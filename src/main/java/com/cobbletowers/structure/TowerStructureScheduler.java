@@ -17,6 +17,8 @@ import java.util.function.Consumer;
  * exceptions are contained here and never intentionally propagated into the Minecraft server tick
  * loop. Build work receives three attempts total. Cleanup work remains quarantined and retryable;
  * the production retry cadence is supplied by the caller so policy is not hidden in this class.
+ * Persisted work snapshots contain only restart-stable progress; runtime tick deadlines are rebuilt
+ * after restart instead of persisting an absolute server tick.
  */
 public final class TowerStructureScheduler {
     public static final int MAX_BUILD_ATTEMPTS = 3;
@@ -54,6 +56,18 @@ public final class TowerStructureScheduler {
                 ? progress
                 : progress.beginTeardown();
         put(new CellWork(runId, slotIndex, normalized, Math.max(0, firstEligibleTick)));
+    }
+
+    /**
+     * Restore persisted structure work. Runtime retry deadlines intentionally restart from now.
+     */
+    public void restore(CellWorkSnapshot snapshot, long currentServerTick) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        TowerCellProgress progress = snapshot.progress();
+        if (progress.state() != TowerCellState.BUILDING && progress.state() != TowerCellState.TEARDOWN) {
+            throw new IllegalArgumentException("Only BUILDING or TEARDOWN work may be restored, got " + progress.state());
+        }
+        putRuntimeOnly(new CellWork(snapshot.runId(), snapshot.slotIndex(), progress, Math.max(0, currentServerTick)));
     }
 
     /**
@@ -126,7 +140,7 @@ public final class TowerStructureScheduler {
         CellWork updated = new CellWork(work.runId(), work.slotIndex(), next, 0);
         if (next.state() == TowerCellState.READY || next.cleanupComplete()) {
             byRun.remove(work.runId());
-            persistenceSink.accept(updated.snapshot());
+            safePersist(updated.snapshot());
             return;
         }
         replaceAndRequeue(updated);
@@ -142,7 +156,7 @@ public final class TowerStructureScheduler {
         if (operation == TowerStructureOperation.BUILD && failed.failedAttempts() >= MAX_BUILD_ATTEMPTS) {
             CellWork quarantined = new CellWork(work.runId(), work.slotIndex(), failed.quarantine(), 0);
             byRun.remove(work.runId());
-            persistenceSink.accept(quarantined.snapshot());
+            safePersist(quarantined.snapshot());
             CobbleTowers.LOGGER.error(
                     "Tower cell quarantined after {} failed build attempts: run={}, slot={}, section={}",
                     failed.failedAttempts(), work.runId(), work.slotIndex(), work.progress().currentSection().id()
@@ -150,17 +164,23 @@ public final class TowerStructureScheduler {
             return;
         }
 
-        long nextEligible = operation == TowerStructureOperation.BUILD
-                ? Math.addExact(serverTick, 1)
-                : Math.addExact(serverTick, cleanupRetryDelayTicks);
+        long delay = operation == TowerStructureOperation.BUILD ? 1 : cleanupRetryDelayTicks;
+        long nextEligible = saturatingAdd(serverTick, delay);
         replaceAndRequeue(new CellWork(work.runId(), work.slotIndex(), failed, nextEligible));
     }
 
     private void onAssetFault(CellWork work, TowerStructureSection section) {
         CellWork quarantined = new CellWork(work.runId(), work.slotIndex(), work.progress().quarantine(), 0);
         byRun.remove(work.runId());
-        persistenceSink.accept(quarantined.snapshot());
-        assetFaultSink.accept(work.runId(), section);
+        safePersist(quarantined.snapshot());
+        try {
+            assetFaultSink.accept(work.runId(), section);
+        } catch (RuntimeException callbackFailure) {
+            CobbleTowers.LOGGER.error(
+                    "Contained Tower asset-fault callback exception: run={}, slot={}, section={}",
+                    work.runId(), work.slotIndex(), section.id(), callbackFailure
+            );
+        }
         CobbleTowers.LOGGER.error(
                 "Non-retryable Tower structure asset fault: run={}, slot={}, section={}",
                 work.runId(), work.slotIndex(), section.id()
@@ -168,19 +188,42 @@ public final class TowerStructureScheduler {
     }
 
     private void put(CellWork work) {
+        putRuntimeOnly(work);
+        safePersist(work.snapshot());
+    }
+
+    private void putRuntimeOnly(CellWork work) {
         Objects.requireNonNull(work.runId(), "runId");
         if (work.slotIndex() < 0) throw new IllegalArgumentException("slotIndex must be >= 0");
         if (byRun.putIfAbsent(work.runId(), work) != null) {
             throw new IllegalStateException("Structure work already queued for run " + work.runId());
         }
         queue.addLast(work.runId());
-        persistenceSink.accept(work.snapshot());
     }
 
     private void replaceAndRequeue(CellWork work) {
         byRun.put(work.runId(), work);
         queue.addLast(work.runId());
-        persistenceSink.accept(work.snapshot());
+        safePersist(work.snapshot());
+    }
+
+    private void safePersist(CellWorkSnapshot snapshot) {
+        try {
+            persistenceSink.accept(snapshot);
+        } catch (RuntimeException persistenceFailure) {
+            byRun.remove(snapshot.runId());
+            queue.removeIf(snapshot.runId()::equals);
+            CobbleTowers.LOGGER.error(
+                    "Contained Tower structure persistence exception; work stopped and cell must remain quarantined: run={}, slot={}, state={}, sectionIndex={}",
+                    snapshot.runId(), snapshot.slotIndex(), snapshot.progress().state(), snapshot.progress().sectionIndex(), persistenceFailure
+            );
+        }
+    }
+
+    private static long saturatingAdd(long value, long increment) {
+        if (increment < 0) throw new IllegalArgumentException("increment must be >= 0");
+        if (value > Long.MAX_VALUE - increment) return Long.MAX_VALUE;
+        return value + increment;
     }
 
     private record CellWork(UUID runId, int slotIndex, TowerCellProgress progress, long nextEligibleTick) {
@@ -192,16 +235,16 @@ public final class TowerStructureScheduler {
         }
 
         private CellWorkSnapshot snapshot() {
-            return new CellWorkSnapshot(runId, slotIndex, progress, nextEligibleTick);
+            return new CellWorkSnapshot(runId, slotIndex, progress);
         }
     }
 
-    public record CellWorkSnapshot(UUID runId, int slotIndex, TowerCellProgress progress, long nextEligibleTick) {
+    /** Persisted restart-stable work state. Runtime retry deadlines are intentionally excluded. */
+    public record CellWorkSnapshot(UUID runId, int slotIndex, TowerCellProgress progress) {
         public CellWorkSnapshot {
             Objects.requireNonNull(runId, "runId");
             Objects.requireNonNull(progress, "progress");
             if (slotIndex < 0) throw new IllegalArgumentException("slotIndex must be >= 0");
-            if (nextEligibleTick < 0) throw new IllegalArgumentException("nextEligibleTick must be >= 0");
         }
     }
 }
