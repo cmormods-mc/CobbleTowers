@@ -53,6 +53,16 @@ public final class TowerInstanceAllocator {
         return Optional.ofNullable(byRun.get(runId));
     }
 
+    public TowerInstanceRegion region(TowerInstanceSlot slot) {
+        Objects.requireNonNull(slot, "slot");
+        int negativeHalf = strideBlocks / 2;
+        int minX = Math.subtractExact(slot.originX(), negativeHalf);
+        int minZ = Math.subtractExact(slot.originZ(), negativeHalf);
+        int maxX = Math.addExact(minX, strideBlocks - 1);
+        int maxZ = Math.addExact(minZ, strideBlocks - 1);
+        return new TowerInstanceRegion(slot, minX, maxX, minZ, maxZ);
+    }
+
     public boolean release(UUID runId) {
         TowerInstanceSlot removed = byRun.remove(runId);
         if (removed == null) return false;
@@ -70,6 +80,10 @@ public final class TowerInstanceAllocator {
 
     public int gridWidth() {
         return gridWidth;
+    }
+
+    public int strideBlocks() {
+        return strideBlocks;
     }
 
     public void clear() {
