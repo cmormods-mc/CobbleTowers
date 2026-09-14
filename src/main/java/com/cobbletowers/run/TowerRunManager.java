@@ -13,12 +13,12 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * Server-thread owner of all active Tower runs.
+ * Server-thread owner of all active and teardown-pending Tower runs.
  *
  * <p>Runs are indexed directly by run UUID and participant UUID. No global player/world scans are
  * needed to answer "which run owns this player?". Instance allocation and participant indexing are
  * created/restored/released atomically through this class. Optional persistence sinks receive one
- * immutable snapshot per durable mutation and one run ID after successful teardown/release.
+ * immutable snapshot per durable mutation and one run ID only after successful teardown/release.
  */
 public final class TowerRunManager {
     private static final Consumer<TowerRunSnapshot> NO_SNAPSHOT_SINK = snapshot -> {};
@@ -103,10 +103,8 @@ public final class TowerRunManager {
     }
 
     /**
-     * Removes runtime ownership only after callers have completed world/entity teardown.
-     *
-     * <p>The instance slot becomes reusable and persistent live-run data is removed only at this
-     * explicit point, so a cell cannot be reassigned while its previous world state is still present.
+     * Removes runtime ownership only after callers have completed world/entity teardown and any final
+     * reward commitment. The instance slot and persisted snapshot become reusable/removable together.
      */
     public boolean release(UUID runId) {
         TowerRun removed = runs.remove(runId);
@@ -131,12 +129,7 @@ public final class TowerRunManager {
 
     private void persist(UUID runId) {
         TowerRun run = runs.get(runId);
-        if (run == null) return;
-        if (run.state().terminal()) {
-            // Keep the persisted live-run record until explicit release after teardown succeeds.
-            return;
-        }
-        persistenceSink.accept(run.snapshot());
+        if (run != null) persistenceSink.accept(run.snapshot());
     }
 
     private void bind(TowerRun run) {
@@ -144,7 +137,6 @@ public final class TowerRunManager {
         for (TowerParticipant participant : run.participants()) {
             UUID previous = runByPlayer.put(participant.playerId(), run.runId());
             if (previous != null) {
-                // Defensive rollback: validateParticipantsAvailable should make this unreachable.
                 runs.remove(run.runId());
                 for (TowerParticipant rollback : run.participants()) {
                     runByPlayer.remove(rollback.playerId(), run.runId());
