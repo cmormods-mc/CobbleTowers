@@ -72,9 +72,10 @@ public final class TowerSavedData extends SavedData {
             CompoundTag runTag = runTags.getCompound(i);
             try {
                 TowerRunSnapshot snapshot = TowerRunNbtCodec.decode(runTag);
-                if (data.runs.put(snapshot.runId(), snapshot) != null) {
+                if (data.runs.containsKey(snapshot.runId())) {
                     throw new IllegalArgumentException("Duplicate persisted run UUID: " + snapshot.runId());
                 }
+                data.runs.put(snapshot.runId(), snapshot);
             } catch (RuntimeException ex) {
                 String runHint = runTag.hasUUID("run_id") ? runTag.getUUID("run_id").toString() : "<unknown>";
                 CobbleTowers.LOGGER.error(
