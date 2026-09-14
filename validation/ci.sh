@@ -19,6 +19,7 @@ run() {
 }
 
 run "CobbleTowers architecture boundary" python3 validation/validate_architecture.py
+run "CobbleTowers V1 dimension/gameplay contract" python3 validation/validate_tower_contract.py
 
 if [[ $# -lt 1 ]]; then
   echo '[FAIL] CobbleTowers now imports the typed CobbleRaids public API.' >&2
