@@ -19,7 +19,6 @@ public final class TowerInstanceAllocator {
     private final int strideBlocks;
     private final int maxSlots;
     private final Map<UUID, TowerInstanceSlot> byRun = new HashMap<>();
-    private final Map<Integer, UUID> bySlot = new HashMap<>();
     private final TreeSet<Integer> freeSlots = new TreeSet<>();
     private int nextSlot;
 
@@ -40,7 +39,6 @@ public final class TowerInstanceAllocator {
         int originX = Math.multiplyExact(slot, strideBlocks);
         TowerInstanceSlot allocated = new TowerInstanceSlot(runId, slot, originX, 0);
         byRun.put(runId, allocated);
-        bySlot.put(slot, runId);
         return allocated;
     }
 
@@ -51,7 +49,6 @@ public final class TowerInstanceAllocator {
     public boolean release(UUID runId) {
         TowerInstanceSlot removed = byRun.remove(runId);
         if (removed == null) return false;
-        bySlot.remove(removed.slotIndex());
         freeSlots.add(removed.slotIndex());
         return true;
     }
@@ -66,7 +63,6 @@ public final class TowerInstanceAllocator {
 
     public void clear() {
         byRun.clear();
-        bySlot.clear();
         freeSlots.clear();
         nextSlot = 0;
     }
