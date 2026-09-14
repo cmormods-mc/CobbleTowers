@@ -36,7 +36,28 @@ require(
         "manager.restore(snapshot)",
         "TowerRunState.BOSS_BATTLE",
         "recoverInterruptedBossBattle()",
+        "recoverParticipantConnectionsAfterServerRestart()",
         "retained for recovery",
+    ],
+)
+
+require(
+    "src/main/java/com/cobbletowers/runtime/TowerServerRuntime.java",
+    [
+        "savedData.incompatibleNewerSchema()",
+        "Saved Tower data is preserved untouched",
+        "rejected run(s)",
+        "snapshots remain on disk for recovery",
+        "runManager.clearRuntimeState()",
+    ],
+)
+
+require(
+    "src/main/java/com/cobbletowers/CobbleTowers.java",
+    [
+        "ServerLifecycleEvents.SERVER_STARTED.register(SERVER_RUNTIME::start)",
+        "ServerLifecycleEvents.SERVER_STOPPED.register",
+        "public static TowerServerRuntime runtime()",
     ],
 )
 
@@ -54,6 +75,7 @@ require(
     [
         "DEFAULT_RECONNECT_GRACE_TICKS = 5 * 60 * 20",
         "reconnectGraceTicksRemaining",
+        "recoverAfterServerRestart()",
         "disconnect()",
         "reconnect()",
     ],
