@@ -18,13 +18,17 @@ def require(path: str, needles: list[str]) -> None:
 require(
     "src/main/java/com/cobbletowers/persistence/TowerSavedData.java",
     [
-        "CURRENT_SCHEMA_VERSION = 1",
+        "CURRENT_SCHEMA_VERSION = 2",
         "DataFixTypes.SAVED_DATA_COMMAND_STORAGE",
+        "Migrating CobbleTowers persistence schema 1 -> 2",
         "TowerRunNbtCodec.decode",
+        "TowerStructureWorkNbtCodec.decode",
+        "structure_work",
         "incompatibleNewerSchema()",
         "preservedUnknownRoot.copy()",
         "setDirty()",
         "Duplicate persisted run UUID",
+        "Duplicate persisted structure work UUID",
     ],
 )
 
@@ -86,4 +90,16 @@ require(
     ["BOSS_BATTLE", "PREPARING_NEXT_FLOOR"],
 )
 
-print("[PASS] CobbleTowers persistence/recovery contract")
+require(
+    "src/main/java/com/cobbletowers/structure/TowerStructureScheduler.java",
+    [
+        "MAX_BUILD_ATTEMPTS = 3",
+        "return; // hard global budget: at most one operation per tick",
+        "TowerStructureOperationResult.ASSET_FAULT",
+        "safePersist",
+        "saturatingAdd",
+        "Runtime retry deadlines intentionally restart from now",
+    ],
+)
+
+print("[PASS] CobbleTowers persistence/recovery/structure-work contract")
