@@ -75,6 +75,11 @@ public final class TowerModifierProgress {
         return promotionPending ? List.copyOf(new ArrayList<>(recentAccepted)) : List.of();
     }
 
+    /** Exact recent-history window for persistence; unlike promotionChoices(), this is not state-filtered. */
+    public List<ResourceLocation> promotionChoicesForPersistence() {
+        return List.copyOf(new ArrayList<>(recentAccepted));
+    }
+
     public Map<ResourceLocation, Integer> permanentTiers() {
         return Map.copyOf(permanentTiers);
     }
