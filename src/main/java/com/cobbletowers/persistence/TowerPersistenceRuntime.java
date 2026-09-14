@@ -14,14 +14,7 @@ import java.util.Objects;
 import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 
-/**
- * Bridges Minecraft's global SavedData storage to the pure Tower run/instance model.
- *
- * <p>This class deliberately does not choose policy for a newer incompatible schema and does not
- * perform world/template/entity reconciliation. Callers inspect compatibility first, then restore
- * runtime ownership. Conflicting snapshots are reported and retained in SavedData for forensic/admin
- * recovery until product policy explicitly chooses otherwise.
- */
+/** Bridges Minecraft global SavedData storage to the pure Tower run/instance model. */
 public final class TowerPersistenceRuntime {
     private TowerPersistenceRuntime() {}
 
@@ -60,11 +53,20 @@ public final class TowerPersistenceRuntime {
     ) {
         try {
             TowerRun run = manager.restore(snapshot);
+
             if (run.state() == TowerRunState.BOSS_BATTLE) {
                 // Showdown/Cobblemon live battle internals are intentionally not persisted.
                 // Recovery returns the floor to a state where its boss can be spawned at full HP.
                 run.recoverInterruptedBossBattle();
             }
+
+            if (!run.state().terminal()) {
+                // A full server restart disconnects every live network session. Participants who were
+                // online receive a fresh five-minute reconnect window; participants who were already
+                // disconnected preserve their exact remaining grace.
+                run.recoverParticipantConnectionsAfterServerRestart();
+            }
+
             // PREPARING_NEXT_FLOOR remains durable until the future world reconciler verifies/rebuilds
             // the target floor. Terminal states remain bound until teardown succeeds and release() runs.
         } catch (RuntimeException ex) {
