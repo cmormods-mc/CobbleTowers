@@ -20,7 +20,7 @@ require(
     [
         "CURRENT_SCHEMA_VERSION = 1",
         "DataFixTypes.SAVED_DATA_COMMAND_STORAGE",
-        "computeIfAbsent" if False else "TowerRunNbtCodec.decode",
+        "TowerRunNbtCodec.decode",
         "incompatibleNewerSchema()",
         "preservedUnknownRoot.copy()",
         "setDirty()",
@@ -33,7 +33,6 @@ require(
     [
         "server.overworld()",
         "computeIfAbsent(TowerSavedData.factory(), TowerSavedData.STORAGE_ID)",
-        "allocator",
         "manager.restore(snapshot)",
         "TowerRunState.BOSS_BATTLE",
         "recoverInterruptedBossBattle()",
