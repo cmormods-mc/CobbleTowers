@@ -92,6 +92,28 @@ public final class TowerRun {
         state = TowerRunState.FLOOR_ACTIVE;
     }
 
+    public void beginBossBattle() {
+        requireState(TowerRunState.FLOOR_ACTIVE);
+        state = TowerRunState.BOSS_BATTLE;
+    }
+
+    /**
+     * Converts an interrupted live battle back into a spawnable floor state.
+     *
+     * <p>No Showdown state is resumed. The battle adapter may now start the floor boss again at full
+     * HP while Tower-level floor/modifier/reward state remains unchanged.
+     */
+    public void recoverInterruptedBossBattle() {
+        requireState(TowerRunState.BOSS_BATTLE);
+        state = TowerRunState.FLOOR_ACTIVE;
+    }
+
+    public void beginUpgradeChoiceAfterBoss() {
+        requireState(TowerRunState.BOSS_BATTLE);
+        state = TowerRunState.CHOOSING_UPGRADE;
+    }
+
+    /** Retained for non-boss test/dev transitions while every production floor still has a boss. */
     public void beginUpgradeChoice() {
         requireState(TowerRunState.FLOOR_ACTIVE);
         state = TowerRunState.CHOOSING_UPGRADE;
@@ -102,19 +124,76 @@ public final class TowerRun {
         state = TowerRunState.READY_FOR_NEXT_FLOOR;
     }
 
-    public void advanceFloor() {
+    /** Persist this intent before any next-floor structure/world mutation begins. */
+    public void beginPreparingNextFloor() {
         requireState(TowerRunState.READY_FOR_NEXT_FLOOR);
         if (currentFloor >= maxFloors) throw new IllegalStateException("Final floor cannot advance");
+        state = TowerRunState.PREPARING_NEXT_FLOOR;
+    }
+
+    /** Call only after the next floor's required world preparation has completed successfully. */
+    public void finishPreparingNextFloor() {
+        requireState(TowerRunState.PREPARING_NEXT_FLOOR);
         currentFloor++;
         state = TowerRunState.FLOOR_ACTIVE;
     }
 
+    /** Legacy convenience transition for pure-state callers; world code should use prepare/finish. */
+    public void advanceFloor() {
+        beginPreparingNextFloor();
+        finishPreparingNextFloor();
+    }
+
     public void complete() {
         if (currentFloor != maxFloors) throw new IllegalStateException("Run may complete only on its final floor");
-        if (state != TowerRunState.FLOOR_ACTIVE && state != TowerRunState.READY_FOR_NEXT_FLOOR) {
+        if (state != TowerRunState.FLOOR_ACTIVE
+                && state != TowerRunState.BOSS_BATTLE
+                && state != TowerRunState.READY_FOR_NEXT_FLOOR) {
             throw new IllegalStateException("Run cannot complete from state " + state);
         }
         state = TowerRunState.COMPLETE;
+    }
+
+    public boolean disconnect(UUID playerId) {
+        if (state.terminal()) return false;
+        TowerParticipant participant = participants.get(playerId);
+        if (participant == null || !participant.active() || !participant.connected()) return false;
+        participants.put(playerId, participant.disconnect());
+        return true;
+    }
+
+    public boolean reconnect(UUID playerId) {
+        if (state.terminal()) return false;
+        TowerParticipant participant = participants.get(playerId);
+        if (participant == null || !participant.active() || participant.connected()) return false;
+        participants.put(playerId, participant.reconnect());
+        return true;
+    }
+
+    /**
+     * Decrements grace for disconnected active participants by one online server tick.
+     *
+     * @return true when persistent participant/run state changed.
+     */
+    public boolean tickReconnectGrace() {
+        if (state.terminal()) return false;
+        boolean changed = false;
+        for (Map.Entry<UUID, TowerParticipant> entry : participants.entrySet()) {
+            TowerParticipant participant = entry.getValue();
+            if (!participant.active() || participant.connected()) continue;
+
+            TowerParticipant next = participant.decrementReconnectGrace();
+            if (next != participant) {
+                entry.setValue(next);
+                changed = true;
+            }
+            if (next.reconnectGraceExpired()) {
+                entry.setValue(next.deactivate());
+                changed = true;
+            }
+        }
+        if (changed && activeParticipantIds().isEmpty()) state = TowerRunState.FAILED;
+        return changed;
     }
 
     public boolean eliminate(UUID playerId) {
