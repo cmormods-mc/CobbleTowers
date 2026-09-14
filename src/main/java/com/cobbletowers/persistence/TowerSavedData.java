@@ -2,7 +2,6 @@ package com.cobbletowers.persistence;
 
 import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.run.TowerRunSnapshot;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -18,12 +17,13 @@ import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * Versioned server-global persistence for live/recoverable Tower runs.
+ * Versioned server-global persistence for recoverable Tower runs and teardown-pending terminal runs.
  *
  * <p>Only immutable run snapshots are stored. Individual malformed runs are isolated during load so
- * one damaged run cannot prevent healthy parties from recovering. Unknown newer root schemas are
- * preserved byte-for-byte at the NBT-tree level and exposed as incompatible; callers must not mutate
- * such a store, which prevents an older mod version from overwriting newer data.
+ * one damaged run cannot prevent healthy parties from recovering. A terminal run remains persisted
+ * until world/entity teardown and reward commitment have completed and the run manager explicitly
+ * releases it; this prevents a crash between terminal transition and cleanup from restoring stale
+ * active state. Unknown newer root schemas are preserved without modification.
  */
 public final class TowerSavedData extends SavedData {
     public static final String STORAGE_ID = "cobbletowers_runs";
@@ -47,7 +47,7 @@ public final class TowerSavedData extends SavedData {
 
     public static Factory<TowerSavedData> factory() {
         // DataFixTypes must be non-null in 1.21.1. CobbleTowers owns its own explicit schema migration;
-        // the vanilla fixer family is supplied only to satisfy DimensionDataStorage's read contract.
+        // this vanilla fixer family satisfies DimensionDataStorage's read contract.
         return new Factory<>(TowerSavedData::new, TowerSavedData::load, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
     }
 
@@ -72,14 +72,6 @@ public final class TowerSavedData extends SavedData {
             CompoundTag runTag = runTags.getCompound(i);
             try {
                 TowerRunSnapshot snapshot = TowerRunNbtCodec.decode(runTag);
-                if (snapshot.state().terminal()) {
-                    CobbleTowers.LOGGER.warn(
-                            "Ignoring terminal Tower run {} found in live-run persistence (state={}).",
-                            snapshot.runId(),
-                            snapshot.state()
-                    );
-                    continue;
-                }
                 if (data.runs.put(snapshot.runId(), snapshot) != null) {
                     throw new IllegalArgumentException("Duplicate persisted run UUID: " + snapshot.runId());
                 }
@@ -98,8 +90,6 @@ public final class TowerSavedData extends SavedData {
     @Override
     public CompoundTag save(CompoundTag root, HolderLookup.Provider registries) {
         if (incompatibleNewerSchema()) {
-            // Defensive preservation. Normal callers must not mutate this store, but if Minecraft asks
-            // it to save during shutdown, returning the untouched newer root avoids destructive downgrade.
             return preservedUnknownRoot.copy();
         }
 
@@ -128,9 +118,6 @@ public final class TowerSavedData extends SavedData {
     public boolean put(TowerRunSnapshot snapshot) {
         requireCompatible();
         Objects.requireNonNull(snapshot, "snapshot");
-        if (snapshot.state().terminal()) {
-            throw new IllegalArgumentException("Terminal runs must be removed from live persistence, not stored");
-        }
         TowerRunSnapshot previous = runs.put(snapshot.runId(), snapshot);
         if (snapshot.equals(previous)) return false;
         setDirty();
@@ -152,7 +139,6 @@ public final class TowerSavedData extends SavedData {
         Map<UUID, TowerRunSnapshot> replacement = new LinkedHashMap<>();
         for (TowerRunSnapshot snapshot : snapshots) {
             Objects.requireNonNull(snapshot, "snapshots may not contain null");
-            if (snapshot.state().terminal()) continue;
             if (replacement.put(snapshot.runId(), snapshot) != null) {
                 throw new IllegalArgumentException("Duplicate Tower run UUID: " + snapshot.runId());
             }
