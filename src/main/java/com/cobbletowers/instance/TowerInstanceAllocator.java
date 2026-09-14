@@ -11,13 +11,15 @@ import java.util.UUID;
  * Server-thread allocator for private Tower regions in one shared dimension.
  *
  * <p>The allocator is intentionally world-agnostic. It owns only slot identities and origins; chunk
- * loading, structure placement, and cleanup belong to later layers. Released slots are reused before
- * new indices are created, so coordinate growth is bounded by peak concurrent runs rather than total
- * historical runs.
+ * loading, structure placement, and cleanup belong to later layers. Slots are laid out on a compact
+ * square-ish 2D grid so peak concurrent runs stay spatially bounded in both axes. Released slots are
+ * reused before new indices are created, so coordinate growth depends on peak concurrency rather than
+ * total historical runs.
  */
 public final class TowerInstanceAllocator {
     private final int strideBlocks;
     private final int maxSlots;
+    private final int gridWidth;
     private final Map<UUID, TowerInstanceSlot> byRun = new HashMap<>();
     private final TreeSet<Integer> freeSlots = new TreeSet<>();
     private int nextSlot;
@@ -27,6 +29,7 @@ public final class TowerInstanceAllocator {
         if (maxSlots < 1) throw new IllegalArgumentException("maxSlots must be >= 1");
         this.strideBlocks = strideBlocks;
         this.maxSlots = maxSlots;
+        this.gridWidth = (int) Math.ceil(Math.sqrt(maxSlots));
     }
 
     public TowerInstanceSlot allocate(UUID runId) {
@@ -36,8 +39,12 @@ public final class TowerInstanceAllocator {
         if (byRun.size() >= maxSlots) throw new IllegalStateException("No Tower instance slots are available");
 
         int slot = freeSlots.isEmpty() ? nextSlot++ : freeSlots.pollFirst();
-        int originX = Math.multiplyExact(slot, strideBlocks);
-        TowerInstanceSlot allocated = new TowerInstanceSlot(runId, slot, originX, 0);
+        int column = slot % gridWidth;
+        int row = slot / gridWidth;
+        int originX = Math.multiplyExact(column, strideBlocks);
+        int originZ = Math.multiplyExact(row, strideBlocks);
+
+        TowerInstanceSlot allocated = new TowerInstanceSlot(runId, slot, originX, originZ);
         byRun.put(runId, allocated);
         return allocated;
     }
@@ -59,6 +66,10 @@ public final class TowerInstanceAllocator {
 
     public int capacity() {
         return maxSlots;
+    }
+
+    public int gridWidth() {
+        return gridWidth;
     }
 
     public void clear() {
