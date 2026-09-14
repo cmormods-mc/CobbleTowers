@@ -31,6 +31,14 @@ final class TowerInstanceAllocatorTest {
         assertEquals(192, second.originX());
         assertEquals(0, second.originZ());
 
+        TowerInstanceRegion firstRegion = allocator.region(first);
+        TowerInstanceRegion secondRegion = allocator.region(second);
+        assertEquals(192, firstRegion.width());
+        assertEquals(192, firstRegion.depth());
+        assertTrue(firstRegion.contains(first.originX(), first.originZ()));
+        assertFalse(firstRegion.contains(second.originX(), second.originZ()));
+        assertFalse(secondRegion.contains(first.originX(), first.originZ()));
+
         assertTrue(allocator.release(firstRun));
         TowerInstanceSlot reused = allocator.allocate(thirdRun);
         assertEquals(0, reused.slotIndex());
