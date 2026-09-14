@@ -21,6 +21,7 @@ public final class TowerInstanceAllocator {
     private final int maxSlots;
     private final int gridWidth;
     private final Map<UUID, TowerInstanceSlot> byRun = new HashMap<>();
+    private final Map<Integer, UUID> slotOwners = new HashMap<>();
     private final TreeSet<Integer> freeSlots = new TreeSet<>();
     private int nextSlot;
 
@@ -38,15 +39,39 @@ public final class TowerInstanceAllocator {
         if (existing != null) return existing;
         if (byRun.size() >= maxSlots) throw new IllegalStateException("No Tower instance slots are available");
 
-        int slot = freeSlots.isEmpty() ? nextSlot++ : freeSlots.pollFirst();
-        int column = slot % gridWidth;
-        int row = slot / gridWidth;
-        int originX = Math.multiplyExact(column, strideBlocks);
-        int originZ = Math.multiplyExact(row, strideBlocks);
+        int slot = nextAvailableSlot();
+        return bind(runId, slot);
+    }
 
-        TowerInstanceSlot allocated = new TowerInstanceSlot(runId, slot, originX, originZ);
-        byRun.put(runId, allocated);
-        return allocated;
+    /**
+     * Reclaims one persisted slot after restart.
+     *
+     * <p>This is intentionally strict: a persisted run may not silently move to another coordinate.
+     * If two saved runs claim the same slot, restoration fails instead of allowing overlapping tower
+     * instances to mutate the same blocks.
+     */
+    public TowerInstanceSlot reserve(UUID runId, int slotIndex) {
+        Objects.requireNonNull(runId, "runId");
+        if (slotIndex < 0 || slotIndex >= maxSlots) {
+            throw new IllegalArgumentException("slotIndex is outside allocator capacity: " + slotIndex);
+        }
+
+        TowerInstanceSlot existing = byRun.get(runId);
+        if (existing != null) {
+            if (existing.slotIndex() != slotIndex) {
+                throw new IllegalStateException("Run is already assigned to a different Tower slot");
+            }
+            return existing;
+        }
+
+        UUID owner = slotOwners.get(slotIndex);
+        if (owner != null) {
+            throw new IllegalStateException("Tower slot " + slotIndex + " is already owned by run " + owner);
+        }
+
+        freeSlots.remove(slotIndex);
+        if (slotIndex >= nextSlot) nextSlot = slotIndex + 1;
+        return bind(runId, slotIndex);
     }
 
     public Optional<TowerInstanceSlot> get(UUID runId) {
@@ -66,6 +91,7 @@ public final class TowerInstanceAllocator {
     public boolean release(UUID runId) {
         TowerInstanceSlot removed = byRun.remove(runId);
         if (removed == null) return false;
+        slotOwners.remove(removed.slotIndex());
         freeSlots.add(removed.slotIndex());
         return true;
     }
@@ -88,7 +114,27 @@ public final class TowerInstanceAllocator {
 
     public void clear() {
         byRun.clear();
+        slotOwners.clear();
         freeSlots.clear();
         nextSlot = 0;
+    }
+
+    private int nextAvailableSlot() {
+        if (!freeSlots.isEmpty()) return freeSlots.pollFirst();
+        while (nextSlot < maxSlots && slotOwners.containsKey(nextSlot)) nextSlot++;
+        if (nextSlot >= maxSlots) throw new IllegalStateException("No Tower instance slots are available");
+        return nextSlot++;
+    }
+
+    private TowerInstanceSlot bind(UUID runId, int slot) {
+        int column = slot % gridWidth;
+        int row = slot / gridWidth;
+        int originX = Math.multiplyExact(column, strideBlocks);
+        int originZ = Math.multiplyExact(row, strideBlocks);
+
+        TowerInstanceSlot allocated = new TowerInstanceSlot(runId, slot, originX, originZ);
+        byRun.put(runId, allocated);
+        slotOwners.put(slot, runId);
+        return allocated;
     }
 }
