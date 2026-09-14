@@ -10,21 +10,38 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * Server-thread owner of all active Tower runs.
  *
  * <p>Runs are indexed directly by run UUID and participant UUID. No global player/world scans are
  * needed to answer "which run owns this player?". Instance allocation and participant indexing are
- * created/restored/released atomically through this class.
+ * created/restored/released atomically through this class. Optional persistence sinks receive one
+ * immutable snapshot per durable mutation and one run ID after successful teardown/release.
  */
 public final class TowerRunManager {
+    private static final Consumer<TowerRunSnapshot> NO_SNAPSHOT_SINK = snapshot -> {};
+    private static final Consumer<UUID> NO_REMOVE_SINK = runId -> {};
+
     private final TowerInstanceAllocator allocator;
+    private final Consumer<TowerRunSnapshot> persistenceSink;
+    private final Consumer<UUID> persistenceRemoveSink;
     private final Map<UUID, TowerRun> runs = new HashMap<>();
     private final Map<UUID, UUID> runByPlayer = new HashMap<>();
 
     public TowerRunManager(TowerInstanceAllocator allocator) {
+        this(allocator, NO_SNAPSHOT_SINK, NO_REMOVE_SINK);
+    }
+
+    public TowerRunManager(
+            TowerInstanceAllocator allocator,
+            Consumer<TowerRunSnapshot> persistenceSink,
+            Consumer<UUID> persistenceRemoveSink
+    ) {
         this.allocator = Objects.requireNonNull(allocator, "allocator");
+        this.persistenceSink = Objects.requireNonNull(persistenceSink, "persistenceSink");
+        this.persistenceRemoveSink = Objects.requireNonNull(persistenceRemoveSink, "persistenceRemoveSink");
     }
 
     public TowerRun create(UUID runId, long seed, int maxFloors, Collection<TowerParticipant> participants) {
@@ -35,10 +52,13 @@ public final class TowerRunManager {
 
         TowerInstanceSlot slot = allocator.allocate(runId);
         try {
-            TowerRun run = new TowerRun(runId, seed, maxFloors, slot, participants);
+            TowerRun run = new TowerRun(runId, seed, maxFloors, slot, participants, () -> persist(runId));
             bind(run);
+            persistenceSink.accept(run.snapshot());
             return run;
         } catch (RuntimeException ex) {
+            runs.remove(runId);
+            for (TowerParticipant participant : participants) runByPlayer.remove(participant.playerId(), runId);
             allocator.release(runId);
             throw ex;
         }
@@ -52,10 +72,14 @@ public final class TowerRunManager {
 
         TowerInstanceSlot slot = allocator.reserve(snapshot.runId(), snapshot.slotIndex());
         try {
-            TowerRun run = TowerRun.restore(snapshot, slot);
+            TowerRun run = TowerRun.restore(snapshot, slot, () -> persist(snapshot.runId()));
             bind(run);
             return run;
         } catch (RuntimeException ex) {
+            runs.remove(snapshot.runId());
+            for (TowerParticipant participant : snapshot.participants()) {
+                runByPlayer.remove(participant.playerId(), snapshot.runId());
+            }
             allocator.release(snapshot.runId());
             throw ex;
         }
@@ -81,8 +105,8 @@ public final class TowerRunManager {
     /**
      * Removes runtime ownership only after callers have completed world/entity teardown.
      *
-     * <p>Keeping teardown outside this manager avoids a hidden world mutation in what is otherwise a
-     * pure run-state service. The instance slot becomes reusable only at this explicit release point.
+     * <p>The instance slot becomes reusable and persistent live-run data is removed only at this
+     * explicit point, so a cell cannot be reassigned while its previous world state is still present.
      */
     public boolean release(UUID runId) {
         TowerRun removed = runs.remove(runId);
@@ -91,6 +115,7 @@ public final class TowerRunManager {
             runByPlayer.remove(participant.playerId(), runId);
         }
         allocator.release(runId);
+        persistenceRemoveSink.accept(runId);
         return true;
     }
 
@@ -102,6 +127,16 @@ public final class TowerRunManager {
         runs.clear();
         runByPlayer.clear();
         allocator.clear();
+    }
+
+    private void persist(UUID runId) {
+        TowerRun run = runs.get(runId);
+        if (run == null) return;
+        if (run.state().terminal()) {
+            // Keep the persisted live-run record until explicit release after teardown succeeds.
+            return;
+        }
+        persistenceSink.accept(run.snapshot());
     }
 
     private void bind(TowerRun run) {
