@@ -39,6 +39,18 @@ public record TowerParticipant(
         return new TowerParticipant(playerId, returnLocation, true, true, DEFAULT_RECONNECT_GRACE_TICKS);
     }
 
+    /**
+     * Normalize persisted connection state after a full server restart.
+     *
+     * <p>A participant who was connected when the server stopped receives the normal five-minute
+     * reconnect window. A participant who was already disconnected preserves the remaining grace
+     * exactly, so restarting the server cannot be used to reset an expiring timeout.
+     */
+    public TowerParticipant recoverAfterServerRestart() {
+        if (!active || !connected) return this;
+        return new TowerParticipant(playerId, returnLocation, true, false, DEFAULT_RECONNECT_GRACE_TICKS);
+    }
+
     public TowerParticipant decrementReconnectGrace() {
         if (!active || connected || reconnectGraceTicksRemaining == 0) return this;
         return new TowerParticipant(playerId, returnLocation, true, false, reconnectGraceTicksRemaining - 1);
