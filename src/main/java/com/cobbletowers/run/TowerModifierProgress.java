@@ -14,16 +14,27 @@ import net.minecraft.resources.ResourceLocation;
  *
  * <p>Every fifth accepted challenge opens a promotion choice over the most recent five accepted
  * challenges. Promoting a modifier that is already permanent increments its tier instead of adding a
- * duplicate entry.
+ * duplicate entry. A lightweight mutation callback lets persistence observe durable changes without
+ * coupling this domain object to Minecraft SavedData.
  */
 public final class TowerModifierProgress {
     private static final int PROMOTION_WINDOW = 5;
+    private static final Runnable NO_OP = () -> {};
 
     private final Deque<ResourceLocation> recentAccepted = new ArrayDeque<>(PROMOTION_WINDOW);
     private final Map<ResourceLocation, Integer> permanentTiers = new LinkedHashMap<>();
+    private final Runnable onMutation;
     private int acceptedChallengeCount;
     private boolean promotionPending;
     private ResourceLocation pendingTemporary;
+
+    public TowerModifierProgress() {
+        this(NO_OP);
+    }
+
+    TowerModifierProgress(Runnable onMutation) {
+        this.onMutation = Objects.requireNonNull(onMutation, "onMutation");
+    }
 
     public void acceptTemporary(ResourceLocation modifierId) {
         Objects.requireNonNull(modifierId, "modifierId");
@@ -39,11 +50,15 @@ public final class TowerModifierProgress {
         if (recentAccepted.size() == PROMOTION_WINDOW) recentAccepted.removeFirst();
         recentAccepted.addLast(modifierId);
         if (acceptedChallengeCount % PROMOTION_WINDOW == 0) promotionPending = true;
+        onMutation.run();
     }
 
     public ResourceLocation consumeTemporary() {
         ResourceLocation consumed = pendingTemporary;
-        pendingTemporary = null;
+        if (consumed != null) {
+            pendingTemporary = null;
+            onMutation.run();
+        }
         return consumed;
     }
 
@@ -57,6 +72,7 @@ public final class TowerModifierProgress {
         permanentTiers.merge(modifierId, 1, Integer::sum);
         promotionPending = false;
         recentAccepted.clear();
+        onMutation.run();
     }
 
     public int acceptedChallengeCount() {
@@ -92,6 +108,24 @@ public final class TowerModifierProgress {
             List<ResourceLocation> recentAccepted,
             Map<ResourceLocation, Integer> permanentTiers
     ) {
+        return restore(
+                acceptedChallengeCount,
+                promotionPending,
+                pendingTemporary,
+                recentAccepted,
+                permanentTiers,
+                NO_OP
+        );
+    }
+
+    static TowerModifierProgress restore(
+            int acceptedChallengeCount,
+            boolean promotionPending,
+            ResourceLocation pendingTemporary,
+            List<ResourceLocation> recentAccepted,
+            Map<ResourceLocation, Integer> permanentTiers,
+            Runnable onMutation
+    ) {
         if (acceptedChallengeCount < 0) throw new IllegalArgumentException("acceptedChallengeCount must be >= 0");
         Objects.requireNonNull(recentAccepted, "recentAccepted");
         Objects.requireNonNull(permanentTiers, "permanentTiers");
@@ -99,7 +133,7 @@ public final class TowerModifierProgress {
             throw new IllegalArgumentException("recentAccepted may contain at most five modifiers");
         }
 
-        TowerModifierProgress restored = new TowerModifierProgress();
+        TowerModifierProgress restored = new TowerModifierProgress(onMutation);
         restored.acceptedChallengeCount = acceptedChallengeCount;
         restored.promotionPending = promotionPending;
         restored.pendingTemporary = pendingTemporary;
