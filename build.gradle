@@ -33,6 +33,28 @@ dependencies {
     // Exact Cobblemon artifact used by the currently audited CobbleRaids runtime.
     modImplementation 'maven.modrinth:MdwFAVRL:kF7CvxTo' // Cobblemon 1.7.3
 
+    /*
+     * Integration notes
+     * -----------------
+     * Exact functionality:
+     * When CI supplies -Pcobbleraids_jar=/absolute/path/to/CobbleRaids.jar, CobbleTowers compiles
+     * against that exact upstream build. Local/bootstrap builds do not require an unpublished
+     * CobbleRaids artifact until source code actually consumes com.cobbleraids.api.
+     *
+     * Architectural role:
+     * This is the cross-repository compatibility seam. It avoids publishing temporary API builds
+     * and prevents CI from silently compiling against a stale Maven artifact.
+     *
+     * Performance impact:
+     * Build-time only. It adds no runtime lookup, reflection, polling, or server work.
+     *
+     * Constraint:
+     * CobbleTowers code may import only com.cobbleraids.api; CI separately enforces that boundary.
+     */
+    if (project.hasProperty('cobbleraids_jar')) {
+        modImplementation files(project.property('cobbleraids_jar'))
+    }
+
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
