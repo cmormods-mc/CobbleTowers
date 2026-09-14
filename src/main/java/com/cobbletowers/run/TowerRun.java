@@ -116,16 +116,33 @@ public final class TowerRun {
         changed();
     }
 
-    /**
-     * Converts an interrupted live battle back into a spawnable floor state.
-     *
-     * <p>No Showdown state is resumed. The battle adapter may now start the floor boss again at full
-     * HP while Tower-level floor/modifier/reward state remains unchanged.
-     */
+    /** Converts an interrupted live battle back into a spawnable floor state. */
     public void recoverInterruptedBossBattle() {
         requireState(TowerRunState.BOSS_BATTLE);
         state = TowerRunState.FLOOR_ACTIVE;
         changed();
+    }
+
+    /**
+     * Normalize participant connection state after a full server restart.
+     *
+     * <p>Connected participants become disconnected with a fresh standard grace period. Participants
+     * who were already disconnected retain their exact remaining grace. This mutation is persisted so
+     * a second crash during startup cannot repeatedly alter the timeout semantics.
+     */
+    public boolean recoverParticipantConnectionsAfterServerRestart() {
+        if (state.terminal()) return false;
+        boolean mutated = false;
+        for (Map.Entry<UUID, TowerParticipant> entry : participants.entrySet()) {
+            TowerParticipant current = entry.getValue();
+            TowerParticipant recovered = current.recoverAfterServerRestart();
+            if (recovered != current) {
+                entry.setValue(recovered);
+                mutated = true;
+            }
+        }
+        if (mutated) changed();
+        return mutated;
     }
 
     public void beginUpgradeChoiceAfterBoss() {
@@ -134,7 +151,6 @@ public final class TowerRun {
         changed();
     }
 
-    /** Retained for non-boss test/dev transitions while every production floor still has a boss. */
     public void beginUpgradeChoice() {
         requireState(TowerRunState.FLOOR_ACTIVE);
         state = TowerRunState.CHOOSING_UPGRADE;
@@ -147,7 +163,6 @@ public final class TowerRun {
         changed();
     }
 
-    /** Persist this intent before any next-floor structure/world mutation begins. */
     public void beginPreparingNextFloor() {
         requireState(TowerRunState.READY_FOR_NEXT_FLOOR);
         if (currentFloor >= maxFloors) throw new IllegalStateException("Final floor cannot advance");
@@ -155,7 +170,6 @@ public final class TowerRun {
         changed();
     }
 
-    /** Call only after the next floor's required world preparation has completed successfully. */
     public void finishPreparingNextFloor() {
         requireState(TowerRunState.PREPARING_NEXT_FLOOR);
         currentFloor++;
@@ -163,7 +177,6 @@ public final class TowerRun {
         changed();
     }
 
-    /** Legacy convenience transition for pure-state callers; world code should use prepare/finish. */
     public void advanceFloor() {
         beginPreparingNextFloor();
         finishPreparingNextFloor();
@@ -198,14 +211,9 @@ public final class TowerRun {
         return true;
     }
 
-    /**
-     * Decrements grace for disconnected active participants by one online server tick.
-     *
-     * @return true when persistent participant/run state changed.
-     */
     public boolean tickReconnectGrace() {
         if (state.terminal()) return false;
-        boolean changed = false;
+        boolean mutated = false;
         for (Map.Entry<UUID, TowerParticipant> entry : participants.entrySet()) {
             TowerParticipant participant = entry.getValue();
             if (!participant.active() || participant.connected()) continue;
@@ -213,16 +221,16 @@ public final class TowerRun {
             TowerParticipant next = participant.decrementReconnectGrace();
             if (next != participant) {
                 entry.setValue(next);
-                changed = true;
+                mutated = true;
             }
             if (next.reconnectGraceExpired()) {
                 entry.setValue(next.deactivate());
-                changed = true;
+                mutated = true;
             }
         }
-        if (changed && activeParticipantIds().isEmpty()) state = TowerRunState.FAILED;
-        if (changed) changed();
-        return changed;
+        if (mutated && activeParticipantIds().isEmpty()) state = TowerRunState.FAILED;
+        if (mutated) changed();
+        return mutated;
     }
 
     public boolean eliminate(UUID playerId) {
@@ -295,7 +303,6 @@ public final class TowerRun {
         onMutation.run();
     }
 
-    /** Tiny helper avoids exposing a mutable collection view while preserving participant order. */
     private static final class ListView {
         private ListView() {}
         static <T> java.util.List<T> copyOf(Collection<T> values) {
