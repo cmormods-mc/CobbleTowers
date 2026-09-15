@@ -25,8 +25,24 @@ jobs:
         with:
           gradle-version: '8.14.3'
 
-      - name: Validate architecture boundary
-        run: python3 validation/validate_architecture.py
+      # CobbleTowers compiles against CobbleRaids from Maven Local. main must be at the version named
+      # by cobbleraids_version in gradle.properties, or dependency resolution fails.
+      - name: Checkout CobbleRaids
+        uses: actions/checkout@v4
+        with:
+          repository: cmormods-mc/SnobblemonRaids
+          path: .cobbleraids
+
+      - name: Publish CobbleRaids to Maven Local
+        working-directory: .cobbleraids
+        run: gradle --no-daemon publishToMavenLocal --stacktrace
 
       - name: Compile and test
         run: gradle --no-daemon clean build --stacktrace --warning-mode all
+
+      # After the build on purpose: the check reads compiled bytecode.
+      - name: Validate architecture boundary
+        run: |
+          python3 validation/validate_architecture.py
+          version=$(sed -n "s/^version = '\(.*\)'$/\1/p" build.gradle)
+          python3 validation/validate_architecture.py "build/libs/CobbleTowers-${version}.jar"

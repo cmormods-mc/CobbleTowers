@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "cobbletowers",
+  "version": "${version}",
+  "name": "CobbleTowers",
+  "description": "Cobblemon Battle Tower runs for solo players and parties of up to four, with boss floors built on CobbleRaids.",
+  "authors": ["CMor"],
+  "contact": {
+    "homepage": "https://github.com/cmormods-mc/CobbleTowers",
+    "sources": "https://github.com/cmormods-mc/CobbleTowers",
+    "issues": "https://github.com/cmormods-mc/CobbleTowers/issues"
+  },
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.cobbletowers.CobbleTowers"]
+  },
+  "depends": {
+    "fabricloader": ">=0.17.2",
+    "fabric-api": ">=0.116.6+1.21.1",
+    "minecraft": "1.21.1",
+    "java": ">=21",
+    "cobblemon": "1.7.3",
+    "cobbleraids": ">=0.8.94-encounter-api"
+  }
+}

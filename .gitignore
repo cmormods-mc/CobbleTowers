@@ -1,0 +1,19 @@
+.gradle/
+build/
+run/
+out/
+# IDE settings hold machine-specific absolute JDK paths
+.vscode/
+.idea/
+*.iml
+*.log
+
+# Log4j output from the JUnit test worker; Minecraft is on the test classpath.
+logs/
+
+# Python bytecode from the validation scripts.
+__pycache__/
+*.pyc
+
+# Where CI checks out CobbleRaids to publish it locally before building.
+.cobbleraids/
