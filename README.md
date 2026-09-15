@@ -30,4 +30,24 @@ Code should favor simple indexed state, explicit lifecycle ownership, determinis
 
 ## Status
 
-Phase 0: upstream CobbleRaids architecture and integration audit in progress.
+Milestone 1: a buildable Fabric project that uses CobbleRaids only through its public encounter API
+(`com.cobbleraids.api.encounter`, CobbleRaids 0.8.94 and later), with a local CI gate and a
+dev-only battle spike. No tower dimension, structures or run state yet.
+
+## Building
+
+CobbleTowers compiles against CobbleRaids from Maven Local. In a SnobblemonRaids checkout at the
+version named by `cobbleraids_version` in `gradle.properties`:
+
+```sh
+./gradlew publishToMavenLocal
+```
+
+Then, here:
+
+```sh
+bash validation/hooks/install.sh   # once per clone: runs local CI before every push
+bash validation/ci_local.sh        # build, test, and check the CobbleRaids API boundary
+```
+
+GitHub Actions is disabled for this account, so the pre-push hook is the only gate.
