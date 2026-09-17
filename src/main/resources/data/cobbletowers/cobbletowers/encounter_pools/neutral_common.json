@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "entries": [
+    { "species": "cobblemon:machoke", "weight": 100 },
+    { "species": "cobblemon:haunter", "weight": 100 },
+    { "species": "cobblemon:lairon", "weight": 80 },
+    { "species": "cobblemon:roselia", "weight": 80 },
+    { "species": "cobblemon:staraptor", "weight": 60, "level_offset": 2 },
+    { "species": "cobblemon:lucario", "weight": 40, "level_offset": 3 }
+  ]
+}

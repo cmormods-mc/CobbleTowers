@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Neutral Tower",
+  "ruleset": "cobbletowers:standard",
+  "floors": [
+    "cobbletowers:neutral/floor_01",
+    "cobbletowers:neutral/floor_02",
+    "cobbletowers:neutral/floor_03",
+    "cobbletowers:neutral/floor_04",
+    "cobbletowers:neutral/floor_05",
+    "cobbletowers:neutral/floor_06",
+    "cobbletowers:neutral/floor_07",
+    "cobbletowers:neutral/floor_08",
+    "cobbletowers:neutral/floor_09",
+    "cobbletowers:neutral/floor_10"
+  ],
+  "milestones": [
+    "cobbletowers:neutral/boss_05",
+    "cobbletowers:neutral/champion_10"
+  ]
+}
