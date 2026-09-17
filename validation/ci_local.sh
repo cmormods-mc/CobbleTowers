@@ -4,7 +4,7 @@
 #
 # .git/hooks/pre-push runs it (install with `bash validation/hooks/install.sh`), and
 # `bash validation/ci_local.sh` runs it by hand. Keep it in step with
-# .github/workflows/pr-build.yml.
+# .github/workflows/build.yml.
 #
 # GitHub Actions was disabled account-wide while this repo was started, which is why the whole
 # workflow is duplicated here. Actions came back on 2026-09-17, so this is now the pre-push gate

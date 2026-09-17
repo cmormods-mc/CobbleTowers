@@ -50,4 +50,7 @@ bash validation/hooks/install.sh   # once per clone: runs local CI before every 
 bash validation/ci_local.sh        # build, test, and check the CobbleRaids API boundary
 ```
 
-GitHub Actions is disabled for this account, so the pre-push hook is the only gate.
+The pre-push hook is the first gate; `.github/workflows/build.yml` runs the same sequence on
+GitHub for every push to main and every pull request. Run the hook anyway -- it is faster than a
+push, and its first step (no source file is hidden from git by a .gitignore pattern) is one CI
+cannot perform, because CI builds a clone where an ignored file does not exist.

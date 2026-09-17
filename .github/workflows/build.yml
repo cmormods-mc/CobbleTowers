@@ -1,7 +1,13 @@
-name: CobbleTowers Pull Request CI
+name: CobbleTowers Build
 
+# Pushes to main as well as pull requests. Work on this repo goes straight to main, so a
+# pull-request-only trigger meant the workflow had never run once -- see the note in
+# validation/ci_local.sh about the local gate.
 on:
+  push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout pull request
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Java 21
@@ -25,8 +31,11 @@ jobs:
         with:
           gradle-version: '8.14.3'
 
-      # CobbleTowers compiles against CobbleRaids from Maven Local. main must be at the version named
-      # by cobbleraids_version in gradle.properties, or dependency resolution fails.
+      # CobbleTowers compiles against CobbleRaids from Maven Local. This follows that repo's default
+      # branch, so its main must be at the version named by cobbleraids_version in gradle.properties
+      # or dependency resolution fails. That coupling is deliberate -- it catches a CobbleRaids
+      # change that breaks us -- but it does mean a version bump over there turns this red until
+      # gradle.properties follows, without anything changing here.
       - name: Checkout CobbleRaids
         uses: actions/checkout@v4
         with:
