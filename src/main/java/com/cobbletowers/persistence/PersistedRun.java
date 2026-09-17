@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -22,8 +23,9 @@ import net.minecraft.resources.ResourceLocation;
  * @param towerRevision     the author's revision of the tower when the run started
  * @param towerDigest       the content digest then, so an edit is distinguishable from a renumber
  * @param structureRevision the tower structure's revision, versioned independently (TDS #40)
- * @param lastCheckpoint    the idempotency key of the last committed checkpoint, or empty
- * @param committedTransactions keys of economic mutations already applied, so replaying is safe (TDS #30)
+ * @param lastCheckpoint    where the run was last committed, or empty before its first checkpoint
+ * @param committedTransactions keys of mutations already applied, so replaying is safe (TDS #30)
+ * @param updatedAt         epoch millis of the last write, used to retire finished runs
  */
 public record PersistedRun(
         UUID runId,
@@ -37,8 +39,9 @@ public record PersistedRun(
         int floorIndex,
         RunState state,
         List<PersistedParticipant> participants,
-        String lastCheckpoint,
-        List<String> committedTransactions) {
+        Optional<RunCheckpoint> lastCheckpoint,
+        List<String> committedTransactions,
+        long updatedAt) {
 
     /** The only shape this build writes or reads. */
     public static final int SCHEMA_VERSION = 1;
@@ -66,7 +69,8 @@ public record PersistedRun(
         tag.putLong("seed", seed);
         tag.putInt("floor", floorIndex);
         tag.putString("state", state.name().toLowerCase(Locale.ROOT));
-        tag.putString("last_checkpoint", lastCheckpoint);
+        lastCheckpoint.ifPresent(checkpoint -> tag.put("last_checkpoint", checkpoint.toTag()));
+        tag.putLong("updated_at", updatedAt);
         ListTag people = new ListTag();
         for (PersistedParticipant participant : participants) people.add(participant.toTag());
         tag.put("participants", people);
@@ -107,8 +111,27 @@ public record PersistedRun(
                 tag.getInt("floor"),
                 parseState(tag.getString("state")),
                 participants,
-                tag.getString("last_checkpoint"),
-                transactions);
+                tag.contains("last_checkpoint", Tag.TAG_COMPOUND)
+                        ? Optional.of(RunCheckpoint.fromTag(tag.getCompound("last_checkpoint")))
+                        : Optional.empty(),
+                transactions,
+                tag.getLong("updated_at"));
+    }
+
+    /** The same run, recorded as it stands after {@code at}. */
+    public PersistedRun touched(long at) {
+        return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
+                structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions, at);
+    }
+
+    /** True when this key has already been committed, so applying the move again must not repeat it. */
+    public boolean hasCommitted(String key) {
+        return committedTransactions.contains(key);
+    }
+
+    /** True when the run is finished and only kept for history. */
+    public boolean isRetired() {
+        return state.isTerminal();
     }
 
     /** True when {@code digest} differs from what this run pinned, i.e. the tower was edited since. */

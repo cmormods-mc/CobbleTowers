@@ -53,10 +53,12 @@ jobs:
         run: gradle --no-daemon clean build --stacktrace --warning-mode all
 
       # After the build on purpose: the check reads compiled bytecode.
-      - name: Validate architecture and API boundaries
+      - name: Validate architecture, API and persistence boundaries
         run: |
           python3 validation/validate_architecture.py
           python3 validation/validate_api_boundary.py
+          python3 validation/validate_persistence.py
           version=$(sed -n "s/^version = '\(.*\)'$/\1/p" build.gradle)
           python3 validation/validate_architecture.py "build/libs/CobbleTowers-${version}.jar"
           python3 validation/validate_api_boundary.py "build/libs/CobbleTowers-${version}.jar"
+          python3 validation/validate_persistence.py "build/libs/CobbleTowers-${version}.jar"
