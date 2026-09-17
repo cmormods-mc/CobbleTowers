@@ -1,0 +1,152 @@
+package com.cobbletowers.definition;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.cobbletowers.api.tower.MilestoneKind;
+import com.google.gson.JsonParser;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import net.minecraft.resources.ResourceLocation;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+/** What the registry reports after a reload: resolved content, or exactly which reference dangles. */
+class TowerContentTest {
+
+    private static ResourceLocation id(String path) {
+        return ResourceLocation.fromNamespaceAndPath("cobbletowers", path);
+    }
+
+    private static FloorDefinition floor(int index, Optional<MilestoneKind> milestone) {
+        return new FloorDefinition(id("floor_" + index), index, id("pool"), milestone, Optional.empty(), List.of());
+    }
+
+    private static TowerContent content(TowerDefinition tower, Map<ResourceLocation, FloorDefinition> floors,
+                                        Map<ResourceLocation, MilestoneDefinition> milestones,
+                                        boolean withPool, boolean withRuleset) {
+        return TowerContent.of(
+                Map.of(tower.id(), tower),
+                floors,
+                withPool ? Map.of(id("pool"), EncounterPoolDefinition.fromJson(id("pool"),
+                        JsonParser.parseString("{\"schema_version\":1,\"entries\":[{\"species\":\"cobblemon:machoke\"}]}")
+                                .getAsJsonObject())) : Map.of(),
+                withRuleset ? Map.of(id("standard"), RulesetDefinition.fromJson(id("standard"),
+                        JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())) : Map.of(),
+                milestones,
+                Map.of(DefinitionKey.tower(id("neutral")), "digest-abc"));
+    }
+
+    private static TowerDefinition tower(List<ResourceLocation> floorIds, List<ResourceLocation> milestoneIds) {
+        return new TowerDefinition(id("neutral"), "Neutral", 1, 1, id("standard"), floorIds, milestoneIds,
+                Optional.empty());
+    }
+
+    @Test
+    @DisplayName("consistent content reports no problems and summarises the tower")
+    void consistent() {
+        FloorDefinition one = floor(1, Optional.empty());
+        FloorDefinition two = floor(2, Optional.of(MilestoneKind.BOSS));
+        MilestoneDefinition boss = new MilestoneDefinition(id("boss"), 2, MilestoneKind.BOSS,
+                Optional.of(ResourceLocation.fromNamespaceAndPath("cobbleraids", "lucario")), true);
+
+        TowerContent content = content(tower(List.of(one.id(), two.id()), List.of(boss.id())),
+                Map.of(one.id(), one, two.id(), two), Map.of(boss.id(), boss), true, true);
+
+        assertEquals(List.of(), content.problems());
+        assertEquals(2, content.floorViews(id("neutral")).size());
+        assertEquals(List.of(2), content.summary(id("neutral")).orElseThrow().milestoneFloors());
+        assertEquals("digest-abc", content.summary(id("neutral")).orElseThrow().contentDigest());
+    }
+
+    @Test
+    @DisplayName("a ruleset named after its tower does not take over the tower's digest")
+    void digestsAreScopedToTheirFolder() {
+        // One reload loads all five folders into one digest map, towers first and rulesets after. A
+        // definition's id is its path below its folder, so towers/neutral.json and
+        // rulesets/neutral.json are both cobbletowers:neutral -- and a pack naming a ruleset after
+        // its tower is the obvious thing to do. Keyed by id alone the ruleset would win, and the
+        // tower would report a digest that does not change when the tower is edited, which is the
+        // one question the digest exists to answer.
+        FloorDefinition one = floor(1, Optional.empty());
+        Map<DefinitionKey, String> digests = new LinkedHashMap<>();
+        digests.put(DefinitionKey.tower(id("neutral")), "tower-digest");
+        digests.put(DefinitionKey.of("rulesets", id("neutral")), "ruleset-digest");
+
+        TowerContent content = TowerContent.of(
+                Map.of(id("neutral"), tower(List.of(one.id()), List.of())),
+                Map.of(one.id(), one),
+                Map.of(id("pool"), EncounterPoolDefinition.fromJson(id("pool"),
+                        JsonParser.parseString("{\"schema_version\":1,\"entries\":[{\"species\":\"cobblemon:machoke\"}]}")
+                                .getAsJsonObject())),
+                Map.of(id("standard"), RulesetDefinition.fromJson(id("standard"),
+                        JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())),
+                Map.of(),
+                digests);
+
+        assertEquals("tower-digest", content.summary(id("neutral")).orElseThrow().contentDigest(),
+                "the tower's own digest, not whichever file was loaded last under that id");
+    }
+
+    @Test
+    @DisplayName("a dangling reference is named, not thrown")
+    void danglingReferences() {
+        FloorDefinition one = floor(1, Optional.empty());
+
+        TowerContent content = content(tower(List.of(one.id(), id("missing")), List.of()),
+                Map.of(one.id(), one), Map.of(), false, false);
+
+        String problems = String.join(" | ", content.problems());
+        assertTrue(problems.contains("floor cobbletowers:missing"), problems);
+        assertTrue(problems.contains("ruleset cobbletowers:standard"), problems);
+        assertTrue(problems.contains("encounter pool cobbletowers:pool"), problems);
+    }
+
+    @Test
+    @DisplayName("floors must be numbered 1..n in listed order")
+    void floorNumbering() {
+        FloorDefinition one = floor(1, Optional.empty());
+        FloorDefinition five = floor(5, Optional.empty());
+
+        TowerContent content = content(tower(List.of(one.id(), five.id()), List.of()),
+                Map.of(one.id(), one, five.id(), five), Map.of(), true, true);
+
+        assertTrue(String.join(" ", content.problems()).contains("must be numbered"), content.problems().toString());
+    }
+
+    @Test
+    @DisplayName("a milestone must land on a floor marked for it, of the same kind")
+    void milestonePlacement() {
+        FloorDefinition plain = floor(1, Optional.empty());
+        MilestoneDefinition boss = new MilestoneDefinition(id("boss"), 1, MilestoneKind.BOSS,
+                Optional.of(ResourceLocation.fromNamespaceAndPath("cobbleraids", "lucario")), true);
+
+        TowerContent unmarked = content(tower(List.of(plain.id()), List.of(boss.id())),
+                Map.of(plain.id(), plain), Map.of(boss.id(), boss), true, true);
+        assertTrue(String.join(" ", unmarked.problems()).contains("not marked as a milestone floor"),
+                unmarked.problems().toString());
+
+        FloorDefinition champion = floor(1, Optional.of(MilestoneKind.CHAMPION));
+        TowerContent mismatched = content(tower(List.of(champion.id()), List.of(boss.id())),
+                Map.of(champion.id(), champion), Map.of(boss.id(), boss), true, true);
+        assertTrue(String.join(" ", mismatched.problems()).contains("but milestone"), mismatched.problems().toString());
+    }
+
+    @Test
+    @DisplayName("a digest ignores formatting and key order, and changes with content")
+    void digestIsCanonical() {
+        String compact = "{\"b\":2,\"a\":[1,2],\"c\":\"x\"}";
+        String reordered = "{\n  \"a\": [1, 2],\n  \"c\": \"x\",\n  \"b\": 2\n}";
+        String changed = "{\"a\":[2,1],\"b\":2,\"c\":\"x\"}";
+
+        assertEquals(ContentDigest.of(JsonParser.parseString(compact)),
+                ContentDigest.of(JsonParser.parseString(reordered)),
+                "reformatting a definition must not read as an edit");
+        assertNotEquals(ContentDigest.of(JsonParser.parseString(compact)),
+                ContentDigest.of(JsonParser.parseString(changed)),
+                "array order is meaning: floors are played in the order they are listed");
+    }
+}

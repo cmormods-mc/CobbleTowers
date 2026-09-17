@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "enemy_level": {
+    "min": 5,
+    "max": 100
+  },
+  "registered_party_size": 6,
+  "requires_battle_ready_party": true,
+  "item_action_budget": 0,
+  "carryover": {
+    "health": true,
+    "pp": true
+  }
+}

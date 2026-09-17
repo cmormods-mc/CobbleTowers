@@ -37,12 +37,17 @@ jobs:
         working-directory: .cobbleraids
         run: gradle --no-daemon publishToMavenLocal --stacktrace
 
+      - name: Validate the bundled tower definitions
+        run: python3 validation/validate_definitions.py
+
       - name: Compile and test
         run: gradle --no-daemon clean build --stacktrace --warning-mode all
 
       # After the build on purpose: the check reads compiled bytecode.
-      - name: Validate architecture boundary
+      - name: Validate architecture and API boundaries
         run: |
           python3 validation/validate_architecture.py
+          python3 validation/validate_api_boundary.py
           version=$(sed -n "s/^version = '\(.*\)'$/\1/p" build.gradle)
           python3 validation/validate_architecture.py "build/libs/CobbleTowers-${version}.jar"
+          python3 validation/validate_api_boundary.py "build/libs/CobbleTowers-${version}.jar"
