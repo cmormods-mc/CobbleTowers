@@ -3,7 +3,7 @@ package com.cobbletowers.command;
 import com.cobbletowers.api.registry.TowerSummary;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
-import com.cobbletowers.run.RunTransitions;
+import com.cobbletowers.runtime.RunTransitions;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import java.util.Locale;
