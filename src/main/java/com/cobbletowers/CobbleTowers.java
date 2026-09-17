@@ -1,7 +1,10 @@
 package com.cobbletowers;
 
 import com.cobbletowers.command.DefinitionsCommand;
+import com.cobbletowers.command.RunsCommand;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.runtime.RunRecovery;
+import com.cobbletowers.runtime.TowerRuns;
 import com.cobbletowers.spike.SpikeCommand;
 import com.cobbletowers.spike.SpikeEncounters;
 import net.fabricmc.api.ModInitializer;
@@ -11,7 +14,7 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.packs.PackType;
 
-/** Entrypoint: tower definitions, the read-only debug commands, and the dev-only battle spike. */
+/** Entrypoint: tower definitions, stored runs and their recovery, the debug commands, and the spike. */
 public final class CobbleTowers implements ModInitializer {
 
     public static final String MOD_ID = "cobbletowers";
@@ -27,12 +30,33 @@ public final class CobbleTowers implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             try {
                 DefinitionsCommand.register(dispatcher);
+                RunsCommand.register(dispatcher);
                 SpikeCommand.register(dispatcher);
             } catch (RuntimeException ex) {
                 TowerLog.error("Could not register the CobbleTowers commands", ex);
             }
         });
+        // Loading and recovery are separate steps, and separately guarded: a failure to park an
+        // interrupted run must not also cost the index of the runs that loaded fine.
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            long now = System.currentTimeMillis();
+            try {
+                int loaded = TowerRuns.load(server, now);
+                if (loaded > 0) TowerLog.info("Loaded {} tower run(s) from disk.", loaded);
+            } catch (RuntimeException ex) {
+                TowerLog.error("Could not load stored tower runs", ex);
+                return;
+            }
+            try {
+                RunRecovery.recoverInterruptedRuns(server, now);
+            } catch (RuntimeException ex) {
+                TowerLog.error("Could not recover interrupted tower runs", ex);
+            }
+        });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> SpikeEncounters.onServerStopped());
+        // Per-server state on a class that is not per-server: an integrated client keeps this JVM
+        // across worlds, so anything left indexed here would be read back against the next one.
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> TowerRuns.onServerStopped());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new TowerDefinitionRegistry());
 
         TowerLog.info("CobbleTowers {} loaded", version);

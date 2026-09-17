@@ -75,10 +75,16 @@ fi
 step "Validate public API boundary (bytecode)"
 "$py" validation/validate_api_boundary.py
 
+step "Validate persisted state holds no live references (bytecode)"
+"$py" validation/validate_persistence.py
+
 step "Validate architecture boundary (jar)"
 "$py" validation/validate_architecture.py "$jar"
 
 step "Validate public API boundary (jar)"
 "$py" validation/validate_api_boundary.py "$jar"
+
+step "Validate persisted state holds no live references (jar)"
+"$py" validation/validate_persistence.py "$jar"
 
 printf '\n\033[32mci_local: all checks passed for %s\033[0m\n' "$version"
