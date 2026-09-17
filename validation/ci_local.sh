@@ -2,9 +2,14 @@
 #
 # The whole CI sequence, runnable on a developer machine.
 #
-# GitHub Actions is disabled account-wide, so this script IS the gate: .git/hooks/pre-push runs it
-# (install with `bash validation/hooks/install.sh`), and `bash validation/ci_local.sh` runs it by
-# hand. Keep it in step with .github/workflows/pr-build.yml.
+# .git/hooks/pre-push runs it (install with `bash validation/hooks/install.sh`), and
+# `bash validation/ci_local.sh` runs it by hand. Keep it in step with
+# .github/workflows/pr-build.yml.
+#
+# GitHub Actions was disabled account-wide while this repo was started, which is why the whole
+# workflow is duplicated here. Actions came back on 2026-09-17, so this is now the pre-push gate
+# rather than the only one -- but it stays, because it is faster than a push and because the first
+# step below is one the workflow structurally cannot perform.
 set -euo pipefail
 
 project_root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -31,6 +36,27 @@ if [ ! -d "$m2" ]; then
   exit 1
 fi
 
+step "Check git can see every source file"
+# A .gitignore pattern without a leading slash matches a directory of that name at ANY depth. The
+# entry meant for the dev server's run/ directory also matched src/main/java/com/cobbletowers/run,
+# hiding the entire run-state package -- while the build stayed green, because Gradle compiles what
+# is on disk and does not care what git can see. A fresh clone would not have had the files.
+#
+# The GitHub workflow cannot catch this: it builds a clone, where an ignored file simply is not
+# there. This check only ever bites here, before the push that would lose the file.
+hidden="$(git ls-files --others --ignored --exclude-standard -- src/ validation/   | grep -Ev '(^|/)__pycache__/|[.]pyc$' || true)"
+if [ -n "$hidden" ]; then
+  echo "ci_local: git ignores these source files, so a commit would silently leave them behind:" >&2
+  echo "$hidden" | sed 's/^/  /' >&2
+  echo "ci_local: check .gitignore for an unanchored pattern; anchor it with a leading slash." >&2
+  exit 1
+fi
+
+step "Validate the bundled tower definitions"
+# Before the build: this reads the shipped JSON, and a dangling reference in our own content should
+# fail here rather than be skipped at runtime by the registry's malformed-file safety net.
+"$py" validation/validate_definitions.py
+
 step "Compile, test and remap"
 ./gradlew clean build --stacktrace --warning-mode all
 
@@ -46,7 +72,13 @@ if [ ! -f "$jar" ]; then
   exit 1
 fi
 
+step "Validate public API boundary (bytecode)"
+"$py" validation/validate_api_boundary.py
+
 step "Validate architecture boundary (jar)"
 "$py" validation/validate_architecture.py "$jar"
+
+step "Validate public API boundary (jar)"
+"$py" validation/validate_api_boundary.py "$jar"
 
 printf '\n\033[32mci_local: all checks passed for %s\033[0m\n' "$version"
