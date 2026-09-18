@@ -149,6 +149,17 @@ public record TowerContent(
                 digests.getOrDefault(DefinitionKey.tower(tower.id()), ""), tower.rulesetId(), tower.floorIds(), milestoneFloors));
     }
 
+    /** The floor a run on this tower is standing on, by its 1-based index. */
+    public Optional<FloorDefinition> floorAt(ResourceLocation towerId, int index) {
+        TowerDefinition tower = towers.get(towerId);
+        if (tower == null) return Optional.empty();
+        for (ResourceLocation floorId : tower.floorIds()) {
+            FloorDefinition floor = floors.get(floorId);
+            if (floor != null && floor.index() == index) return Optional.of(floor);
+        }
+        return Optional.empty();
+    }
+
     /** A tower's floors in play order; empty when the tower is unknown or a floor is missing. */
     public List<FloorView> floorViews(ResourceLocation towerId) {
         TowerDefinition tower = towers.get(towerId);

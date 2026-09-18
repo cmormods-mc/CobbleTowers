@@ -30,17 +30,22 @@ Code should favor simple indexed state, explicit lifecycle ownership, determinis
 
 ## Status
 
-**P2 (persistence and the run state machine).** A run is now something the server owns: stored as a
-SavedData, checkpointed at the moves the transition table marks, reloaded at start, and parked in
-`RECOVERY_REQUIRED` rather than lost when a restart interrupts it. Definition schemas, the public
-API and the transition table came with P1; both phases have a design document under `docs/design/`.
+**P4 (chunk lifecycle, arenas and anchors).** A run is given a cell, the cell's arena is pasted from
+a real structure, its chunks are held by a region ticket for exactly as long as the run needs them,
+and ending the run clears the arena and lets the chunks go. Cells that cannot be verified clean are
+quarantined. Before it: P3 gave a run a cell in a controlled dimension, P2 made a run durable and
+recoverable, P1 fixed the contracts. Every phase has a design document under `docs/design/`.
+
+The arenas are WorldEdit schematics converted to vanilla structure NBT by
+`validation/schem_to_structure.py`; the sources are committed under `validation/schematics/` and CI
+checks the committed structures still match them block for block.
 
 CobbleRaids is used only through its public encounter API (`com.cobbleraids.api.encounter`,
 CobbleRaids 0.8.94 and later), which a bytecode check enforces.
 
-Not built yet: the tower dimension, the instance allocator, structures, floors, battles beyond the
-dev-only spike, rewards and any GUI. A run can be created and moved through its states by command,
-but it has nowhere to stand.
+Not built yet: floor logic, encounters beyond the dev-only spike, rewards and any GUI. A run can be
+created, given a built floor and moved through its states by command, but nothing plays out in it
+yet.
 
 ## Building
 

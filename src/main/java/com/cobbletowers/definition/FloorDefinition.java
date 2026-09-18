@@ -18,6 +18,8 @@ import net.minecraft.resources.ResourceLocation;
  *
  * @param rulesetOverride optional, for a floor that bends the tower's rules
  * @param modifierIds     reserved for P8; parsed and carried, never resolved here
+ * @param layout          what to paste and where the anchors are; absent on content written before
+ *                        the arenas existed, which loads but cannot be prepared
  */
 public record FloorDefinition(
         ResourceLocation id,
@@ -25,13 +27,15 @@ public record FloorDefinition(
         ResourceLocation encounterPoolId,
         Optional<MilestoneKind> milestone,
         Optional<ResourceLocation> rulesetOverride,
-        List<ResourceLocation> modifierIds) implements FloorView {
+        List<ResourceLocation> modifierIds,
+        Optional<FloorLayout> layout) implements FloorView {
 
     public FloorDefinition {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(encounterPoolId, "encounterPoolId");
         Objects.requireNonNull(milestone, "milestone");
         Objects.requireNonNull(rulesetOverride, "rulesetOverride");
+        Objects.requireNonNull(layout, "layout");
         modifierIds = List.copyOf(modifierIds);
         if (index < 1) throw new IllegalArgumentException("index must be >= 1, got " + index);
     }
@@ -44,7 +48,11 @@ public record FloorDefinition(
                 TowerJson.requireId(root, "encounter_pool"),
                 milestone.isEmpty() ? Optional.empty() : Optional.of(parseMilestone(milestone)),
                 TowerJson.optionalId(root, "ruleset_override"),
-                TowerJson.ids(root, "modifiers"));
+                TowerJson.ids(root, "modifiers"),
+                // Optional: a floor with no layout is content that predates the arenas, and it loads
+                // rather than failing -- it simply cannot be prepared until it names one.
+                root.has("layout") ? Optional.of(FloorLayout.fromJson(TowerJson.object(root, "layout")))
+                        : Optional.empty());
     }
 
     private static MilestoneKind parseMilestone(String raw) {

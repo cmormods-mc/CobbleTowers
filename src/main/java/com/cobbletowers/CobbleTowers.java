@@ -4,6 +4,8 @@ import com.cobbletowers.command.DefinitionsCommand;
 import com.cobbletowers.command.CellsCommand;
 import com.cobbletowers.command.RunsCommand;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.instance.CellTickets;
+import com.cobbletowers.instance.CellWarmPool;
 import com.cobbletowers.instance.InstanceAllocator;
 import com.cobbletowers.runtime.RunRecovery;
 import com.cobbletowers.runtime.TowerRuns;
@@ -66,6 +68,8 @@ public final class CobbleTowers implements ModInitializer {
         // across worlds, so anything left indexed here would be read back against the next one.
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> TowerRuns.onServerStopped());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> InstanceAllocator.onServerStopped());
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> CellTickets.onServerStopped());
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> CellWarmPool.onServerStopped());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new TowerDefinitionRegistry());
 
         TowerLog.info("CobbleTowers {} loaded", version);

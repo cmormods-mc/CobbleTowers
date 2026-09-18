@@ -133,7 +133,13 @@ public final class InstanceAllocator {
     public static Release release(MinecraftServer server, UUID runId, int cell) {
         CellGrid.requireValid(cell);
         try {
-            CellCleanup.Report report = CellCleanup.verify(server, cell);
+            // Order is the whole of this method. Reset and sweep while the chunks are still held,
+            // because both need them loaded; then let the chunks go; then check that they went.
+            CellPreparer.reset(server, cell);
+            CellCleanup.Report contents = CellCleanup.verify(server, cell);
+            CellTickets.drop(server, cell);
+            CellCleanup.Report report = CellCleanup.verifyReleased(cell, contents);
+
             if (report.isClean()) {
                 TowerLog.info("Cell {} released by run {}", cell, runId);
                 return new Released(cell);
@@ -148,6 +154,21 @@ public final class InstanceAllocator {
             RUN_BY_CELL.remove(cell, runId);
             CELL_BY_RUN.remove(runId, cell);
         }
+    }
+
+    /**
+     * Moves a lease from one holder to another without the cell ever being free.
+     *
+     * <p>What the warm pool hands over. Releasing and re-allocating would do the same job with a
+     * window in the middle where another run could take the cell that was just built for this one.
+     */
+    public static void transferLease(int cell, UUID from, UUID to) {
+        CellGrid.requireValid(cell);
+        RUN_BY_CELL.remove(cell, from);
+        CELL_BY_RUN.remove(from, cell);
+        LEASED.set(cell);
+        RUN_BY_CELL.put(cell, to);
+        CELL_BY_RUN.put(to, cell);
     }
 
     /** Takes a cell out of service by hand. */
