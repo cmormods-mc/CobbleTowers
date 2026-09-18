@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "entries": [
+    { "definition": "cobbleraids:baxcalibur", "weight": 100, "level_offset": 2 },
+    { "definition": "cobbleraids:blaziken", "weight": 100, "level_offset": 2 },
+    { "definition": "cobbleraids:delphox", "weight": 80, "level_offset": 3 },
+    { "definition": "cobbleraids:cinderace", "weight": 80, "level_offset": 3 }
+  ]
+}

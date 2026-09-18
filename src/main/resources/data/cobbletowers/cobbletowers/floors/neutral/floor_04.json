@@ -25,5 +25,6 @@
       "z": 44,
       "yaw": 180
     }
-  }
+  },
+  "boss_pool": "cobbletowers:neutral/early"
 }

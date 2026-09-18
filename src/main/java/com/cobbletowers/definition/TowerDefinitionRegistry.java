@@ -69,6 +69,8 @@ public final class TowerDefinitionRegistry
                 load(manager, "rulesets", RulesetDefinition::fromJson, digests, rejected);
         Map<ResourceLocation, MilestoneDefinition> milestones =
                 load(manager, "milestones", MilestoneDefinition::fromJson, digests, rejected);
+        Map<ResourceLocation, BossPoolDefinition> bossPools =
+                load(manager, "boss_pools", BossPoolDefinition::fromJson, digests, rejected);
 
         if (!rejected.isEmpty()) {
             // A summary as well as the per-file errors: those are easy to scroll past, and an operator
@@ -77,7 +79,7 @@ public final class TowerDefinitionRegistry
                     rejected.size(), rejected.stream().map(ResourceLocation::toString).sorted()
                             .collect(Collectors.joining(", ")));
         }
-        return TowerContent.of(towers, floors, pools, rulesets, milestones, digests);
+        return TowerContent.of(towers, floors, pools, rulesets, milestones, bossPools, digests);
     }
 
     private static <T> Map<ResourceLocation, T> load(ResourceManager manager, String folder,

@@ -22,7 +22,7 @@ class TowerContentTest {
     }
 
     private static FloorDefinition floor(int index, Optional<MilestoneKind> milestone) {
-        return new FloorDefinition(id("floor_" + index), index, id("pool"), milestone, Optional.empty(), List.of(), Optional.empty());
+        return new FloorDefinition(id("floor_" + index), index, id("pool"), milestone, Optional.empty(), List.of(), Optional.empty(), Optional.empty());
     }
 
     private static TowerContent content(TowerDefinition tower, Map<ResourceLocation, FloorDefinition> floors,
@@ -36,7 +36,7 @@ class TowerContentTest {
                                 .getAsJsonObject())) : Map.of(),
                 withRuleset ? Map.of(id("standard"), RulesetDefinition.fromJson(id("standard"),
                         JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())) : Map.of(),
-                milestones,
+                milestones, Map.of(),
                 Map.of(DefinitionKey.tower(id("neutral")), "digest-abc"));
     }
 
@@ -84,7 +84,7 @@ class TowerContentTest {
                                 .getAsJsonObject())),
                 Map.of(id("standard"), RulesetDefinition.fromJson(id("standard"),
                         JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())),
-                Map.of(),
+                Map.of(), Map.of(),
                 digests);
 
         assertEquals("tower-digest", content.summary(id("neutral")).orElseThrow().contentDigest(),
