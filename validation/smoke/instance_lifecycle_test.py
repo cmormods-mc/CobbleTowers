@@ -131,6 +131,10 @@ def main() -> None:
             cell_c = cell_from(rcon.command(f"cobbletowers runs allocate {run_c}"))
             results.append(Result("a quarantined cell is not handed to the next run", cell_c != cell_b,
                                   f"run C was given the quarantined cell {cell_b}"))
+            # A forceload is written into the world, so it outlives this test -- and the one left
+            # here went on to fail an unrelated check in floor_build_test, which asserts the tower
+            # holds chunks by ticket and not by forceload. Clean up what we forced.
+            rcon.command("execute in cobbletowers:tower run forceload remove all")
             print(f"  A={run_a} cell {cell_a}, B cell {cell_b} quarantined, C cell {cell_c}")
 
         print("Killing the server with no stop and no save")

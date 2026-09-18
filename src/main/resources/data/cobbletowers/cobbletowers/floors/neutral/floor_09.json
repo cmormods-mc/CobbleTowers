@@ -1,4 +1,29 @@
 {
   "index": 9,
-  "encounter_pool": "cobbletowers:neutral_common"
+  "encounter_pool": "cobbletowers:neutral_common",
+  "layout": {
+    "structure": "cobbletowers:arena_floor",
+    "entry": {
+      "x": 25,
+      "y": 2,
+      "z": 6
+    },
+    "presentation": {
+      "x": 25,
+      "y": 2,
+      "z": 25
+    },
+    "spectator": {
+      "x": 6,
+      "y": 2,
+      "z": 25,
+      "yaw": 90
+    },
+    "exit": {
+      "x": 25,
+      "y": 2,
+      "z": 44,
+      "yaw": 180
+    }
+  }
 }

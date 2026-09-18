@@ -12,18 +12,30 @@ checks the bundled data at build time, where failing is exactly what should happ
 - floors are numbered 1..n in listed order
 - a milestone lands on a floor marked for it, of the same kind
 - weights are positive, level bounds are ordered, party size is 1..6
+- every floor layout names a structure that exists, and every anchor in it is somewhere a player
+  could actually stand: inside the structure, feet on something solid, head clear
 
     python validation/validate_definitions.py
 """
 
 from __future__ import annotations
 
+import gzip
 import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from schem_to_structure import Reader  # noqa: E402  -- same directory, shared NBT reader
+
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "src" / "main" / "resources" / "data"
+STRUCTURES = DATA / "cobbletowers" / "structure"
+ANCHORS = ("entry", "presentation", "spectator", "exit")
+# Present in the structure but nothing to stand on. Not exhaustive -- it covers what the arenas
+# actually contain, and anything else present counts as solid, which errs towards refusing an anchor
+# rather than approving one.
+NON_SUPPORTING = ("banner", "torch", "carpet", "button", "pressure_plate", "sign", "rail")
 KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones")
 MAX_PARTY = 6
 MIN_LEVEL, MAX_LEVEL = 1, 100
@@ -39,6 +51,69 @@ def load(namespace_dir: Path, kind: str) -> dict[str, dict]:
         ident = f"{namespace_dir.name}:{path.relative_to(base).with_suffix('').as_posix()}"
         found[ident] = json.loads(path.read_text(encoding="utf-8"))
     return found
+
+
+def read_structure(name: str):
+    """A committed structure as (size, occupied positions, supporting positions)."""
+    path = STRUCTURES / f"{name}.nbt"
+    if not path.is_file():
+        return None
+    raw = path.read_bytes()
+    data = gzip.decompress(raw) if raw[:2] == b"\x1f\x8b" else raw
+    _, root = Reader(data).root()
+    palette = [entry["Name"] for entry in root["palette"]]
+    occupied, supporting = set(), set()
+    for block in root["blocks"]:
+        position = tuple(block["pos"])
+        occupied.add(position)
+        if not any(weak in palette[block["state"]] for weak in NON_SUPPORTING):
+            supporting.add(position)
+    return tuple(root["size"]), occupied, supporting
+
+
+def check_layouts(content: dict, problems: list[str]) -> int:
+    """Anchors are declared by hand, so they are checked against what was actually built.
+
+    The schematics carry no marker blocks, so nothing derives these positions -- which makes an
+    anchor inside a wall, or over a hole, an ordinary typo. Catching it here means it fails on the
+    build that introduced it, rather than as a player standing inside a pillar.
+    """
+    checked = 0
+    for floor_id, floor in content["floors"].items():
+        layout = floor.get("layout")
+        if layout is None:
+            continue
+        structure = layout.get("structure", "")
+        if ":" not in structure:
+            problems.append(f"{floor_id} names structure '{structure}', which is not a valid id")
+            continue
+        namespace, _, name = structure.partition(":")
+        if namespace != "cobbletowers":
+            continue  # somebody else's structure; not ours to verify
+        loaded = read_structure(name)
+        if loaded is None:
+            problems.append(f"{floor_id} names structure {structure}, which is not committed"
+                            f" (expected {STRUCTURES.name}/{name}.nbt)")
+            continue
+        size, occupied, supporting = loaded
+        for anchor_name in ANCHORS:
+            anchor = layout.get(anchor_name)
+            if anchor is None:
+                problems.append(f"{floor_id} layout has no {anchor_name} anchor")
+                continue
+            x, y, z = anchor.get("x", 0), anchor.get("y", 0), anchor.get("z", 0)
+            where = f"{floor_id} {anchor_name} ({x},{y},{z})"
+            if not (0 <= x < size[0] and 0 <= y < size[1] and 0 <= z < size[2]):
+                problems.append(f"{where} is outside the structure, which is {size[0]}x{size[1]}x{size[2]}")
+                continue
+            if (x, y - 1, z) not in supporting:
+                problems.append(f"{where} has nothing solid to stand on")
+            if (x, y, z) in occupied:
+                problems.append(f"{where} is inside a block")
+            if (x, y + 1, z) in occupied:
+                problems.append(f"{where} has no headroom")
+            checked += 1
+    return checked
 
 
 def main() -> None:
@@ -115,6 +190,8 @@ def main() -> None:
         if not 1 <= size <= MAX_PARTY:
             problems.append(f"{ruleset_id} has registered_party_size {size}; must be 1..{MAX_PARTY}")
 
+    anchors_checked = check_layouts(content, problems)
+
     total = sum(counts.values())
     if not total:
         print("Tower definition validation: FAIL -- no definitions found; nothing was checked")
@@ -125,7 +202,7 @@ def main() -> None:
             print("  " + problem)
         sys.exit(1)
     print("Tower definition validation: PASS -- " + ", ".join(f"{counts[kind]} {kind}" for kind in KINDS)
-          + "; every reference resolves")
+          + f"; every reference resolves, {anchors_checked} anchor(s) stand on solid ground")
 
 
 if __name__ == "__main__":

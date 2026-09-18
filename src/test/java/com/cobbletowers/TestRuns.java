@@ -77,6 +77,6 @@ public final class TestRuns {
     }
 
     private static FloorDefinition floor(int index, Optional<MilestoneKind> milestone) {
-        return new FloorDefinition(id("floor_" + index), index, id("pool"), milestone, Optional.empty(), List.of());
+        return new FloorDefinition(id("floor_" + index), index, id("pool"), milestone, Optional.empty(), List.of(), Optional.empty());
     }
 }

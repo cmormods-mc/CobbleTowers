@@ -46,6 +46,13 @@ jobs:
         working-directory: .cobbleraids
         run: gradle --no-daemon publishToMavenLocal --stacktrace
 
+      - name: Check the committed arenas still match their schematics
+        run: |
+          for schematic in validation/schematics/*.schem; do
+            name="$(basename "$schematic" .schem)"
+            python3 validation/schem_to_structure.py --check "$schematic"               "src/main/resources/data/cobbletowers/structure/${name}.nbt"
+          done
+
       - name: Validate the bundled tower definitions
         run: python3 validation/validate_definitions.py
 

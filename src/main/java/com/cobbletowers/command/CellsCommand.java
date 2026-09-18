@@ -2,6 +2,8 @@ package com.cobbletowers.command;
 
 import com.cobbletowers.instance.CellCleanup;
 import com.cobbletowers.instance.CellGrid;
+import com.cobbletowers.instance.CellTickets;
+import com.cobbletowers.instance.CellWarmPool;
 import com.cobbletowers.instance.InstanceAllocator;
 import com.cobbletowers.instance.TowerDimension;
 import com.cobbletowers.persistence.CellQuarantine;
@@ -55,10 +57,15 @@ public final class CellsCommand {
         Map<Integer, CellQuarantine> quarantined = CellStateStore.get(source.getServer()).quarantined();
 
         source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
-                        "%d of %d cells leased, %d quarantined, dimension %s",
+                        "%d of %d cells leased, %d quarantined, %d warm, dimension %s",
                         InstanceAllocator.leasedCount(), CellGrid.MAX_CELLS, quarantined.size(),
+                        CellWarmPool.readyCount(),
                         TowerDimension.isLoaded(source.getServer()) ? "loaded" : "MISSING"))
                 .withStyle(ChatFormatting.GOLD), false);
+        source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
+                "  %d cell(s) held loaded, %d chunk(s) each, %d tower chunk(s) in all",
+                CellTickets.heldCount(), CellTickets.chunksPerCell(),
+                CellTickets.heldCount() * CellTickets.chunksPerCell())), false);
 
         for (int cell = 0; cell < CellGrid.MAX_CELLS; cell++) {
             final int index = cell;
@@ -86,7 +93,9 @@ public final class CellsCommand {
         source.sendSuccess(() -> Component.literal("  chunks " + CellGrid.minChunk(cell) + " .. "
                 + CellGrid.maxChunk(cell)), false);
         source.sendSuccess(() -> Component.literal("  " + InstanceAllocator.runIn(cell)
-                .map(runId -> "leased by " + runId).orElse("free")), false);
+                .map(runId -> "leased by " + runId).orElse("free")
+                + (CellWarmPool.isWarm(cell) ? " (warm, built and waiting)" : "")
+                + (CellTickets.isHeld(cell) ? ", chunks held" : ", chunks not held")), false);
         CellStateStore.get(source.getServer()).quarantined().values().stream()
                 .filter(entry -> entry.cell() == cell)
                 .forEach(entry -> source.sendSuccess(() -> Component.literal("  quarantined: " + entry.reason())

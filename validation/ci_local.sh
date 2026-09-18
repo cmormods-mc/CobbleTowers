@@ -52,6 +52,15 @@ if [ -n "$hidden" ]; then
   exit 1
 fi
 
+step "Check the committed arenas still match their schematics"
+# The .schem sources are committed beside the converter so this is reproducible. It catches the
+# thing nobody would otherwise notice: a schematic re-exported without re-running the conversion,
+# leaving the jar shipping the previous building.
+for schematic in validation/schematics/*.schem; do
+  name="$(basename "$schematic" .schem)"
+  "$py" validation/schem_to_structure.py --check "$schematic"     "src/main/resources/data/cobbletowers/structure/${name}.nbt"
+done
+
 step "Validate the bundled tower definitions"
 # Before the build: this reads the shipped JSON, and a dangling reference in our own content should
 # fail here rather than be skipped at runtime by the registry's malformed-file safety net.
