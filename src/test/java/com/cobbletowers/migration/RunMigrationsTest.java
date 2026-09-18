@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cobbletowers.TestRuns;
 import com.cobbletowers.persistence.PersistedRun;
+import java.util.List;
 import java.util.OptionalInt;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
@@ -57,6 +58,22 @@ class RunMigrationsTest {
                 "a run written before cells existed cannot have held one");
         assertEquals(RUN, run.runId(), "and everything else survives the step untouched");
         assertTrue(RunMigrations.canRead(1));
+    }
+
+    @Test
+    @DisplayName("a version 2 run loads, and comes back with an empty pool")
+    void versionTwoIsMigrated() {
+        // What P4 wrote, before the ledger existed. This step carries data rather than only stamping
+        // a version, which is the first time the chain has had to do that.
+        CompoundTag v2 = TestRuns.fresh(RUN).toTag();
+        v2.putInt("schema_version", 2);
+        v2.remove("ledger");
+
+        PersistedRun run = PersistedRun.fromTag(RunMigrations.toCurrent(v2));
+
+        assertEquals(List.of(), run.ledger(), "a run that predates the pool earned nothing into it");
+        assertEquals(RUN, run.runId());
+        assertTrue(RunMigrations.canRead(2));
     }
 
     @Test

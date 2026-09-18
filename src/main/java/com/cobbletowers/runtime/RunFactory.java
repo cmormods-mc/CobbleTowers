@@ -55,6 +55,8 @@ public final class RunFactory {
                 // without touching the rest of the schema.
                 0, seed, FIRST_FLOOR, RunState.CREATED, participants, Optional.empty(), List.of(), now,
                 // No cell until the run reaches ALLOCATING_INSTANCE and one is leased to it.
-                OptionalInt.empty()));
+                OptionalInt.empty(),
+                // Nothing earned yet; the pool fills as floors are cleared and is banked at cash-out.
+                List.of()));
     }
 }

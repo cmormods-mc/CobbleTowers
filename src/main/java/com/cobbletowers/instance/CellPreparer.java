@@ -67,6 +67,19 @@ public final class CellPreparer {
     }
 
     /**
+     * Where this floor's structure sits in this cell.
+     *
+     * <p>The origin depends on the structure's size, because a floor is centred in its cell. Anything
+     * that needs to turn an anchor into a world position has to ask <b>this</b> -- working it out
+     * separately is how the entry anchor ended up twenty-five blocks from the arena it belonged to,
+     * and the party arrived in the void beside their own floor.
+     */
+    public static Optional<BlockPos> originFor(MinecraftServer server, int cell, FloorLayout layout) {
+        return server.getStructureManager().get(layout.structure())
+                .map(template -> CellTickets.pasteOrigin(cell, template.getSize().getX(), template.getSize().getZ()));
+    }
+
+    /**
      * Pastes a floor's structure into a cell and checks the result is playable.
      *
      * <p>Returns problems rather than throwing: a floor that cannot be built is a cell to quarantine
@@ -85,6 +98,7 @@ public final class CellPreparer {
         StructureTemplate template = found.get();
         Vec3i size = template.getSize();
         BlockPos origin = CellTickets.pasteOrigin(cell, size.getX(), size.getZ());
+        // originFor() must agree with this; it is the same call, kept together on purpose.
 
         CellTickets.hold(server, cell);
 

@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -165,6 +166,37 @@ def wait_online(rcon: Rcon, seconds: int = 90) -> bool:
             return True
         time.sleep(1)
     return False
+
+
+def clear_tower(rcon: Rcon) -> None:
+    """Best-effort tidy of the tower while the server is up.
+
+    Only reaches loaded chunks, which is the whole trouble: at the start of a test the tower holds no
+    tickets, so `kill @e` there silently does nothing and a leftover from an earlier run survives it.
+    Use reset_tower_world() for isolation; this is for tidying inside a single run.
+    """
+    rcon.command("execute in cobbletowers:tower run kill @e[type=cobblemon:pokemon]")
+    rcon.command("execute in cobbletowers:tower run forceload remove all")
+
+
+def reset_tower_world(server_dir: Path) -> None:
+    """Deletes the tower dimension and the mod's saved state. Server must be stopped.
+
+    These tests share one rig world, and a hard kill mid-battle strands whatever was fighting -- a
+    player's own Pokemon as readily as an opponent. The next test allocates that cell and its cleanup
+    sweep quarantines it for contents it did not put there. The sweep is right; the isolation was
+    missing, and doing it over RCON does not work because the chunks holding the leftovers are not
+    loaded at that point. Deleting the region files is the reset that actually resets.
+
+    Worth knowing beyond the harness: a crash mid-floor leaves a cell genuinely dirty, so recovery
+    ought to sweep a cell it parks rather than leave a quarantine for an operator to find. That
+    belongs with the rest of the crash-recovery behaviour in P7.
+    """
+    dimension = server_dir / "world" / "dimensions" / "cobbletowers" / "tower"
+    if dimension.exists():
+        shutil.rmtree(dimension, ignore_errors=True)
+    for stale in ["cobbletowers_runs.dat", "cobbletowers_cells.dat"]:
+        (server_dir / "world" / "data" / stale).unlink(missing_ok=True)
 
 
 def run_id_from(created: str) -> str:

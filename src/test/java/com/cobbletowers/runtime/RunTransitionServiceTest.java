@@ -122,7 +122,8 @@ class RunTransitionServiceTest {
         PersistedRun rewound = new PersistedRun(opened.runId(), opened.schemaVersion(), opened.towerId(),
                 opened.towerRevision(), opened.towerDigest(), opened.rulesetRevision(), opened.structureRevision(),
                 opened.seed(), opened.floorIndex() - 1, RunState.NEXT_FLOOR_READY, opened.participants(),
-                opened.lastCheckpoint(), opened.committedTransactions(), opened.updatedAt(), opened.cell());
+                opened.lastCheckpoint(), opened.committedTransactions(), opened.updatedAt(), opened.cell(),
+                opened.ledger());
 
         assertEquals(RunTransitionService.Reason.KEY_REUSED,
                 refusal(rewound, RunEvent.NEXT_FLOOR_CONFIRMED).reason());

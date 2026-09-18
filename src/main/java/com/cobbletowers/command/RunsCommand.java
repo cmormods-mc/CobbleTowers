@@ -1,7 +1,9 @@
 package com.cobbletowers.command;
 
+import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.runtime.RunFactory;
@@ -53,6 +55,9 @@ public final class RunsCommand {
                         .then(Commands.literal("allocate")
                                 .then(Commands.argument("run", UuidArgument.uuid())
                                         .executes(RunsCommand::allocate)))
+                        .then(Commands.literal("encounter")
+                                .then(Commands.argument("run", UuidArgument.uuid())
+                                        .executes(RunsCommand::encounter)))
                         .then(Commands.literal("advance")
                                 .then(Commands.argument("run", UuidArgument.uuid())
                                         .then(Commands.argument("event", StringArgumentType.word())
@@ -101,6 +106,13 @@ public final class RunsCommand {
         source.sendSuccess(() -> Component.literal("  checkpoint " + run.lastCheckpoint()
                 .map(checkpoint -> checkpoint.key() + " @ " + checkpoint.state()).orElse("none")), false);
         source.sendSuccess(() -> Component.literal("  committed " + run.committedTransactions()), false);
+        source.sendSuccess(() -> Component.literal("  unclaimed pool: " + run.ledger().size() + " entry(s)"), false);
+        for (var entry : run.ledger()) {
+            source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT, "    %s floor %d %s",
+                    entry.kind(), entry.floorIndex(), entry.what())), false);
+        }
+        TowerEncounters.of(runId).ifPresent(round -> source.sendSuccess(() -> Component.literal(
+                "  fighting now: " + round.byPlayer()), false));
         for (PersistedParticipant participant : run.participants()) {
             source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
                     "  %s  %s/%s/%s  %d registered", participant.playerId(), participant.state().connection(),
@@ -147,6 +159,51 @@ public final class RunsCommand {
         RunTransitionService.Refusal refusal = (RunTransitionService.Refusal) outcome;
         source.sendFailure(Component.literal(refusal.reason() + ": " + refusal.detail()));
         return 0;
+    }
+
+    /**
+     * Starts the floor's prerequisite round, the thing a GUI will do in P11.
+     *
+     * <p>Dev-gated like the rest of these: there is no preparation screen yet, so a floor is begun by
+     * hand. The durability and floor tests drive exactly this over RCON.
+     */
+    private static int encounter(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        UUID runId = UuidArgument.getUuid(context, "run");
+
+        RunTransitionService.Outcome started =
+                RunTransitionService.apply(source.getServer(), runId, RunEvent.ENCOUNTER_STARTED,
+                        System.currentTimeMillis());
+        if (started instanceof RunTransitionService.Refusal refusal) {
+            source.sendFailure(Component.literal(refusal.reason() + ": " + refusal.detail()));
+            return 0;
+        }
+
+        Optional<TowerEncounters.Round> round;
+        try {
+            round = TowerEncounters.begin(source.getServer(), runId);
+        } catch (RuntimeException ex) {
+            // Minecraft only prints a command's stack trace when it is running in an IDE; on a real
+            // server the throwable is swallowed and the caller gets "An unexpected error occurred".
+            // A dev command whose failures are invisible is worse than no command, so it says so
+            // itself before anything else gets a chance to hide it.
+            TowerLog.error("Starting the floor for run {} threw", runId, ex);
+            source.sendFailure(Component.literal("Starting the floor threw: " + ex));
+            return 0;
+        }
+        if (round.isEmpty()) {
+            // The floor could not be put up at all: unknown content, nobody able to fight, no cell.
+            // None of those are the party's doing, so it is a technical fault and the run parks.
+            source.sendFailure(Component.literal("The floor could not be started; parking the run"));
+            RunTransitionService.apply(source.getServer(), runId, RunEvent.TECHNICAL_FAILURE,
+                    System.currentTimeMillis());
+            return 0;
+        }
+        TowerEncounters.Round begun = round.get();
+        source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
+                        "Floor %d begun: %d opponent(s)", begun.floorIndex(), begun.byPlayer().size()))
+                .withStyle(ChatFormatting.GREEN), true);
+        return begun.byPlayer().size();
     }
 
     private static int advance(CommandContext<CommandSourceStack> context) {

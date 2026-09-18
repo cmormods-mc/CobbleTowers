@@ -28,6 +28,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param committedTransactions keys of mutations already applied, so replaying is safe (TDS #30)
  * @param updatedAt         epoch millis of the last write, used to retire finished runs
  * @param cell              the instance cell leased to this run, or empty before one is allocated
+ * @param ledger            what the run has earned so far, with no worth attached to it yet
  */
 public record PersistedRun(
         UUID runId,
@@ -44,15 +45,23 @@ public record PersistedRun(
         Optional<RunCheckpoint> lastCheckpoint,
         List<String> committedTransactions,
         long updatedAt,
-        OptionalInt cell) {
+        OptionalInt cell,
+        List<LedgerEntry> ledger) {
 
     /**
      * The only shape this build writes or reads.
      *
-     * <p>2 added the instance cell. Version 1 files are migrated forward by
-     * {@code RunMigrations}, which is the first thing that framework has had to do.
+     * <p>2 added the instance cell; 3 added the unclaimed ledger. Older files are migrated forward by
+     * {@code RunMigrations}, which is what that framework was shipped empty for.
      */
-    public static final int SCHEMA_VERSION = 2;
+    public static final int SCHEMA_VERSION = 3;
+
+    private static List<LedgerEntry> readLedger(CompoundTag tag) {
+        List<LedgerEntry> ledger = new ArrayList<>();
+        ListTag stored = tag.getList("ledger", Tag.TAG_COMPOUND);
+        for (int i = 0; i < stored.size(); i++) ledger.add(LedgerEntry.fromTag(stored.getCompound(i)));
+        return ledger;
+    }
 
     public PersistedRun {
         Objects.requireNonNull(runId, "runId");
@@ -62,6 +71,7 @@ public record PersistedRun(
         Objects.requireNonNull(lastCheckpoint, "lastCheckpoint");
         participants = List.copyOf(participants);
         committedTransactions = List.copyOf(committedTransactions);
+        ledger = List.copyOf(ledger);
         if (floorIndex < 0) throw new IllegalArgumentException("floorIndex must be >= 0, got " + floorIndex);
     }
 
@@ -80,6 +90,9 @@ public record PersistedRun(
         lastCheckpoint.ifPresent(checkpoint -> tag.put("last_checkpoint", checkpoint.toTag()));
         tag.putLong("updated_at", updatedAt);
         cell.ifPresent(index -> tag.putInt("cell", index));
+        ListTag earned = new ListTag();
+        for (LedgerEntry entry : ledger) earned.add(entry.toTag());
+        tag.put("ledger", earned);
         ListTag people = new ListTag();
         for (PersistedParticipant participant : participants) people.add(participant.toTag());
         tag.put("participants", people);
@@ -126,21 +139,31 @@ public record PersistedRun(
                 transactions,
                 tag.getLong("updated_at"),
                 // Absent means no cell, which is also exactly what a version 1 run says.
-                tag.contains("cell", Tag.TAG_INT) ? OptionalInt.of(tag.getInt("cell")) : OptionalInt.empty());
+                tag.contains("cell", Tag.TAG_INT) ? OptionalInt.of(tag.getInt("cell")) : OptionalInt.empty(),
+                readLedger(tag));
     }
 
     /** The same run, recorded as it stands after {@code at}. */
     public PersistedRun touched(long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell);
+                at, cell, ledger);
+    }
+
+    /** The same run with one more thing earned. The pool only ever grows until it is banked. */
+    public PersistedRun withEarned(LedgerEntry entry, long at) {
+        List<LedgerEntry> next = new ArrayList<>(ledger);
+        next.add(entry);
+        return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
+                structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
+                at, cell, next);
     }
 
     /** The same run holding {@code leased}, or holding none when it is empty. */
     public PersistedRun withCell(OptionalInt leased, long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, leased);
+                at, leased, ledger);
     }
 
     /** True when this key has already been committed, so applying the move again must not repeat it. */

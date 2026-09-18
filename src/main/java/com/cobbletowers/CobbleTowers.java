@@ -4,6 +4,7 @@ import com.cobbletowers.command.DefinitionsCommand;
 import com.cobbletowers.command.CellsCommand;
 import com.cobbletowers.command.RunsCommand;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.instance.CellTickets;
 import com.cobbletowers.instance.CellWarmPool;
 import com.cobbletowers.instance.InstanceAllocator;
@@ -70,7 +71,11 @@ public final class CobbleTowers implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> InstanceAllocator.onServerStopped());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> CellTickets.onServerStopped());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> CellWarmPool.onServerStopped());
+        ServerLifecycleEvents.SERVER_STOPPED.register(TowerEncounters::onServerStopped);
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new TowerDefinitionRegistry());
+        // Subscribed once, for the life of the JVM: Cobblemon's battle events are global, and the
+        // adapter filters them by battle id rather than re-subscribing per floor.
+        TowerEncounters.install();
 
         TowerLog.info("CobbleTowers {} loaded", version);
     }

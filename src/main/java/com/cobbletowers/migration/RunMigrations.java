@@ -45,6 +45,14 @@ public final class RunMigrations {
             tag.putInt("schema_version", 2);
             return tag;
         });
+        // 2 -> 3 added the unclaimed ledger. An older run earned nothing that was ever recorded, so
+        // an absent list is the honest answer rather than an invented one -- and an empty ListTag is
+        // written explicitly so the shape on disk matches what this build produces.
+        STEPS.put(2, tag -> {
+            if (!tag.contains("ledger")) tag.put("ledger", new net.minecraft.nbt.ListTag());
+            tag.putInt("schema_version", 3);
+            return tag;
+        });
     }
 
     private RunMigrations() {}
