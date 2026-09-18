@@ -111,7 +111,20 @@ prints a command's stack trace when it is running in an IDE, so on a real server
 as "An unexpected error occurred" with nothing in the log. The dev command reports its own throwable
 now, which is what turned a day of guessing into one line.
 
-## 7. Assumptions and constraints
+## 7. A gap this phase found and did not close
+
+**Nothing ends a floor that a player stops answering.** The two-player run stalled once because one
+bot's lead had been replaced by a level 1 Magikarp that could not cast the move it kept choosing, so
+Showdown asked, the bot answered "Invalid action choice", and the floor stayed open. The cause was a
+test-party mistake, but the behaviour it exposed is real: a player who never chooses -- disconnected,
+AFK, or holding a Pokemon with no legal move -- leaves the round open forever, and with it the cell,
+its chunk tickets and the run.
+
+TDS #59 already calls for this: a decision timeout, an encounter watchdog, and telling a slow player
+apart from a stalled battle engine. It belongs with P7's disconnect and reconnect handling rather
+than here, and it is written down so it is not rediscovered as a mystery.
+
+## 8. Assumptions and constraints
 
 - Minecraft 1.21.1, Fabric, Java 21, Cobblemon 1.7.3, CobbleRaids >= 0.8.94-encounter-api.
 - CobbleRaids is still used only through `com.cobbleraids.api`; the architecture check enforces it.

@@ -41,7 +41,11 @@ from run_durability_test import (  # noqa: E402
 TOWER = "cobbletowers:neutral"
 LEAD = "glaceon"
 FILLERS = 5
-BOTS = ["TowerFightA", "TowerFightB"]
+# Fresh names each run, because pokegiveother ADDS to a party: reusing a name across runs fills the
+# six slots with earlier tests' fillers until the lead is a level 1 Magikarp that knows nothing the
+# bot can cast. That is what a stalled floor looked like -- "Invalid action choice ... blizzard" over
+# and over, from a Magikarp. Names stay inside Minecraft's 16-character limit.
+BOTS = [f"TFa{int(time.time()) % 100000}", f"TFb{int(time.time()) % 100000}"]
 
 
 def start_battle_bot(rig: Path, name: str, move: str) -> subprocess.Popen:
@@ -118,9 +122,9 @@ def main() -> None:
             for name in BOTS:
                 give_party(rcon, name)
 
-            # A two-player floor: both bots in one run.
-            run = run_id_from(rcon.command(
-                f"cobbletowers runs create {TOWER} @a[name={BOTS[0]}]"))
+            # Both bots in one run. EntityArgument.players() is a single selector token, so this is
+            # "@a" rather than two names -- and @a is exactly the two bots, since nobody else is on.
+            run = run_id_from(rcon.command(f"cobbletowers runs create {TOWER} @a"))
             rcon.command(f"cobbletowers runs advance {run} party_submitted")
             rcon.command(f"cobbletowers runs advance {run} party_validated")
             rcon.command(f"cobbletowers runs allocate {run}")
@@ -137,12 +141,22 @@ def main() -> None:
             begun = begin_floor(rcon, run)
             results.append(Result("a floor begins and puts opponents up", "opponent" in begun,
                                   begun.strip()[:200]))
+            results.append(Result("a two-player floor puts up one opponent each",
+                                  "2 opponent(s)" in begun, begun.strip()[:200]))
+
+            # Both players are tracked as fighting before either has finished. This is the claim the
+            # parallel-battle design rests on, and it had never actually been run.
+            during = rcon.command(f"cobbletowers runs show {run}")
+            results.append(Result("both players are tracked as fighting at once",
+                                  during.count("FIGHTING") == 2, during.strip()[:260]))
 
             time.sleep(2)  # the battle start is logged from Cobblemon's own thread
             log = server.read_log()
             started = re.findall(r"battle (\S+) started: (\S+) vs (\S+) at level (\d+)", log)
             results.append(Result("an opponent was drawn and a battle started against it",
                                   bool(started), "no battle start line in the log"))
+            results.append(Result("each player got their own battle, not a shared one",
+                                  len(started) == 2, f"{len(started)} battle(s) started: {started}"))
             if started:
                 print(f"  drew {started[0][2]} at level {started[0][3]}")
                 results.append(Result("the opponent's level came from the party, not from the pool alone",
@@ -169,6 +183,15 @@ def main() -> None:
             shown = rcon.command(f"cobbletowers runs show {run}")
             results.append(Result("the unclaimed pool recorded what was earned",
                                   "unclaimed pool: 0 entry" not in shown, shown.strip()[:260]))
+
+            # The floor waited for both. If it had resolved on the first win, the round would have
+            # been dropped and the second victory would have found nothing to record -- so counting
+            # two defeated opponents against exactly one cleared floor is the proof.
+            defeated = shown.count("OPPONENT_DEFEATED")
+            cleared_entries = shown.count("FLOOR_CLEARED")
+            results.append(Result("the floor waited for both players before resolving",
+                                  defeated == 2 and cleared_entries == 1,
+                                  f"{defeated} opponent entry(s), {cleared_entries} floor entry(s)"))
             print("  " + " | ".join(line.strip() for line in shown.split("  ") if "pool" in line))
 
             remaining = rcon.command(
