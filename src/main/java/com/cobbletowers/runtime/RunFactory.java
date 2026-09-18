@@ -10,6 +10,7 @@ import com.cobbletowers.persistence.PersistedRun;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import net.minecraft.resources.ResourceLocation;
 
@@ -52,6 +53,8 @@ public final class RunFactory {
                 tower.revision(), digest, ruleset == null ? 0 : ruleset.revision(),
                 // No structures exist yet; the field is versioned independently so P4 can fill it
                 // without touching the rest of the schema.
-                0, seed, FIRST_FLOOR, RunState.CREATED, participants, Optional.empty(), List.of(), now));
+                0, seed, FIRST_FLOOR, RunState.CREATED, participants, Optional.empty(), List.of(), now,
+                // No cell until the run reaches ALLOCATING_INSTANCE and one is leased to it.
+                OptionalInt.empty()));
     }
 }

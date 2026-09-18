@@ -85,21 +85,22 @@ class RunTransitionsTest {
     }
 
     @Test
-    @DisplayName("every checkpointing move names a key that identifies its run")
-    void checkpointsCarryKeys() {
+    @DisplayName("every keyed move checkpoints, and its key identifies its run")
+    void keysCarryTheirRun() {
         UUID run = UUID.fromString("00000000-0000-0000-0000-0000000000ff");
         List<String> keys = new ArrayList<>();
         for (RunState state : RunState.values()) {
             for (RunEvent event : RunTransitions.eventsFrom(state)) {
                 RunTransitions.Transition transition = RunTransitions.lookup(state, event).orElseThrow();
-                if (!transition.checkpoint()) continue;
+                if (transition.keyTemplate().isEmpty()) continue;
+                assertTrue(transition.checkpoint(), state + " + " + event + " has a key but no checkpoint");
                 String key = transition.key(run, 3);
                 assertTrue(key.contains(run.toString()), key + " does not identify its run");
                 assertFalse(key.contains("{"), key + " left a placeholder unfilled");
                 keys.add(key);
             }
         }
-        assertFalse(keys.isEmpty(), "no transition forces a checkpoint");
+        assertFalse(keys.isEmpty(), "no transition commits under a key");
     }
 
     @Test
@@ -110,7 +111,7 @@ class RunTransitionsTest {
         for (RunState state : RunState.values()) {
             for (RunEvent event : RunTransitions.eventsFrom(state)) {
                 RunTransitions.Transition transition = RunTransitions.lookup(state, event).orElseThrow();
-                if (!transition.checkpoint()) continue;
+                if (transition.keyTemplate().isEmpty()) continue;
                 String key = transition.key(run, 3);
                 RunState already = committedBy.putIfAbsent(key, transition.next());
                 if (already != null) {
@@ -119,9 +120,11 @@ class RunTransitionsTest {
                 }
             }
         }
-        // Abandoning is deliberately one key from many states: a run is abandoned once, however it
-        // got there. If that stops being the only collision, the assertion above is the guard.
-        assertEquals(RunState.ABANDONED, committedBy.get("run:" + run + ":abandoned"));
+        // The moves that can legitimately repeat -- abandoning and breaking -- carry no key at all,
+        // which is why nothing here collides any more. A run that is parked, resumed and parked
+        // again would otherwise commit one key twice and be refused the second time.
+        assertFalse(committedBy.containsKey("run:" + run + ":abandoned"),
+                "abandoning commits no value, so it needs no key");
     }
 
     @Test

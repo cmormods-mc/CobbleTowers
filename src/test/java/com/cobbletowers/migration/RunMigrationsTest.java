@@ -8,14 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cobbletowers.TestRuns;
 import com.cobbletowers.persistence.PersistedRun;
+import java.util.OptionalInt;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * Only one shape has ever existed, so these are mostly about what happens to the shapes that do not.
- */
+/** The chain that lets a run written by an older build still load. */
 class RunMigrationsTest {
 
     private static final UUID RUN = UUID.fromString("eeeeeeee-0000-0000-0000-000000000005");
@@ -40,6 +39,24 @@ class RunMigrationsTest {
 
         assertTrue(thrown.getMessage().contains("newer build"), thrown.getMessage());
         assertFalse(RunMigrations.canRead(PersistedRun.SCHEMA_VERSION + 1));
+    }
+
+    @Test
+    @DisplayName("a version 1 run loads, and comes back holding no cell")
+    void versionOneIsMigrated() {
+        // A real v1 tag: what P2 wrote, before the instance cell existed.
+        CompoundTag v1 = TestRuns.fresh(RUN).toTag();
+        v1.putInt("schema_version", 1);
+        v1.remove("cell");
+
+        CompoundTag migrated = RunMigrations.toCurrent(v1);
+
+        assertEquals(PersistedRun.SCHEMA_VERSION, migrated.getInt("schema_version"));
+        PersistedRun run = PersistedRun.fromTag(migrated);
+        assertEquals(OptionalInt.empty(), run.cell(),
+                "a run written before cells existed cannot have held one");
+        assertEquals(RUN, run.runId(), "and everything else survives the step untouched");
+        assertTrue(RunMigrations.canRead(1));
     }
 
     @Test

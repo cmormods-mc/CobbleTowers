@@ -5,6 +5,7 @@ import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.runtime.RunFactory;
+import com.cobbletowers.runtime.RunLifecycle;
 import com.cobbletowers.runtime.RunTransitionService;
 import com.cobbletowers.runtime.TowerRuns;
 import com.mojang.brigadier.CommandDispatcher;
@@ -49,6 +50,9 @@ public final class RunsCommand {
                                 .then(Commands.argument("tower", ResourceLocationArgument.id())
                                         .then(Commands.argument("players", EntityArgument.players())
                                                 .executes(RunsCommand::create))))
+                        .then(Commands.literal("allocate")
+                                .then(Commands.argument("run", UuidArgument.uuid())
+                                        .executes(RunsCommand::allocate)))
                         .then(Commands.literal("advance")
                                 .then(Commands.argument("run", UuidArgument.uuid())
                                         .then(Commands.argument("event", StringArgumentType.word())
@@ -92,6 +96,8 @@ public final class RunsCommand {
                 run.rulesetRevision(), run.structureRevision())), false);
         source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT, "  floor %d  seed %d  updated %d",
                 run.floorIndex(), run.seed(), run.updatedAt())), false);
+        source.sendSuccess(() -> Component.literal("  cell " + (run.cell().isPresent()
+                ? String.valueOf(run.cell().getAsInt()) : "none")), false);
         source.sendSuccess(() -> Component.literal("  checkpoint " + run.lastCheckpoint()
                 .map(checkpoint -> checkpoint.key() + " @ " + checkpoint.state()).orElse("none")), false);
         source.sendSuccess(() -> Component.literal("  committed " + run.committedTransactions()), false);
@@ -124,6 +130,23 @@ public final class RunsCommand {
         source.sendSuccess(() -> Component.literal("Created run " + run.runId() + " on " + towerId
                 + " with " + players.size() + " player(s)").withStyle(ChatFormatting.GREEN), true);
         return 1;
+    }
+
+    private static int allocate(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        UUID runId = UuidArgument.getUuid(context, "run");
+        RunTransitionService.Outcome outcome =
+                RunLifecycle.allocateInstance(source.getServer(), runId, System.currentTimeMillis());
+        if (outcome instanceof RunTransitionService.Move move) {
+            source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT, "%s -> %s, cell %s",
+                            move.from(), move.next().state(), move.next().cell().isPresent()
+                                    ? String.valueOf(move.next().cell().getAsInt()) : "none"))
+                    .withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        }
+        RunTransitionService.Refusal refusal = (RunTransitionService.Refusal) outcome;
+        source.sendFailure(Component.literal(refusal.reason() + ": " + refusal.detail()));
+        return 0;
     }
 
     private static int advance(CommandContext<CommandSourceStack> context) {

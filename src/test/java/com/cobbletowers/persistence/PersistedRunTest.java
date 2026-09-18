@@ -12,6 +12,7 @@ import com.cobbletowers.api.tower.participant.MembershipState;
 import com.cobbletowers.api.tower.participant.ParticipantState;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -30,7 +31,7 @@ class PersistedRunTest {
                 PersistedRun.SCHEMA_VERSION, TOWER, 4, "abc123", 2, 7, -9876543210L, 3, state,
                 List.of(participant),
                 Optional.of(new RunCheckpoint("run:x:floor:3:ready", RunState.FLOOR_READY)),
-                List.of("run:x:floor:2:banked"), 1_726_000_000_000L);
+                List.of("run:x:floor:2:banked"), 1_726_000_000_000L, OptionalInt.of(12));
     }
 
     @Test
@@ -57,11 +58,13 @@ class PersistedRunTest {
         assertEquals(Optional.of(new RunCheckpoint("run:x:floor:3:ready", RunState.FLOOR_READY)),
                 restored.lastCheckpoint());
         assertEquals(1_726_000_000_000L, restored.updatedAt());
+        assertEquals(OptionalInt.of(12), restored.cell(), "the instance lease is persisted with the run");
 
         // A run that has never checkpointed must come back with none, not with an empty-keyed one --
         // RunCheckpoint refuses a blank key precisely so that cannot be written in the first place.
         PersistedRun fresh = new PersistedRun(withCheckpoint.runId(), PersistedRun.SCHEMA_VERSION, TOWER, 4,
-                "abc123", 2, 7, 1L, 1, RunState.CREATED, List.of(), Optional.empty(), List.of(), 5L);
+                "abc123", 2, 7, 1L, 1, RunState.CREATED, List.of(), Optional.empty(), List.of(), 5L,
+                OptionalInt.empty());
         assertEquals(Optional.empty(), PersistedRun.fromTag(fresh.toTag()).lastCheckpoint());
     }
 

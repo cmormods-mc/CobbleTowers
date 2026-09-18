@@ -1,8 +1,10 @@
 package com.cobbletowers;
 
 import com.cobbletowers.command.DefinitionsCommand;
+import com.cobbletowers.command.CellsCommand;
 import com.cobbletowers.command.RunsCommand;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.instance.InstanceAllocator;
 import com.cobbletowers.runtime.RunRecovery;
 import com.cobbletowers.runtime.TowerRuns;
 import com.cobbletowers.spike.SpikeCommand;
@@ -31,6 +33,7 @@ public final class CobbleTowers implements ModInitializer {
             try {
                 DefinitionsCommand.register(dispatcher);
                 RunsCommand.register(dispatcher);
+                CellsCommand.register(dispatcher);
                 SpikeCommand.register(dispatcher);
             } catch (RuntimeException ex) {
                 TowerLog.error("Could not register the CobbleTowers commands", ex);
@@ -42,7 +45,12 @@ public final class CobbleTowers implements ModInitializer {
             long now = System.currentTimeMillis();
             try {
                 int loaded = TowerRuns.load(server, now);
-                if (loaded > 0) TowerLog.info("Loaded {} tower run(s) from disk.", loaded);
+                // The cell index is rebuilt from the runs themselves, so there is no second file
+                // that could disagree with them about who holds what.
+                int leased = InstanceAllocator.rebuild(server, TowerRuns.all());
+                if (loaded > 0) {
+                    TowerLog.info("Loaded {} tower run(s) from disk, {} holding an instance cell.", loaded, leased);
+                }
             } catch (RuntimeException ex) {
                 TowerLog.error("Could not load stored tower runs", ex);
                 return;
@@ -57,6 +65,7 @@ public final class CobbleTowers implements ModInitializer {
         // Per-server state on a class that is not per-server: an integrated client keeps this JVM
         // across worlds, so anything left indexed here would be read back against the next one.
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> TowerRuns.onServerStopped());
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> InstanceAllocator.onServerStopped());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new TowerDefinitionRegistry());
 
         TowerLog.info("CobbleTowers {} loaded", version);
