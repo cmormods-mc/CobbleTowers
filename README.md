@@ -30,9 +30,17 @@ Code should favor simple indexed state, explicit lifecycle ownership, determinis
 
 ## Status
 
-Milestone 1: a buildable Fabric project that uses CobbleRaids only through its public encounter API
-(`com.cobbleraids.api.encounter`, CobbleRaids 0.8.94 and later), with a local CI gate and a
-dev-only battle spike. No tower dimension, structures or run state yet.
+**P2 (persistence and the run state machine).** A run is now something the server owns: stored as a
+SavedData, checkpointed at the moves the transition table marks, reloaded at start, and parked in
+`RECOVERY_REQUIRED` rather than lost when a restart interrupts it. Definition schemas, the public
+API and the transition table came with P1; both phases have a design document under `docs/design/`.
+
+CobbleRaids is used only through its public encounter API (`com.cobbleraids.api.encounter`,
+CobbleRaids 0.8.94 and later), which a bytecode check enforces.
+
+Not built yet: the tower dimension, the instance allocator, structures, floors, battles beyond the
+dev-only spike, rewards and any GUI. A run can be created and moved through its states by command,
+but it has nowhere to stand.
 
 ## Building
 
