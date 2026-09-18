@@ -122,7 +122,7 @@ class RunTransitionServiceTest {
         PersistedRun rewound = new PersistedRun(opened.runId(), opened.schemaVersion(), opened.towerId(),
                 opened.towerRevision(), opened.towerDigest(), opened.rulesetRevision(), opened.structureRevision(),
                 opened.seed(), opened.floorIndex() - 1, RunState.NEXT_FLOOR_READY, opened.participants(),
-                opened.lastCheckpoint(), opened.committedTransactions(), opened.updatedAt());
+                opened.lastCheckpoint(), opened.committedTransactions(), opened.updatedAt(), opened.cell());
 
         assertEquals(RunTransitionService.Reason.KEY_REUSED,
                 refusal(rewound, RunEvent.NEXT_FLOOR_CONFIRMED).reason());
@@ -139,15 +139,61 @@ class RunTransitionServiceTest {
     }
 
     @Test
-    @DisplayName("resuming is refused for now, and says why rather than pretending")
-    void resumeIsNotYetPossible() {
-        PersistedRun parked = move(walkTo(RunState.ENCOUNTER_ACTIVE), RunEvent.TECHNICAL_FAILURE, TestRuns.NOW);
+    @DisplayName("resuming puts a parked run back where its checkpoint says it was")
+    void resumeReturnsToTheCheckpoint() {
+        PersistedRun active = walkTo(RunState.ENCOUNTER_ACTIVE);
+        PersistedRun parked = move(active, RunEvent.TECHNICAL_FAILURE, TestRuns.NOW);
         assertEquals(RunState.RECOVERY_REQUIRED, parked.state());
 
-        RunTransitionService.Refusal refused = refusal(parked, RunEvent.RECOVERY_COMPLETED);
+        PersistedRun resumed = move(parked, RunEvent.RECOVERY_COMPLETED, TestRuns.NOW + 10);
 
-        assertEquals(RunTransitionService.Reason.NOT_RESUMABLE_YET, refused.reason());
-        assertTrue(parked.lastCheckpoint().isPresent(), "what a resume will need is kept, even though it is refused");
+        assertEquals(RunState.ENCOUNTER_ACTIVE, resumed.state(),
+                "the table cannot name this state; the checkpoint does");
+        assertEquals(parked.lastCheckpoint(), resumed.lastCheckpoint(), "and the checkpoint itself is untouched");
+        assertEquals(active.floorIndex(), resumed.floorIndex(), "a resume does not move the run along");
+    }
+
+    @Test
+    @DisplayName("a run parked before it committed anything cannot be resumed, and says so")
+    void resumeWithoutACheckpoint() {
+        // Parked while still validating its party: nothing was ever committed, so there is no state
+        // to return to. Abandoning is the way out, not guessing at one.
+        PersistedRun early = move(TestRuns.fresh(RUN), RunEvent.PARTY_SUBMITTED, TestRuns.NOW);
+        PersistedRun parked = move(early, RunEvent.TECHNICAL_FAILURE, TestRuns.NOW);
+        assertTrue(parked.lastCheckpoint().isEmpty());
+
+        assertEquals(RunTransitionService.Reason.NO_CHECKPOINT,
+                refusal(parked, RunEvent.RECOVERY_COMPLETED).reason());
+    }
+
+    @Test
+    @DisplayName("a run can be parked, resumed and parked again")
+    void parkResumePark() {
+        // The reason the wildcards carry no idempotency key. They are the two moves that can happen
+        // to one run more than once, and a repeated key is indistinguishable from a double commit --
+        // so a second crash used to be refused, leaving the run live and unparked.
+        PersistedRun parked = move(walkTo(RunState.ENCOUNTER_ACTIVE), RunEvent.TECHNICAL_FAILURE, TestRuns.NOW);
+        PersistedRun resumed = move(parked, RunEvent.RECOVERY_COMPLETED, TestRuns.NOW + 1);
+
+        PersistedRun parkedAgain = move(resumed, RunEvent.TECHNICAL_FAILURE, TestRuns.NOW + 2);
+
+        assertEquals(RunState.RECOVERY_REQUIRED, parkedAgain.state());
+        // RECOVERY_ABANDONED rather than ABANDON_REQUESTED: the wildcards apply to live states, and a
+        // parked run is not one -- it has its own way out, which is the point of the distinction.
+        assertEquals(RunState.ABANDONED, move(parkedAgain, RunEvent.RECOVERY_ABANDONED, TestRuns.NOW + 3).state(),
+                "and it can still be given up on afterwards");
+    }
+
+    @Test
+    @DisplayName("resuming is durable, because a resume a crash undoes is indistinguishable from none")
+    void resumeCheckpoints() {
+        PersistedRun parked = move(walkTo(RunState.ENCOUNTER_ACTIVE), RunEvent.TECHNICAL_FAILURE, TestRuns.NOW);
+
+        RunTransitionService.Move move = assertInstanceOf(RunTransitionService.Move.class,
+                RunTransitionService.decide(parked, RunEvent.RECOVERY_COMPLETED, TestRuns.NOW));
+
+        assertTrue(move.checkpoint());
+        assertEquals("", move.key(), "durability without a key: a resume commits no value");
     }
 
     @Test

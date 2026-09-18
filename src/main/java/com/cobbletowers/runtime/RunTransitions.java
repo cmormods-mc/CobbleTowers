@@ -28,9 +28,17 @@ public final class RunTransitions {
     /**
      * One move.
      *
+     * <p>A checkpoint and a key are two different things, and P3 is where the difference started to
+     * matter. A checkpoint is durability: write this now, because a crash after it must not undo it.
+     * A key is idempotency of a commit that carries value (TDS #30). Every keyed move checkpoints,
+     * but not every checkpointing move needs a key -- and the two that can legitimately happen more
+     * than once to the same run, abandoning and breaking, deliberately carry none. Keyed moves happen
+     * at most once per run and floor, so a repeated key means two outcomes under one identity, which
+     * is what the service refuses.
+     *
      * @param checkpoint          whether the run must be persisted before the side effect runs
-     * @param keyTemplate         the idempotency key that checkpoint commits under, with {run},
-     *                            {floor} and {nextFloor} placeholders; empty when no checkpoint
+     * @param keyTemplate         the idempotency key this commits under, with {run}, {floor} and
+     *                            {nextFloor} placeholders; empty when the move commits no value
      * @param resumeFromCheckpoint true only for recovery, where the next state comes from the
      *                            checkpoint rather than from this table
      */
@@ -38,8 +46,8 @@ public final class RunTransitions {
         public Transition {
             Objects.requireNonNull(next, "next");
             Objects.requireNonNull(keyTemplate, "keyTemplate");
-            if (checkpoint == keyTemplate.isEmpty()) {
-                throw new IllegalArgumentException("a checkpointing transition needs a key, and only it may have one");
+            if (!keyTemplate.isEmpty() && !checkpoint) {
+                throw new IllegalArgumentException("an idempotency key without a checkpoint commits nothing");
             }
         }
 
@@ -78,8 +86,8 @@ public final class RunTransitions {
         checkpoint(RunState.NEXT_FLOOR_READY, RunEvent.NEXT_FLOOR_CONFIRMED, RunState.FLOOR_READY, "run:{run}:floor:{nextFloor}:ready");
         // Recovery: the next state is whatever the last checkpoint recorded, so the table cannot name it.
         TABLE.computeIfAbsent(RunState.RECOVERY_REQUIRED, state -> new EnumMap<>(RunEvent.class))
-                .put(RunEvent.RECOVERY_COMPLETED, new Transition(RunState.RECOVERY_REQUIRED, false, "", true));
-        checkpoint(RunState.RECOVERY_REQUIRED, RunEvent.RECOVERY_ABANDONED, RunState.ABANDONED, "run:{run}:abandoned");
+                .put(RunEvent.RECOVERY_COMPLETED, new Transition(RunState.RECOVERY_REQUIRED, true, "", true));
+        checkpoint(RunState.RECOVERY_REQUIRED, RunEvent.RECOVERY_ABANDONED, RunState.ABANDONED, "");
     }
 
     private RunTransitions() {}
@@ -116,10 +124,10 @@ public final class RunTransitions {
     public static Optional<Transition> lookup(RunState state, RunEvent event) {
         if (state.isLive()) {
             if (event == RunEvent.ABANDON_REQUESTED) {
-                return Optional.of(new Transition(RunState.ABANDONED, true, "run:{run}:abandoned", false));
+                return Optional.of(new Transition(RunState.ABANDONED, true, "", false));
             }
             if (event == RunEvent.TECHNICAL_FAILURE) {
-                return Optional.of(new Transition(RunState.RECOVERY_REQUIRED, true, "run:{run}:recovery", false));
+                return Optional.of(new Transition(RunState.RECOVERY_REQUIRED, true, "", false));
             }
         }
         Map<RunEvent, Transition> byEvent = TABLE.get(state);

@@ -7,7 +7,7 @@ easy to break by accident -- a PokemonEntity field on a stored record looks conv
 turns a save file into a promise the server cannot keep, because the entity is gone after a restart
 and a stale one pins the world it belonged to.
 
-So this reads the compiled classes under com/cobbletowers/persistence/ and fails when a FIELD names:
+So this reads the compiled classes and fails when a FIELD of persisted state names:
 
     net/minecraft/world/entity/   entities
     net/minecraft/server/         the server, its levels and its players
@@ -16,6 +16,11 @@ So this reads the compiled classes under com/cobbletowers/persistence/ and fails
 
 Fields, not methods: reaching the store needs a MinecraftServer parameter, which is how a checkpoint
 gets written at all. What must never happen is one being kept.
+
+"Persisted state" is anything under com/cobbletowers/persistence/ **or** anything extending
+SavedData, wherever it lives. Folder alone would be a rule about where a file sits rather than what
+it does, and the day someone puts a SavedData in another package is exactly the day this should
+still fire.
 
 Reading bytecode means it cannot be fooled by a fully qualified name, an import alias or a type
 reached through a generic argument, and it keeps working when classes are renamed or added.
@@ -35,7 +40,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validate_api_boundary import parse_class  # noqa: E402  -- same directory, shared class reader
 
 ROOT = Path(__file__).resolve().parents[1]
+MOD_PREFIX = "com/cobbletowers/"
 PERSISTENCE_PREFIX = "com/cobbletowers/persistence/"
+SAVED_DATA = "net/minecraft/world/level/saveddata/SavedData"
 FORBIDDEN = (
     "net/minecraft/world/entity/",
     "net/minecraft/server/",
@@ -45,14 +52,18 @@ FORBIDDEN = (
 CLASS_NAME = re.compile(r"L([^;<]+)")
 
 
-def persistence_classes(source: Path | None) -> list[tuple[str, bytes]]:
+def mod_classes(source: Path | None) -> list[tuple[str, bytes]]:
     if source is None:
         base = ROOT / "build" / "classes" / "java" / "main"
         return [(str(p.relative_to(base)).replace("\\", "/"), p.read_bytes())
-                for p in sorted((base / PERSISTENCE_PREFIX).rglob("*.class"))]
+                for p in sorted((base / MOD_PREFIX).rglob("*.class"))]
     with zipfile.ZipFile(source) as jar:
         return [(name, jar.read(name)) for name in sorted(jar.namelist())
-                if name.startswith(PERSISTENCE_PREFIX) and name.endswith(".class")]
+                if name.startswith(MOD_PREFIX) and name.endswith(".class")]
+
+
+def is_persisted_state(name: str, parsed: dict) -> bool:
+    return name.startswith(PERSISTENCE_PREFIX) or parsed.get("super") == SAVED_DATA
 
 
 def violations_in(parsed: dict) -> list[str]:
@@ -71,15 +82,24 @@ def violations_in(parsed: dict) -> list[str]:
 
 def main() -> None:
     source = Path(sys.argv[1]) if len(sys.argv) > 1 else None
-    classes = persistence_classes(source)
+    classes = mod_classes(source)
     if not classes:
-        print(f"Persistence validation: FAIL -- no classes under {PERSISTENCE_PREFIX} in "
+        print(f"Persistence validation: FAIL -- no classes under {MOD_PREFIX} in "
               f"{source or 'build/classes/java/main'}; nothing was checked")
         sys.exit(1)
 
     violations: list[str] = []
+    checked = 0
     for _path, data in classes:
-        violations.extend(violations_in(parse_class(data)))
+        parsed = parse_class(data)
+        if not is_persisted_state(parsed["name"] + ".class", parsed):
+            continue
+        checked += 1
+        violations.extend(violations_in(parsed))
+
+    if checked == 0:
+        print("Persistence validation: FAIL -- no persisted state found at all; nothing was checked")
+        sys.exit(1)
 
     where = f" ({source.name})" if source else ""
     if violations:
@@ -89,8 +109,9 @@ def main() -> None:
         print("  Persist an identifier and look the live object up again; see TDS section 10.")
         sys.exit(1)
 
-    print(f"Persistence validation{where}: PASS -- {len(classes)} class(es) under "
-          f"{PERSISTENCE_PREFIX}, no field holds an entity, level, server or Cobblemon reference")
+    print(f"Persistence validation{where}: PASS -- {checked} persisted type(s) checked "
+          f"(persistence package plus every SavedData), none holds an entity, level, server or "
+          f"Cobblemon reference")
 
 
 if __name__ == "__main__":

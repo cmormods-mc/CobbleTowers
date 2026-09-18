@@ -3,11 +3,14 @@ package com.cobbletowers.runtime;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.api.tower.RunState;
+import com.cobbletowers.instance.InstanceAllocator;
+import com.cobbletowers.persistence.CellStateStore;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.RunCheckpoint;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 
@@ -39,8 +42,10 @@ public final class RunTransitionService {
         UNKNOWN_RUN,
         /** The table has no move for this event from this state. Includes replaying a move already made. */
         ILLEGAL_EVENT,
-        /** Recovery resumes into an instance, and instances arrive in P3. */
-        NOT_RESUMABLE_YET,
+        /** Nothing was ever committed, so there is no state to put the run back into. */
+        NO_CHECKPOINT,
+        /** The run's cell is gone or quarantined, so resuming would put it somewhere unusable. */
+        CELL_UNAVAILABLE,
         /** A checkpoint key already committed is being committed again for a different outcome. */
         KEY_REUSED
     }
@@ -64,8 +69,7 @@ public final class RunTransitionService {
         }
         RunTransitions.Transition transition = found.get();
         if (transition.resumeFromCheckpoint()) {
-            return new Refusal(Reason.NOT_RESUMABLE_YET, "resuming a run needs an instance to resume into,"
-                    + " which arrives with P3; the run stays parked in " + RunState.RECOVERY_REQUIRED);
+            return resume(run, now);
         }
 
         // The floor BEFORE the move, which is what makes {nextFloor} name the floor being opened.
@@ -78,14 +82,41 @@ public final class RunTransitionService {
         int floor = event == RunEvent.NEXT_FLOOR_CONFIRMED ? run.floorIndex() + 1 : run.floorIndex();
         List<String> committed = new ArrayList<>(run.committedTransactions());
         if (!key.isEmpty()) committed.add(key);
-        Optional<RunCheckpoint> checkpoint = transition.checkpoint()
-                ? Optional.of(new RunCheckpoint(key, transition.next()))
-                : run.lastCheckpoint();
+        // Only a KEYED move moves the checkpoint. A keyless checkpointing move -- parking a broken
+        // run, abandoning it, resuming it -- forces a write but must leave the checkpoint where it
+        // was: recording "committed at RECOVERY_REQUIRED" would make a later resume return the run
+        // to the state it was trying to escape.
+        Optional<RunCheckpoint> checkpoint = key.isEmpty()
+                ? run.lastCheckpoint()
+                : Optional.of(new RunCheckpoint(key, transition.next()));
 
         PersistedRun next = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), floor,
-                transition.next(), run.participants(), checkpoint, committed, now);
+                transition.next(), run.participants(), checkpoint, committed, now, run.cell());
         return new Move(next, run.state(), transition.checkpoint(), key);
+    }
+
+    /**
+     * Puts a parked run back where its checkpoint says it was.
+     *
+     * <p>The table cannot name the state, because it depends on the run rather than on the move --
+     * which is what {@code resumeFromCheckpoint} means. A run with nothing committed has no state to
+     * return to and is refused: that only happens when it was parked before its instance was
+     * allocated, and such a run is abandoned rather than resumed.
+     */
+    private static Outcome resume(PersistedRun run, long now) {
+        Optional<RunCheckpoint> checkpoint = run.lastCheckpoint();
+        if (checkpoint.isEmpty()) {
+            return new Refusal(Reason.NO_CHECKPOINT, "run " + run.runId() + " was parked before it committed"
+                    + " anything, so there is no state to resume into; abandon it instead");
+        }
+        RunState target = checkpoint.get().state();
+        PersistedRun next = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
+                run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), run.floorIndex(),
+                target, run.participants(), run.lastCheckpoint(), run.committedTransactions(), now, run.cell());
+        // Durable, because a resume that a crash undoes leaves a run reported as recovered and
+        // parked on disk -- the two states nobody can tell apart afterwards.
+        return new Move(next, run.state(), true, "");
     }
 
     /**
@@ -99,12 +130,62 @@ public final class RunTransitionService {
         if (found.isEmpty()) {
             return new Refusal(Reason.UNKNOWN_RUN, "no run with id " + runId);
         }
-        Outcome outcome = decide(found.get(), event, now);
+        PersistedRun run = found.get();
+        if (event == RunEvent.RECOVERY_COMPLETED) {
+            // Checked here rather than in decide, because whether a cell is usable is a question
+            // about the world and decide is deliberately pure.
+            Optional<Refusal> blocked = cellUnusable(server, run);
+            if (blocked.isPresent()) return blocked.get();
+        }
+        Outcome outcome = decide(run, event, now);
         if (outcome instanceof Move move) {
             TowerRuns.save(server, move.next(), move.checkpoint());
             TowerLog.info("Run {} {} -> {} on {}{}", runId, move.from(), move.next().state(), event,
                     move.checkpoint() ? " [checkpoint " + move.key() + "]" : "");
+            if (move.next().state().isTerminal()) releaseInstance(server, move.next(), now);
         }
         return outcome;
+    }
+
+    /**
+     * Gives a finished run's cell back, and drops the lease from the run.
+     *
+     * <p>Tied to reaching a terminal state rather than to any particular event, so every way a run
+     * can end -- completed, cashed out, wiped, abandoned -- returns its cell by the same path. A cell
+     * that does not verify is quarantined by the allocator; either way the run stops holding it,
+     * because a finished run holding a lease is a cell nothing will ever release.
+     */
+    private static void releaseInstance(MinecraftServer server, PersistedRun run, long now) {
+        OptionalInt cell = run.cell();
+        if (cell.isEmpty()) return;
+        InstanceAllocator.Release release = InstanceAllocator.release(server, run.runId(), cell.getAsInt());
+        if (release instanceof InstanceAllocator.Quarantined quarantined) {
+            TowerLog.warn("Run {} ended leaving cell {} unfit for reuse: {}",
+                    run.runId(), quarantined.cell(), quarantined.reason());
+        }
+        // Checkpointed: a dropped lease that a crash undoes would leave the cell claimed by a run
+        // that has already finished, and nothing later would ever come back to release it.
+        TowerRuns.save(server, run.withCell(OptionalInt.empty(), now), true);
+    }
+
+    /**
+     * Whether the run's instance is fit to go back to.
+     *
+     * <p>A run that reached a checkpoint was allocated a cell at the same moment, so a missing lease
+     * here means the save was edited or the cell was taken away. Either way, resuming into a cell
+     * that is gone or quarantined would put players somewhere nobody has verified, which is the
+     * thing quarantine exists to prevent.
+     */
+    private static Optional<Refusal> cellUnusable(MinecraftServer server, PersistedRun run) {
+        OptionalInt cell = run.cell();
+        if (cell.isEmpty()) {
+            return Optional.of(new Refusal(Reason.CELL_UNAVAILABLE,
+                    "run " + run.runId() + " holds no instance cell to resume into"));
+        }
+        if (CellStateStore.get(server).isQuarantined(cell.getAsInt())) {
+            return Optional.of(new Refusal(Reason.CELL_UNAVAILABLE,
+                    "cell " + cell.getAsInt() + " is quarantined; it must be cleared before the run can resume"));
+        }
+        return Optional.empty();
     }
 }

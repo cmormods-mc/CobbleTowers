@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -26,6 +27,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param lastCheckpoint    where the run was last committed, or empty before its first checkpoint
  * @param committedTransactions keys of mutations already applied, so replaying is safe (TDS #30)
  * @param updatedAt         epoch millis of the last write, used to retire finished runs
+ * @param cell              the instance cell leased to this run, or empty before one is allocated
  */
 public record PersistedRun(
         UUID runId,
@@ -41,10 +43,16 @@ public record PersistedRun(
         List<PersistedParticipant> participants,
         Optional<RunCheckpoint> lastCheckpoint,
         List<String> committedTransactions,
-        long updatedAt) {
+        long updatedAt,
+        OptionalInt cell) {
 
-    /** The only shape this build writes or reads. */
-    public static final int SCHEMA_VERSION = 1;
+    /**
+     * The only shape this build writes or reads.
+     *
+     * <p>2 added the instance cell. Version 1 files are migrated forward by
+     * {@code RunMigrations}, which is the first thing that framework has had to do.
+     */
+    public static final int SCHEMA_VERSION = 2;
 
     public PersistedRun {
         Objects.requireNonNull(runId, "runId");
@@ -71,6 +79,7 @@ public record PersistedRun(
         tag.putString("state", state.name().toLowerCase(Locale.ROOT));
         lastCheckpoint.ifPresent(checkpoint -> tag.put("last_checkpoint", checkpoint.toTag()));
         tag.putLong("updated_at", updatedAt);
+        cell.ifPresent(index -> tag.putInt("cell", index));
         ListTag people = new ListTag();
         for (PersistedParticipant participant : participants) people.add(participant.toTag());
         tag.put("participants", people);
@@ -115,13 +124,23 @@ public record PersistedRun(
                         ? Optional.of(RunCheckpoint.fromTag(tag.getCompound("last_checkpoint")))
                         : Optional.empty(),
                 transactions,
-                tag.getLong("updated_at"));
+                tag.getLong("updated_at"),
+                // Absent means no cell, which is also exactly what a version 1 run says.
+                tag.contains("cell", Tag.TAG_INT) ? OptionalInt.of(tag.getInt("cell")) : OptionalInt.empty());
     }
 
     /** The same run, recorded as it stands after {@code at}. */
     public PersistedRun touched(long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
-                structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions, at);
+                structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
+                at, cell);
+    }
+
+    /** The same run holding {@code leased}, or holding none when it is empty. */
+    public PersistedRun withCell(OptionalInt leased, long at) {
+        return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
+                structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
+                at, leased);
     }
 
     /** True when this key has already been committed, so applying the move again must not repeat it. */

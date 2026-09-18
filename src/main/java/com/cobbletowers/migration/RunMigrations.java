@@ -22,8 +22,8 @@ import net.minecraft.nbt.CompoundTag;
  *       wrongly and then save it that way, which is worse than declining to load it.</li>
  * </ul>
  *
- * <p>Only version 1 has ever existed, so {@link #STEPS} is empty. That is the point of shipping it
- * now: adding version 2 is one entry and one test, not a reader rewrite.
+ * <p>Shipped empty in P2 and first used in P3, which is the test of whether that was worth doing:
+ * adding version 2 was one entry here and one test, with no change to the reader at all.
  */
 public final class RunMigrations {
 
@@ -37,8 +37,14 @@ public final class RunMigrations {
     private static final Map<Integer, UnaryOperator<CompoundTag>> STEPS = new LinkedHashMap<>();
 
     static {
-        // No entries yet. When version 2 arrives:
-        //   STEPS.put(1, tag -> { ...rewrite...; tag.putInt("schema_version", 2); return tag; });
+        // 1 -> 2 added the instance cell. Nothing needs rewriting: the field is optional and its
+        // absence already means "no cell leased", which is true of every version 1 run, none of
+        // which could have had one. So the step stamps the version and stops -- and that is worth
+        // having rather than skipping, because without it a version 1 file would simply be refused.
+        STEPS.put(1, tag -> {
+            tag.putInt("schema_version", 2);
+            return tag;
+        });
     }
 
     private RunMigrations() {}
