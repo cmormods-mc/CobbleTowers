@@ -3,6 +3,7 @@ package com.cobbletowers.runtime;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.api.tower.RunState;
+import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.instance.InstanceAllocator;
 import com.cobbletowers.persistence.CellStateStore;
 import com.cobbletowers.persistence.PersistedRun;
@@ -92,7 +93,7 @@ public final class RunTransitionService {
 
         PersistedRun next = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), floor,
-                transition.next(), run.participants(), checkpoint, committed, now, run.cell());
+                transition.next(), run.participants(), checkpoint, committed, now, run.cell(), run.ledger());
         return new Move(next, run.state(), transition.checkpoint(), key);
     }
 
@@ -113,7 +114,8 @@ public final class RunTransitionService {
         RunState target = checkpoint.get().state();
         PersistedRun next = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), run.floorIndex(),
-                target, run.participants(), run.lastCheckpoint(), run.committedTransactions(), now, run.cell());
+                target, run.participants(), run.lastCheckpoint(), run.committedTransactions(), now, run.cell(),
+                run.ledger());
         // Durable, because a resume that a crash undoes leaves a run reported as recovered and
         // parked on disk -- the two states nobody can tell apart afterwards.
         return new Move(next, run.state(), true, "");
@@ -156,6 +158,11 @@ public final class RunTransitionService {
      * because a finished run holding a lease is a cell nothing will ever release.
      */
     private static void releaseInstance(MinecraftServer server, PersistedRun run, long now) {
+        // Whatever the run was fighting stops first. An opponent left standing would be found by the
+        // cell's cleanup sweep a moment later and quarantine the cell -- a poor way to discover that
+        // a battle was not tidied up.
+        TowerEncounters.abandon(server, run.runId());
+
         OptionalInt cell = run.cell();
         if (cell.isEmpty()) return;
         InstanceAllocator.Release release = InstanceAllocator.release(server, run.runId(), cell.getAsInt());

@@ -34,7 +34,8 @@ sys.path.insert(0, str(ROOT / "validation"))
 
 from rcon import Rcon  # noqa: E402
 from run_durability_test import (  # noqa: E402
-    BOT, Result, Server, install_jar, read_password, run_id_from, server_port, start_bot, wait_online,
+    BOT, Result, Server, clear_tower, install_jar, reset_tower_world, read_password, run_id_from, server_port, start_bot,
+    wait_online,
 )
 from schem_to_structure import Reader  # noqa: E402
 
@@ -97,8 +98,7 @@ def main() -> None:
     node_modules = args.node_modules or (server_dir.parent / "bot" / "node_modules")
     if args.jar:
         install_jar(server_dir, args.jar.resolve())
-    for stale in ["cobbletowers_runs.dat", "cobbletowers_cells.dat"]:
-        (server_dir / "world" / "data" / stale).unlink(missing_ok=True)
+    reset_tower_world(server_dir)
 
     size, samples = arena_samples()
     results: list[Result] = []
@@ -118,6 +118,7 @@ def main() -> None:
             # property this test asserts the tower does NOT rely on. An earlier session's probe left
             # one behind, so clear them before asking the question.
             rcon.command("execute in cobbletowers:tower run forceload remove all")
+            clear_tower(rcon)
             probe = Probe(rcon)
 
             run = run_id_from(rcon.command(f"cobbletowers runs create {TOWER} {BOT}"))

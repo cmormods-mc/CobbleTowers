@@ -30,8 +30,8 @@ sys.path.insert(0, str(HERE))
 
 from rcon import Rcon  # noqa: E402
 from run_durability_test import (  # noqa: E402
-    BOT, Result, Server, install_jar, read_password, recovered_from, run_id_from, server_port,
-    start_bot, wait_online,
+    BOT, Result, Server, clear_tower, install_jar, reset_tower_world, read_password, recovered_from, run_id_from,
+    server_port, start_bot, wait_online,
 )
 
 TOWER = "cobbletowers:neutral"
@@ -61,8 +61,7 @@ def main() -> None:
 
     # A previous run's parked runs and quarantines would make cell numbers unpredictable, and this
     # test is about which cell comes next.
-    for stale in ["cobbletowers_runs.dat", "cobbletowers_cells.dat"]:
-        (server_dir / "world" / "data" / stale).unlink(missing_ok=True)
+    reset_tower_world(server_dir)
 
     results: list[Result] = []
     server = Server(server_dir, java)
@@ -76,6 +75,7 @@ def main() -> None:
         with Rcon("127.0.0.1", 25575, read_password(server_dir)) as rcon:
             if not wait_online(rcon):
                 raise RuntimeError("the bot never joined; run commands need a player selector")
+            clear_tower(rcon)
 
             listed = rcon.command("cobbletowers cells list")
             results.append(Result("the tower dimension is loaded", "dimension loaded" in listed,

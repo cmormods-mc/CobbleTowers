@@ -43,7 +43,7 @@ public final class TestRuns {
         return new PersistedRun(runId, PersistedRun.SCHEMA_VERSION, TOWER, 3, "digest-abc", 2, 0, 42L,
                 RunFactory.FIRST_FLOOR, RunState.CREATED,
                 List.of(new PersistedParticipant(playerId, ParticipantState.joined(), List.of())),
-                Optional.empty(), List.of(), updatedAt, OptionalInt.empty());
+                Optional.empty(), List.of(), updatedAt, OptionalInt.empty(), List.of());
     }
 
     /** The same run moved to a state directly, for tests about storage rather than transitions. */
@@ -52,7 +52,7 @@ public final class TestRuns {
         return new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), run.floorIndex(),
                 state, run.participants(), run.lastCheckpoint(), run.committedTransactions(), updatedAt,
-                run.cell());
+                run.cell(), run.ledger());
     }
 
     /** One tower, two floors, a ruleset and a boss milestone -- enough for every reference to resolve. */

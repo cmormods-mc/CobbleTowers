@@ -2,6 +2,7 @@ package com.cobbletowers.persistence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -31,7 +32,8 @@ class PersistedRunTest {
                 PersistedRun.SCHEMA_VERSION, TOWER, 4, "abc123", 2, 7, -9876543210L, 3, state,
                 List.of(participant),
                 Optional.of(new RunCheckpoint("run:x:floor:3:ready", RunState.FLOOR_READY)),
-                List.of("run:x:floor:2:banked"), 1_726_000_000_000L, OptionalInt.of(12));
+                List.of("run:x:floor:2:banked"), 1_726_000_000_000L, OptionalInt.of(12),
+                List.of(LedgerEntry.opponentDefeated(3, TOWER, UUID.fromString("44444444-4444-4444-4444-444444444444"), 7L)));
     }
 
     @Test
@@ -64,8 +66,55 @@ class PersistedRunTest {
         // RunCheckpoint refuses a blank key precisely so that cannot be written in the first place.
         PersistedRun fresh = new PersistedRun(withCheckpoint.runId(), PersistedRun.SCHEMA_VERSION, TOWER, 4,
                 "abc123", 2, 7, 1L, 1, RunState.CREATED, List.of(), Optional.empty(), List.of(), 5L,
-                OptionalInt.empty());
+                OptionalInt.empty(), List.of());
         assertEquals(Optional.empty(), PersistedRun.fromTag(fresh.toTag()).lastCheckpoint());
+    }
+
+    @Test
+    @DisplayName("the unclaimed pool survives a round trip, entry by entry")
+    void ledgerRoundTrip() {
+        PersistedRun run = run(RunState.INTERMISSION, ParticipantState.joined());
+        PersistedRun restored = PersistedRun.fromTag(run.toTag());
+
+        assertEquals(run.ledger(), restored.ledger());
+        assertEquals(LedgerEntry.Kind.OPPONENT_DEFEATED, restored.ledger().get(0).kind());
+        assertEquals(3, restored.ledger().get(0).floorIndex());
+    }
+
+    @Test
+    @DisplayName("earning appends and never rewrites what is already in the pool")
+    void earningAppends() {
+        // The pool only grows until it is banked. An entry that could be overwritten by the next one
+        // would quietly shrink what a player is owed.
+        PersistedRun run = run(RunState.ENCOUNTER_ACTIVE, ParticipantState.joined());
+        int before = run.ledger().size();
+
+        PersistedRun after = run
+                .withEarned(LedgerEntry.opponentDefeated(4, TOWER, UUID.randomUUID(), 10L), 10L)
+                .withEarned(LedgerEntry.floorCleared(4, TOWER, 11L), 11L);
+
+        assertEquals(before + 2, after.ledger().size());
+        assertEquals(run.ledger().get(0), after.ledger().get(0), "the first entry is untouched");
+        assertEquals(LedgerEntry.Kind.FLOOR_CLEARED, after.ledger().get(after.ledger().size() - 1).kind());
+        assertEquals(before, run.ledger().size(), "and the original record is unchanged");
+    }
+
+    @Test
+    @DisplayName("a cleared floor belongs to the run, not to one player")
+    void floorClearedHasNoPlayer() {
+        LedgerEntry entry = LedgerEntry.floorCleared(2, TOWER, 1L);
+
+        assertNull(entry.byPlayer());
+        assertEquals(entry, LedgerEntry.fromTag(entry.toTag()), "and that survives the round trip");
+    }
+
+    @Test
+    @DisplayName("a ledger entry of an unknown kind is refused rather than filed under the wrong one")
+    void unknownLedgerKind() {
+        CompoundTag tag = LedgerEntry.opponentDefeated(1, TOWER, UUID.randomUUID(), 1L).toTag();
+        tag.putString("kind", "mystery_prize");
+
+        assertThrows(IllegalArgumentException.class, () -> LedgerEntry.fromTag(tag));
     }
 
     @Test
