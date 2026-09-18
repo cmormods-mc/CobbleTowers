@@ -72,11 +72,11 @@ public final class TestRuns {
                 List.of(one.id(), two.id()), List.of(boss.id()), Optional.empty());
 
         return TowerContent.of(Map.of(TOWER, tower), Map.of(one.id(), one, two.id(), two), Map.of(pool.id(), pool),
-                Map.of(ruleset.id(), ruleset), Map.of(boss.id(), boss),
+                Map.of(ruleset.id(), ruleset), Map.of(boss.id(), boss), Map.of(),
                 Map.of(DefinitionKey.tower(TOWER), "digest-abc"));
     }
 
     private static FloorDefinition floor(int index, Optional<MilestoneKind> milestone) {
-        return new FloorDefinition(id("floor_" + index), index, id("pool"), milestone, Optional.empty(), List.of(), Optional.empty());
+        return new FloorDefinition(id("floor_" + index), index, id("pool"), milestone, Optional.empty(), List.of(), Optional.empty(), Optional.empty());
     }
 }

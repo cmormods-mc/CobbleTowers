@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "entries": [
+    { "definition": "cobbleraids:decidueye", "weight": 100 },
+    { "definition": "cobbleraids:blastoise", "weight": 100 },
+    { "definition": "cobbleraids:charizard", "weight": 80 },
+    { "definition": "cobbleraids:chesnaught", "weight": 80 }
+  ]
+}

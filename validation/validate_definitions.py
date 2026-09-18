@@ -14,6 +14,11 @@ checks the bundled data at build time, where failing is exactly what should happ
 - weights are positive, level bounds are ordered, party size is 1..6
 - every floor layout names a structure that exists, and every anchor in it is somewhere a player
   could actually stand: inside the structure, feet on something solid, head clear
+- every floor names a boss: a loaded boss pool, or a milestone that names a raid definition
+
+What is deliberately NOT checked: whether CobbleRaids has a raid definition by that id. Those live in
+the other mod, behind an API with no listing, so the check would be a guess. A missing definition
+fails when the boss is started, reported as a technical fault.
 
     python validation/validate_definitions.py
 """
@@ -36,7 +41,7 @@ ANCHORS = ("entry", "presentation", "spectator", "exit")
 # actually contain, and anything else present counts as solid, which errs towards refusing an anchor
 # rather than approving one.
 NON_SUPPORTING = ("banner", "torch", "carpet", "button", "pressure_plate", "sign", "rail")
-KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones")
+KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones", "boss_pools")
 MAX_PARTY = 6
 MIN_LEVEL, MAX_LEVEL = 1, 100
 
@@ -170,6 +175,32 @@ def main() -> None:
                 problems.append(f"{floor_id} is marked {marked} but {milestone_id} is {milestone.get('kind')}")
             if milestone.get("kind") == "boss" and not milestone.get("raid_definition"):
                 problems.append(f"{milestone_id} is a boss milestone but names no raid_definition")
+
+    for pool_id, pool in content["boss_pools"].items():
+        entries = pool.get("entries", [])
+        if not entries:
+            problems.append(f"{pool_id} has no entries")
+        for entry in entries:
+            if "definition" not in entry:
+                problems.append(f"{pool_id} has an entry with no definition")
+            if entry.get("weight", 100) < 1:
+                problems.append(f"{pool_id} has an entry with weight {entry.get('weight')}; weights must be >= 1")
+
+    # Every floor has to be finishable: a boss pool, or a milestone that names one.
+    for tower_id, tower in content["towers"].items():
+        milestone_floors = {}
+        for milestone_id in tower.get("milestones", []):
+            milestone = content["milestones"].get(milestone_id)
+            if milestone:
+                milestone_floors[milestone.get("floor")] = milestone.get("raid_definition")
+        for floor_id in tower.get("floors", []):
+            floor = content["floors"].get(floor_id)
+            if floor is None:
+                continue
+            if floor.get("boss_pool"):
+                continue
+            if not milestone_floors.get(floor.get("index")):
+                problems.append(f"{floor_id} names no boss_pool and no milestone boss, so it cannot be finished")
 
     for pool_id, pool in content["encounter_pools"].items():
         entries = pool.get("entries", [])

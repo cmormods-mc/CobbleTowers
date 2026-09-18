@@ -4,10 +4,14 @@ import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
+import com.cobbleraids.api.encounter.EncounterResult;
 import com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter;
+import com.cobbletowers.battle.cobbleraids.TowerBossAdapter;
+import com.cobbletowers.definition.BossPoolDefinition;
 import com.cobbletowers.definition.EncounterPoolDefinition;
 import com.cobbletowers.definition.FloorAnchor;
 import com.cobbletowers.definition.FloorDefinition;
+import com.cobbletowers.definition.MilestoneDefinition;
 import com.cobbletowers.definition.RulesetDefinition;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
@@ -23,10 +27,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -47,8 +53,18 @@ public final class TowerEncounters {
 
     public enum Status { FIGHTING, CLEARED, OUT }
 
+    /**
+     * Which half of the floor is being fought.
+     *
+     * <p>The phase lives here, in runtime state, and deliberately not in P1's transition table. The
+     * table already has an event for a resolved encounter and one for a wipe, and both still mean
+     * exactly what they meant; a table that grew a state every time gameplay gained a step would stop
+     * being a contract worth having.
+     */
+    public enum Phase { PREREQUISITE, BOSS }
+
     /** One floor's round for one run. */
-    public record Round(UUID runId, int floorIndex, Map<UUID, Status> byPlayer) {
+    public record Round(UUID runId, int floorIndex, Phase phase, Map<UUID, Status> byPlayer) {
 
         public Round {
             byPlayer = Map.copyOf(byPlayer);
@@ -74,6 +90,13 @@ public final class TowerEncounters {
     /** Wires this to the adapter. Called once at startup. */
     public static void install() {
         CobblemonBattleAdapter.install(TowerEncounters::onResolved);
+        TowerBossAdapter.install(new TowerBossAdapter.Listener() {
+            @Override
+            public void onBossEnded(MinecraftServer server, TowerBossAdapter.Binding binding,
+                                    EncounterResult result) {
+                TowerEncounters.onBossEnded(server, binding, result);
+            }
+        });
     }
 
     /**
@@ -164,7 +187,7 @@ public final class TowerEncounters {
         }
         if (byPlayer.isEmpty()) return Optional.empty();
 
-        Round round = new Round(runId, run.floorIndex(), byPlayer);
+        Round round = new Round(runId, run.floorIndex(), Phase.PREREQUISITE, byPlayer);
         ROUNDS.put(runId, round);
         TowerLog.info("Floor {} of run {} begun with {} opponent(s)", run.floorIndex(), runId, byPlayer.size());
         return Optional.of(round);
@@ -188,7 +211,7 @@ public final class TowerEncounters {
 
         Map<UUID, Status> byPlayer = new LinkedHashMap<>(round.byPlayer());
         byPlayer.put(binding.playerId(), playerWon ? Status.CLEARED : Status.OUT);
-        Round updated = new Round(round.runId(), round.floorIndex(), byPlayer);
+        Round updated = new Round(round.runId(), round.floorIndex(), round.phase(), byPlayer);
         ROUNDS.put(binding.runId(), updated);
 
         long now = System.currentTimeMillis();
@@ -197,23 +220,132 @@ public final class TowerEncounters {
 
         if (!updated.settled()) return;
 
-        ROUNDS.remove(binding.runId());
         if (updated.everyoneOut()) {
+            ROUNDS.remove(binding.runId());
             TowerLog.info("Floor {} of run {} wiped the party", updated.floorIndex(), updated.runId());
-            RunTransitionService.apply(server, updated.runId(), RunEvent.ENCOUNTER_RESOLVED_WIPED, now);
+            lose(server, updated.runId(), updated.floorIndex(), now);
             return;
         }
-        // Anyone still standing clears the floor. A knocked-out teammate returns at the intermission,
-        // which is what the participant axes were built for in P1.
-        TowerDefinitionRegistry.content().floorAt(runIdTower(updated.runId()), updated.floorIndex())
-                .ifPresent(floor -> earn(server, updated.runId(),
-                        LedgerEntry.floorCleared(updated.floorIndex(), floor.id(), now)));
-        TowerLog.info("Floor {} of run {} cleared", updated.floorIndex(), updated.runId());
-        RunTransitionService.apply(server, updated.runId(), RunEvent.ENCOUNTER_RESOLVED_CLEARED, now);
+
+        // Anyone still standing has earned the right to the boss. The floor is not finished until
+        // that is fought: the prerequisite is a prerequisite, not the floor.
+        if (!startBoss(server, updated, now)) {
+            ROUNDS.remove(binding.runId());
+            TowerLog.error("Floor {} of run {} cleared its opponents but the boss could not be started",
+                    updated.floorIndex(), updated.runId());
+            RunTransitionService.apply(server, updated.runId(), RunEvent.TECHNICAL_FAILURE, now);
+        }
     }
 
-    private static net.minecraft.resources.ResourceLocation runIdTower(UUID runId) {
-        return TowerRuns.get(runId).map(PersistedRun::towerId).orElse(null);
+    /**
+     * Puts this floor's boss up against everyone still standing.
+     *
+     * <p>Everyone, not only those who cleared their own opponent: the boss is the shared fight, which
+     * is the whole reason it runs through CobbleRaids rather than as another set of solo battles.
+     */
+    private static boolean startBoss(MinecraftServer server, Round round, long now) {
+        Optional<PersistedRun> found = TowerRuns.get(round.runId());
+        if (found.isEmpty()) return false;
+        PersistedRun run = found.get();
+
+        TowerContent content = TowerDefinitionRegistry.content();
+        Optional<FloorDefinition> floor = content.floorAt(run.towerId(), run.floorIndex());
+        TowerDefinition tower = content.towers().get(run.towerId());
+        if (floor.isEmpty() || tower == null) return false;
+        RulesetDefinition ruleset = content.rulesets().get(
+                floor.get().rulesetOverride().orElse(tower.rulesetId()));
+        ServerLevel level = TowerDimension.level(server);
+        if (ruleset == null || level == null || run.cell().isEmpty() || floor.get().layout().isEmpty()) return false;
+
+        List<ServerPlayer> standing = new ArrayList<>();
+        for (Map.Entry<UUID, Status> entry : round.byPlayer().entrySet()) {
+            if (entry.getValue() == Status.OUT) continue;
+            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
+            if (player != null) standing.add(player);
+        }
+        if (standing.isEmpty()) return false;
+
+        // A milestone floor takes the boss the milestone names; every other floor draws one.
+        Optional<BossPoolDefinition> pool = floor.get().bossPoolId()
+                .map(id -> content.bossPools().get(id))
+                .filter(Objects::nonNull);
+        Optional<BossDraw.Boss> boss = BossDraw.draw(pool, handpickedBoss(content, tower, floor.get()),
+                run.seed(), run.floorIndex(), levelsOf(standing), ruleset);
+        if (boss.isEmpty()) {
+            TowerLog.error("Floor {} names neither a boss pool nor a milestone boss", floor.get().id());
+            return false;
+        }
+
+        Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), floor.get().layout().get());
+        if (origin.isEmpty()) return false;
+        BlockPos where = floor.get().layout().get().presentation().in(origin.get());
+
+        Optional<UUID> started = TowerBossAdapter.start(
+                server, level, standing, boss.get(), where, round.runId(), round.floorIndex());
+        if (started.isEmpty()) return false;
+
+        ROUNDS.put(round.runId(), new Round(round.runId(), round.floorIndex(), Phase.BOSS, round.byPlayer()));
+        return true;
+    }
+
+    /** The definition a milestone floor is meant to finish with, if this is one. */
+    private static Optional<ResourceLocation> handpickedBoss(TowerContent content, TowerDefinition tower,
+                                                            FloorDefinition floor) {
+        if (floor.milestone().isEmpty()) return Optional.empty();
+        for (ResourceLocation milestoneId : tower.milestoneIds()) {
+            MilestoneDefinition milestone = content.milestones().get(milestoneId);
+            if (milestone != null && milestone.floorIndex() == floor.index()) {
+                return milestone.raidDefinitionId();
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** CobbleRaids has finished with the floor's boss, one way or another. */
+    private static void onBossEnded(MinecraftServer server, TowerBossAdapter.Binding binding,
+                                    EncounterResult result) {
+        Round round = ROUNDS.remove(binding.runId());
+        long now = System.currentTimeMillis();
+        TowerLog.info("Floor {} boss of run {} ended {} after {} combat tick(s)",
+                binding.floorIndex(), binding.runId(), result.outcome(), result.elapsedCombatTicks());
+
+        switch (result.outcome()) {
+            case VICTORY -> {
+                earn(server, binding.runId(),
+                        LedgerEntry.bossDefeated(binding.floorIndex(), binding.definition(), now));
+                TowerRuns.get(binding.runId())
+                        .flatMap(run -> TowerDefinitionRegistry.content().floorAt(run.towerId(), run.floorIndex()))
+                        .ifPresent(floor -> earn(server, binding.runId(),
+                                LedgerEntry.floorCleared(binding.floorIndex(), floor.id(), now)));
+                // Said plainly, because completing a floor is the thing an operator reading a log is
+                // looking for. It moved here when the boss became the end of a floor, and stopped
+                // being logged at all for a run -- which the live test noticed before anyone else.
+                TowerLog.info("Floor {} of run {} cleared", binding.floorIndex(), binding.runId());
+                RunTransitionService.apply(server, binding.runId(), RunEvent.ENCOUNTER_RESOLVED_CLEARED, now);
+            }
+            case DEFEAT -> lose(server, binding.runId(), binding.floorIndex(), now);
+            // Aborted is neither a win nor a loss -- an operator or a shutdown ended it -- so the run
+            // parks rather than being scored. Losing a pool to a server restart would be indefensible.
+            case ABORTED -> {
+                if (round != null) {
+                    RunTransitionService.apply(server, binding.runId(), RunEvent.TECHNICAL_FAILURE, now);
+                }
+            }
+        }
+    }
+
+    /**
+     * The run is lost, so the unclaimed pool goes with it.
+     *
+     * <p>Marked rather than deleted, so what was earned can still be read afterwards -- and so
+     * cashing out at an intermission stays a real decision, which is the point of the rule.
+     */
+    private static void lose(MinecraftServer server, UUID runId, int floorIndex, long now) {
+        TowerLog.info("Floor {} of run {} wiped the party; the unclaimed pool is forfeited",
+                floorIndex, runId);
+        TowerRuns.get(runId).ifPresent(run -> earn(server, runId,
+                LedgerEntry.forfeited(floorIndex, run.towerId(), now)));
+        RunTransitionService.apply(server, runId, RunEvent.ENCOUNTER_RESOLVED_WIPED, now);
     }
 
     /** Appends to the unclaimed pool. No worth is decided here; that is P9's. */
@@ -233,12 +365,15 @@ public final class TowerEncounters {
     public static void abandon(MinecraftServer server, UUID runId) {
         ROUNDS.remove(runId);
         CobblemonBattleAdapter.endRun(server, runId);
+        // The boss too, or it stands in the cell until the sweep quarantines it.
+        TowerBossAdapter.abort(runId);
     }
 
     public static int onServerStopped(MinecraftServer server) {
         int held = ROUNDS.size();
         ROUNDS.clear();
         CobblemonBattleAdapter.onServerStopped(server);
+        TowerBossAdapter.onServerStopped();
         return held;
     }
 }

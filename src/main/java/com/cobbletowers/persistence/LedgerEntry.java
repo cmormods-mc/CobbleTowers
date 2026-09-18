@@ -20,13 +20,31 @@ public record LedgerEntry(Kind kind, int floorIndex, ResourceLocation what, UUID
 
     public enum Kind {
         OPPONENT_DEFEATED,
-        FLOOR_CLEARED
+        /** The floor's CobbleRaids boss. Separate from an ordinary opponent so P9 can weigh it. */
+        BOSS_DEFEATED,
+        FLOOR_CLEARED,
+        /**
+         * The run was lost, so everything above it is void.
+         *
+         * <p>Marked rather than deleted: an operator can still see what the run had earned, and P9
+         * reads this as "grant nothing" rather than having to infer it from the run's state.
+         */
+        POOL_FORFEITED
     }
 
     public LedgerEntry {
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(what, "what");
         if (floorIndex < 1) throw new IllegalArgumentException("floorIndex must be >= 1, got " + floorIndex);
+    }
+
+    public static LedgerEntry bossDefeated(int floorIndex, ResourceLocation definition, long at) {
+        return new LedgerEntry(Kind.BOSS_DEFEATED, floorIndex, definition, null, at);
+    }
+
+    /** Everything earned so far is void. Appended once, when the run is lost. */
+    public static LedgerEntry forfeited(int floorIndex, ResourceLocation towerId, long at) {
+        return new LedgerEntry(Kind.POOL_FORFEITED, floorIndex, towerId, null, at);
     }
 
     public static LedgerEntry opponentDefeated(int floorIndex, ResourceLocation species, UUID player, long at) {

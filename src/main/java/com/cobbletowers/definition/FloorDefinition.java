@@ -20,6 +20,8 @@ import net.minecraft.resources.ResourceLocation;
  * @param modifierIds     reserved for P8; parsed and carried, never resolved here
  * @param layout          what to paste and where the anchors are; absent on content written before
  *                        the arenas existed, which loads but cannot be prepared
+ * @param bossPoolId      the bosses this floor may finish with; absent on a milestone floor, which
+ *                        uses the milestone's handpicked definition instead
  */
 public record FloorDefinition(
         ResourceLocation id,
@@ -28,7 +30,8 @@ public record FloorDefinition(
         Optional<MilestoneKind> milestone,
         Optional<ResourceLocation> rulesetOverride,
         List<ResourceLocation> modifierIds,
-        Optional<FloorLayout> layout) implements FloorView {
+        Optional<FloorLayout> layout,
+        Optional<ResourceLocation> bossPoolId) implements FloorView {
 
     public FloorDefinition {
         Objects.requireNonNull(id, "id");
@@ -36,6 +39,7 @@ public record FloorDefinition(
         Objects.requireNonNull(milestone, "milestone");
         Objects.requireNonNull(rulesetOverride, "rulesetOverride");
         Objects.requireNonNull(layout, "layout");
+        Objects.requireNonNull(bossPoolId, "bossPoolId");
         modifierIds = List.copyOf(modifierIds);
         if (index < 1) throw new IllegalArgumentException("index must be >= 1, got " + index);
     }
@@ -52,7 +56,10 @@ public record FloorDefinition(
                 // Optional: a floor with no layout is content that predates the arenas, and it loads
                 // rather than failing -- it simply cannot be prepared until it names one.
                 root.has("layout") ? Optional.of(FloorLayout.fromJson(TowerJson.object(root, "layout")))
-                        : Optional.empty());
+                        : Optional.empty(),
+                // Optional: a milestone floor takes its handpicked boss from the milestone instead,
+                // and content written before bosses existed still loads.
+                TowerJson.optionalId(root, "boss_pool"));
     }
 
     private static MilestoneKind parseMilestone(String raw) {

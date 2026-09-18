@@ -174,8 +174,21 @@ def main() -> None:
             results.append(Result("the opponent is marked uncatchable", "ncatchable" in entity,
                                   entity.strip()[:240]))
 
-            # Already armed above; just wait for the outcome.
-            resolved = wait_for(server.log, r"Floor \d+ of run \S+ (cleared|wiped the party)", seconds=180)
+            # The prerequisite is only half a floor now: clearing it hands over to the floor's
+            # CobbleRaids boss, and the floor is not finished until that is fought.
+            boss_started = wait_for(server.log, r"Floor \d+ boss \S+ started at level \d+", seconds=180)
+            print(f"  boss: {boss_started or '<none>'}")
+            results.append(Result("clearing the prerequisite starts the floor's boss",
+                                  bool(boss_started), "no boss start line; see " + str(server.log)))
+
+            during_boss = rcon.command(f"cobbletowers runs show {run}")
+            results.append(Result("the floor is in its boss phase, not resolved",
+                                  "BOSS" in during_boss and "ENCOUNTER_ACTIVE" in during_boss,
+                                  during_boss.strip()[:260]))
+
+            # Already armed above; just wait for the outcome. The boss has a shared health pool, so
+            # this takes appreciably longer than the ordinary opponents did.
+            resolved = wait_for(server.log, r"Floor \d+ of run \S+ (cleared|wiped the party)", seconds=360)
             print(f"  floor outcome: {resolved or '<none>'}")
             results.append(Result("the floor resolved rather than hanging", bool(resolved),
                                   "no cleared/wiped line appeared; see " + str(server.log)))
@@ -192,6 +205,10 @@ def main() -> None:
             results.append(Result("the floor waited for both players before resolving",
                                   defeated == 2 and cleared_entries == 1,
                                   f"{defeated} opponent entry(s), {cleared_entries} floor entry(s)"))
+            results.append(Result("the boss is recorded in the pool, separately from the trash",
+                                  shown.count("BOSS_DEFEATED") == 1, shown.strip()[:300]))
+            results.append(Result("a won floor forfeits nothing", "POOL_FORFEITED" not in shown,
+                                  shown.strip()[:300]))
             print("  " + " | ".join(line.strip() for line in shown.split("  ") if "pool" in line))
 
             remaining = rcon.command(

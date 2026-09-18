@@ -28,8 +28,13 @@ public record MilestoneDefinition(
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(raidDefinitionId, "raidDefinitionId");
         if (floorIndex < 1) throw new IllegalArgumentException("floor must be >= 1, got " + floorIndex);
-        if (kind == MilestoneKind.BOSS && raidDefinitionId.isEmpty()) {
-            throw new IllegalArgumentException("a boss milestone must name a raid_definition");
+        if (raidDefinitionId.isEmpty()) {
+            // Both kinds, not only BOSS. Every floor is finished by a CobbleRaids boss, and a
+            // milestone floor takes the one named here rather than drawing from a pool -- so a
+            // milestone without a definition is a floor nobody can complete. The definition
+            // validator caught floor 10 in exactly that state the first time it ran.
+            throw new IllegalArgumentException("a " + kind.name().toLowerCase(java.util.Locale.ROOT)
+                    + " milestone must name a raid_definition; a milestone floor is finished by it");
         }
     }
 

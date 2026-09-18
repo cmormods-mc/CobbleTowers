@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.13.6'
 }
 
-version = '0.6.0-p5-encounters'
+version = '0.7.0-p6-bosses'
 group = 'com.cobbletowers'
 
 base {

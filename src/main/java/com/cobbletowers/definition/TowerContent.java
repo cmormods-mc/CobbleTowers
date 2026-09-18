@@ -30,12 +30,13 @@ public record TowerContent(
         Map<ResourceLocation, EncounterPoolDefinition> pools,
         Map<ResourceLocation, RulesetDefinition> rulesets,
         Map<ResourceLocation, MilestoneDefinition> milestones,
+        Map<ResourceLocation, BossPoolDefinition> bossPools,
         Map<DefinitionKey, String> digests,
         List<String> problems,
         List<ResourceLocation> sortedTowerIds) {
 
     public static final TowerContent EMPTY = new TowerContent(
-            Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), List.of(), List.of());
+            Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), List.of(), List.of());
 
     public TowerContent {
         towers = Map.copyOf(towers);
@@ -43,6 +44,7 @@ public record TowerContent(
         pools = Map.copyOf(pools);
         rulesets = Map.copyOf(rulesets);
         milestones = Map.copyOf(milestones);
+        bossPools = Map.copyOf(bossPools);
         digests = Map.copyOf(digests);
         problems = List.copyOf(problems);
         sortedTowerIds = List.copyOf(sortedTowerIds);
@@ -58,6 +60,7 @@ public record TowerContent(
                                   Map<ResourceLocation, EncounterPoolDefinition> pools,
                                   Map<ResourceLocation, RulesetDefinition> rulesets,
                                   Map<ResourceLocation, MilestoneDefinition> milestones,
+                                  Map<ResourceLocation, BossPoolDefinition> bossPools,
                                   Map<DefinitionKey, String> digests) {
         List<String> problems = new ArrayList<>();
         for (TowerDefinition tower : towers.values()) {
@@ -76,6 +79,11 @@ public record TowerContent(
                     problems.add(floor.id() + " names encounter pool " + floor.encounterPoolId()
                             + ", which is not loaded");
                 }
+                floor.bossPoolId().ifPresent(bossPoolId -> {
+                    if (!bossPools.containsKey(bossPoolId)) {
+                        problems.add(floor.id() + " names boss pool " + bossPoolId + ", which is not loaded");
+                    }
+                });
                 floor.rulesetOverride().ifPresent(override -> {
                     if (!rulesets.containsKey(override)) {
                         problems.add(floor.id() + " names ruleset override " + override + ", which is not loaded");
@@ -88,7 +96,7 @@ public record TowerContent(
         List<ResourceLocation> sorted = towers.keySet().stream()
                 .sorted(Comparator.comparing(ResourceLocation::toString))
                 .toList();
-        return new TowerContent(towers, floors, pools, rulesets, milestones, digests, problems, sorted);
+        return new TowerContent(towers, floors, pools, rulesets, milestones, bossPools, digests, problems, sorted);
     }
 
     /** Floors must be numbered 1..n in listed order: a gap or a repeat means a floor nobody reaches. */
@@ -177,6 +185,7 @@ public record TowerContent(
     }
 
     public int definitionCount() {
-        return towers.size() + floors.size() + pools.size() + rulesets.size() + milestones.size();
+        return towers.size() + floors.size() + pools.size() + rulesets.size() + milestones.size()
+                + bossPools.size();
     }
 }

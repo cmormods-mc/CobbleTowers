@@ -2,6 +2,7 @@ package com.cobbletowers.command;
 
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
+import com.cobbletowers.battle.cobbleraids.TowerBossAdapter;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.persistence.PersistedParticipant;
@@ -112,7 +113,9 @@ public final class RunsCommand {
                     entry.kind(), entry.floorIndex(), entry.what())), false);
         }
         TowerEncounters.of(runId).ifPresent(round -> source.sendSuccess(() -> Component.literal(
-                "  fighting now: " + round.byPlayer()), false));
+                "  fighting now: " + round.phase() + " " + round.byPlayer()), false));
+        TowerBossAdapter.of(runId).ifPresent(boss -> source.sendSuccess(() -> Component.literal(
+                "  boss: " + boss.definition() + " at level " + boss.level()), false));
         for (PersistedParticipant participant : run.participants()) {
             source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
                     "  %s  %s/%s/%s  %d registered", participant.playerId(), participant.state().connection(),
