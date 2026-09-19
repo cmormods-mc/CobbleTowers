@@ -3,6 +3,7 @@ package com.cobbletowers.runtime;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.persistence.PersistedRun;
+import java.util.OptionalInt;
 import net.minecraft.server.MinecraftServer;
 
 /**
@@ -26,10 +27,15 @@ public final class RunRecovery {
         int parked = 0;
         for (PersistedRun run : TowerRuns.all()) {
             if (!run.state().isLive()) continue;
+            OptionalInt cell = run.cell();
             RunTransitionService.Outcome outcome =
                     RunTransitionService.apply(server, run.runId(), RunEvent.TECHNICAL_FAILURE, now);
             if (outcome instanceof RunTransitionService.Move) {
                 parked++;
+                // Whatever was fighting when the server went down is still standing in the cell.
+                // Left there, it is found when the run finally releases the cell, and the cell is
+                // quarantined for contents this run put there and nobody cleaned up.
+                if (cell.isPresent()) RecoverySweep.schedule(server, run.runId(), cell.getAsInt());
             } else if (outcome instanceof RunTransitionService.Refusal refusal) {
                 // Reported rather than retried: a run the machine will not park is one a person
                 // needs to look at, and silently leaving it live would let P3 try to resume it.

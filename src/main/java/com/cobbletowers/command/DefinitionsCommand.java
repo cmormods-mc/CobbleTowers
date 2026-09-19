@@ -26,8 +26,11 @@ public final class DefinitionsCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("cobbletowers")
-                .requires(source -> source.hasPermission(2))
-                .then(Commands.literal("definitions").executes(DefinitionsCommand::definitions))
+                // Gated here rather than on the root: Brigadier merges a re-registered literal into
+                // the node that is already there and keeps that node's requirement, so a gate on
+                // "cobbletowers" would also gate the one subcommand players are meant to run.
+                .then(Commands.literal("definitions")
+                        .requires(source -> source.hasPermission(2)).executes(DefinitionsCommand::definitions))
                 .then(Commands.literal("transitions").executes(DefinitionsCommand::transitions)));
     }
 

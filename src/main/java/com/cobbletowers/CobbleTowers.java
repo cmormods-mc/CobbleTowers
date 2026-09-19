@@ -8,7 +8,9 @@ import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.instance.CellTickets;
 import com.cobbletowers.instance.CellWarmPool;
 import com.cobbletowers.instance.InstanceAllocator;
+import com.cobbletowers.runtime.RecoverySweep;
 import com.cobbletowers.runtime.RunRecovery;
+import com.cobbletowers.runtime.TowerPresence;
 import com.cobbletowers.runtime.TowerRuns;
 import com.cobbletowers.spike.SpikeCommand;
 import com.cobbletowers.spike.SpikeEncounters;
@@ -72,10 +74,15 @@ public final class CobbleTowers implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> CellTickets.onServerStopped());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> CellWarmPool.onServerStopped());
         ServerLifecycleEvents.SERVER_STOPPED.register(TowerEncounters::onServerStopped);
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> TowerPresence.onServerStopped());
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> RecoverySweep.onServerStopped());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new TowerDefinitionRegistry());
         // Subscribed once, for the life of the JVM: Cobblemon's battle events are global, and the
         // adapter filters them by battle id rather than re-subscribing per floor.
         TowerEncounters.install();
+        // Disconnects, rejoining, and the watchdog that ends a floor nobody is playing any more.
+        TowerPresence.install();
+        RecoverySweep.install();
 
         TowerLog.info("CobbleTowers {} loaded", version);
     }

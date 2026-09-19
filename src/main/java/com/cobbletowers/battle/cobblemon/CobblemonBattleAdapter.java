@@ -2,7 +2,10 @@ package com.cobbletowers.battle.cobblemon;
 
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
+import com.cobblemon.mod.common.api.events.battles.BattleFaintedEvent;
 import com.cobblemon.mod.common.api.events.battles.BattleVictoryEvent;
+import com.cobblemon.mod.common.api.battles.model.PokemonBattle;
+import com.cobblemon.mod.common.battles.BattleRegistry;
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
 import com.cobblemon.mod.common.battles.BattleBuilder;
 import com.cobblemon.mod.common.battles.BattleFormat;
@@ -49,10 +52,19 @@ import net.minecraft.world.phys.Vec3;
 public final class CobblemonBattleAdapter {
 
     /** What a running battle belongs to. Ids only -- an entity reference here would pin its level. */
-    public record Binding(UUID runId, UUID playerId, int floorIndex, ResourceLocation species, UUID opponentEntity) {}
+    public record Binding(UUID runId, UUID playerId, int floorIndex, ResourceLocation species, UUID opponentEntity,
+                          long startedAt) {}
 
     private static final Map<UUID, Binding> BY_BATTLE = new LinkedHashMap<>();
     private static final Map<UUID, List<UUID>> BATTLES_BY_RUN = new HashMap<>();
+    /**
+     * When each battle last did something, for the watchdog to read.
+     *
+     * <p>Cobblemon raises no per-turn event, so the honest signals are the two it does raise: the
+     * battle starting, and something fainting in it. A battle that has produced neither for a long
+     * time is what "stopped" can be said to mean from out here without reaching into Showdown.
+     */
+    private static final Map<UUID, Long> LAST_ACTIVITY = new HashMap<>();
     private static boolean installed;
 
     private CobblemonBattleAdapter() {}
@@ -76,6 +88,7 @@ public final class CobblemonBattleAdapter {
         if (installed) return;
         installed = true;
         CobblemonEvents.BATTLE_VICTORY.subscribe(CobblemonBattleAdapter::onVictorySafely);
+        CobblemonEvents.BATTLE_FAINTED.subscribe(CobblemonBattleAdapter::onFaintedSafely);
         TowerLog.info("Cobblemon battle adapter installed");
     }
 
@@ -115,8 +128,10 @@ public final class CobblemonBattleAdapter {
         }
 
         UUID battleId = success.getBattle().getBattleId();
-        Binding binding = new Binding(runId, player.getUUID(), floorIndex, snapshot.species(), opponent.getUUID());
+        Binding binding = new Binding(runId, player.getUUID(), floorIndex, snapshot.species(), opponent.getUUID(),
+                System.currentTimeMillis());
         BY_BATTLE.put(battleId, binding);
+        LAST_ACTIVITY.put(battleId, binding.startedAt());
         BATTLES_BY_RUN.computeIfAbsent(runId, key -> new ArrayList<>()).add(battleId);
         TowerLog.info("Floor {} battle {} started: {} vs {} at level {}", floorIndex, battleId,
                 player.getGameProfile().getName(), snapshot.species(), snapshot.level());
@@ -166,7 +181,23 @@ public final class CobblemonBattleAdapter {
         }
     }
 
+    /**
+     * A faint in one of our battles: proof the battle is still moving.
+     *
+     * <p>Guarded like the victory handler, and for the same reason -- this runs inside Cobblemon's
+     * own battle loop, where an exception unwinds onto the tick and takes every other battle with it.
+     */
+    private static void onFaintedSafely(BattleFaintedEvent event) {
+        try {
+            UUID battleId = event.getBattle().getBattleId();
+            if (BY_BATTLE.containsKey(battleId)) LAST_ACTIVITY.put(battleId, System.currentTimeMillis());
+        } catch (RuntimeException ex) {
+            TowerLog.error("A tower floor failed to note a faint", ex);
+        }
+    }
+
     private static void onVictory(BattleVictoryEvent event) {
+        LAST_ACTIVITY.remove(event.getBattle().getBattleId());
         Binding binding = BY_BATTLE.remove(event.getBattle().getBattleId());
         if (binding == null) return;  // somebody else's battle; the reason this index exists
 
@@ -199,7 +230,9 @@ public final class CobblemonBattleAdapter {
         int ended = 0;
         for (UUID battleId : List.copyOf(battles)) {
             Binding binding = BY_BATTLE.remove(battleId);
+            LAST_ACTIVITY.remove(battleId);
             if (binding == null) continue;
+            closeBattle(battleId);
             discardOpponent(server, binding);
             ended++;
         }
@@ -216,6 +249,79 @@ public final class CobblemonBattleAdapter {
         }
     }
 
+    /**
+     * Ends one player's battle and removes their opponent, leaving the rest of the floor alone.
+     *
+     * <p>What a disconnect and the watchdog both need: {@link #endRun} would take the whole floor
+     * down with it, which is precisely what the user asked not to happen when one player stops
+     * answering.
+     */
+    public static boolean endPlayer(MinecraftServer server, UUID runId, UUID playerId) {
+        for (Map.Entry<UUID, Binding> entry : Map.copyOf(BY_BATTLE).entrySet()) {
+            Binding binding = entry.getValue();
+            if (!binding.runId().equals(runId) || !binding.playerId().equals(playerId)) continue;
+            BY_BATTLE.remove(entry.getKey());
+            LAST_ACTIVITY.remove(entry.getKey());
+            List<UUID> battles = BATTLES_BY_RUN.get(runId);
+            if (battles != null) {
+                battles.remove(entry.getKey());
+                if (battles.isEmpty()) BATTLES_BY_RUN.remove(runId);
+            }
+            closeBattle(entry.getKey());
+            discardOpponent(server, binding);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Ends the Cobblemon battle itself, not merely this mod's memory of it.
+     *
+     * <p>Forgetting a battle and discarding its opponent leaves the player sitting in a battle UI
+     * they cannot leave, with Showdown still holding their actors. {@code end()} sends the end
+     * packet, lets entity actors clear their battle id, and closes the registry entry -- the same
+     * call CobbleRaids makes on every path where no win packet is coming.
+     *
+     * <p>The index entry is removed before this is called, so a victory event raised on the way out
+     * finds nothing to resolve and cannot score a battle that was cancelled.
+     */
+    private static void closeBattle(UUID battleId) {
+        try {
+            PokemonBattle battle = BattleRegistry.getBattle(battleId);
+            if (battle != null && !battle.getEnded()) battle.end();
+        } catch (RuntimeException ex) {
+            TowerLog.error("Could not end tower battle " + battleId, ex);
+        }
+    }
+
+    /**
+     * When each of a run's players last saw their battle do something.
+     *
+     * <p>Exactly what the watchdog needs and nothing more: an id and a clock reading, so the verdict
+     * itself can be decided without a server.
+     */
+    public static Map<UUID, Long> lastActivityByPlayer(UUID runId) {
+        Map<UUID, Long> activity = new LinkedHashMap<>();
+        for (UUID battleId : BATTLES_BY_RUN.getOrDefault(runId, List.of())) {
+            Binding binding = BY_BATTLE.get(battleId);
+            if (binding == null) continue;
+            activity.put(binding.playerId(), LAST_ACTIVITY.getOrDefault(battleId, binding.startedAt()));
+        }
+        return activity;
+    }
+
+    /** Every battle a run has open, for the watchdog to judge. */
+    public static List<Binding> battlesOf(UUID runId) {
+        List<UUID> battles = BATTLES_BY_RUN.get(runId);
+        if (battles == null) return List.of();
+        List<Binding> open = new ArrayList<>(battles.size());
+        for (UUID battleId : battles) {
+            Binding binding = BY_BATTLE.get(battleId);
+            if (binding != null) open.add(binding);
+        }
+        return open;
+    }
+
     public static int activeBattles() {
         return BY_BATTLE.size();
     }
@@ -226,6 +332,7 @@ public final class CobblemonBattleAdapter {
         for (Binding binding : List.copyOf(BY_BATTLE.values())) discardOpponent(server, binding);
         BY_BATTLE.clear();
         BATTLES_BY_RUN.clear();
+        LAST_ACTIVITY.clear();
         return held;
     }
 }
