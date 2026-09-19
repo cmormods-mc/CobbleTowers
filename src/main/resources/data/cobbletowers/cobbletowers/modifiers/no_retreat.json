@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "player_constraint",
+  "display_name": "No Retreat",
+  "risk": "severe",
+  "weight": 45,
+  "stack_limit": 1,
+  "effect": {
+    "allow_switching": false
+  }
+}

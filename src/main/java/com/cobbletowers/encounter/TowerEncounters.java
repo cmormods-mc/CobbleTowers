@@ -477,7 +477,8 @@ public final class TowerEncounters {
         BlockPos where = floor.get().layout().get().presentation().in(origin.get());
 
         Optional<UUID> started = TowerBossAdapter.start(
-                server, level, standing, boss.get(), where, round.runId(), round.floorIndex());
+                server, level, standing, boss.get(), where, round.runId(), round.floorIndex(),
+                DraftService.effects(run));
         if (started.isEmpty()) return false;
 
         ROUNDS.put(round.runId(),

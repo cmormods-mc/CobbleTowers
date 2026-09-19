@@ -3,11 +3,13 @@ package com.cobbletowers.battle.cobbleraids;
 import com.cobbleraids.api.encounter.CobbleRaidsEncounters;
 import com.cobbleraids.api.encounter.EncounterListener;
 import com.cobbleraids.api.encounter.EncounterPolicy;
+import com.cobbleraids.api.encounter.EncounterRules;
 import com.cobbleraids.api.encounter.EncounterRequest;
 import com.cobbleraids.api.encounter.EncounterResult;
 import com.cobbleraids.api.encounter.LeaveReason;
 import com.cobbleraids.api.encounter.StartResult;
 import com.cobbletowers.TowerLog;
+import com.cobbletowers.modifier.ModifierEffects;
 import com.cobbletowers.encounter.BossDraw;
 import java.util.HashMap;
 import java.util.List;
@@ -80,6 +82,24 @@ public final class TowerBossAdapter {
      */
     public static Optional<UUID> start(MinecraftServer server, ServerLevel level, List<ServerPlayer> players,
                                        BossDraw.Boss boss, BlockPos where, UUID runId, int floorIndex) {
+        return start(server, level, players, boss, where, runId, floorIndex, ModifierEffects.NONE);
+    }
+
+    /**
+     * The same start, under the rules a run has drafted (TDS #2: the challenge affects the next boss).
+     *
+     * <p>This is the whole of the modifier-to-CobbleRaids boundary, and it is one method on one
+     * adapter on purpose -- the GATE's rule that external-mod integration lives behind an adapter, so
+     * a version change there has the smallest blast radius here. Nothing else in CobbleTowers knows
+     * that {@code EncounterRules} exists.
+     *
+     * <p>Only the <b>boss</b> is fought under these. A floor's prerequisite battles are ordinary
+     * Cobblemon battles run by our own adapter, which CobbleRaids is no part of -- and that matches
+     * #2 exactly, which says the selected challenge affects the next boss.
+     */
+    public static Optional<UUID> start(MinecraftServer server, ServerLevel level, List<ServerPlayer> players,
+                                       BossDraw.Boss boss, BlockPos where, UUID runId, int floorIndex,
+                                       ModifierEffects effects) {
         if (players.isEmpty()) return Optional.empty();
         if (players.size() > EncounterRequest.MAX_PLAYERS) {
             TowerLog.error("Floor {} of run {} has {} players; CobbleRaids takes at most {}",
@@ -88,11 +108,16 @@ public final class TowerBossAdapter {
         }
 
         UUID encounterId = UUID.randomUUID();
+        EncounterRules rules = rulesFor(effects);
+        // Said from this side as well as CobbleRaids', so a rule that goes missing can be pinned to
+        // the boundary it went missing at rather than argued about from one end (TDS #60).
+        TowerLog.info("Floor {} of run {} starts its boss {}", floorIndex, runId,
+                rules.restrictsAnything() ? "under " + rules : "under ordinary rules");
         EncounterRequest request = new EncounterRequest(OWNER, encounterId, players, boss.definition(), level,
                 Vec3.atBottomCenterOf(where), boss.level(),
                 // No health override: CobbleRaids scales the pool from its own definition and the
                 // party size, which is the behaviour the spike measured.
-                OptionalLong.empty(), POLICY);
+                OptionalLong.empty(), POLICY, rules);
 
         StartResult result;
         try {
@@ -114,6 +139,23 @@ public final class TowerBossAdapter {
         TowerLog.info("Floor {} boss {} started at level {} for {} player(s), encounter {}",
                 floorIndex, boss.definition(), boss.level(), players.size(), started);
         return Optional.of(started);
+    }
+
+    /**
+     * A run's drafted effects as the rules CobbleRaids understands.
+     *
+     * <p>A translation and nothing else: no decision is taken here that {@code ModifierEffects} did
+     * not already take, so the two cannot drift into disagreeing about what a party drafted.
+     */
+    private static EncounterRules rulesFor(ModifierEffects effects) {
+        if (!effects.changesBattleRules()) return EncounterRules.none();
+        return EncounterRules.none()
+                .withBannedMoves(effects.bannedMoves())
+                .withSwitching(effects.switchingAllowed())
+                .withItems(effects.itemsAllowed())
+                .withWeather(effects.weather())
+                .withTerrain(effects.terrain())
+                .withHealthPercent(effects.bossHealthPercent());
     }
 
     /** Ends a run's boss without it being fought out: abandoning, parking, shutting down. */

@@ -186,27 +186,19 @@ public record ModifierDefinition(
     /**
      * Whether anything in this build would actually apply this modifier.
      *
-     * <p>Asked of the <b>effect</b>, not of the type, and that distinction is the point. Typing it
-     * -- "everything except PLAYER_CONSTRAINT and FIELD" -- reads the same and is wrong for one
-     * case that content will certainly write: an ENEMY modifier whose only effect is {@code
-     * boss_health_percent}. Nothing can apply that yet, because the shared pool is derived inside
-     * CobbleRaids and the tower is not told the baseline it would be scaling (P8b's job). Such a
-     * card passes a type check, is offered, is voted on, and does nothing at all.
+     * <p>Asked of the <b>effect</b>, not of the type. The type-based version -- "everything except
+     * PLAYER_CONSTRAINT and FIELD" -- read the same while those two were inert, and would have been
+     * wrong for a case content will certainly write: an ENEMY modifier whose only effect is {@code
+     * boss_health_percent}, which had nowhere to go until CobbleRaids grew a way to be asked for a
+     * proportion of a pool it derives itself. A card like that passes a type check, is offered, is
+     * voted on, and does nothing at all.
      *
-     * <p>So the question is which fields have somewhere to go today:
-     * <ul>
-     *   <li>level offsets and extra opponents reach {@code EncounterDraw} and {@code BossDraw};</li>
-     *   <li>a reward percentage is accumulated and read back by the economy in P9 -- recorded, as
-     *       the unclaimed pool has recorded everything since P5, never valued here;</li>
-     *   <li>banned moves, switching, items, weather and terrain need a battle's rules changed, which
-     *       is P8b through the CobbleRaids boundary.</li>
-     * </ul>
+     * <p>Since P8b every field has somewhere to go, so this is currently true of any effect that is
+     * not neutral. It stays written this way regardless: the next field added will arrive before
+     * whatever applies it, and this is the check that keeps it off the table until then.
      */
     public boolean effectiveNow() {
-        return effect.levelOffset() != 0
-                || effect.extraOpponents() != 0
-                || effect.bossLevelOffset() != 0
-                || effect.rewardPercent() != 100;
+        return !effect.equals(Effect.NEUTRAL);
     }
 
     public static ModifierDefinition fromJson(ResourceLocation id, JsonObject root) {

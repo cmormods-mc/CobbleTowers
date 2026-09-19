@@ -1,7 +1,9 @@
 package com.cobbletowers.modifier;
 
 import com.cobbletowers.definition.ModifierDefinition;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * What a run's accumulated modifiers add up to.
@@ -18,10 +20,20 @@ public record ModifierEffects(
         int extraOpponents,
         int bossLevelOffset,
         int bossHealthPercent,
-        int rewardPercent) {
+        int rewardPercent,
+        List<String> bannedMoves,
+        boolean switchingAllowed,
+        boolean itemsAllowed,
+        Optional<String> weather,
+        Optional<String> terrain) {
 
     /** A run carrying nothing: every field is the value that changes nothing. */
-    public static final ModifierEffects NONE = new ModifierEffects(0, 0, 0, 100, 100);
+    public static final ModifierEffects NONE = new ModifierEffects(0, 0, 0, 100, 100,
+            List.of(), true, true, Optional.empty(), Optional.empty());
+
+    public ModifierEffects {
+        bannedMoves = List.copyOf(bannedMoves);
+    }
 
     /**
      * Sums a run's modifiers.
@@ -40,6 +52,11 @@ public record ModifierEffects(
         int bossLevel = 0;
         int bossHealth = 100;
         int reward = 100;
+        List<String> banned = new ArrayList<>();
+        boolean switching = true;
+        boolean items = true;
+        Optional<String> weather = Optional.empty();
+        Optional<String> terrain = Optional.empty();
         for (ModifierDefinition modifier : modifiers) {
             ModifierDefinition.Effect effect = modifier.effect();
             level += effect.levelOffset();
@@ -47,10 +64,31 @@ public record ModifierEffects(
             bossLevel += effect.bossLevelOffset();
             bossHealth = bossHealth * effect.bossHealthPercent() / 100;
             reward = reward * effect.rewardPercent() / 100;
+
+            for (String move : effect.bannedMoves()) {
+                if (!banned.contains(move)) banned.add(move);
+            }
+            // A permission, once withdrawn, stays withdrawn. Two modifiers cannot disagree about
+            // whether switching is allowed in a way that lets the party keep it -- the restrictive
+            // answer is the one the party drafted.
+            switching = switching && effect.allowSwitching();
+            items = items && effect.allowItems();
+            // A field is one condition, so the LAST drafted wins rather than the first. A party that
+            // drafts rain and later drafts sun has chosen sun; the alternative silently ignores the
+            // card they just voted for. Groups are how content stops the two being held at once.
+            if (effect.weather().isPresent()) weather = effect.weather();
+            if (effect.terrain().isPresent()) terrain = effect.terrain();
         }
         // A pool of zero is not a boss, it is a corpse: compounding reductions could reach it, and a
         // boss that dies to the first hit would read as a bug rather than as a drafted advantage.
-        return new ModifierEffects(level, opponents, bossLevel, Math.max(bossHealth, 1), Math.max(reward, 0));
+        return new ModifierEffects(level, opponents, bossLevel, Math.max(bossHealth, 1), Math.max(reward, 0),
+                banned, switching, items, weather, terrain);
+    }
+
+    /** Whether anything here changes how the boss battle itself is fought. */
+    public boolean changesBattleRules() {
+        return !bannedMoves.isEmpty() || !switchingAllowed || !itemsAllowed
+                || weather.isPresent() || terrain.isPresent() || bossHealthPercent != 100;
     }
 
     /** Applies the boss health percentage to a pool the adapter would otherwise have used. */

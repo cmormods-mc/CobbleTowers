@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "field",
+  "display_name": "Downpour",
+  "risk": "moderate",
+  "weight": 70,
+  "group": "field_condition",
+  "stack_limit": 1,
+  "effect": {
+    "weather": "raindance"
+  }
+}
