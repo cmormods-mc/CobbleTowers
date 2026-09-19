@@ -125,7 +125,7 @@ class RunTransitionServiceTest {
                 opened.towerRevision(), opened.towerDigest(), opened.rulesetRevision(), opened.structureRevision(),
                 opened.seed(), opened.floorIndex() - 1, RunState.NEXT_FLOOR_READY, opened.participants(),
                 opened.lastCheckpoint(), opened.committedTransactions(), opened.updatedAt(), opened.cell(),
-                opened.ledger(), opened.modifiers());
+                opened.ledger(), opened.modifiers(), opened.lastBankedFloor());
 
         assertEquals(RunTransitionService.Reason.KEY_REUSED,
                 refusal(rewound, RunEvent.NEXT_FLOOR_CONFIRMED).reason());

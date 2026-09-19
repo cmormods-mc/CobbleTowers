@@ -30,6 +30,8 @@ import net.minecraft.resources.ResourceLocation;
  * @param cell              the instance cell leased to this run, or empty before one is allocated
  * @param ledger            what the run has earned so far, with no worth attached to it yet
  * @param modifiers         what the run has drafted, and the draft it is sitting at (TDS #2)
+ * @param lastBankedFloor   the floor index through which the ledger has already been priced and
+ *                          granted (TDS #24, #30); 0 means nothing has been banked yet
  */
 public record PersistedRun(
         UUID runId,
@@ -48,16 +50,17 @@ public record PersistedRun(
         long updatedAt,
         OptionalInt cell,
         List<LedgerEntry> ledger,
-        RunModifierState modifiers) {
+        RunModifierState modifiers,
+        int lastBankedFloor) {
 
     /**
      * The only shape this build writes or reads.
      *
-     * <p>2 added the instance cell; 3 added the unclaimed ledger; 4 added the drafted modifiers.
-     * Older files are migrated forward by {@code RunMigrations}, which is what that framework was
-     * shipped empty for.
+     * <p>2 added the instance cell; 3 added the unclaimed ledger; 4 added the drafted modifiers; 5
+     * added how much of the ledger has been banked. Older files are migrated forward by {@code
+     * RunMigrations}, which is what that framework was shipped empty for.
      */
-    public static final int SCHEMA_VERSION = 4;
+    public static final int SCHEMA_VERSION = 5;
 
     private static List<LedgerEntry> readLedger(CompoundTag tag) {
         List<LedgerEntry> ledger = new ArrayList<>();
@@ -77,6 +80,9 @@ public record PersistedRun(
         committedTransactions = List.copyOf(committedTransactions);
         ledger = List.copyOf(ledger);
         if (floorIndex < 0) throw new IllegalArgumentException("floorIndex must be >= 0, got " + floorIndex);
+        if (lastBankedFloor < 0) {
+            throw new IllegalArgumentException("lastBankedFloor must be >= 0, got " + lastBankedFloor);
+        }
     }
 
     public CompoundTag toTag() {
@@ -104,6 +110,7 @@ public record PersistedRun(
         ListTag transactions = new ListTag();
         for (String key : committedTransactions) transactions.add(StringTag.valueOf(key));
         tag.put("committed_transactions", transactions);
+        tag.putInt("last_banked_floor", lastBankedFloor);
         return tag;
     }
 
@@ -148,14 +155,15 @@ public record PersistedRun(
                 readLedger(tag),
                 tag.contains("modifiers", Tag.TAG_COMPOUND)
                         ? RunModifierState.fromTag(tag.getCompound("modifiers"))
-                        : RunModifierState.EMPTY);
+                        : RunModifierState.EMPTY,
+                tag.getInt("last_banked_floor"));
     }
 
     /** The same run, recorded as it stands after {@code at}. */
     public PersistedRun touched(long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell, ledger, modifiers);
+                at, cell, ledger, modifiers, lastBankedFloor);
     }
 
     /** The same run with one more thing earned. The pool only ever grows until it is banked. */
@@ -164,21 +172,39 @@ public record PersistedRun(
         next.add(entry);
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell, next, modifiers);
+                at, cell, next, modifiers, lastBankedFloor);
     }
 
     /** The same run holding {@code leased}, or holding none when it is empty. */
     public PersistedRun withCell(OptionalInt leased, long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, leased, ledger, modifiers);
+                at, leased, ledger, modifiers, lastBankedFloor);
     }
 
     /** The same run carrying {@code next} as its drafted state. */
     public PersistedRun withModifiers(RunModifierState next, long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell, ledger, next);
+                at, cell, ledger, next, lastBankedFloor);
+    }
+
+    /**
+     * The same run with its ledger priced through {@code throughFloor} and {@code grantKey} committed.
+     *
+     * <p>{@code grantKey} is deliberately distinct from any transition's own checkpoint key: by the
+     * time a grant runs, the run's state has already moved, so the state machine's own replay guard
+     * (a move cannot be applied twice because applying it moves the state) cannot cover it. This is
+     * the economic commit TDS #30 was left unused for -- its own key, checked before granting, so a
+     * retry after a crash between the transition and the grant is a safe no-op rather than a second
+     * payout.
+     */
+    public PersistedRun banked(int throughFloor, String grantKey, long at) {
+        List<String> transactions = new ArrayList<>(committedTransactions);
+        transactions.add(grantKey);
+        return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
+                structureRevision, seed, floorIndex, state, participants, lastCheckpoint, transactions,
+                at, cell, ledger, modifiers, throughFloor);
     }
 
     /** True when this key has already been committed, so applying the move again must not repeat it. */

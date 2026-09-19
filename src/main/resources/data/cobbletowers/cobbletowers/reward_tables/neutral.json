@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Neutral Tower Rewards",
+  "growth_percent_per_floor": 8,
+  "tiers": {
+    "opponent_defeated": [
+      { "item": "minecraft:cobbled_deepslate", "min_amount": 1, "max_amount": 3, "weight": 100 }
+    ],
+    "boss_defeated": [
+      { "item": "minecraft:diamond", "min_amount": 1, "max_amount": 2, "weight": 100 }
+    ],
+    "floor_cleared": [
+      { "item": "minecraft:emerald", "min_amount": 2, "max_amount": 4, "weight": 100 }
+    ]
+  }
+}

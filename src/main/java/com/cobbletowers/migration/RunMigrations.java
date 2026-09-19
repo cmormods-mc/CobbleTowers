@@ -65,6 +65,14 @@ public final class RunMigrations {
             tag.putInt("schema_version", 4);
             return tag;
         });
+        // 4 -> 5 added how much of the ledger has been banked. An older run has priced nothing, which
+        // is exactly what 0 means, and every run written before this build banked nothing by
+        // definition -- P9 is the first code that ever prices a ledger entry.
+        STEPS.put(4, tag -> {
+            if (!tag.contains("last_banked_floor")) tag.putInt("last_banked_floor", 0);
+            tag.putInt("schema_version", 5);
+            return tag;
+        });
     }
 
     private RunMigrations() {}

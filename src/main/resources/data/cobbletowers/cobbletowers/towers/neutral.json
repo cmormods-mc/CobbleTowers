@@ -3,6 +3,7 @@
   "revision": 1,
   "display_name": "Neutral Tower",
   "ruleset": "cobbletowers:standard",
+  "reward_table": "cobbletowers:neutral",
   "floors": [
     "cobbletowers:neutral/floor_01",
     "cobbletowers:neutral/floor_02",

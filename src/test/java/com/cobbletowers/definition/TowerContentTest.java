@@ -28,6 +28,12 @@ class TowerContentTest {
     private static TowerContent content(TowerDefinition tower, Map<ResourceLocation, FloorDefinition> floors,
                                         Map<ResourceLocation, MilestoneDefinition> milestones,
                                         boolean withPool, boolean withRuleset) {
+        return content(tower, floors, milestones, withPool, withRuleset, true);
+    }
+
+    private static TowerContent content(TowerDefinition tower, Map<ResourceLocation, FloorDefinition> floors,
+                                        Map<ResourceLocation, MilestoneDefinition> milestones,
+                                        boolean withPool, boolean withRuleset, boolean withRewardTable) {
         return TowerContent.of(
                 Map.of(tower.id(), tower),
                 floors,
@@ -37,12 +43,18 @@ class TowerContentTest {
                 withRuleset ? Map.of(id("standard"), RulesetDefinition.fromJson(id("standard"),
                         JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())) : Map.of(),
                 milestones, Map.of(), Map.of(),
+                withRewardTable ? Map.of(id("rewards"), rewardTable()) : Map.of(),
                 Map.of(DefinitionKey.tower(id("neutral")), "digest-abc"));
     }
 
+    private static RewardTableDefinition rewardTable() {
+        return RewardTableDefinition.fromJson(id("rewards"),
+                JsonParser.parseString("{\"schema_version\":1,\"display_name\":\"Rewards\"}").getAsJsonObject());
+    }
+
     private static TowerDefinition tower(List<ResourceLocation> floorIds, List<ResourceLocation> milestoneIds) {
-        return new TowerDefinition(id("neutral"), "Neutral", 1, 1, id("standard"), floorIds, milestoneIds,
-                Optional.empty());
+        return new TowerDefinition(id("neutral"), "Neutral", 1, 1, id("standard"), id("rewards"), floorIds,
+                milestoneIds, Optional.empty());
     }
 
     @Test
@@ -85,6 +97,7 @@ class TowerContentTest {
                 Map.of(id("standard"), RulesetDefinition.fromJson(id("standard"),
                         JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())),
                 Map.of(), Map.of(), Map.of(),
+                Map.of(id("rewards"), rewardTable()),
                 digests);
 
         assertEquals("tower-digest", content.summary(id("neutral")).orElseThrow().contentDigest(),
@@ -97,12 +110,13 @@ class TowerContentTest {
         FloorDefinition one = floor(1, Optional.empty());
 
         TowerContent content = content(tower(List.of(one.id(), id("missing")), List.of()),
-                Map.of(one.id(), one), Map.of(), false, false);
+                Map.of(one.id(), one), Map.of(), false, false, false);
 
         String problems = String.join(" | ", content.problems());
         assertTrue(problems.contains("floor cobbletowers:missing"), problems);
         assertTrue(problems.contains("ruleset cobbletowers:standard"), problems);
         assertTrue(problems.contains("encounter pool cobbletowers:pool"), problems);
+        assertTrue(problems.contains("reward table cobbletowers:rewards"), problems);
     }
 
     @Test

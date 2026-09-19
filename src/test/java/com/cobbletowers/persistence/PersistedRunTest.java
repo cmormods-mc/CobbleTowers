@@ -40,7 +40,8 @@ class PersistedRunTest {
                         List.of(TOWER, TOWER),
                         List.of(TOWER),
                         Optional.of(PersistedDraft.opening(3, true, List.of(TOWER))
-                                .withVote(UUID.fromString("11111111-1111-1111-1111-111111111111"), 0))));
+                                .withVote(UUID.fromString("11111111-1111-1111-1111-111111111111"), 0))),
+                2);
     }
 
     @Test
@@ -73,7 +74,7 @@ class PersistedRunTest {
         // RunCheckpoint refuses a blank key precisely so that cannot be written in the first place.
         PersistedRun fresh = new PersistedRun(withCheckpoint.runId(), PersistedRun.SCHEMA_VERSION, TOWER, 4,
                 "abc123", 2, 7, 1L, 1, RunState.CREATED, List.of(), Optional.empty(), List.of(), 5L,
-                OptionalInt.empty(), List.of(), RunModifierState.EMPTY);
+                OptionalInt.empty(), List.of(), RunModifierState.EMPTY, 0);
         assertEquals(Optional.empty(), PersistedRun.fromTag(fresh.toTag()).lastCheckpoint());
     }
 
@@ -151,6 +152,30 @@ class PersistedRunTest {
 
         assertFalse(original.contentChangedFrom("abc123"));
         assertTrue(original.contentChangedFrom("def456"));
+    }
+
+    @Test
+    @DisplayName("how much has been banked survives a round trip")
+    void lastBankedFloorRoundTrip() {
+        PersistedRun run = run(RunState.INTERMISSION, ParticipantState.joined());
+        assertEquals(2, run.lastBankedFloor());
+        assertEquals(2, PersistedRun.fromTag(run.toTag()).lastBankedFloor());
+    }
+
+    @Test
+    @DisplayName("banking sets the floor priced through and commits the grant's own key")
+    void banked() {
+        PersistedRun run = run(RunState.INTERMISSION, ParticipantState.joined());
+        int transactionsBefore = run.committedTransactions().size();
+
+        PersistedRun after = run.banked(5, "run:x:floor:5:granted", 99L);
+
+        assertEquals(5, after.lastBankedFloor());
+        assertEquals(transactionsBefore + 1, after.committedTransactions().size());
+        assertTrue(after.hasCommitted("run:x:floor:5:granted"));
+        assertEquals(99L, after.updatedAt());
+        assertEquals(run.ledger(), after.ledger(), "banking prices the ledger, it does not touch it");
+        assertEquals(2, run.lastBankedFloor(), "the original record is unchanged");
     }
 
     @Test

@@ -491,13 +491,15 @@ public final class TowerEncounters {
     private static Optional<ResourceLocation> handpickedBoss(TowerContent content, TowerDefinition tower,
                                                             FloorDefinition floor) {
         if (floor.milestone().isEmpty()) return Optional.empty();
-        for (ResourceLocation milestoneId : tower.milestoneIds()) {
-            MilestoneDefinition milestone = content.milestones().get(milestoneId);
-            if (milestone != null && milestone.floorIndex() == floor.index()) {
-                return milestone.raidDefinitionId();
-            }
-        }
-        return Optional.empty();
+        return content.milestoneAt(tower.id(), floor.index()).flatMap(MilestoneDefinition::raidDefinitionId);
+    }
+
+    /** Whether {@code floorIndex} is the last floor of the run's tower. */
+    private static boolean isFinalFloor(UUID runId, int floorIndex) {
+        return TowerRuns.get(runId)
+                .map(run -> TowerDefinitionRegistry.content().towers().get(run.towerId()))
+                .map(tower -> floorIndex >= tower.floorCount())
+                .orElse(false);
     }
 
     /** CobbleRaids has finished with the floor's boss, one way or another. */
@@ -525,7 +527,20 @@ public final class TowerEncounters {
                 // And the party's Pokemon go back in their balls: the floor is over, and a lead left
                 // standing is what the cell's cleanup sweep quarantines the cell for.
                 recallParties(server, binding.runId());
-                RunTransitionService.apply(server, binding.runId(), RunEvent.ENCOUNTER_RESOLVED_CLEARED, now);
+                RunTransitionService.Outcome resolved =
+                        RunTransitionService.apply(server, binding.runId(), RunEvent.ENCOUNTER_RESOLVED_CLEARED, now);
+                // FLOOR_RESOLVING has two ways out and this is the only place that knows which floor
+                // just cleared. RewardBankService, not this event, decides whether the clear actually
+                // pays out anything (docs/design/P9-economy.md §4a) -- this only chooses which of the
+                // two transitions applies.
+                if (resolved instanceof RunTransitionService.Move) {
+                    RunEvent next = isFinalFloor(binding.runId(), binding.floorIndex())
+                            ? RunEvent.FINAL_FLOOR_CLEARED : RunEvent.REWARDS_BANKED;
+                    RunTransitionService.apply(server, binding.runId(), next, now);
+                } else {
+                    TowerLog.error("Run {} could not resolve floor {} into FLOOR_RESOLVING; rewards were not banked",
+                            binding.runId(), binding.floorIndex());
+                }
             }
             case DEFEAT -> lose(server, binding.runId(), binding.floorIndex(), now);
             // Aborted is neither a win nor a loss -- an operator or a shutdown ended it -- so the run

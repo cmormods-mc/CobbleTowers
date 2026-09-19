@@ -60,6 +60,8 @@ public final class RunFactory {
                 // Nothing earned yet; the pool fills as floors are cleared and is banked at cash-out.
                 List.of(),
                 // Nothing drafted yet; the first draft opens at the first intermission.
-                RunModifierState.EMPTY));
+                RunModifierState.EMPTY,
+                // Nothing banked yet.
+                0));
     }
 }

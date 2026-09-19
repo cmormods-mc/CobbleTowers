@@ -7,18 +7,20 @@ the content this mod itself ships, where a dangling floor id means a tower nobod
 checks the bundled data at build time, where failing is exactly what should happen:
 
 - every definition file parses, and has the fields its kind requires
-- every reference resolves: tower -> ruleset, tower -> floors, floor -> encounter pool,
-  floor -> ruleset override, tower -> milestones
+- every reference resolves: tower -> ruleset, tower -> reward table, tower -> floors,
+  floor -> encounter pool, floor -> ruleset override, tower -> milestones
 - floors are numbered 1..n in listed order
 - a milestone lands on a floor marked for it, of the same kind
-- weights are positive, level bounds are ordered, party size is 1..6
+- weights are positive, level bounds are ordered, party size is 1..6, reward amounts are ordered
 - every floor layout names a structure that exists, and every anchor in it is somewhere a player
   could actually stand: inside the structure, feet on something solid, head clear
 - every floor names a boss: a loaded boss pool, or a milestone that names a raid definition
 
-What is deliberately NOT checked: whether CobbleRaids has a raid definition by that id. Those live in
-the other mod, behind an API with no listing, so the check would be a guess. A missing definition
-fails when the boss is started, reported as a technical fault.
+What is deliberately NOT checked: whether CobbleRaids has a raid definition by that id, or whether a
+reward table's item ids actually exist. Those live behind registries this script (and the Java
+registry that loads content) has no access to outside a running game -- CobbleRaids' behind an API
+with no listing, vanilla's item registry behind a bootstrap this project's unit tests never run. A
+missing definition or item fails at grant/start time instead, reported as a technical fault.
 
     python validation/validate_definitions.py
 """
@@ -41,7 +43,8 @@ ANCHORS = ("entry", "presentation", "spectator", "exit")
 # actually contain, and anything else present counts as solid, which errs towards refusing an anchor
 # rather than approving one.
 NON_SUPPORTING = ("banner", "torch", "carpet", "button", "pressure_plate", "sign", "rail")
-KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones", "boss_pools", "modifiers")
+KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones", "boss_pools", "modifiers",
+         "reward_tables")
 MAX_PARTY = 6
 MIN_LEVEL, MAX_LEVEL = 1, 100
 
@@ -189,6 +192,35 @@ def check_modifiers(content: dict, problems: list[str]) -> None:
                     stack.append(nxt)
 
 
+def check_reward_tables(content: dict, problems: list[str]) -> None:
+    """Structural checks only. Whether an item id actually exists is not checked, here or on the Java
+    side: vanilla's item registry is not bootstrapped in this project's plain-JVM unit tests, the same
+    reasoning that already keeps this script (and BossPoolDefinition/EncounterPoolDefinition) from
+    checking CobbleRaids or Cobblemon ids -- an unknown item fails when it is actually granted,
+    reported as a technical fault.
+    """
+    tier_keys = ("opponent_defeated", "boss_defeated", "floor_cleared")
+    for table_id, table in content["reward_tables"].items():
+        for field in ("schema_version", "display_name"):
+            if field not in table:
+                problems.append(f"{table_id} is missing required field '{field}'")
+        tiers = table.get("tiers", {})
+        for key in tiers:
+            if key not in tier_keys:
+                problems.append(f"{table_id} has an unknown tier '{key}'; must be one of {tier_keys}")
+        for key, entries in tiers.items():
+            for entry in entries:
+                if "item" not in entry:
+                    problems.append(f"{table_id} tier '{key}' has an entry with no item")
+                if entry.get("weight", 100) < 1:
+                    problems.append(f"{table_id} tier '{key}' has an entry with weight {entry.get('weight')};"
+                                    " weights must be >= 1")
+                low, high = entry.get("min_amount", 1), entry.get("max_amount", 1)
+                if not 1 <= low <= high:
+                    problems.append(f"{table_id} tier '{key}' has min_amount/max_amount {low}/{high};"
+                                    " must be >= 1 and ordered")
+
+
 def main() -> None:
     problems: list[str] = []
     counts = {kind: 0 for kind in KINDS}
@@ -205,11 +237,13 @@ def main() -> None:
             content[kind].update(loaded)
 
     for tower_id, tower in content["towers"].items():
-        for field in ("schema_version", "display_name", "ruleset", "floors"):
+        for field in ("schema_version", "display_name", "ruleset", "reward_table", "floors"):
             if field not in tower:
                 problems.append(f"{tower_id} is missing required field '{field}'")
         if tower.get("ruleset") not in content["rulesets"]:
             problems.append(f"{tower_id} names ruleset {tower.get('ruleset')}, which does not exist")
+        if tower.get("reward_table") not in content["reward_tables"]:
+            problems.append(f"{tower_id} names reward table {tower.get('reward_table')}, which does not exist")
         floors = tower.get("floors", [])
         if len(set(floors)) != len(floors):
             problems.append(f"{tower_id} lists the same floor twice")
@@ -249,6 +283,7 @@ def main() -> None:
                 problems.append(f"{milestone_id} is a boss milestone but names no raid_definition")
 
     check_modifiers(content, problems)
+    check_reward_tables(content, problems)
 
     for pool_id, pool in content["boss_pools"].items():
         entries = pool.get("entries", [])

@@ -143,3 +143,23 @@ floor, because that is the only way to see a modifier change one.
   guarding came back green with nothing behind it. This is the third shape of the same trap in this
   directory, after `execute ... run say` and `splitlines()` on RCON output: if the thing under test
   vanished entirely, would the check still pass? If yes, it is not a check.
+
+## `reward_test.py`
+
+P9's economy: that a real floor win reaches `INTERMISSION` on its own -- before this phase, nothing
+in production code ever fired `REWARDS_BANKED`, `FINAL_FLOOR_CLEARED` or `CASH_OUT_CHOSEN`, so a real
+win stalled forever in `FLOOR_RESOLVING` and only `runs advance` ever reached those states. Also: an
+ordinary floor's earnings stay at risk rather than being banked immediately, cashing out is not
+blocked by an open draft and grants everything earned so far to an online player's inventory, a
+milestone floor's own intermission is a real bank point, and the final floor reaches `COMPLETED`.
+
+```sh
+python validation/smoke/reward_test.py --server-dir <rig>/testserver --java "C:/Program Files/Eclipse Adoptium/jdk-21.0.12.1+1/bin/java.exe" --jar build/libs/CobbleTowers-<version>.jar
+```
+
+One real floor is fought (run A); a second run (run B) is walked to its milestone and its final
+floor with `runs advance`, the same shortcut `draft_test.py`'s `to_intermission` takes, because the
+claim there is about the transition wiring, not the battle -- `floor_encounter_test.py` already
+proves a floor plays for real. The observable that matters throughout is each grant's own commit key,
+`run:<id>:floor:<n>:granted`, printed in `runs show`'s committed-transactions line: present only when
+a payout actually happened, and it is what tells "banked" apart from "merely advanced".

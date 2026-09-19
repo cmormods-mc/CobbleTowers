@@ -93,6 +93,20 @@ class RunMigrationsTest {
     }
 
     @Test
+    @DisplayName("a version 4 run loads, and comes back having banked nothing")
+    void versionFourIsMigrated() {
+        CompoundTag v4 = TestRuns.fresh(RUN).toTag();
+        v4.putInt("schema_version", 4);
+        v4.remove("last_banked_floor");
+
+        PersistedRun run = PersistedRun.fromTag(RunMigrations.toCurrent(v4));
+
+        assertEquals(0, run.lastBankedFloor(), "a run that predates banking has priced nothing, ever");
+        assertEquals(RUN, run.runId());
+        assertTrue(RunMigrations.canRead(4));
+    }
+
+    @Test
     @DisplayName("a migrated run has the same shape on disk as a freshly written one")
     void migrationMatchesAFreshWrite() {
         // A migration whose output differs from a fresh write is a difference that surfaces later,
@@ -102,6 +116,12 @@ class RunMigrationsTest {
         v3.remove("modifiers");
 
         assertEquals(TestRuns.fresh(RUN).toTag(), RunMigrations.toCurrent(v3));
+
+        CompoundTag v4 = TestRuns.fresh(RUN).toTag();
+        v4.putInt("schema_version", 4);
+        v4.remove("last_banked_floor");
+
+        assertEquals(TestRuns.fresh(RUN).toTag(), RunMigrations.toCurrent(v4));
     }
 
     @Test

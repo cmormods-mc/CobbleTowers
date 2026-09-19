@@ -10,9 +10,11 @@ import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.modifier.ModifierEffects;
 import com.cobbletowers.modifier.ModifierResolver;
 import com.cobbletowers.encounter.TowerEncounters;
+import com.cobbletowers.persistence.PendingTowerReward;
 import com.cobbletowers.persistence.PersistedDraft;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
+import com.cobbletowers.persistence.TowerPendingRewardStore;
 import com.cobbletowers.runtime.RunFactory;
 import com.cobbletowers.runtime.RunLifecycle;
 import com.cobbletowers.runtime.RunTransitionService;
@@ -56,6 +58,13 @@ public final class RunsCommand {
                         // The one thing here a player is meant to do for themselves. Everything else
                         // under "runs" drives the machine by hand and stays at permission 2.
                         .then(Commands.literal("leave").executes(RunsCommand::leave))
+                        // Also player-facing, and also bare of a `.requires(...)` for the same reason:
+                        // cashing out ends the run, which is a decision only the party makes for
+                        // itself. Not blocked by an open draft -- a party that is leaving for good has
+                        // no reason to be forced through a vote on a challenge it will never fight.
+                        .then(Commands.literal("cashout").executes(RunsCommand::cashout))
+                        .then(Commands.literal("reward")
+                                .then(Commands.literal("show").executes(RunsCommand::rewardShow)))
                         // Drafting is the other thing a player does for themselves, so `vote` and
                         // `show` set no permission while `force` does. P7's trap is why each
                         // subcommand carries its own: Brigadier keeps the FIRST registration's
@@ -158,6 +167,64 @@ public final class RunsCommand {
         source.sendSuccess(() -> Component.literal("You have left the tower run.")
                 .withStyle(ChatFormatting.GOLD), false);
         return 1;
+    }
+
+    /**
+     * {@code /cobbletowers runs cashout}: the party stops here, banking whatever it has earned.
+     *
+     * <p>Fires {@code CASH_OUT_CHOSEN} for the caller's own run, the same way {@code leave} resolves
+     * its run from the player rather than taking one as an argument. {@code RewardBankService} grants
+     * everything remaining the moment the run reaches {@code CASHED_OUT} (docs/design/P9-economy.md
+     * §4a) -- this command only asks for the transition.
+     */
+    private static int cashout(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        ServerPlayer player = source.getPlayerOrException();
+        Optional<PersistedRun> found = TowerRuns.forPlayer(player.getUUID());
+        if (found.isEmpty()) {
+            source.sendFailure(Component.literal("You are not in a tower run."));
+            return 0;
+        }
+        RunTransitionService.Outcome outcome = RunTransitionService.apply(source.getServer(), found.get().runId(),
+                RunEvent.CASH_OUT_CHOSEN, System.currentTimeMillis());
+        if (outcome instanceof RunTransitionService.Move) {
+            source.sendSuccess(() -> Component.literal("You have cashed out.").withStyle(ChatFormatting.GOLD), true);
+            return 1;
+        }
+        RunTransitionService.Refusal refusal = (RunTransitionService.Refusal) outcome;
+        source.sendFailure(Component.literal(refusal.reason() + ": " + refusal.detail()));
+        return 0;
+    }
+
+    /**
+     * {@code /cobbletowers runs reward show}: what has been banked, what is still at risk, and what
+     * is queued for the caller. Diagnostic (TDS #60), the same role {@code draft show} plays for the
+     * modifier system.
+     */
+    private static int rewardShow(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        ServerPlayer player = source.getPlayerOrException();
+        Optional<PersistedRun> found = TowerRuns.forPlayer(player.getUUID());
+        if (found.isEmpty()) {
+            source.sendFailure(Component.literal("You are not in a tower run."));
+            return 0;
+        }
+        PersistedRun run = found.get();
+        source.sendSuccess(() -> Component.literal("Banked through floor " + run.lastBankedFloor())
+                .withStyle(ChatFormatting.GOLD), false);
+        for (var entry : run.ledger()) {
+            boolean banked = entry.floorIndex() <= run.lastBankedFloor();
+            source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT, "  %s floor %d %s  [%s]",
+                    entry.kind(), entry.floorIndex(), entry.what(), banked ? "banked" : "at risk")), false);
+        }
+        List<PendingTowerReward> pending = TowerPendingRewardStore.get(source.getServer())
+                .queueFor(player.getUUID());
+        source.sendSuccess(() -> Component.literal("Queued for you: " + pending.size() + " grant(s)"), false);
+        for (PendingTowerReward reward : pending) {
+            source.sendSuccess(() -> Component.literal("  " + reward.item() + " x" + reward.amount()
+                    + " (floor " + reward.floorIndex() + ")"), false);
+        }
+        return pending.size();
     }
 
     private static int list(CommandContext<CommandSourceStack> context) {

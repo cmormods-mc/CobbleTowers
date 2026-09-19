@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.13.6'
 }
 
-version = '0.9.1-p8b-battle-rules'
+version = '0.10.0-p9-economy'
 group = 'com.cobbletowers'
 
 base {

@@ -95,4 +95,9 @@ public record ModifierEffects(
     public long applyBossHealth(long baseline) {
         return Math.max(1L, baseline * bossHealthPercent / 100);
     }
+
+    /** Applies the reward percentage to an amount {@link com.cobbletowers.reward.RewardValuation} rolled. */
+    public int applyReward(int amount) {
+        return Math.max(0, amount * rewardPercent / 100);
+    }
 }
