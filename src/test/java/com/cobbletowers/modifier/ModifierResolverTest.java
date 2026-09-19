@@ -120,17 +120,18 @@ class ModifierResolverTest {
     }
 
     @Test
-    @DisplayName("eligibleFrom drops what is ineligible and what nothing would apply yet")
+    @DisplayName("eligibleFrom drops what the run cannot legally take")
     void eligibleFromFilters() {
         ModifierDefinition held = enemy("held");
         ModifierDefinition blocked = enemy("blocked", "\"excludes\":[\"cobbletowers:held\"]");
-        ModifierDefinition inert = TestRuns.modifier("inert", "field", "\"weather\":\"raindance\"");
+        ModifierDefinition field = TestRuns.modifier("field", "field", "\"weather\":\"raindance\"");
         ModifierDefinition offerable = enemy("offerable");
 
         List<ModifierDefinition> offers = ModifierResolver.eligibleFrom(
-                List.of(blocked, inert, offerable), List.of(held));
+                List.of(blocked, field, offerable), List.of(held));
 
-        assertEquals(List.of(offerable), offers,
-                "the excluded one and the one nothing applies yet are both left off the table");
+        // The FIELD card stays on the table: since P8b its effect reaches the boss through the
+        // CobbleRaids encounter rules, so there is no longer such a thing as a type nothing applies.
+        assertEquals(List.of(field, offerable), offers, "only the excluded one is left off");
     }
 }

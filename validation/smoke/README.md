@@ -132,6 +132,12 @@ floor, because that is the only way to see a modifier change one.
 - **A hard kill loses the bots' Cobblemon parties**, even after `save-all flush` -- Cobblemon keeps
   its storage on its own schedule. A floor cannot level an opponent against a party that is not
   there, so anything that restarts a server mid-test has to `pokegiveother` again before playing on.
+- **`compileJava` does not produce the jar you are about to test.** Fabric Loom builds the remapped
+  artifact in `remapJar`, so after `compileJava` the file in `build/libs/` is still the *previous*
+  build. Two live cycles were spent reading real failures off a jar that was one edit old, and the
+  tell is subtle: the jar exists, has the right version in its name, and loads. Run `./gradlew build`
+  before any smoke test, and when a result makes no sense, compare the jar's timestamp against the
+  source file you last changed.
 - **Assert what is present, never the absence of a word.** A check written as `"plus" not in begun`
   was passed with flying colours by a floor that failed to start altogether, and the run it was
   guarding came back green with nothing behind it. This is the third shape of the same trap in this

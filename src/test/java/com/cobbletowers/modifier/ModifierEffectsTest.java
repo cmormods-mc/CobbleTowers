@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.cobbletowers.TestRuns;
 import com.cobbletowers.definition.ModifierDefinition;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -74,17 +75,76 @@ class ModifierEffectsTest {
     }
 
     @Test
-    @DisplayName("a card nothing can apply yet is not offerable")
-    void inertCardsAreNotOfferable() {
+    @DisplayName("every type is offerable now that every field has somewhere to go")
+    void everyTypeIsOfferable() {
+        // P8a could not offer these: a battle's rules were not the tower's to change, and a boss
+        // pool derived inside CobbleRaids was not the tower's to scale. P8b gave all three a road
+        // across the encounter boundary, so all three are real cards.
         assertTrue(TestRuns.modifier("real", "enemy", "\"level_offset\":1").effectiveNow());
         assertTrue(TestRuns.modifier("paid", "reward", "\"reward_percent\":120").effectiveNow());
+        assertTrue(TestRuns.modifier("weather", "field", "\"weather\":\"raindance\"").effectiveNow());
+        assertTrue(TestRuns.modifier("no_items", "player_constraint", "\"allow_items\":false").effectiveNow());
+        assertTrue(TestRuns.modifier("tough_boss", "enemy", "\"boss_health_percent\":130").effectiveNow());
+    }
 
-        // Typed, validated and drafted-in-principle, but nothing in this build applies them: they
-        // need a battle's rules changed, which is P8b through the CobbleRaids boundary.
-        assertFalse(TestRuns.modifier("weather", "field", "\"weather\":\"raindance\"").effectiveNow());
-        assertFalse(TestRuns.modifier("no_items", "player_constraint", "\"allow_items\":false").effectiveNow());
-        // And the case a type-based check would get wrong: an ENEMY modifier whose only effect is a
-        // boss pool the tower is never told the baseline of.
-        assertFalse(TestRuns.modifier("frail_boss", "enemy", "\"boss_health_percent\":80").effectiveNow());
+    @Test
+    @DisplayName("a card that would do nothing cannot be defined at all")
+    void inertCardsCannotExist() {
+        // The guarantee that replaced the P8a filter, and it is the stronger one: rather than
+        // loading a do-nothing modifier and declining to offer it, the definition is refused. Every
+        // type now has at least one field that reaches something, so an effect that changes nothing
+        // matches no type and cannot get past the constructor.
+        for (String type : new String[] {"enemy", "encounter", "player_constraint", "field", "reward"}) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> TestRuns.modifier("empty_" + type, type, ""),
+                    type + " accepted an effect that changes nothing");
+        }
+    }
+
+    @Test
+    @DisplayName("a withdrawn permission stays withdrawn")
+    void permissionsOnlyNarrow() {
+        ModifierDefinition noSwitch = TestRuns.modifier("no_switch", "player_constraint",
+                "\"allow_switching\":false");
+        ModifierDefinition ordinary = TestRuns.modifier("ordinary", "enemy", "\"level_offset\":1");
+
+        // Order must not matter: an ordinary modifier drafted after a restriction cannot hand the
+        // permission back, because its own effect says "switching allowed" simply by not mentioning it.
+        assertFalse(ModifierEffects.of(List.of(noSwitch, ordinary)).switchingAllowed());
+        assertFalse(ModifierEffects.of(List.of(ordinary, noSwitch)).switchingAllowed());
+    }
+
+    @Test
+    @DisplayName("banned moves are pooled across every modifier holding them")
+    void bannedMovesUnion() {
+        ModifierDefinition one = TestRuns.modifier("one", "player_constraint", "\"banned_moves\":[\"protect\"]");
+        ModifierDefinition two = TestRuns.modifier("two", "player_constraint",
+                "\"banned_moves\":[\"recover\",\"protect\"]");
+
+        assertEquals(List.of("protect", "recover"), ModifierEffects.of(List.of(one, two)).bannedMoves(),
+                "pooled and deduplicated, in the order they were drafted");
+    }
+
+    @Test
+    @DisplayName("the last field condition drafted is the one that applies")
+    void lastFieldWins() {
+        ModifierDefinition rain = TestRuns.modifier("rain", "field", "\"weather\":\"raindance\"");
+        ModifierDefinition sun = TestRuns.modifier("sun", "field", "\"weather\":\"sunnyday\"");
+
+        // A field is one condition, so somebody has to lose. Taking the last means the card the
+        // party just voted for is the one they get; taking the first would silently ignore it.
+        assertEquals(Optional.of("sunnyday"), ModifierEffects.of(List.of(rain, sun)).weather());
+        assertEquals(Optional.of("raindance"), ModifierEffects.of(List.of(sun, rain)).weather());
+    }
+
+    @Test
+    @DisplayName("nothing drafted changes no battle rules")
+    void neutralChangesNoRules() {
+        assertFalse(ModifierEffects.NONE.changesBattleRules());
+        assertTrue(ModifierEffects.of(List.of(
+                TestRuns.modifier("tough", "enemy", "\"boss_health_percent\":130"))).changesBattleRules());
+        assertFalse(ModifierEffects.of(List.of(
+                TestRuns.modifier("plain", "enemy", "\"level_offset\":2"))).changesBattleRules(),
+                "a level offset is not a battle rule; it is applied when the opponent is drawn");
     }
 }

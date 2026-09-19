@@ -152,7 +152,7 @@ on a merged literal, so a player-facing `vote` under a tree first registered at 
 silently unavailable to every player it exists for. Diagnostics per #60: `runs show` prints the
 accumulated modifiers, the open draft and the seed.
 
-## Deferred to P8b — the CobbleRaids boundary
+## P8b — the CobbleRaids boundary, built
 
 `PLAYER_CONSTRAINT` and `FIELD` modifiers need a battle's rules changed, and **CobbleTowers must not
 be the mod that reaches into Showdown** (#48). CobbleRaids already is, and already owns every
@@ -160,10 +160,41 @@ mechanism: `RaidBannedMoves` with its mixin rejects a move before it reaches Sho
 `Side.prototype.chooseSwitch` is already overridden in `raid-patch.js`, and `showdown/mods/conditions.js`
 already registers a custom Showdown condition.
 
-So the effect travels as data across the API boundary that exists — a sibling to `EncounterPolicy` —
-and CobbleRaids enforces it. **This reaches the boss only**, since a floor's prerequisite battles are
-ordinary Cobblemon battles run by our own adapter. That is not a compromise: #2 says the selected
-challenge affects *the next boss*.
+So the effect travels as data across the API boundary that exists — `EncounterRules`, a sibling to
+`EncounterPolicy` on `EncounterRequest` — and CobbleRaids enforces it. **This reaches the boss only**,
+since a floor's prerequisite battles are ordinary Cobblemon battles run by our own adapter. That is
+not a compromise: #2 says the selected challenge affects *the next boss*.
+
+What it carries: banned moves, whether switching and items are allowed, a weather and a terrain id,
+and a **health percentage**. That last one exists because the shared pool is derived *inside*
+CobbleRaids from the definition, the party size and the level — a tower asking for a tougher boss
+cannot compute that number, so it asks for a proportion instead of a total. It is what finally gave
+`boss_health_percent` somewhere to go, and with it every modifier field now reaches something, so
+`effectiveNow()` is simply "the effect is not neutral".
+
+**Three of the four are enforced in Java**, in the mixin that already rejected CobbleRaids' own
+unsafe moves — `SwitchActionResponse`, `BagItemActionResponse` and `HealItemActionResponse` all exist,
+so no Showdown change was needed for them. The owner's bans ride *on top of* the safety list and
+cannot switch it off: those moves faint a Pokemon outside the pipeline the shared pool is driven by,
+so allowing one would not make a harder fight, it would make a stuck one.
+
+**Only the field conditions touch Showdown.** They ride the `>start` payload's format object, the
+same already-version-checked road `playerCount` takes, as `raidWeather` and `raidTerrain` — prefixed
+because Showdown's own `Format` already has a `weather` field, and `BasicEffect`'s
+`Object.assign(this, data)` is what carries them through. The ids are validated at the API boundary
+against `[a-z0-9]{1,32}`, because a quote in one would corrupt the payload for the whole battle
+rather than merely failing to apply.
+
+### Proving the field actually applied
+
+A weather set inside the Showdown process is invisible to Java, so "it worked" could only have been
+*inferred* from having asked for it — and an unknown id, or a patch that quietly stopped loading,
+would look exactly like success. The patch therefore reports back what the field **holds** after it
+tried, read from `battle.field.weather` rather than from what it was told to set, as a `-raidfield`
+instruction that CobbleRaids logs. A mismatch is a warning naming both values.
+
+The same reasoning put the baseline into the pool log: `pool 9100 (130% of 7000)` is checkable from
+one line, where `pool 9100` alone would have needed a second, unscaled run to mean anything.
 
 ## What the live run changed
 

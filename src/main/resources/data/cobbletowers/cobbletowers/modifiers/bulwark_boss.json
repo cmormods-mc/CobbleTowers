@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "enemy",
+  "display_name": "Bulwark",
+  "risk": "severe",
+  "weight": 55,
+  "stack_limit": 2,
+  "effect": {
+    "boss_health_percent": 130
+  }
+}

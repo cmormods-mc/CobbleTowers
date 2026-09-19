@@ -8,6 +8,7 @@ import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.modifier.ModifierEffects;
+import com.cobbletowers.modifier.ModifierResolver;
 import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.persistence.PersistedDraft;
 import com.cobbletowers.persistence.PersistedParticipant;
@@ -60,6 +61,14 @@ public final class RunsCommand {
                         // subcommand carries its own: Brigadier keeps the FIRST registration's
                         // `requires` on a merged literal, so one put higher up would silently apply
                         // to every player-facing thing beneath it.
+                        // Puts a modifier on a run without waiting for the draw to offer it.
+                        // An operator's tool and the only way a live test can pin down which
+                        // modifier a boss is fought under -- the cards are the seed's business.
+                        .then(Commands.literal("grant")
+                                .requires(source -> source.hasPermission(2))
+                                .then(Commands.argument("run", UuidArgument.uuid())
+                                        .then(Commands.argument("modifier", ResourceLocationArgument.id())
+                                                .executes(RunsCommand::grant))))
                         .then(Commands.literal("draft")
                                 .then(Commands.literal("show")
                                         .executes(RunsCommand::draftShow))
@@ -333,6 +342,42 @@ public final class RunsCommand {
         RunTransitionService.Refusal refusal = (RunTransitionService.Refusal) outcome;
         source.sendFailure(Component.literal(refusal.reason() + ": " + refusal.detail()));
         return 0;
+    }
+
+    /**
+     * Grants a modifier straight onto a run, bypassing the draft.
+     *
+     * <p>Refused if the resolver would not allow it, so this cannot be used to build an accumulation
+     * the game itself could never reach -- an operator tool that could produce illegal state would
+     * make every later bug report ambiguous.
+     */
+    private static int grant(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        UUID runId = UuidArgument.getUuid(context, "run");
+        ResourceLocation modifierId = ResourceLocationArgument.getId(context, "modifier");
+
+        Optional<PersistedRun> found = TowerRuns.get(runId);
+        if (found.isEmpty()) {
+            source.sendFailure(Component.literal("No run " + runId));
+            return 0;
+        }
+        PersistedRun run = found.get();
+        TowerContent content = TowerDefinitionRegistry.content();
+        Optional<ModifierDefinition> modifier = content.modifier(modifierId);
+        if (modifier.isEmpty()) {
+            source.sendFailure(Component.literal("No modifier " + modifierId + " is loaded"));
+            return 0;
+        }
+        if (!ModifierResolver.eligible(modifier.get(), DraftService.held(content, run.modifiers()))) {
+            source.sendFailure(Component.literal(modifierId + " cannot be held alongside what this run"
+                    + " already has: " + run.modifiers().accumulated()));
+            return 0;
+        }
+
+        TowerRuns.save(source.getServer(),
+                run.withModifiers(run.modifiers().accumulating(modifierId), System.currentTimeMillis()), true);
+        source.sendSuccess(() -> Component.literal("Granted " + modifierId + " to run " + runId), true);
+        return 1;
     }
 
     /**
