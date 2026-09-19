@@ -1,12 +1,15 @@
 package com.cobbletowers.command;
 
 import com.cobbletowers.api.registry.TowerSummary;
+import com.cobbletowers.definition.RegionalThemeDefinition;
 import com.cobbletowers.definition.TowerContent;
+import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.runtime.RunTransitions;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import java.util.Locale;
+import java.util.Optional;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -45,9 +48,10 @@ public final class DefinitionsCommand {
         // just written a modifiers/ folder no way to tell whether theirs was one of them.
         source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
                 "  %d floor(s), %d encounter pool(s), %d ruleset(s), %d milestone(s), %d boss pool(s),"
-                        + " %d modifier(s)",
+                        + " %d modifier(s), %d regional theme(s)",
                 content.floors().size(), content.pools().size(), content.rulesets().size(),
-                content.milestones().size(), content.bossPools().size(), content.modifiers().size())), false);
+                content.milestones().size(), content.bossPools().size(), content.modifiers().size(),
+                content.regionalThemes().size())), false);
 
         for (ResourceLocation towerId : content.sortedTowerIds()) {
             TowerSummary summary = content.summary(towerId).orElseThrow();
@@ -57,6 +61,13 @@ public final class DefinitionsCommand {
                     // The first eight hex characters are enough to see that content changed.
                     summary.contentDigest().isEmpty() ? "no digest" : summary.contentDigest().substring(0, 8),
                     summary.floorCount(), summary.milestoneFloors())), false);
+            // Not on TowerSummary itself: a themed tower is the exception, not a fact every reader of
+            // the public view needs, so this looks the theme up directly (P10).
+            TowerDefinition tower = content.towers().get(towerId);
+            Optional<RegionalThemeDefinition> theme = tower.regionalTheme().flatMap(content::regionalTheme);
+            theme.ifPresent(t -> source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
+                    "    regional theme %s: \"%s\", doctrine %s, %d jersey species",
+                    t.id(), t.displayName(), t.doctrine(), t.jerseySpeciesIds().size())), false));
         }
 
         if (content.problems().isEmpty()) {

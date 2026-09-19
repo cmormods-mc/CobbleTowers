@@ -1,6 +1,7 @@
 package com.cobbletowers.encounter;
 
 import com.cobbletowers.definition.EncounterPoolDefinition;
+import com.cobbletowers.definition.RegionalThemeDefinition;
 import com.cobbletowers.definition.RulesetDefinition;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,7 +44,20 @@ public final class EncounterDraw {
     public static Optional<EncounterSnapshot> draw(EncounterPoolDefinition pool, long runSeed, int floorIndex,
                                                    int ordinal, Collection<Integer> partyLevels,
                                                    RulesetDefinition ruleset, int modifierLevelOffset) {
-        EncounterPoolDefinition.Entry entry = pick(pool, EncounterSeed.of(runSeed, floorIndex, ordinal));
+        return draw(pool, runSeed, floorIndex, ordinal, partyLevels, ruleset, modifierLevelOffset, Optional.empty());
+    }
+
+    /**
+     * The same draw, weighted toward a resolved regional theme's jerseys as the floor deepens (TDS
+     * #73). {@code theme} is what {@code pool.regionalPool()} resolves to, if anything -- empty leaves
+     * every entry's weight exactly as authored.
+     */
+    public static Optional<EncounterSnapshot> draw(EncounterPoolDefinition pool, long runSeed, int floorIndex,
+                                                   int ordinal, Collection<Integer> partyLevels,
+                                                   RulesetDefinition ruleset, int modifierLevelOffset,
+                                                   Optional<RegionalThemeDefinition> theme) {
+        EncounterPoolDefinition.Entry entry =
+                pick(pool, theme, floorIndex, EncounterSeed.of(runSeed, floorIndex, ordinal));
         int offset = entry.levelOffset() + modifierLevelOffset;
         return TowerLevelPolicy.levelFor(partyLevels, floorIndex, offset, ruleset).stream()
                 .mapToObj(level -> new EncounterSnapshot(ordinal, entry.species(), entry.aspects(), level))
@@ -73,11 +87,17 @@ public final class EncounterDraw {
      * the edit visible rather than silent.
      */
     static EncounterPoolDefinition.Entry pick(EncounterPoolDefinition pool, long seed) {
-        int total = pool.totalWeight();
+        return pick(pool, Optional.empty(), 0, seed);
+    }
+
+    /** The same walk, with a resolved theme's jersey entries weighted heavier by {@link RegionalWeighting}. */
+    static EncounterPoolDefinition.Entry pick(EncounterPoolDefinition pool, Optional<RegionalThemeDefinition> theme,
+                                              int floorIndex, long seed) {
+        int total = RegionalWeighting.totalWeight(pool, theme, floorIndex);
         // Math.floorMod, not %, because a negative seed would otherwise index backwards off the end.
         int roll = (int) Math.floorMod(seed, total);
         for (EncounterPoolDefinition.Entry entry : pool.entries()) {
-            roll -= entry.weight();
+            roll -= RegionalWeighting.weightFor(entry, theme, floorIndex);
             if (roll < 0) return entry;
         }
         // Unreachable while weights are positive, which the record enforces; still, a pool is content.

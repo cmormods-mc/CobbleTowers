@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cobbletowers.definition.EncounterPoolDefinition;
+import com.cobbletowers.definition.RegionalThemeDefinition;
 import com.cobbletowers.definition.RulesetDefinition;
 import com.google.gson.JsonParser;
 import java.util.Collections;
@@ -159,5 +160,44 @@ class EncounterDrawTest {
 
         EncounterSnapshot aspected = new EncounterSnapshot(1, id("vulpix"), List.of("alolan"), 30);
         assertEquals("cobbletowers:vulpix level=30 alolan", aspected.toProperties());
+
+        // The fallback CobblemonBattleAdapter.spawn retries with when an aspect is not recognized
+        // (TDS #85): the same opponent, minus the cosmetic layer.
+        assertEquals("cobbletowers:vulpix level=30", aspected.toProperties(false));
+        assertEquals(plain.toProperties(), plain.toProperties(true));
+    }
+
+    @Test
+    @DisplayName("a regional theme's jerseys are drawn more often on a later floor (TDS #73)")
+    void regionalThemeWeightsJerseysDeeperFloorsMore() {
+        EncounterPoolDefinition themedPool = pool("""
+                [{"species":"cobblemon:gyarados","weight":100},
+                 {"species":"cobblemon:magikarp","weight":100}]""");
+        RegionalThemeDefinition theme = RegionalThemeDefinition.fromJson(id("tideforge"), JsonParser.parseString("""
+                {"schema_version":1,"display_name":"Tideforge","doctrine":"Momentum",
+                 "jersey_weight_growth_percent_per_floor":50,
+                 "jersey_signatures":[
+                   {"species":"cobblemon:gyarados"},{"species":"cobblemon:lanturn"},
+                   {"species":"cobblemon:kingdra"},{"species":"cobblemon:empoleon"},
+                   {"species":"cobblemon:milotic"}]}""").getAsJsonObject());
+        Optional<RegionalThemeDefinition> resolved = Optional.of(theme);
+
+        int jerseyOnFloor1 = 0;
+        int jerseyOnFloor9 = 0;
+        for (int seed = 0; seed < 2000; seed++) {
+            String early = EncounterDraw.pick(themedPool, resolved, 1, EncounterSeed.of(seed, 1, 0)).species().getPath();
+            String late = EncounterDraw.pick(themedPool, resolved, 9, EncounterSeed.of(seed, 9, 0)).species().getPath();
+            if (early.equals("gyarados")) jerseyOnFloor1++;
+            if (late.equals("gyarados")) jerseyOnFloor9++;
+        }
+
+        assertTrue(jerseyOnFloor9 > jerseyOnFloor1,
+                "a deeper floor should favor the jersey more: floor1=" + jerseyOnFloor1 + " floor9=" + jerseyOnFloor9);
+
+        // No theme resolved at all: the same pool draws exactly as an untouched one would.
+        EncounterSnapshot untouched = EncounterDraw.draw(themedPool, RUN_SEED, 9, 0, PARTY, ruleset(), 0).orElseThrow();
+        EncounterSnapshot alsoUntouched = EncounterDraw.draw(themedPool, RUN_SEED, 9, 0, PARTY, ruleset(),
+                0, Optional.empty()).orElseThrow();
+        assertEquals(untouched, alsoUntouched);
     }
 }

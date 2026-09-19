@@ -139,15 +139,8 @@ public final class CobblemonBattleAdapter {
     }
 
     private static PokemonEntity spawn(ServerLevel level, EncounterSnapshot snapshot, BlockPos where) {
-        Pokemon pokemon;
-        try {
-            // The property string is what Cobblemon's own /pokegive parses, so species, level and any
-            // aspect all take one path rather than three setters that drift apart.
-            pokemon = PokemonProperties.Companion.parse(snapshot.toProperties(), " ", "=").create();
-        } catch (RuntimeException ex) {
-            TowerLog.error("Could not build a tower opponent from '{}': {}", snapshot.toProperties(), ex.toString());
-            return null;
-        }
+        Pokemon pokemon = build(snapshot);
+        if (pokemon == null) return null;
         UncatchableProperty.INSTANCE.uncatchable().apply(pokemon);
         pokemon.setCurrentHealth(pokemon.getMaxHealth());
 
@@ -163,6 +156,38 @@ public final class CobblemonBattleAdapter {
             TowerLog.error("Cobblemon did not create an entity for tower opponent {}", snapshot.species());
         }
         return entity;
+    }
+
+    /**
+     * Parses a snapshot into a Pokemon, falling back to the base species if its aspects are the
+     * problem (TDS #85).
+     *
+     * <p>The property string is what Cobblemon's own {@code /pokegive} parses, so species, level and
+     * any aspect all take one path rather than three setters that drift apart. A regional theme (P10)
+     * is the first thing that gives {@code aspects} real content, and a resource pack not installed, an
+     * aspect renamed upstream, or Cobblemon version drift can all make one Cobblemon does not
+     * recognize -- which must not fail the whole floor over what is only a cosmetic layer. Only a
+     * species Cobblemon itself does not know (possible before this phase too) still fails the
+     * encounter, on the retry's own exception.
+     */
+    private static Pokemon build(EncounterSnapshot snapshot) {
+        try {
+            return PokemonProperties.Companion.parse(snapshot.toProperties(), " ", "=").create();
+        } catch (RuntimeException ex) {
+            if (snapshot.aspects().isEmpty()) {
+                TowerLog.error("Could not build a tower opponent from '{}': {}", snapshot.toProperties(), ex.toString());
+                return null;
+            }
+            TowerLog.warn("Aspect(s) {} not recognized for tower opponent {}, falling back to the base species: {}",
+                    snapshot.aspects(), snapshot.species(), ex.toString());
+            try {
+                return PokemonProperties.Companion.parse(snapshot.toProperties(false), " ", "=").create();
+            } catch (RuntimeException fallbackEx) {
+                TowerLog.error("Could not build a tower opponent from '{}' even without aspects: {}",
+                        snapshot.toProperties(false), fallbackEx.toString());
+                return null;
+            }
+        }
     }
 
     /**

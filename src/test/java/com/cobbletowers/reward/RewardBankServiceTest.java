@@ -60,7 +60,8 @@ class RewardBankServiceTest {
 
         return TowerContent.of(Map.of(TestRuns.TOWER, tower), Map.of(one.id(), one, two.id(), two),
                 Map.of(pool.id(), pool), Map.of(ruleset.id(), ruleset), Map.of(boss.id(), boss), Map.of(), Map.of(),
-                Map.of(rewardTable.id(), rewardTable), Map.of(DefinitionKey.tower(TestRuns.TOWER), "digest"));
+                Map.of(rewardTable.id(), rewardTable), Map.of(),
+                Map.of(DefinitionKey.tower(TestRuns.TOWER), "digest"));
     }
 
     @Test

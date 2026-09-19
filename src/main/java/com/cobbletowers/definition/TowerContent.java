@@ -33,13 +33,14 @@ public record TowerContent(
         Map<ResourceLocation, BossPoolDefinition> bossPools,
         Map<ResourceLocation, ModifierDefinition> modifiers,
         Map<ResourceLocation, RewardTableDefinition> rewardTables,
+        Map<ResourceLocation, RegionalThemeDefinition> regionalThemes,
         Map<DefinitionKey, String> digests,
         List<String> problems,
         List<ResourceLocation> sortedTowerIds) {
 
     public static final TowerContent EMPTY = new TowerContent(
-            Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), List.of(),
-            List.of());
+            Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(),
+            List.of(), List.of());
 
     public TowerContent {
         towers = Map.copyOf(towers);
@@ -50,6 +51,7 @@ public record TowerContent(
         bossPools = Map.copyOf(bossPools);
         modifiers = Map.copyOf(modifiers);
         rewardTables = Map.copyOf(rewardTables);
+        regionalThemes = Map.copyOf(regionalThemes);
         digests = Map.copyOf(digests);
         problems = List.copyOf(problems);
         sortedTowerIds = List.copyOf(sortedTowerIds);
@@ -68,9 +70,11 @@ public record TowerContent(
                                   Map<ResourceLocation, BossPoolDefinition> bossPools,
                                   Map<ResourceLocation, ModifierDefinition> modifiers,
                                   Map<ResourceLocation, RewardTableDefinition> rewardTables,
+                                  Map<ResourceLocation, RegionalThemeDefinition> regionalThemes,
                                   Map<DefinitionKey, String> digests) {
         List<String> problems = new ArrayList<>();
         problems.addAll(modifierProblems(modifiers));
+        problems.addAll(regionalPoolProblems(pools, regionalThemes));
         for (TowerDefinition tower : towers.values()) {
             if (!rulesets.containsKey(tower.rulesetId())) {
                 problems.add(tower.id() + " names ruleset " + tower.rulesetId() + ", which is not loaded");
@@ -78,6 +82,11 @@ public record TowerContent(
             if (!rewardTables.containsKey(tower.rewardTableId())) {
                 problems.add(tower.id() + " names reward table " + tower.rewardTableId() + ", which is not loaded");
             }
+            tower.regionalTheme().ifPresent(themeId -> {
+                if (!regionalThemes.containsKey(themeId)) {
+                    problems.add(tower.id() + " names regional theme " + themeId + ", which is not loaded");
+                }
+            });
             List<Integer> indices = new ArrayList<>();
             for (ResourceLocation floorId : tower.floorIds()) {
                 FloorDefinition floor = floors.get(floorId);
@@ -114,7 +123,21 @@ public record TowerContent(
                 .sorted(Comparator.comparing(ResourceLocation::toString))
                 .toList();
         return new TowerContent(towers, floors, pools, rulesets, milestones, bossPools, modifiers, rewardTables,
-                digests, problems, sorted);
+                regionalThemes, digests, problems, sorted);
+    }
+
+    /** Every loaded pool's {@code regional_pool}, if it names one, must resolve (P10). */
+    private static List<String> regionalPoolProblems(Map<ResourceLocation, EncounterPoolDefinition> pools,
+                                                      Map<ResourceLocation, RegionalThemeDefinition> regionalThemes) {
+        List<String> problems = new ArrayList<>();
+        for (EncounterPoolDefinition pool : pools.values()) {
+            pool.regionalPool().ifPresent(themeId -> {
+                if (!regionalThemes.containsKey(themeId)) {
+                    problems.add(pool.id() + " names regional pool " + themeId + ", which is not loaded");
+                }
+            });
+        }
+        return problems;
     }
 
     /**
@@ -227,6 +250,11 @@ public record TowerContent(
         return Optional.ofNullable(rulesets.get(rulesetId));
     }
 
+    /** One regional theme by id. */
+    public Optional<RegionalThemeDefinition> regionalTheme(ResourceLocation themeId) {
+        return Optional.ofNullable(regionalThemes.get(themeId));
+    }
+
     /** One modifier by id. */
     public Optional<ModifierDefinition> modifier(ResourceLocation modifierId) {
         return Optional.ofNullable(modifiers.get(modifierId));
@@ -277,6 +305,6 @@ public record TowerContent(
 
     public int definitionCount() {
         return towers.size() + floors.size() + pools.size() + rulesets.size() + milestones.size()
-                + bossPools.size() + modifiers.size() + rewardTables.size();
+                + bossPools.size() + modifiers.size() + rewardTables.size() + regionalThemes.size();
     }
 }

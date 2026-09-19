@@ -26,8 +26,21 @@ public record EncounterSnapshot(int ordinal, ResourceLocation species, List<Stri
 
     /** What Cobblemon's own property parser reads: "species level=n aspect=..". */
     public String toProperties() {
+        return toProperties(true);
+    }
+
+    /**
+     * The same string, optionally without the aspects.
+     *
+     * <p>The fallback {@code CobblemonBattleAdapter.spawn} retries with when Cobblemon does not
+     * recognize an aspect (TDS #85): the base species is always a valid opponent, only the cosmetic
+     * layer on top of it can fail.
+     */
+    public String toProperties(boolean includeAspects) {
         StringBuilder properties = new StringBuilder(species.toString()).append(" level=").append(level);
-        for (String aspect : aspects) properties.append(' ').append(aspect);
+        if (includeAspects) {
+            for (String aspect : aspects) properties.append(' ').append(aspect);
+        }
         return properties.toString();
     }
 }
