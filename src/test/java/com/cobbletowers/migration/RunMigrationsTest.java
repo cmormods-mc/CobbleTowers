@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cobbletowers.TestRuns;
 import com.cobbletowers.persistence.PersistedRun;
+import com.cobbletowers.persistence.RunModifierState;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.UUID;
@@ -74,6 +75,33 @@ class RunMigrationsTest {
         assertEquals(List.of(), run.ledger(), "a run that predates the pool earned nothing into it");
         assertEquals(RUN, run.runId());
         assertTrue(RunMigrations.canRead(2));
+    }
+
+    @Test
+    @DisplayName("a version 3 run loads, and comes back having drafted nothing")
+    void versionThreeLoads() {
+        CompoundTag v3 = TestRuns.fresh(RUN).toTag();
+        v3.putInt("schema_version", 3);
+        v3.remove("modifiers");
+
+        PersistedRun run = PersistedRun.fromTag(RunMigrations.toCurrent(v3));
+
+        assertEquals(RunModifierState.EMPTY, run.modifiers(),
+                "a run that predates the draft drafted nothing, which is the honest answer");
+        assertEquals(RUN, run.runId());
+        assertTrue(RunMigrations.canRead(3));
+    }
+
+    @Test
+    @DisplayName("a migrated run has the same shape on disk as a freshly written one")
+    void migrationMatchesAFreshWrite() {
+        // A migration whose output differs from a fresh write is a difference that surfaces later,
+        // somewhere less obvious than here.
+        CompoundTag v3 = TestRuns.fresh(RUN).toTag();
+        v3.putInt("schema_version", 3);
+        v3.remove("modifiers");
+
+        assertEquals(TestRuns.fresh(RUN).toTag(), RunMigrations.toCurrent(v3));
     }
 
     @Test

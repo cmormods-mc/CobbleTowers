@@ -33,7 +33,14 @@ class PersistedRunTest {
                 List.of(participant),
                 Optional.of(new RunCheckpoint("run:x:floor:3:ready", RunState.FLOOR_READY)),
                 List.of("run:x:floor:2:banked"), 1_726_000_000_000L, OptionalInt.of(12),
-                List.of(LedgerEntry.opponentDefeated(3, TOWER, UUID.fromString("44444444-4444-4444-4444-444444444444"), 7L)));
+                List.of(LedgerEntry.opponentDefeated(3, TOWER, UUID.fromString("44444444-4444-4444-4444-444444444444"), 7L)),
+                // A drafted, locked-in modifier and an open draft with a vote in it, so the round
+                // trip covers the shape a run actually has mid-intermission rather than an empty one.
+                new RunModifierState(
+                        List.of(TOWER, TOWER),
+                        List.of(TOWER),
+                        Optional.of(PersistedDraft.opening(3, true, List.of(TOWER))
+                                .withVote(UUID.fromString("11111111-1111-1111-1111-111111111111"), 0))));
     }
 
     @Test
@@ -66,7 +73,7 @@ class PersistedRunTest {
         // RunCheckpoint refuses a blank key precisely so that cannot be written in the first place.
         PersistedRun fresh = new PersistedRun(withCheckpoint.runId(), PersistedRun.SCHEMA_VERSION, TOWER, 4,
                 "abc123", 2, 7, 1L, 1, RunState.CREATED, List.of(), Optional.empty(), List.of(), 5L,
-                OptionalInt.empty(), List.of());
+                OptionalInt.empty(), List.of(), RunModifierState.EMPTY);
         assertEquals(Optional.empty(), PersistedRun.fromTag(fresh.toTag()).lastCheckpoint());
     }
 

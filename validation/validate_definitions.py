@@ -41,7 +41,7 @@ ANCHORS = ("entry", "presentation", "spectator", "exit")
 # actually contain, and anything else present counts as solid, which errs towards refusing an anchor
 # rather than approving one.
 NON_SUPPORTING = ("banner", "torch", "carpet", "button", "pressure_plate", "sign", "rail")
-KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones", "boss_pools")
+KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones", "boss_pools", "modifiers")
 MAX_PARTY = 6
 MIN_LEVEL, MAX_LEVEL = 1, 100
 
@@ -121,6 +121,74 @@ def check_layouts(content: dict, problems: list[str]) -> int:
     return checked
 
 
+def check_modifiers(content: dict, problems: list[str]) -> None:
+    """Modifier references and the contradictions a machine notices (TDS #58).
+
+    The one-file mistakes -- excluding itself, requiring what it excludes -- are refused by
+    ModifierDefinition's own constructor, so a malformed file never loads. These are the checks
+    that need the whole loaded set, which is the part Java cannot do until a server is running.
+    """
+    effect_fields_by_type = {
+        "enemy": ("level_offset", "boss_level_offset", "boss_health_percent"),
+        "encounter": ("extra_opponents",),
+        "player_constraint": ("banned_moves", "allow_switching", "allow_items"),
+        "field": ("weather", "terrain"),
+        "reward": ("reward_percent",),
+    }
+    for modifier_id, modifier in content["modifiers"].items():
+        for field in ("schema_version", "type", "display_name"):
+            if field not in modifier:
+                problems.append(f"{modifier_id} is missing required field '{field}'")
+
+        kind = modifier.get("type")
+        if kind is not None and kind not in effect_fields_by_type:
+            problems.append(f"{modifier_id} has unknown type '{kind}'")
+
+        excludes = modifier.get("excludes", [])
+        requires = modifier.get("requires", [])
+        for other in excludes:
+            if other not in content["modifiers"]:
+                problems.append(f"{modifier_id} excludes {other}, which does not exist")
+        for other in requires:
+            if other not in content["modifiers"]:
+                problems.append(f"{modifier_id} requires {other}, which does not exist")
+        if modifier_id in excludes:
+            problems.append(f"{modifier_id} excludes itself")
+        if modifier_id in requires:
+            problems.append(f"{modifier_id} requires itself, which nothing could ever satisfy")
+        for other in requires:
+            if other in excludes:
+                problems.append(f"{modifier_id} both requires and excludes {other}")
+
+        if modifier.get("stack_limit", 1) < 1:
+            problems.append(f"{modifier_id} has stack_limit {modifier.get('stack_limit')}; it must be >= 1")
+        if modifier.get("weight", 100) < 1:
+            problems.append(f"{modifier_id} has weight {modifier.get('weight')}; weights must be >= 1")
+
+        # The mistake content actually makes: copy a modifier, change its type, keep the payload.
+        effect = modifier.get("effect", {})
+        if kind in effect_fields_by_type and not any(f in effect for f in effect_fields_by_type[kind]):
+            problems.append(
+                f"{modifier_id} is type '{kind}' but its effect sets none of "
+                f"{', '.join(effect_fields_by_type[kind])}")
+
+    # A prerequisite cycle can never be drafted: every member needs another member held first.
+    requires_map = {mid: [r for r in m.get("requires", []) if r in content["modifiers"]]
+                    for mid, m in content["modifiers"].items()}
+    for start in requires_map:
+        seen, stack = set(), [start]
+        while stack:
+            current = stack.pop()
+            for nxt in requires_map.get(current, []):
+                if nxt == start:
+                    problems.append(f"{start} is in a prerequisite cycle, so it can never be drafted")
+                    stack = []
+                    break
+                if nxt not in seen:
+                    seen.add(nxt)
+                    stack.append(nxt)
+
+
 def main() -> None:
     problems: list[str] = []
     counts = {kind: 0 for kind in KINDS}
@@ -157,6 +225,10 @@ def main() -> None:
             override = floor.get("ruleset_override")
             if override is not None and override not in content["rulesets"]:
                 problems.append(f"{floor_id} names ruleset override {override}, which does not exist")
+            # Reserved since P1 and carried untouched; P8 is where it finally has to resolve.
+            for modifier_id in floor.get("modifiers", []):
+                if modifier_id not in content["modifiers"]:
+                    problems.append(f"{floor_id} names modifier {modifier_id}, which does not exist")
 
         by_index = {content["floors"][f].get("index"): f for f in floors if f in content["floors"]}
         for milestone_id in tower.get("milestones", []):
@@ -175,6 +247,8 @@ def main() -> None:
                 problems.append(f"{floor_id} is marked {marked} but {milestone_id} is {milestone.get('kind')}")
             if milestone.get("kind") == "boss" and not milestone.get("raid_definition"):
                 problems.append(f"{milestone_id} is a boss milestone but names no raid_definition")
+
+    check_modifiers(content, problems)
 
     for pool_id, pool in content["boss_pools"].items():
         entries = pool.get("entries", [])

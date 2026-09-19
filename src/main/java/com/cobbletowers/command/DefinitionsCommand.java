@@ -41,6 +41,13 @@ public final class DefinitionsCommand {
         source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
                 "%d tower(s), %d definition file(s) loaded", content.towers().size(), content.definitionCount()))
                 .withStyle(ChatFormatting.GOLD), false);
+        // Per kind, not just a total. A total says 23 files loaded and leaves an operator who has
+        // just written a modifiers/ folder no way to tell whether theirs was one of them.
+        source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
+                "  %d floor(s), %d encounter pool(s), %d ruleset(s), %d milestone(s), %d boss pool(s),"
+                        + " %d modifier(s)",
+                content.floors().size(), content.pools().size(), content.rulesets().size(),
+                content.milestones().size(), content.bossPools().size(), content.modifiers().size())), false);
 
         for (ResourceLocation towerId : content.sortedTowerIds()) {
             TowerSummary summary = content.summary(towerId).orElseThrow();

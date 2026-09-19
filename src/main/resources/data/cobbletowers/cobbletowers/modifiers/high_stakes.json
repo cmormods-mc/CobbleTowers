@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "reward",
+  "display_name": "High Stakes",
+  "risk": "minor",
+  "weight": 80,
+  "stack_limit": 2,
+  "requires": ["cobbletowers:sharpened_claws"],
+  "effect": {
+    "reward_percent": 150
+  }
+}

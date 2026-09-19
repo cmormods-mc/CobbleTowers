@@ -39,16 +39,24 @@ public final class BossDraw {
     public static Optional<Boss> draw(Optional<BossPoolDefinition> pool, Optional<ResourceLocation> handpicked,
                                       long runSeed, int floorIndex, Collection<Integer> partyLevels,
                                       RulesetDefinition ruleset) {
+        return draw(pool, handpicked, runSeed, floorIndex, partyLevels, ruleset, 0);
+    }
+
+    /** The same draw, with a run's drafted modifiers folded into the level it is asked for. */
+    public static Optional<Boss> draw(Optional<BossPoolDefinition> pool, Optional<ResourceLocation> handpicked,
+                                      long runSeed, int floorIndex, Collection<Integer> partyLevels,
+                                      RulesetDefinition ruleset, int modifierLevelOffset) {
         if (handpicked.isPresent()) {
             // Floors 5 and 10: special through content, not through a second code path.
-            return TowerLevelPolicy.levelFor(partyLevels, floorIndex, 0, ruleset).stream()
+            return TowerLevelPolicy.levelFor(partyLevels, floorIndex, modifierLevelOffset, ruleset).stream()
                     .mapToObj(level -> new Boss(handpicked.get(), level))
                     .findFirst();
         }
         if (pool.isEmpty()) return Optional.empty();
 
         BossPoolDefinition.Entry entry = pick(pool.get(), EncounterSeed.of(runSeed, floorIndex, BOSS_ORDINAL));
-        OptionalInt level = TowerLevelPolicy.levelFor(partyLevels, floorIndex, entry.levelOffset(), ruleset);
+        OptionalInt level = TowerLevelPolicy.levelFor(partyLevels, floorIndex,
+                entry.levelOffset() + modifierLevelOffset, ruleset);
         return level.stream().mapToObj(value -> new Boss(entry.definition(), value)).findFirst();
     }
 

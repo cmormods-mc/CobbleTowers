@@ -55,7 +55,8 @@ class TowerRunsTest {
                 run.towerRevision(), run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(),
                 run.floorIndex(), run.state(),
                 List.of(new PersistedParticipant(PLAYER, ParticipantState.joined().left(), List.of())),
-                run.lastCheckpoint(), run.committedTransactions(), run.updatedAt(), run.cell(), run.ledger());
+                run.lastCheckpoint(), run.committedTransactions(), run.updatedAt(), run.cell(), run.ledger(),
+                run.modifiers());
 
         TowerRuns.resetForTests(List.of(afterLeaving));
 

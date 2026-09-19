@@ -53,6 +53,18 @@ public final class RunMigrations {
             tag.putInt("schema_version", 3);
             return tag;
         });
+        // 3 -> 4 added the drafted modifiers. An older run drafted nothing, and PersistedRun.fromTag
+        // already reads an absent block as RunModifierState.EMPTY -- but the block is written here
+        // anyway, so a migrated file has the same shape on disk as one this build wrote. A migration
+        // whose output differs from a fresh write is a difference that shows up later, somewhere
+        // less obvious.
+        STEPS.put(3, tag -> {
+            if (!tag.contains("modifiers")) {
+                tag.put("modifiers", com.cobbletowers.persistence.RunModifierState.EMPTY.toTag());
+            }
+            tag.putInt("schema_version", 4);
+            return tag;
+        });
     }
 
     private RunMigrations() {}

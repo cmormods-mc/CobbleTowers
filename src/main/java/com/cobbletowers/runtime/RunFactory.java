@@ -7,6 +7,7 @@ import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
+import com.cobbletowers.persistence.RunModifierState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +58,8 @@ public final class RunFactory {
                 // No cell until the run reaches ALLOCATING_INSTANCE and one is leased to it.
                 OptionalInt.empty(),
                 // Nothing earned yet; the pool fills as floors are cleared and is banked at cash-out.
-                List.of()));
+                List.of(),
+                // Nothing drafted yet; the first draft opens at the first intermission.
+                RunModifierState.EMPTY));
     }
 }

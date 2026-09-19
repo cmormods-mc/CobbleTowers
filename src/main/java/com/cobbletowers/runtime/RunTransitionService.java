@@ -6,6 +6,7 @@ import com.cobbletowers.api.tower.RunState;
 import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.instance.InstanceAllocator;
 import com.cobbletowers.persistence.CellStateStore;
+import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.RunCheckpoint;
 import java.util.ArrayList;
@@ -48,7 +49,9 @@ public final class RunTransitionService {
         /** The run's cell is gone or quarantined, so resuming would put it somewhere unusable. */
         CELL_UNAVAILABLE,
         /** A checkpoint key already committed is being committed again for a different outcome. */
-        KEY_REUSED
+        KEY_REUSED,
+        /** The party is still being offered a modifier and has not settled on one (TDS #2). */
+        DRAFT_OPEN
     }
 
     private RunTransitionService() {}
@@ -72,6 +75,13 @@ public final class RunTransitionService {
         if (transition.resumeFromCheckpoint()) {
             return resume(run, now);
         }
+        // A run does not leave an intermission with a draft still on the table. Decided here, in the
+        // pure half, because it is a fact about the run rather than about the world -- and because
+        // the refusal is then testable without a server, like every other one.
+        if (event == RunEvent.INTERMISSION_COMPLETE && run.modifiers().hasOpenDraft()) {
+            return new Refusal(Reason.DRAFT_OPEN, "run " + run.runId() + " is still choosing a modifier;"
+                    + " vote with /cobbletowers runs draft vote, or settle it with draft force");
+        }
 
         // The floor BEFORE the move, which is what makes {nextFloor} name the floor being opened.
         String key = transition.checkpoint() ? transition.key(run.runId(), run.floorIndex()) : "";
@@ -93,7 +103,8 @@ public final class RunTransitionService {
 
         PersistedRun next = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), floor,
-                transition.next(), run.participants(), checkpoint, committed, now, run.cell(), run.ledger());
+                transition.next(), run.participants(), checkpoint, committed, now, run.cell(), run.ledger(),
+                run.modifiers());
         return new Move(next, run.state(), transition.checkpoint(), key);
     }
 
@@ -115,7 +126,7 @@ public final class RunTransitionService {
         PersistedRun next = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), run.floorIndex(),
                 target, run.participants(), run.lastCheckpoint(), run.committedTransactions(), now, run.cell(),
-                run.ledger());
+                run.ledger(), run.modifiers());
         // Durable, because a resume that a crash undoes leaves a run reported as recovered and
         // parked on disk -- the two states nobody can tell apart afterwards.
         return new Move(next, run.state(), true, "");
@@ -150,6 +161,12 @@ public final class RunTransitionService {
             // knocked-out or reconnected player can rely on.
             if (move.next().state() == RunState.INTERMISSION) {
                 ParticipantService.reviveAtIntermission(server, runId, now);
+                DraftService.open(server, runId, now);
+            }
+            // The settled draft is cleared on the way out rather than when it settles, so that
+            // `runs show` and the reward-reveal still have it to read for the whole intermission.
+            if (move.next().state() == RunState.NEXT_FLOOR_READY) {
+                DraftService.clearIfSettled(server, runId, now);
             }
             if (move.next().state().isTerminal()) releaseInstance(server, move.next(), now);
         }

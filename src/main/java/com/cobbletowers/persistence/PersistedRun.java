@@ -29,6 +29,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param updatedAt         epoch millis of the last write, used to retire finished runs
  * @param cell              the instance cell leased to this run, or empty before one is allocated
  * @param ledger            what the run has earned so far, with no worth attached to it yet
+ * @param modifiers         what the run has drafted, and the draft it is sitting at (TDS #2)
  */
 public record PersistedRun(
         UUID runId,
@@ -46,15 +47,17 @@ public record PersistedRun(
         List<String> committedTransactions,
         long updatedAt,
         OptionalInt cell,
-        List<LedgerEntry> ledger) {
+        List<LedgerEntry> ledger,
+        RunModifierState modifiers) {
 
     /**
      * The only shape this build writes or reads.
      *
-     * <p>2 added the instance cell; 3 added the unclaimed ledger. Older files are migrated forward by
-     * {@code RunMigrations}, which is what that framework was shipped empty for.
+     * <p>2 added the instance cell; 3 added the unclaimed ledger; 4 added the drafted modifiers.
+     * Older files are migrated forward by {@code RunMigrations}, which is what that framework was
+     * shipped empty for.
      */
-    public static final int SCHEMA_VERSION = 3;
+    public static final int SCHEMA_VERSION = 4;
 
     private static List<LedgerEntry> readLedger(CompoundTag tag) {
         List<LedgerEntry> ledger = new ArrayList<>();
@@ -69,6 +72,7 @@ public record PersistedRun(
         Objects.requireNonNull(towerDigest, "towerDigest");
         Objects.requireNonNull(state, "state");
         Objects.requireNonNull(lastCheckpoint, "lastCheckpoint");
+        Objects.requireNonNull(modifiers, "modifiers");
         participants = List.copyOf(participants);
         committedTransactions = List.copyOf(committedTransactions);
         ledger = List.copyOf(ledger);
@@ -93,6 +97,7 @@ public record PersistedRun(
         ListTag earned = new ListTag();
         for (LedgerEntry entry : ledger) earned.add(entry.toTag());
         tag.put("ledger", earned);
+        tag.put("modifiers", modifiers.toTag());
         ListTag people = new ListTag();
         for (PersistedParticipant participant : participants) people.add(participant.toTag());
         tag.put("participants", people);
@@ -140,14 +145,17 @@ public record PersistedRun(
                 tag.getLong("updated_at"),
                 // Absent means no cell, which is also exactly what a version 1 run says.
                 tag.contains("cell", Tag.TAG_INT) ? OptionalInt.of(tag.getInt("cell")) : OptionalInt.empty(),
-                readLedger(tag));
+                readLedger(tag),
+                tag.contains("modifiers", Tag.TAG_COMPOUND)
+                        ? RunModifierState.fromTag(tag.getCompound("modifiers"))
+                        : RunModifierState.EMPTY);
     }
 
     /** The same run, recorded as it stands after {@code at}. */
     public PersistedRun touched(long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell, ledger);
+                at, cell, ledger, modifiers);
     }
 
     /** The same run with one more thing earned. The pool only ever grows until it is banked. */
@@ -156,14 +164,21 @@ public record PersistedRun(
         next.add(entry);
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell, next);
+                at, cell, next, modifiers);
     }
 
     /** The same run holding {@code leased}, or holding none when it is empty. */
     public PersistedRun withCell(OptionalInt leased, long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, leased, ledger);
+                at, leased, ledger, modifiers);
+    }
+
+    /** The same run carrying {@code next} as its drafted state. */
+    public PersistedRun withModifiers(RunModifierState next, long at) {
+        return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
+                structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
+                at, cell, ledger, next);
     }
 
     /** True when this key has already been committed, so applying the move again must not repeat it. */

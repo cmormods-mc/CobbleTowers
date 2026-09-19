@@ -97,3 +97,43 @@ Two things it does deliberately:
   an empty cell and the test proves only that the harness can delete a Pokemon.
 - **`wait_online` in `run_durability_test.py` waits for its own bot's name**, not for whoever you
   passed it. Wait for a named player instead.
+
+## `draft_test.py`
+
+P8's intermission draft: that one opens, that a run cannot skip it, that a majority settles it, that
+the chosen modifier reaches a real floor, and that **a hard kill mid-draft brings back the same three
+cards** (TDS #29).
+
+```sh
+python validation/smoke/draft_test.py   --server-dir <rig>/testserver   --java "C:/Program Files/Eclipse Adoptium/jdk-21.0.12.1+1/bin/java.exe"   --jar build/libs/CobbleTowers-<version>.jar
+```
+
+The run is driven to its intermission with `runs advance` rather than by winning a fight. The subject
+is the draft, and making it depend on two bots beating a real draw would make a red result mean "the
+bots lost" as often as "the draft is broken". Every step is still a real transition through the real
+table -- what is skipped is the battle, not the state machine. The last section does fight a real
+floor, because that is the only way to see a modifier change one.
+
+### Gotchas this one added
+
+- **RCON returns a whole command's output as ONE line.** `runs show` prints a dozen lines in game and
+  arrives here as a single space-separated string, so anything written with `splitlines()` finds only
+  the first line and every later probe quietly returns `""` and passes. That is the same shape as the
+  `execute ... run say` trap above: a check that cannot fail. Parse with a regex for the thing you
+  are looking for, and assert on something that would be absent if it were missing.
+- **A hard kill parks the run.** It comes back `RECOVERY_REQUIRED` and refuses gameplay events until
+  `recovery_completed`, so a test that kills a server mid-run has to resume it before playing on --
+  otherwise the next step fails with `ILLEGAL_EVENT` and it reads like a bug in the feature.
+- **`Server.start()` deletes the log.** After a restart the first boot's lines are gone, so anything
+  to be asserted about the run before the kill has to be asserted before the kill.
+- **A draft is settled by the watchdog only after five minutes of emptiness**, and the timer starts
+  when the emptiness is first seen. `runs watchdog player` winds the clock past that; waiting does
+  not, within a test's patience.
+- **A hard kill loses the bots' Cobblemon parties**, even after `save-all flush` -- Cobblemon keeps
+  its storage on its own schedule. A floor cannot level an opponent against a party that is not
+  there, so anything that restarts a server mid-test has to `pokegiveother` again before playing on.
+- **Assert what is present, never the absence of a word.** A check written as `"plus" not in begun`
+  was passed with flying colours by a floor that failed to start altogether, and the run it was
+  guarding came back green with nothing behind it. This is the third shape of the same trap in this
+  directory, after `execute ... run say` and `splitlines()` on RCON output: if the thing under test
+  vanished entirely, would the check still pass? If yes, it is not a check.
