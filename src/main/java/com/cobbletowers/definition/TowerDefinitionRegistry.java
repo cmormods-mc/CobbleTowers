@@ -75,6 +75,8 @@ public final class TowerDefinitionRegistry
                 load(manager, "modifiers", ModifierDefinition::fromJson, digests, rejected);
         Map<ResourceLocation, RewardTableDefinition> rewardTables =
                 load(manager, "reward_tables", RewardTableDefinition::fromJson, digests, rejected);
+        Map<ResourceLocation, RegionalThemeDefinition> regionalThemes =
+                load(manager, "regional_themes", RegionalThemeDefinition::fromJson, digests, rejected);
 
         if (!rejected.isEmpty()) {
             // A summary as well as the per-file errors: those are easy to scroll past, and an operator
@@ -84,7 +86,7 @@ public final class TowerDefinitionRegistry
                             .collect(Collectors.joining(", ")));
         }
         return TowerContent.of(towers, floors, pools, rulesets, milestones, bossPools, modifiers, rewardTables,
-                digests);
+                regionalThemes, digests);
     }
 
     private static <T> Map<ResourceLocation, T> load(ResourceManager manager, String folder,

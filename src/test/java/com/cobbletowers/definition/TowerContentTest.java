@@ -44,6 +44,7 @@ class TowerContentTest {
                         JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())) : Map.of(),
                 milestones, Map.of(), Map.of(),
                 withRewardTable ? Map.of(id("rewards"), rewardTable()) : Map.of(),
+                Map.of(),
                 Map.of(DefinitionKey.tower(id("neutral")), "digest-abc"));
     }
 
@@ -53,8 +54,13 @@ class TowerContentTest {
     }
 
     private static TowerDefinition tower(List<ResourceLocation> floorIds, List<ResourceLocation> milestoneIds) {
+        return tower(floorIds, milestoneIds, Optional.empty());
+    }
+
+    private static TowerDefinition tower(List<ResourceLocation> floorIds, List<ResourceLocation> milestoneIds,
+                                         Optional<ResourceLocation> regionalTheme) {
         return new TowerDefinition(id("neutral"), "Neutral", 1, 1, id("standard"), id("rewards"), floorIds,
-                milestoneIds, Optional.empty());
+                milestoneIds, regionalTheme);
     }
 
     @Test
@@ -98,6 +104,7 @@ class TowerContentTest {
                         JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())),
                 Map.of(), Map.of(), Map.of(),
                 Map.of(id("rewards"), rewardTable()),
+                Map.of(),
                 digests);
 
         assertEquals("tower-digest", content.summary(id("neutral")).orElseThrow().contentDigest(),
@@ -117,6 +124,31 @@ class TowerContentTest {
         assertTrue(problems.contains("ruleset cobbletowers:standard"), problems);
         assertTrue(problems.contains("encounter pool cobbletowers:pool"), problems);
         assertTrue(problems.contains("reward table cobbletowers:rewards"), problems);
+    }
+
+    @Test
+    @DisplayName("a dangling regional theme or regional pool reference is named, not thrown (P10)")
+    void danglingRegionalReferences() {
+        FloorDefinition one = floor(1, Optional.empty());
+        EncounterPoolDefinition pool = EncounterPoolDefinition.fromJson(id("pool"), JsonParser.parseString(
+                "{\"schema_version\":1,\"entries\":[{\"species\":\"cobblemon:machoke\"}],"
+                        + "\"regional_pool\":\"cobbletowers:missing_theme\"}").getAsJsonObject());
+        TowerDefinition tower = tower(List.of(one.id()), List.of(), Optional.of(id("missing_theme")));
+
+        TowerContent content = TowerContent.of(
+                Map.of(tower.id(), tower),
+                Map.of(one.id(), one),
+                Map.of(pool.id(), pool),
+                Map.of(id("standard"), RulesetDefinition.fromJson(id("standard"),
+                        JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())),
+                Map.of(), Map.of(), Map.of(),
+                Map.of(id("rewards"), rewardTable()),
+                Map.of(),
+                Map.of(DefinitionKey.tower(id("neutral")), "digest-abc"));
+
+        String problems = String.join(" | ", content.problems());
+        assertTrue(problems.contains("names regional theme cobbletowers:missing_theme"), problems);
+        assertTrue(problems.contains("names regional pool cobbletowers:missing_theme"), problems);
     }
 
     @Test

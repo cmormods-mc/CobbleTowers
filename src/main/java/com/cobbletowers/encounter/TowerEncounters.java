@@ -13,6 +13,7 @@ import com.cobbletowers.definition.EncounterPoolDefinition;
 import com.cobbletowers.definition.FloorAnchor;
 import com.cobbletowers.definition.FloorDefinition;
 import com.cobbletowers.definition.MilestoneDefinition;
+import com.cobbletowers.definition.RegionalThemeDefinition;
 import com.cobbletowers.definition.RulesetDefinition;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
@@ -207,13 +208,16 @@ public final class TowerEncounters {
 
         // What the party has drafted, resolved once for the whole floor rather than per opponent.
         ModifierEffects effects = DraftService.effects(run);
+        // Which theme, if any, this floor's pool favors -- resolved once, the same lookup pattern
+        // already used for the pool and ruleset themselves (P10).
+        Optional<RegionalThemeDefinition> theme = pool.regionalPool().flatMap(content::regionalTheme);
 
         Map<UUID, Status> byPlayer = new LinkedHashMap<>();
         Map<UUID, Wave> waves = new LinkedHashMap<>();
         for (int ordinal = 0; ordinal < fighters.size(); ordinal++) {
             ServerPlayer player = fighters.get(ordinal);
-            Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(
-                    pool, run.seed(), run.floorIndex(), ordinal, partyLevels, ruleset, effects.levelOffset());
+            Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(pool, run.seed(), run.floorIndex(), ordinal,
+                    partyLevels, ruleset, effects.levelOffset(), theme);
             if (snapshot.isEmpty()) continue;
             waves.put(player.getUUID(),
                     new Wave(ordinal + fighters.size(), fighters.size(), effects.extraOpponents()));
@@ -341,11 +345,12 @@ public final class TowerEncounters {
         if (origin.isEmpty()) return false;
 
         ModifierEffects effects = DraftService.effects(run);
+        Optional<RegionalThemeDefinition> theme = pool.regionalPool().flatMap(content::regionalTheme);
         // The level snapshot is taken from this player's own party, as the first draw was from the
         // whole party's. It cannot be lowered by the floor's progress: TowerLevelPolicy reads the
         // registered Pokemon, and a fainted one still counts (TDS #45).
         Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(pool, run.seed(), run.floorIndex(),
-                wave.nextOrdinal(), levelsOf(List.of(player)), ruleset, effects.levelOffset());
+                wave.nextOrdinal(), levelsOf(List.of(player)), ruleset, effects.levelOffset(), theme);
         if (snapshot.isEmpty()) return false;
 
         BlockPos where = floor.get().layout().get().presentation().in(origin.get())

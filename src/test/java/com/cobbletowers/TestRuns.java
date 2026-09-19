@@ -79,14 +79,14 @@ public final class TestRuns {
 
         return TowerContent.of(Map.of(TOWER, tower), Map.of(one.id(), one, two.id(), two), Map.of(pool.id(), pool),
                 Map.of(ruleset.id(), ruleset), Map.of(boss.id(), boss), Map.of(), Map.of(),
-                Map.of(rewardTable.id(), rewardTable), Map.of(DefinitionKey.tower(TOWER), "digest-abc"));
+                Map.of(rewardTable.id(), rewardTable), Map.of(), Map.of(DefinitionKey.tower(TOWER), "digest-abc"));
     }
 
     /** The same content, plus a set of modifiers to draft from. */
     public static TowerContent contentWith(Map<ResourceLocation, ModifierDefinition> modifiers) {
         TowerContent base = content();
         return TowerContent.of(base.towers(), base.floors(), base.pools(), base.rulesets(), base.milestones(),
-                base.bossPools(), modifiers, base.rewardTables(), base.digests());
+                base.bossPools(), modifiers, base.rewardTables(), base.regionalThemes(), base.digests());
     }
 
     /**
