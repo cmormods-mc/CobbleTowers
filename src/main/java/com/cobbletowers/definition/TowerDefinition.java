@@ -26,6 +26,7 @@ public record TowerDefinition(
         int schemaVersion,
         int revision,
         ResourceLocation rulesetId,
+        ResourceLocation rewardTableId,
         List<ResourceLocation> floorIds,
         List<ResourceLocation> milestoneIds,
         Optional<ResourceLocation> regionalTheme) {
@@ -36,6 +37,7 @@ public record TowerDefinition(
     public TowerDefinition {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(rulesetId, "rulesetId");
+        Objects.requireNonNull(rewardTableId, "rewardTableId");
         Objects.requireNonNull(regionalTheme, "regionalTheme");
         if (displayName == null || displayName.isBlank()) {
             throw new IllegalArgumentException("display_name must not be blank");
@@ -67,6 +69,7 @@ public record TowerDefinition(
                 TowerJson.requireInt(root, "schema_version"),
                 TowerJson.integer(root, "revision", 1),
                 TowerJson.requireId(root, "ruleset"),
+                TowerJson.requireId(root, "reward_table"),
                 TowerJson.requireIds(root, "floors"),
                 TowerJson.ids(root, "milestones"),
                 TowerJson.optionalId(root, "regional_theme"));

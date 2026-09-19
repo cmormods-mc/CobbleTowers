@@ -9,6 +9,7 @@ import com.cobbletowers.persistence.CellStateStore;
 import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.RunCheckpoint;
+import com.cobbletowers.reward.RewardBankService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -104,7 +105,7 @@ public final class RunTransitionService {
         PersistedRun next = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), floor,
                 transition.next(), run.participants(), checkpoint, committed, now, run.cell(), run.ledger(),
-                run.modifiers());
+                run.modifiers(), run.lastBankedFloor());
         return new Move(next, run.state(), transition.checkpoint(), key);
     }
 
@@ -126,7 +127,7 @@ public final class RunTransitionService {
         PersistedRun next = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), run.floorIndex(),
                 target, run.participants(), run.lastCheckpoint(), run.committedTransactions(), now, run.cell(),
-                run.ledger(), run.modifiers());
+                run.ledger(), run.modifiers(), run.lastBankedFloor());
         // Durable, because a resume that a crash undoes leaves a run reported as recovered and
         // parked on disk -- the two states nobody can tell apart afterwards.
         return new Move(next, run.state(), true, "");
@@ -163,12 +164,28 @@ public final class RunTransitionService {
                 ParticipantService.reviveAtIntermission(server, runId, now);
                 DraftService.open(server, runId, now);
             }
+            // Tied to arrival for the same reason as above: REWARDS_BANKED always fires on a floor
+            // clear, but bank() itself decides whether this particular arrival is a real payout point
+            // (docs/design/P9-economy.md §4a). Calling it unconditionally here, including on an
+            // ordinary floor's INTERMISSION, is what makes a resume after a crash re-attempt banking
+            // for free -- the same idempotent-arrival idiom DraftService.open already relies on.
+            if (move.next().state() == RunState.INTERMISSION || move.next().state() == RunState.COMPLETED
+                    || move.next().state() == RunState.CASHED_OUT) {
+                RewardBankService.bank(server, runId, now);
+            }
             // The settled draft is cleared on the way out rather than when it settles, so that
             // `runs show` and the reward-reveal still have it to read for the whole intermission.
             if (move.next().state() == RunState.NEXT_FLOOR_READY) {
                 DraftService.clearIfSettled(server, runId, now);
             }
-            if (move.next().state().isTerminal()) releaseInstance(server, move.next(), now);
+            // Re-fetched rather than trusting move.next(): RewardBankService.bank() above may have
+            // already written a newer record (a grant's own commit key, a bumped lastBankedFloor).
+            // releaseInstance ends with its own save, and saving the stale move.next() would silently
+            // overwrite whatever bank() just committed -- found live, by a cash-out whose grant key
+            // vanished the instant the run's cell was released.
+            if (move.next().state().isTerminal()) {
+                releaseInstance(server, TowerRuns.get(runId).orElse(move.next()), now);
+            }
         }
         return outcome;
     }

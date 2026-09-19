@@ -32,12 +32,14 @@ public record TowerContent(
         Map<ResourceLocation, MilestoneDefinition> milestones,
         Map<ResourceLocation, BossPoolDefinition> bossPools,
         Map<ResourceLocation, ModifierDefinition> modifiers,
+        Map<ResourceLocation, RewardTableDefinition> rewardTables,
         Map<DefinitionKey, String> digests,
         List<String> problems,
         List<ResourceLocation> sortedTowerIds) {
 
     public static final TowerContent EMPTY = new TowerContent(
-            Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), List.of(), List.of());
+            Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), List.of(),
+            List.of());
 
     public TowerContent {
         towers = Map.copyOf(towers);
@@ -47,6 +49,7 @@ public record TowerContent(
         milestones = Map.copyOf(milestones);
         bossPools = Map.copyOf(bossPools);
         modifiers = Map.copyOf(modifiers);
+        rewardTables = Map.copyOf(rewardTables);
         digests = Map.copyOf(digests);
         problems = List.copyOf(problems);
         sortedTowerIds = List.copyOf(sortedTowerIds);
@@ -64,12 +67,16 @@ public record TowerContent(
                                   Map<ResourceLocation, MilestoneDefinition> milestones,
                                   Map<ResourceLocation, BossPoolDefinition> bossPools,
                                   Map<ResourceLocation, ModifierDefinition> modifiers,
+                                  Map<ResourceLocation, RewardTableDefinition> rewardTables,
                                   Map<DefinitionKey, String> digests) {
         List<String> problems = new ArrayList<>();
         problems.addAll(modifierProblems(modifiers));
         for (TowerDefinition tower : towers.values()) {
             if (!rulesets.containsKey(tower.rulesetId())) {
                 problems.add(tower.id() + " names ruleset " + tower.rulesetId() + ", which is not loaded");
+            }
+            if (!rewardTables.containsKey(tower.rewardTableId())) {
+                problems.add(tower.id() + " names reward table " + tower.rewardTableId() + ", which is not loaded");
             }
             List<Integer> indices = new ArrayList<>();
             for (ResourceLocation floorId : tower.floorIds()) {
@@ -106,8 +113,8 @@ public record TowerContent(
         List<ResourceLocation> sorted = towers.keySet().stream()
                 .sorted(Comparator.comparing(ResourceLocation::toString))
                 .toList();
-        return new TowerContent(towers, floors, pools, rulesets, milestones, bossPools, modifiers, digests,
-                problems, sorted);
+        return new TowerContent(towers, floors, pools, rulesets, milestones, bossPools, modifiers, rewardTables,
+                digests, problems, sorted);
     }
 
     /**
@@ -225,6 +232,22 @@ public record TowerContent(
         return Optional.ofNullable(modifiers.get(modifierId));
     }
 
+    /** One reward table by id. */
+    public Optional<RewardTableDefinition> rewardTable(ResourceLocation rewardTableId) {
+        return Optional.ofNullable(rewardTables.get(rewardTableId));
+    }
+
+    /** The milestone landing on this floor of this tower, if there is one. */
+    public Optional<MilestoneDefinition> milestoneAt(ResourceLocation towerId, int floorIndex) {
+        TowerDefinition tower = towers.get(towerId);
+        if (tower == null) return Optional.empty();
+        for (ResourceLocation milestoneId : tower.milestoneIds()) {
+            MilestoneDefinition milestone = milestones.get(milestoneId);
+            if (milestone != null && milestone.floorIndex() == floorIndex) return Optional.of(milestone);
+        }
+        return Optional.empty();
+    }
+
     /**
      * The modifiers a floor may offer, in a stable order.
      *
@@ -254,6 +277,6 @@ public record TowerContent(
 
     public int definitionCount() {
         return towers.size() + floors.size() + pools.size() + rulesets.size() + milestones.size()
-                + bossPools.size() + modifiers.size();
+                + bossPools.size() + modifiers.size() + rewardTables.size();
     }
 }

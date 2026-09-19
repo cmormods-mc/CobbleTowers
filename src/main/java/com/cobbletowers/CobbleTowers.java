@@ -8,6 +8,8 @@ import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.instance.CellTickets;
 import com.cobbletowers.instance.CellWarmPool;
 import com.cobbletowers.instance.InstanceAllocator;
+import com.cobbletowers.reward.RewardBankService;
+import com.cobbletowers.reward.RewardDelivery;
 import com.cobbletowers.runtime.RecoverySweep;
 import com.cobbletowers.runtime.RunRecovery;
 import com.cobbletowers.runtime.TowerPresence;
@@ -65,6 +67,14 @@ public final class CobbleTowers implements ModInitializer {
             } catch (RuntimeException ex) {
                 TowerLog.error("Could not recover interrupted tower runs", ex);
             }
+            // A separate, later step: COMPLETED and CASHED_OUT are terminal, so RunRecovery above
+            // never touches them, and this is the only path back for a run that crashed between its
+            // final checkpoint and its grant (docs/design/P9-economy.md §4a).
+            try {
+                RewardBankService.sweepUnbanked(server, now);
+            } catch (RuntimeException ex) {
+                TowerLog.error("Could not sweep unbanked tower rewards", ex);
+            }
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> SpikeEncounters.onServerStopped());
         // Per-server state on a class that is not per-server: an integrated client keeps this JVM
@@ -83,6 +93,8 @@ public final class CobbleTowers implements ModInitializer {
         // Disconnects, rejoining, and the watchdog that ends a floor nobody is playing any more.
         TowerPresence.install();
         RecoverySweep.install();
+        // Hands a player whatever the tower owes them the moment they are somewhere to receive it.
+        RewardDelivery.install();
 
         TowerLog.info("CobbleTowers {} loaded", version);
     }

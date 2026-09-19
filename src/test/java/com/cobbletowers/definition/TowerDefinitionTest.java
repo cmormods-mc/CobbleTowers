@@ -26,7 +26,7 @@ class TowerDefinitionTest {
     void towerParses() {
         TowerDefinition tower = TowerDefinition.fromJson(ID, json("""
                 {"schema_version": 1, "revision": 3, "display_name": "Neutral",
-                 "ruleset": "cobbletowers:standard",
+                 "ruleset": "cobbletowers:standard", "reward_table": "cobbletowers:standard",
                  "floors": ["cobbletowers:f1", "cobbletowers:f2"],
                  "milestones": ["cobbletowers:m5"],
                  "regional_theme": "cobbletowers:tideforge"}"""));
@@ -34,6 +34,7 @@ class TowerDefinitionTest {
         assertEquals("Neutral", tower.displayName());
         assertEquals(2, tower.floorCount());
         assertEquals(ResourceLocation.fromNamespaceAndPath("cobbletowers", "f1"), tower.floorIds().get(0));
+        assertEquals(ResourceLocation.fromNamespaceAndPath("cobbletowers", "standard"), tower.rewardTableId());
         assertEquals(Optional.of(ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge")),
                 tower.regionalTheme(), "a reserved field is carried, not resolved");
     }
@@ -42,14 +43,17 @@ class TowerDefinitionTest {
     @DisplayName("a tower is refused when it is empty, repeats a floor, or comes from a newer schema")
     void towerValidation() {
         assertThrows(IllegalArgumentException.class, () -> TowerDefinition.fromJson(ID, json("""
-                {"schema_version": 1, "display_name": "x", "ruleset": "a:b", "floors": []}""")));
+                {"schema_version": 1, "display_name": "x", "ruleset": "a:b", "reward_table": "a:b",
+                 "floors": []}""")));
         assertThrows(IllegalArgumentException.class, () -> TowerDefinition.fromJson(ID, json("""
-                {"schema_version": 1, "display_name": "x", "ruleset": "a:b",
+                {"schema_version": 1, "display_name": "x", "ruleset": "a:b", "reward_table": "a:b",
                  "floors": ["a:f1", "a:f1"]}""")));
         assertThrows(IllegalArgumentException.class, () -> TowerDefinition.fromJson(ID, json("""
-                {"schema_version": 2, "display_name": "x", "ruleset": "a:b", "floors": ["a:f1"]}""")));
+                {"schema_version": 2, "display_name": "x", "ruleset": "a:b", "reward_table": "a:b",
+                 "floors": ["a:f1"]}""")));
         assertThrows(IllegalArgumentException.class, () -> TowerDefinition.fromJson(ID, json("""
-                {"schema_version": 1, "display_name": "  ", "ruleset": "a:b", "floors": ["a:f1"]}""")));
+                {"schema_version": 1, "display_name": "  ", "ruleset": "a:b", "reward_table": "a:b",
+                 "floors": ["a:f1"]}""")));
     }
 
     @Test
@@ -59,6 +63,12 @@ class TowerDefinitionTest {
                 () -> TowerDefinition.fromJson(ID, json("""
                         {"schema_version": 1, "display_name": "x", "floors": ["a:f1"]}""")));
         assertTrue(thrown.getMessage().contains("ruleset"), thrown.getMessage());
+
+        IllegalArgumentException rewardTableMissing = assertThrows(IllegalArgumentException.class,
+                () -> TowerDefinition.fromJson(ID, json("""
+                        {"schema_version": 1, "display_name": "x", "ruleset": "a:b",
+                         "floors": ["a:f1"]}""")));
+        assertTrue(rewardTableMissing.getMessage().contains("reward_table"), rewardTableMissing.getMessage());
     }
 
     @Test

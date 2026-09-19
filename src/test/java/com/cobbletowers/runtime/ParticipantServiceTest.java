@@ -34,7 +34,7 @@ class ParticipantServiceTest {
         return new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), run.floorIndex(),
                 run.state(), both, run.lastCheckpoint(), run.committedTransactions(), run.updatedAt(), run.cell(),
-                run.ledger(), run.modifiers());
+                run.ledger(), run.modifiers(), run.lastBankedFloor());
     }
 
     private static ParticipantState stateOf(PersistedRun run, UUID playerId) {
