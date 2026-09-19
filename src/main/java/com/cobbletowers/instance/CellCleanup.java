@@ -73,6 +73,27 @@ public final class CellCleanup {
         return new Report(cell, problems);
     }
 
+    /**
+     * Removes whatever is loose in a cell, and says how many things that was.
+     *
+     * <p>Exactly the class of thing {@link #verify} calls a problem -- every entity in the sweep
+     * volume that is not a player -- so a cell this has swept is a cell that verifies, and the two
+     * cannot drift into disagreeing about what "clean" means.
+     *
+     * <p>Only as honest as the chunks are loaded, which is why the one caller holds the cell's
+     * tickets and waits for them before asking.
+     */
+    public static int sweepEntities(MinecraftServer server, int cell) {
+        CellGrid.requireValid(cell);
+        ServerLevel level = TowerDimension.level(server);
+        if (level == null) return 0;
+
+        List<Entity> loose = level.getEntities((Entity) null, CellGrid.sweepBoundsOf(cell),
+                entity -> !(entity instanceof Player));
+        for (Entity entity : loose) entity.discard();
+        return loose.size();
+    }
+
     public static Report verify(MinecraftServer server, int cell) {
         CellGrid.requireValid(cell);
         List<String> problems = new ArrayList<>();

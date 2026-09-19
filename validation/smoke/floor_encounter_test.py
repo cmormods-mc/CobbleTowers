@@ -40,6 +40,11 @@ from run_durability_test import (  # noqa: E402
 
 TOWER = "cobbletowers:neutral"
 LEAD = "glaceon"
+# Freeze-Dry first: 20 PP against Blizzard's 5, and a floor plus its boss runs well past five turns
+# with no healing in between. The rest are this Glaceon's other moves, tried in turn when one is
+# refused -- Disable and an empty PP bar both look identical from out here.
+FIRST_MOVE = "freezedry"
+FALLBACK_MOVES = ("blizzard", "mirrorcoat", "lastresort")
 FILLERS = 5
 # Fresh names each run, because pokegiveother ADDS to a party: reusing a name across runs fills the
 # six slots with earlier tests' fillers until the lead is a level 1 Magikarp that knows nothing the
@@ -83,6 +88,45 @@ def wait_for(log_path: Path, pattern: str, seconds: int = 90) -> str:
     return ""
 
 
+def wait_for_floor(server, rig: Path, names: list[str], seconds: int = 420,
+                   pattern: str = r"Floor \d+ of run \S+ (cleared|wiped the party)") -> str:
+    """Waits for a line from the server, switching a bot whose move has been refused.
+
+    The rig's bot casts one named move for ever, and a real battle takes that move away from it in
+    at least two ways: **Blizzard has five PP** and the tower deliberately heals nothing between
+    battles (TDS #16), and **Haunter knows Disable**. Either way the bot answers "Invalid action
+    choice" until something gives up -- the harness meeting the mod's own rules, not a fault in
+    either.
+
+    So a refusal moves that bot to the next move on the list. The empty-name DEFAULT the bot
+    supports cannot be reached from here: its command loop trims each line, so "MOVE " arrives as
+    "MOVE" and matches nothing.
+    """
+    fallbacks = {name: list(FALLBACK_MOVES) for name in names}
+    seen = {name: 0 for name in names}
+    deadline = time.time() + seconds
+    while time.time() < deadline:
+        match = re.search(pattern, server.read_log())
+        if match:
+            return match.group(0)
+        for name in names:
+            log = rig / "bot" / f"{name}.log"
+            try:
+                text = log.read_text(encoding="utf-8", errors="replace")
+            except FileNotFoundError:
+                continue
+            refusals = text.count("Invalid action choice")
+            if refusals <= seen[name] or not fallbacks[name]:
+                continue
+            seen[name] = refusals
+            move = fallbacks[name].pop(0)
+            print(f"  {name} had its move refused; switching to {move}")
+            tell_bot(rig, name, f"MOVE {move}")
+            tell_bot(rig, name, "SEND")   # the refusal's re-prompt has already been consumed
+        time.sleep(3)
+    return ""
+
+
 def begin_floor(rcon: Rcon, run: str) -> str:
     rcon.command(f"cobbletowers runs advance {run} preparation_complete")
     return rcon.command(f"cobbletowers runs encounter {run}")
@@ -111,7 +155,7 @@ def main() -> None:
         server.start()
         server.wait_until_ready()
         for name in BOTS:
-            bots.append(start_battle_bot(rig, name, "blizzard"))
+            bots.append(start_battle_bot(rig, name, FIRST_MOVE))
 
         with Rcon("127.0.0.1", 25575, read_password(server_dir)) as rcon:
             for name in BOTS:
@@ -133,7 +177,7 @@ def main() -> None:
             # standing there forever -- the same race that cost the Milestone 1 spike a whole run.
             for name in BOTS:
                 tell_bot(rig, name, "FIGHT")
-                tell_bot(rig, name, "MOVE blizzard")
+                tell_bot(rig, name, f"MOVE {FIRST_MOVE}")
             for name in BOTS:
                 if not wait_for(rig / "bot" / f"{name}.log", r"AUTOFIGHT on", seconds=30):
                     raise RuntimeError(f"{name} never armed; see {rig}/bot/{name}.log")
@@ -176,7 +220,8 @@ def main() -> None:
 
             # The prerequisite is only half a floor now: clearing it hands over to the floor's
             # CobbleRaids boss, and the floor is not finished until that is fought.
-            boss_started = wait_for(server.log, r"Floor \d+ boss \S+ started at level \d+", seconds=180)
+            boss_started = wait_for_floor(server, rig, BOTS, seconds=180,
+                                          pattern=r"Floor \d+ boss \S+ started at level \d+")
             print(f"  boss: {boss_started or '<none>'}")
             results.append(Result("clearing the prerequisite starts the floor's boss",
                                   bool(boss_started), "no boss start line; see " + str(server.log)))
@@ -188,7 +233,7 @@ def main() -> None:
 
             # Already armed above; just wait for the outcome. The boss has a shared health pool, so
             # this takes appreciably longer than the ordinary opponents did.
-            resolved = wait_for(server.log, r"Floor \d+ of run \S+ (cleared|wiped the party)", seconds=360)
+            resolved = wait_for_floor(server, rig, BOTS, seconds=360)
             print(f"  floor outcome: {resolved or '<none>'}")
             results.append(Result("the floor resolved rather than hanging", bool(resolved),
                                   "no cleared/wiped line appeared; see " + str(server.log)))
@@ -211,10 +256,18 @@ def main() -> None:
                                   shown.strip()[:300]))
             print("  " + " | ".join(line.strip() for line in shown.split("  ") if "pool" in line))
 
+            # `data get entity`, not `execute ... run say`: a say inside an execute prints to chat and
+            # returns nothing over RCON, so the probe answered "nothing there" whether or not there
+            # was -- a check that could only ever pass. P7's crash test hit the same trap and that is
+            # how this one was noticed.
             remaining = rcon.command(
-                "execute in cobbletowers:tower run execute if entity @e[type=cobblemon:pokemon] run say left")
-            results.append(Result("no opponent is left standing in the cell afterwards", "left" not in remaining,
-                                  remaining.strip()[:200]))
+                "execute in cobbletowers:tower run data get entity @e[type=cobblemon:pokemon,limit=1] UUID")
+            # Every Pokemon, not only the opponents: a player's own lead is left standing when a
+            # floor ends, and the cleanup sweep does not care whose it is -- a non-player entity in
+            # the cell is a quarantine. This is what the fixed probe found, and the floor now recalls
+            # the party when it resolves.
+            results.append(Result("nothing is left standing in the cell afterwards, the party included",
+                                  "entity data" not in remaining, remaining.strip()[:200]))
 
         # Keep the log before restarting: Server.start() deletes it, and the run that matters
         # happened on the first boot. Asserting against the log after a restart is asserting against

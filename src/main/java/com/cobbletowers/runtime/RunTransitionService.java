@@ -144,6 +144,13 @@ public final class RunTransitionService {
             TowerRuns.save(server, move.next(), move.checkpoint());
             TowerLog.info("Run {} {} -> {} on {}{}", runId, move.from(), move.next().state(), event,
                     move.checkpoint() ? " [checkpoint " + move.key() + "]" : "");
+            // Everybody who is out comes back here, and only here. Tied to arriving at the state
+            // rather than to the event that got there, so every road into an intermission revives
+            // the same people -- which is what makes "until the next intermission" a promise a
+            // knocked-out or reconnected player can rely on.
+            if (move.next().state() == RunState.INTERMISSION) {
+                ParticipantService.reviveAtIntermission(server, runId, now);
+            }
             if (move.next().state().isTerminal()) releaseInstance(server, move.next(), now);
         }
         return outcome;

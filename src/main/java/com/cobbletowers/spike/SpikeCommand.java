@@ -41,8 +41,11 @@ public final class SpikeCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("cobbletowers")
-                .requires(source -> source.hasPermission(2))
+                // Gated here rather than on the root: Brigadier merges a re-registered literal into
+                // the node that is already there and keeps that node's requirement, so a gate on
+                // "cobbletowers" would also gate the one subcommand players are meant to run.
                 .then(Commands.literal("spike")
+                        .requires(source -> source.hasPermission(2))
                         .then(Commands.literal("start")
                                 .then(Commands.argument("definition", ResourceLocationArgument.id())
                                         .then(Commands.argument("players", EntityArgument.players())

@@ -2,6 +2,7 @@ package com.cobbletowers.encounter;
 
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon;
+import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbleraids.api.encounter.EncounterResult;
@@ -21,6 +22,8 @@ import com.cobbletowers.instance.TowerDimension;
 import com.cobbletowers.persistence.LedgerEntry;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
+import com.cobbletowers.api.tower.participant.ParticipantState;
+import com.cobbletowers.runtime.ParticipantService;
 import com.cobbletowers.runtime.RunTransitionService;
 import com.cobbletowers.runtime.TowerRuns;
 import java.util.ArrayList;
@@ -64,7 +67,7 @@ public final class TowerEncounters {
     public enum Phase { PREREQUISITE, BOSS }
 
     /** One floor's round for one run. */
-    public record Round(UUID runId, int floorIndex, Phase phase, Map<UUID, Status> byPlayer) {
+    public record Round(UUID runId, int floorIndex, Phase phase, Map<UUID, Status> byPlayer, long startedAt) {
 
         public Round {
             byPlayer = Map.copyOf(byPlayer);
@@ -187,7 +190,7 @@ public final class TowerEncounters {
         }
         if (byPlayer.isEmpty()) return Optional.empty();
 
-        Round round = new Round(runId, run.floorIndex(), Phase.PREREQUISITE, byPlayer);
+        Round round = new Round(runId, run.floorIndex(), Phase.PREREQUISITE, byPlayer, System.currentTimeMillis());
         ROUNDS.put(runId, round);
         TowerLog.info("Floor {} of run {} begun with {} opponent(s)", run.floorIndex(), runId, byPlayer.size());
         return Optional.of(round);
@@ -211,30 +214,118 @@ public final class TowerEncounters {
 
         Map<UUID, Status> byPlayer = new LinkedHashMap<>(round.byPlayer());
         byPlayer.put(binding.playerId(), playerWon ? Status.CLEARED : Status.OUT);
-        Round updated = new Round(round.runId(), round.floorIndex(), round.phase(), byPlayer);
+        Round updated = new Round(round.runId(), round.floorIndex(), round.phase(), byPlayer, round.startedAt());
         ROUNDS.put(binding.runId(), updated);
 
         long now = System.currentTimeMillis();
-        if (playerWon) earn(server, binding.runId(),
-                LedgerEntry.opponentDefeated(binding.floorIndex(), binding.species(), binding.playerId(), now));
+        if (playerWon) {
+            earn(server, binding.runId(),
+                    LedgerEntry.opponentDefeated(binding.floorIndex(), binding.species(), binding.playerId(), now));
+        } else {
+            knockOut(server, binding.runId(), binding.playerId(), now);
+        }
 
-        if (!updated.settled()) return;
+        settle(server, updated, now);
+    }
 
-        if (updated.everyoneOut()) {
-            ROUNDS.remove(binding.runId());
-            TowerLog.info("Floor {} of run {} wiped the party", updated.floorIndex(), updated.runId());
-            lose(server, updated.runId(), updated.floorIndex(), now);
+    /**
+     * What happens once nobody on the floor is still fighting.
+     *
+     * <p>Reached from a battle ending and from a player being dropped, which is why it is not
+     * written into either: a floor whose last fighter walks away has to finish the same way as one
+     * whose last fighter loses, or it hangs holding the run, the cell and its tickets.
+     */
+    private static void settle(MinecraftServer server, Round round, long now) {
+        if (!round.settled()) return;
+
+        if (round.everyoneOut()) {
+            ROUNDS.remove(round.runId());
+            TowerLog.info("Floor {} of run {} wiped the party", round.floorIndex(), round.runId());
+            lose(server, round.runId(), round.floorIndex(), now);
             return;
         }
 
         // Anyone still standing has earned the right to the boss. The floor is not finished until
         // that is fought: the prerequisite is a prerequisite, not the floor.
-        if (!startBoss(server, updated, now)) {
-            ROUNDS.remove(binding.runId());
+        if (!startBoss(server, round, now)) {
+            ROUNDS.remove(round.runId());
             TowerLog.error("Floor {} of run {} cleared its opponents but the boss could not be started",
-                    updated.floorIndex(), updated.runId());
-            RunTransitionService.apply(server, updated.runId(), RunEvent.TECHNICAL_FAILURE, now);
+                    round.floorIndex(), round.runId());
+            RunTransitionService.apply(server, round.runId(), RunEvent.TECHNICAL_FAILURE, now);
         }
+    }
+
+    /**
+     * Takes one player out of the floor they are on, and lets the floor carry on without them.
+     *
+     * <p>A disconnect past its grace window, a stalled player the watchdog gave up on, somebody who
+     * chose to leave. Their battle ends and their opponent goes with it -- an opponent left standing
+     * is what P3's sweep quarantines a cell for -- and if they were the last one fighting, the floor
+     * settles exactly as it would have if they had lost.
+     *
+     * @return true when a floor actually had them
+     */
+    public static boolean dropPlayer(MinecraftServer server, UUID runId, UUID playerId, String why, long now) {
+        CobblemonBattleAdapter.endPlayer(server, runId, playerId);
+        Round round = ROUNDS.get(runId);
+        if (round == null || !round.byPlayer().containsKey(playerId)) return false;
+        if (round.byPlayer().get(playerId) != Status.FIGHTING) return false;
+
+        Map<UUID, Status> byPlayer = new LinkedHashMap<>(round.byPlayer());
+        byPlayer.put(playerId, Status.OUT);
+        Round updated = new Round(round.runId(), round.floorIndex(), round.phase(), byPlayer, round.startedAt());
+        ROUNDS.put(runId, updated);
+        TowerLog.info("Player {} dropped from floor {} of run {}: {}", playerId, round.floorIndex(), runId, why);
+
+        settle(server, updated, now);
+        return true;
+    }
+
+    /**
+     * A player whose battle is lost: out of the fight, and watching the rest of the floor (TDS #25).
+     *
+     * <p>Two states rather than one, because they are two different facts. KNOCKED_OUT is true the
+     * moment they lose, whether or not they are online to be put anywhere; SPECTATING_TEAM is true
+     * only once they are actually standing somewhere watching. Someone who lost while disconnected
+     * gets the first and not the second, and comes back to exactly that.
+     */
+    private static void knockOut(MinecraftServer server, UUID runId, UUID playerId, long now) {
+        ParticipantService.update(server, runId, playerId, ParticipantState::knockedOut, now);
+        ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+        if (player == null) return;
+        TowerRuns.get(runId).ifPresent(run -> {
+            if (sendToSpectatorAnchor(server, run, player)) {
+                ParticipantService.update(server, runId, playerId, ParticipantState::spectating, now);
+            }
+        });
+    }
+
+    /** Every floor being fought right now, for the watchdog to judge. */
+    public static List<Round> activeRounds() {
+        return List.copyOf(ROUNDS.values());
+    }
+
+    /**
+     * Stands a player on their floor's spectator anchor.
+     *
+     * <p>P4 built that anchor and checked somebody could stand on it; this is what it was for. The
+     * alternative is leaving a knocked-out player in the middle of an arena they are no longer in,
+     * or -- worse, for somebody reconnecting -- wherever they logged out.
+     *
+     * @return false when the floor cannot say where that is, so the caller can leave them be
+     */
+    public static boolean sendToSpectatorAnchor(MinecraftServer server, PersistedRun run, ServerPlayer player) {
+        Optional<FloorDefinition> floor = TowerDefinitionRegistry.content().floorAt(run.towerId(), run.floorIndex());
+        ServerLevel level = TowerDimension.level(server);
+        if (floor.isEmpty() || floor.get().layout().isEmpty() || level == null || run.cell().isEmpty()) return false;
+
+        Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), floor.get().layout().get());
+        if (origin.isEmpty()) return false;
+
+        FloorAnchor anchor = floor.get().layout().get().spectator();
+        BlockPos where = anchor.in(origin.get());
+        player.teleportTo(level, where.getX() + 0.5, where.getY(), where.getZ() + 0.5, anchor.yaw(), 0.0f);
+        return true;
     }
 
     /**
@@ -284,7 +375,8 @@ public final class TowerEncounters {
                 server, level, standing, boss.get(), where, round.runId(), round.floorIndex());
         if (started.isEmpty()) return false;
 
-        ROUNDS.put(round.runId(), new Round(round.runId(), round.floorIndex(), Phase.BOSS, round.byPlayer()));
+        ROUNDS.put(round.runId(),
+                new Round(round.runId(), round.floorIndex(), Phase.BOSS, round.byPlayer(), round.startedAt()));
         return true;
     }
 
@@ -321,6 +413,11 @@ public final class TowerEncounters {
                 // looking for. It moved here when the boss became the end of a floor, and stopped
                 // being logged at all for a run -- which the live test noticed before anyone else.
                 TowerLog.info("Floor {} of run {} cleared", binding.floorIndex(), binding.runId());
+                // Everyone watching is now owed the intermission, which is where they come back.
+                ParticipantService.markRevivePending(server, binding.runId(), now);
+                // And the party's Pokemon go back in their balls: the floor is over, and a lead left
+                // standing is what the cell's cleanup sweep quarantines the cell for.
+                recallParties(server, binding.runId());
                 RunTransitionService.apply(server, binding.runId(), RunEvent.ENCOUNTER_RESOLVED_CLEARED, now);
             }
             case DEFEAT -> lose(server, binding.runId(), binding.floorIndex(), now);
@@ -367,6 +464,33 @@ public final class TowerEncounters {
         CobblemonBattleAdapter.endRun(server, runId);
         // The boss too, or it stands in the cell until the sweep quarantines it.
         TowerBossAdapter.abort(runId);
+        recallParties(server, runId);
+    }
+
+    /**
+     * Puts the party's own Pokemon back in their balls before the cell is handed back.
+     *
+     * <p>Opponents were never the only thing left standing in a cell. A player's own lead is still
+     * out when a floor ends, and the cleanup sweep does not care whose it is: a non-player entity in
+     * the cell is a quarantine, so every completed run would have cost the tower a cell.
+     *
+     * <p>Recalled rather than discarded. The entity is only how a Pokemon is shown; throwing it away
+     * would leave the Pokemon marked as sent out with nothing to send back.
+     *
+     * <p>Found by the live test only after its probe was fixed -- the old one used
+     * {@code execute ... run say}, which returns nothing over RCON, so it had been reporting an
+     * empty cell whatever was in it.
+     */
+    private static void recallParties(MinecraftServer server, UUID runId) {
+        TowerRuns.get(runId).ifPresent(run -> {
+            for (PersistedParticipant participant : run.participants()) {
+                ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+                if (player == null) continue;
+                for (Pokemon pokemon : Cobblemon.INSTANCE.getStorage().getParty(player)) {
+                    if (pokemon.getEntity() != null) pokemon.recall();
+                }
+            }
+        });
     }
 
     public static int onServerStopped(MinecraftServer server) {

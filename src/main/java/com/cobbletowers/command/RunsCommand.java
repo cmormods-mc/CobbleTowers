@@ -10,6 +10,7 @@ import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.runtime.RunFactory;
 import com.cobbletowers.runtime.RunLifecycle;
 import com.cobbletowers.runtime.RunTransitionService;
+import com.cobbletowers.runtime.TowerPresence;
 import com.cobbletowers.runtime.TowerRuns;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -44,22 +45,37 @@ public final class RunsCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("cobbletowers")
-                .requires(source -> source.hasPermission(2))
                 .then(Commands.literal("runs")
-                        .then(Commands.literal("list").executes(RunsCommand::list))
+                        // The one thing here a player is meant to do for themselves. Everything else
+                        // under "runs" drives the machine by hand and stays at permission 2.
+                        .then(Commands.literal("leave").executes(RunsCommand::leave))
+                        .then(Commands.literal("list")
+                                .requires(source -> source.hasPermission(2))
+                                .executes(RunsCommand::list))
                         .then(Commands.literal("show")
+                                .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("run", UuidArgument.uuid()).executes(RunsCommand::show)))
                         .then(Commands.literal("create")
+                                .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("tower", ResourceLocationArgument.id())
                                         .then(Commands.argument("players", EntityArgument.players())
                                                 .executes(RunsCommand::create))))
                         .then(Commands.literal("allocate")
+                                .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("run", UuidArgument.uuid())
                                         .executes(RunsCommand::allocate)))
                         .then(Commands.literal("encounter")
+                                .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("run", UuidArgument.uuid())
                                         .executes(RunsCommand::encounter)))
+                        .then(Commands.literal("watchdog")
+                                .requires(source -> source.hasPermission(2))
+                                .then(Commands.argument("cap", StringArgumentType.word())
+                                        .suggests((context, builder) -> builder.suggest("player")
+                                                .suggest("floor").buildFuture())
+                                        .executes(RunsCommand::watchdog)))
                         .then(Commands.literal("advance")
+                                .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("run", UuidArgument.uuid())
                                         .then(Commands.argument("event", StringArgumentType.word())
                                                 .suggests((context, builder) -> {
@@ -69,6 +85,49 @@ public final class RunsCommand {
                                                     return builder.buildFuture();
                                                 })
                                                 .executes(RunsCommand::advance))))));
+    }
+
+    /**
+     * {@code /cobbletowers runs watchdog player|floor}: the real sweep, with the clock wound forward.
+     *
+     * <p>The watchdog's caps are ten and thirty minutes, which is right for a server and impossible
+     * for a test -- and a test nobody runs proves nothing. This runs the sweep that the tick runs,
+     * over the floors that are really open, with {@code now} advanced past one cap. No test-only
+     * threshold, no second code path: the only thing that differs from the real thing is the clock.
+     *
+     * <p>Useful to an operator for the same reason: it answers "what would the watchdog do about
+     * this floor" without waiting out the cap to find out.
+     */
+    private static int watchdog(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        String cap = StringArgumentType.getString(context, "cap");
+        long ahead = cap.equalsIgnoreCase("floor")
+                ? TowerPresence.FLOOR_STALL_MILLIS : TowerPresence.PLAYER_STALL_MILLIS;
+
+        int floors = TowerEncounters.active();
+        TowerPresence.sweep(source.getServer(), System.currentTimeMillis() + ahead + 1);
+        source.sendSuccess(() -> Component.literal("Swept " + floors + " floor(s) as if the " + cap
+                + " cap had passed").withStyle(ChatFormatting.GOLD), false);
+        return floors;
+    }
+
+    /**
+     * {@code /cobbletowers runs leave}: the player is done, and says so.
+     *
+     * <p>Terminal for them -- {@code ParticipantState} freezes a participant who has left, so no
+     * later transition can quietly put them back in -- and the end of the run if they were the last
+     * one in it (TDS #39).
+     */
+    private static int leave(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        ServerPlayer player = source.getPlayerOrException();
+        if (!TowerPresence.leave(source.getServer(), player, System.currentTimeMillis())) {
+            source.sendFailure(Component.literal("You are not in a tower run."));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("You have left the tower run.")
+                .withStyle(ChatFormatting.GOLD), false);
+        return 1;
     }
 
     private static int list(CommandContext<CommandSourceStack> context) {
