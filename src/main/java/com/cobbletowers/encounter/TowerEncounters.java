@@ -18,6 +18,8 @@ import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.instance.CellPreparer;
+import com.cobbletowers.modifier.DraftService;
+import com.cobbletowers.modifier.ModifierEffects;
 import com.cobbletowers.instance.TowerDimension;
 import com.cobbletowers.persistence.LedgerEntry;
 import com.cobbletowers.persistence.PersistedParticipant;
@@ -66,11 +68,30 @@ public final class TowerEncounters {
      */
     public enum Phase { PREREQUISITE, BOSS }
 
+    /**
+     * How many more opponents one player owes this floor, and where the next one is drawn from.
+     *
+     * <p>An ENCOUNTER modifier's {@code extra_opponents} is what puts anything but zero here: the
+     * floor's prerequisite becomes several battles in a row rather than one.
+     *
+     * <p>The stride is carried rather than recomputed. The next opponent's ordinal has to stay clear
+     * of every other player's, so it steps by the number of fighters -- and by the time a battle
+     * ends, the list of fighters it was calculated from is gone. Carrying it is three bytes against
+     * re-deriving a number that must not change mid-floor.
+     */
+    public record Wave(int nextOrdinal, int stride, int remaining) {
+        public Wave taken() {
+            return new Wave(nextOrdinal + stride, stride, remaining - 1);
+        }
+    }
+
     /** One floor's round for one run. */
-    public record Round(UUID runId, int floorIndex, Phase phase, Map<UUID, Status> byPlayer, long startedAt) {
+    public record Round(UUID runId, int floorIndex, Phase phase, Map<UUID, Status> byPlayer,
+                        Map<UUID, Wave> waves, long startedAt) {
 
         public Round {
             byPlayer = Map.copyOf(byPlayer);
+            waves = Map.copyOf(waves);
         }
 
         public boolean everyoneCleared() {
@@ -162,6 +183,15 @@ public final class TowerEncounters {
         // Taken once, from everybody, before a single battle starts (TDS #45): a party that faints or
         // disconnects during the floor cannot make the rest of it easier.
         List<Integer> partyLevels = levelsOf(fighters);
+        if (partyLevels.isEmpty()) {
+            // Said out loud, because the alternative was found the hard way: every opponent draw
+            // silently returned empty, the round ended up with nobody in it, and `begin` returned
+            // an empty Optional with nothing logged. The operator got "the floor could not be
+            // started" and the log had not one word about why.
+            TowerLog.error("Run {} cannot start floor {}: none of its {} fighter(s) has a Pokemon to"
+                    + " fight with, so no opponent can be levelled", runId, run.floorIndex(), fighters.size());
+            return Optional.empty();
+        }
 
         // Put the party in the arena before anything is fought in it. P4 built the entry anchor and
         // checked a player can stand on it; this is what it was for. Without it the players stay
@@ -175,12 +205,18 @@ public final class TowerEncounters {
                     arrival.getZ() + 0.5, entry.yaw(), 0.0f);
         }
 
+        // What the party has drafted, resolved once for the whole floor rather than per opponent.
+        ModifierEffects effects = DraftService.effects(run);
+
         Map<UUID, Status> byPlayer = new LinkedHashMap<>();
+        Map<UUID, Wave> waves = new LinkedHashMap<>();
         for (int ordinal = 0; ordinal < fighters.size(); ordinal++) {
             ServerPlayer player = fighters.get(ordinal);
             Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(
-                    pool, run.seed(), run.floorIndex(), ordinal, partyLevels, ruleset);
+                    pool, run.seed(), run.floorIndex(), ordinal, partyLevels, ruleset, effects.levelOffset());
             if (snapshot.isEmpty()) continue;
+            waves.put(player.getUUID(),
+                    new Wave(ordinal + fighters.size(), fighters.size(), effects.extraOpponents()));
 
             // Spread out, so four opponents do not stand inside one another.
             BlockPos where = floor.get().layout().get().presentation().in(origin).offset(ordinal * 4, 0, 0);
@@ -188,11 +224,17 @@ public final class TowerEncounters {
                     level, player, snapshot.get(), where, runId, run.floorIndex());
             byPlayer.put(player.getUUID(), battle.isPresent() ? Status.FIGHTING : Status.OUT);
         }
-        if (byPlayer.isEmpty()) return Optional.empty();
+        if (byPlayer.isEmpty()) {
+            TowerLog.error("Run {} drew no opponents at all for floor {}; pool {} produced nothing",
+                    runId, run.floorIndex(), floor.get().encounterPoolId());
+            return Optional.empty();
+        }
 
-        Round round = new Round(runId, run.floorIndex(), Phase.PREREQUISITE, byPlayer, System.currentTimeMillis());
+        Round round = new Round(runId, run.floorIndex(), Phase.PREREQUISITE, byPlayer, waves,
+                System.currentTimeMillis());
         ROUNDS.put(runId, round);
-        TowerLog.info("Floor {} of run {} begun with {} opponent(s)", run.floorIndex(), runId, byPlayer.size());
+        TowerLog.info("Floor {} of run {} begun with {} opponent(s){}", run.floorIndex(), runId, byPlayer.size(),
+                effects.extraOpponents() > 0 ? " plus " + effects.extraOpponents() + " more each" : "");
         return Optional.of(round);
     }
 
@@ -212,18 +254,30 @@ public final class TowerEncounters {
         Round round = ROUNDS.get(binding.runId());
         if (round == null) return;
 
-        Map<UUID, Status> byPlayer = new LinkedHashMap<>(round.byPlayer());
-        byPlayer.put(binding.playerId(), playerWon ? Status.CLEARED : Status.OUT);
-        Round updated = new Round(round.runId(), round.floorIndex(), round.phase(), byPlayer, round.startedAt());
-        ROUNDS.put(binding.runId(), updated);
-
         long now = System.currentTimeMillis();
         if (playerWon) {
             earn(server, binding.runId(),
                     LedgerEntry.opponentDefeated(binding.floorIndex(), binding.species(), binding.playerId(), now));
-        } else {
-            knockOut(server, binding.runId(), binding.playerId(), now);
         }
+
+        // A winner who still owes opponents goes straight into the next one and stays FIGHTING, so
+        // the floor does not settle underneath them. Recorded before the status is, because starting
+        // it can fail and a player with nothing left to fight has simply cleared.
+        Wave wave = round.waves().get(binding.playerId());
+        Map<UUID, Wave> waves = new LinkedHashMap<>(round.waves());
+        boolean stillFighting = false;
+        if (playerWon && wave != null && wave.remaining() > 0) {
+            stillFighting = sendNextOpponent(server, round, binding.playerId(), wave);
+            if (stillFighting) waves.put(binding.playerId(), wave.taken());
+        }
+
+        Map<UUID, Status> byPlayer = new LinkedHashMap<>(round.byPlayer());
+        if (!stillFighting) byPlayer.put(binding.playerId(), playerWon ? Status.CLEARED : Status.OUT);
+        Round updated = new Round(round.runId(), round.floorIndex(), round.phase(), byPlayer, waves,
+                round.startedAt());
+        ROUNDS.put(binding.runId(), updated);
+
+        if (!playerWon) knockOut(server, binding.runId(), binding.playerId(), now);
 
         settle(server, updated, now);
     }
@@ -256,6 +310,55 @@ public final class TowerEncounters {
     }
 
     /**
+     * Puts the next opponent of a multi-opponent floor in front of one player.
+     *
+     * <p>Re-resolves the floor's content rather than carrying it on the round. It is a handful of
+     * map lookups, it happens once per won battle rather than per tick, and the alternative is a
+     * round holding definitions that a datapack reload could make stale underneath it -- the thing
+     * TDS §10 keeps out of persisted state, for the same reason.
+     *
+     * @return whether a battle actually started; false leaves the player cleared, which is the safe
+     *         way to fail -- a floor that cannot put up the next opponent must not hang waiting
+     */
+    private static boolean sendNextOpponent(MinecraftServer server, Round round, UUID playerId, Wave wave) {
+        Optional<PersistedRun> found = TowerRuns.get(round.runId());
+        if (found.isEmpty()) return false;
+        PersistedRun run = found.get();
+        ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+        ServerLevel level = TowerDimension.level(server);
+        if (player == null || level == null || run.cell().isEmpty()) return false;
+
+        TowerContent content = TowerDefinitionRegistry.content();
+        Optional<FloorDefinition> floor = content.floorAt(run.towerId(), run.floorIndex());
+        TowerDefinition tower = content.towers().get(run.towerId());
+        if (floor.isEmpty() || tower == null || floor.get().layout().isEmpty()) return false;
+        EncounterPoolDefinition pool = content.pools().get(floor.get().encounterPoolId());
+        RulesetDefinition ruleset = content.rulesets().get(
+                floor.get().rulesetOverride().orElse(tower.rulesetId()));
+        if (pool == null || ruleset == null) return false;
+
+        Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), floor.get().layout().get());
+        if (origin.isEmpty()) return false;
+
+        ModifierEffects effects = DraftService.effects(run);
+        // The level snapshot is taken from this player's own party, as the first draw was from the
+        // whole party's. It cannot be lowered by the floor's progress: TowerLevelPolicy reads the
+        // registered Pokemon, and a fainted one still counts (TDS #45).
+        Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(pool, run.seed(), run.floorIndex(),
+                wave.nextOrdinal(), levelsOf(List.of(player)), ruleset, effects.levelOffset());
+        if (snapshot.isEmpty()) return false;
+
+        BlockPos where = floor.get().layout().get().presentation().in(origin.get())
+                .offset(wave.nextOrdinal() * 4, 0, 0);
+        Optional<UUID> battle = CobblemonBattleAdapter.start(
+                level, player, snapshot.get(), where, round.runId(), run.floorIndex());
+        if (battle.isEmpty()) return false;
+        TowerLog.info("Run {} floor {}: {} faces another opponent ({} left after this)",
+                round.runId(), run.floorIndex(), playerId, wave.remaining() - 1);
+        return true;
+    }
+
+    /**
      * Takes one player out of the floor they are on, and lets the floor carry on without them.
      *
      * <p>A disconnect past its grace window, a stalled player the watchdog gave up on, somebody who
@@ -273,7 +376,8 @@ public final class TowerEncounters {
 
         Map<UUID, Status> byPlayer = new LinkedHashMap<>(round.byPlayer());
         byPlayer.put(playerId, Status.OUT);
-        Round updated = new Round(round.runId(), round.floorIndex(), round.phase(), byPlayer, round.startedAt());
+        Round updated = new Round(round.runId(), round.floorIndex(), round.phase(), byPlayer, round.waves(),
+                round.startedAt());
         ROUNDS.put(runId, updated);
         TowerLog.info("Player {} dropped from floor {} of run {}: {}", playerId, round.floorIndex(), runId, why);
 
@@ -361,7 +465,8 @@ public final class TowerEncounters {
                 .map(id -> content.bossPools().get(id))
                 .filter(Objects::nonNull);
         Optional<BossDraw.Boss> boss = BossDraw.draw(pool, handpickedBoss(content, tower, floor.get()),
-                run.seed(), run.floorIndex(), levelsOf(standing), ruleset);
+                run.seed(), run.floorIndex(), levelsOf(standing), ruleset,
+                DraftService.effects(run).bossLevelOffset());
         if (boss.isEmpty()) {
             TowerLog.error("Floor {} names neither a boss pool nor a milestone boss", floor.get().id());
             return false;
@@ -376,7 +481,8 @@ public final class TowerEncounters {
         if (started.isEmpty()) return false;
 
         ROUNDS.put(round.runId(),
-                new Round(round.runId(), round.floorIndex(), Phase.BOSS, round.byPlayer(), round.startedAt()));
+                new Round(round.runId(), round.floorIndex(), Phase.BOSS, round.byPlayer(), round.waves(),
+                        round.startedAt()));
         return true;
     }
 

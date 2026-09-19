@@ -7,8 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.cobbletowers.TestRuns;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.api.tower.RunState;
+import com.cobbletowers.persistence.PersistedDraft;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.RunCheckpoint;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -123,7 +125,7 @@ class RunTransitionServiceTest {
                 opened.towerRevision(), opened.towerDigest(), opened.rulesetRevision(), opened.structureRevision(),
                 opened.seed(), opened.floorIndex() - 1, RunState.NEXT_FLOOR_READY, opened.participants(),
                 opened.lastCheckpoint(), opened.committedTransactions(), opened.updatedAt(), opened.cell(),
-                opened.ledger());
+                opened.ledger(), opened.modifiers());
 
         assertEquals(RunTransitionService.Reason.KEY_REUSED,
                 refusal(rewound, RunEvent.NEXT_FLOOR_CONFIRMED).reason());
@@ -217,4 +219,46 @@ class RunTransitionServiceTest {
         assertEquals(target, run.state(), "the walk should reach " + target);
         return run;
     }
+
+    @Test
+    @DisplayName("a run does not leave an intermission while a draft is still on the table")
+    void openDraftBlocksTheNextFloor() {
+        PersistedRun atIntermission = TestRuns.at(RUN, RunState.INTERMISSION, TestRuns.NOW);
+        PersistedRun drafting = atIntermission.withModifiers(
+                atIntermission.modifiers().withDraft(
+                        PersistedDraft.opening(1, false, List.of(TestRuns.id("a"), TestRuns.id("b")))),
+                TestRuns.NOW);
+
+        assertEquals(RunTransitionService.Reason.DRAFT_OPEN,
+                refusal(drafting, RunEvent.INTERMISSION_COMPLETE).reason());
+    }
+
+    @Test
+    @DisplayName("once the draft is settled the run moves on")
+    void settledDraftLetsTheRunPass() {
+        PersistedRun atIntermission = TestRuns.at(RUN, RunState.INTERMISSION, TestRuns.NOW);
+        PersistedRun settled = atIntermission.withModifiers(
+                atIntermission.modifiers().withDraft(
+                        PersistedDraft.opening(1, false, List.of(TestRuns.id("a"), TestRuns.id("b")))
+                                .resolvedAs(0, false)),
+                TestRuns.NOW);
+
+        assertEquals(RunState.NEXT_FLOOR_READY,
+                move(settled, RunEvent.INTERMISSION_COMPLETE, TestRuns.NOW).state());
+    }
+
+    @Test
+    @DisplayName("cashing out is still allowed with a draft open")
+    void cashOutIsNotBlocked() {
+        // The guard is on the one event it is about. A party that wants to stop should not have to
+        // vote on a challenge for a floor they are never going to fight.
+        PersistedRun atIntermission = TestRuns.at(RUN, RunState.INTERMISSION, TestRuns.NOW);
+        PersistedRun drafting = atIntermission.withModifiers(
+                atIntermission.modifiers().withDraft(
+                        PersistedDraft.opening(1, false, List.of(TestRuns.id("a")))),
+                TestRuns.NOW);
+
+        assertEquals(RunState.CASHED_OUT, move(drafting, RunEvent.CASH_OUT_CHOSEN, TestRuns.NOW).state());
+    }
 }
+

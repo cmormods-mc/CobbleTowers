@@ -29,8 +29,23 @@ public final class EncounterDraw {
     public static Optional<EncounterSnapshot> draw(EncounterPoolDefinition pool, long runSeed, int floorIndex,
                                                    int ordinal, Collection<Integer> partyLevels,
                                                    RulesetDefinition ruleset) {
+        return draw(pool, runSeed, floorIndex, ordinal, partyLevels, ruleset, 0);
+    }
+
+    /**
+     * The same draw, with a run's drafted modifiers folded in.
+     *
+     * <p>{@code modifierLevelOffset} is added to the pool entry's own offset and the sum is handed to
+     * {@link TowerLevelPolicy}, which clamps it. Adding the two here and clamping there keeps every
+     * piece of tower level maths in the one place TDS #45 requires -- this method decides nothing
+     * about what a level may be, it only says what to ask for.
+     */
+    public static Optional<EncounterSnapshot> draw(EncounterPoolDefinition pool, long runSeed, int floorIndex,
+                                                   int ordinal, Collection<Integer> partyLevels,
+                                                   RulesetDefinition ruleset, int modifierLevelOffset) {
         EncounterPoolDefinition.Entry entry = pick(pool, EncounterSeed.of(runSeed, floorIndex, ordinal));
-        return TowerLevelPolicy.levelFor(partyLevels, floorIndex, entry.levelOffset(), ruleset).stream()
+        int offset = entry.levelOffset() + modifierLevelOffset;
+        return TowerLevelPolicy.levelFor(partyLevels, floorIndex, offset, ruleset).stream()
                 .mapToObj(level -> new EncounterSnapshot(ordinal, entry.species(), entry.aspects(), level))
                 .findFirst();
     }

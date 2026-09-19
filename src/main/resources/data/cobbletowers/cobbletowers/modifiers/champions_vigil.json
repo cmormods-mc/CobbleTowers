@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "enemy",
+  "display_name": "Champion's Vigil",
+  "risk": "severe",
+  "weight": 50,
+  "group": "boss_pressure",
+  "stack_limit": 1,
+  "effect": {
+    "boss_level_offset": 10
+  }
+}

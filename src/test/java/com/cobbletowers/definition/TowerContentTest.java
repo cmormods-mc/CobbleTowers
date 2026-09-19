@@ -36,7 +36,7 @@ class TowerContentTest {
                                 .getAsJsonObject())) : Map.of(),
                 withRuleset ? Map.of(id("standard"), RulesetDefinition.fromJson(id("standard"),
                         JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())) : Map.of(),
-                milestones, Map.of(),
+                milestones, Map.of(), Map.of(),
                 Map.of(DefinitionKey.tower(id("neutral")), "digest-abc"));
     }
 
@@ -84,7 +84,7 @@ class TowerContentTest {
                                 .getAsJsonObject())),
                 Map.of(id("standard"), RulesetDefinition.fromJson(id("standard"),
                         JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())),
-                Map.of(), Map.of(),
+                Map.of(), Map.of(), Map.of(),
                 digests);
 
         assertEquals("tower-digest", content.summary(id("neutral")).orElseThrow().contentDigest(),

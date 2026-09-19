@@ -31,12 +31,13 @@ public record TowerContent(
         Map<ResourceLocation, RulesetDefinition> rulesets,
         Map<ResourceLocation, MilestoneDefinition> milestones,
         Map<ResourceLocation, BossPoolDefinition> bossPools,
+        Map<ResourceLocation, ModifierDefinition> modifiers,
         Map<DefinitionKey, String> digests,
         List<String> problems,
         List<ResourceLocation> sortedTowerIds) {
 
     public static final TowerContent EMPTY = new TowerContent(
-            Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), List.of(), List.of());
+            Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), List.of(), List.of());
 
     public TowerContent {
         towers = Map.copyOf(towers);
@@ -45,6 +46,7 @@ public record TowerContent(
         rulesets = Map.copyOf(rulesets);
         milestones = Map.copyOf(milestones);
         bossPools = Map.copyOf(bossPools);
+        modifiers = Map.copyOf(modifiers);
         digests = Map.copyOf(digests);
         problems = List.copyOf(problems);
         sortedTowerIds = List.copyOf(sortedTowerIds);
@@ -61,8 +63,10 @@ public record TowerContent(
                                   Map<ResourceLocation, RulesetDefinition> rulesets,
                                   Map<ResourceLocation, MilestoneDefinition> milestones,
                                   Map<ResourceLocation, BossPoolDefinition> bossPools,
+                                  Map<ResourceLocation, ModifierDefinition> modifiers,
                                   Map<DefinitionKey, String> digests) {
         List<String> problems = new ArrayList<>();
+        problems.addAll(modifierProblems(modifiers));
         for (TowerDefinition tower : towers.values()) {
             if (!rulesets.containsKey(tower.rulesetId())) {
                 problems.add(tower.id() + " names ruleset " + tower.rulesetId() + ", which is not loaded");
@@ -89,6 +93,12 @@ public record TowerContent(
                         problems.add(floor.id() + " names ruleset override " + override + ", which is not loaded");
                     }
                 });
+                // Reserved since P1 and carried untouched ever since; P8 is where it finally resolves.
+                for (ResourceLocation modifierId : floor.modifierIds()) {
+                    if (!modifiers.containsKey(modifierId)) {
+                        problems.add(floor.id() + " names modifier " + modifierId + ", which is not loaded");
+                    }
+                }
             }
             problems.addAll(floorNumbering(tower, indices));
             problems.addAll(milestoneProblems(tower, floors, milestones));
@@ -96,7 +106,33 @@ public record TowerContent(
         List<ResourceLocation> sorted = towers.keySet().stream()
                 .sorted(Comparator.comparing(ResourceLocation::toString))
                 .toList();
-        return new TowerContent(towers, floors, pools, rulesets, milestones, bossPools, digests, problems, sorted);
+        return new TowerContent(towers, floors, pools, rulesets, milestones, bossPools, modifiers, digests,
+                problems, sorted);
+    }
+
+    /**
+     * A modifier's own references (TDS #58).
+     *
+     * <p>Self-exclusion and require/exclude contradictions are refused by the record itself, because
+     * they are decidable from one file. These are the checks that need the whole loaded set: a
+     * dangling id, and a prerequisite chain that can never be satisfied because something in it is
+     * missing.
+     */
+    private static List<String> modifierProblems(Map<ResourceLocation, ModifierDefinition> modifiers) {
+        List<String> problems = new ArrayList<>();
+        for (ModifierDefinition modifier : modifiers.values()) {
+            for (ResourceLocation excluded : modifier.excludes()) {
+                if (!modifiers.containsKey(excluded)) {
+                    problems.add(modifier.id() + " excludes " + excluded + ", which is not loaded");
+                }
+            }
+            for (ResourceLocation required : modifier.requires()) {
+                if (!modifiers.containsKey(required)) {
+                    problems.add(modifier.id() + " requires " + required + ", which is not loaded");
+                }
+            }
+        }
+        return problems;
     }
 
     /** Floors must be numbered 1..n in listed order: a gap or a repeat means a floor nobody reaches. */
@@ -184,8 +220,40 @@ public record TowerContent(
         return Optional.ofNullable(rulesets.get(rulesetId));
     }
 
+    /** One modifier by id. */
+    public Optional<ModifierDefinition> modifier(ResourceLocation modifierId) {
+        return Optional.ofNullable(modifiers.get(modifierId));
+    }
+
+    /**
+     * The modifiers a floor may offer, in a stable order.
+     *
+     * <p>A floor that names none draws from every loaded modifier: a tower is expected to grow
+     * content without every floor file being edited to list it. Naming them is how a floor narrows
+     * the pool, not how it opts in.
+     */
+    public List<ModifierDefinition> draftablePool(ResourceLocation towerId, int floorIndex) {
+        List<ResourceLocation> named = floorAt(towerId, floorIndex)
+                .map(FloorDefinition::modifierIds)
+                .orElse(List.of());
+        List<ModifierDefinition> pool = new ArrayList<>();
+        if (named.isEmpty()) {
+            pool.addAll(modifiers.values());
+        } else {
+            for (ResourceLocation id : named) {
+                ModifierDefinition modifier = modifiers.get(id);
+                if (modifier != null) pool.add(modifier);
+            }
+        }
+        // Sorted, because a draw walks this list subtracting weights and a map's iteration order is
+        // not a contract. Two servers with the same seed and the same content must offer the same
+        // three cards; an unordered pool would make that true only by luck.
+        pool.sort(Comparator.comparing(modifier -> modifier.id().toString()));
+        return List.copyOf(pool);
+    }
+
     public int definitionCount() {
         return towers.size() + floors.size() + pools.size() + rulesets.size() + milestones.size()
-                + bossPools.size();
+                + bossPools.size() + modifiers.size();
     }
 }

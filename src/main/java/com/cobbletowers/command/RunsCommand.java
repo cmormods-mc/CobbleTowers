@@ -3,8 +3,13 @@ package com.cobbletowers.command;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.battle.cobbleraids.TowerBossAdapter;
+import com.cobbletowers.definition.ModifierDefinition;
+import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.modifier.DraftService;
+import com.cobbletowers.modifier.ModifierEffects;
 import com.cobbletowers.encounter.TowerEncounters;
+import com.cobbletowers.persistence.PersistedDraft;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.runtime.RunFactory;
@@ -13,6 +18,7 @@ import com.cobbletowers.runtime.RunTransitionService;
 import com.cobbletowers.runtime.TowerPresence;
 import com.cobbletowers.runtime.TowerRuns;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -49,6 +55,21 @@ public final class RunsCommand {
                         // The one thing here a player is meant to do for themselves. Everything else
                         // under "runs" drives the machine by hand and stays at permission 2.
                         .then(Commands.literal("leave").executes(RunsCommand::leave))
+                        // Drafting is the other thing a player does for themselves, so `vote` and
+                        // `show` set no permission while `force` does. P7's trap is why each
+                        // subcommand carries its own: Brigadier keeps the FIRST registration's
+                        // `requires` on a merged literal, so one put higher up would silently apply
+                        // to every player-facing thing beneath it.
+                        .then(Commands.literal("draft")
+                                .then(Commands.literal("show")
+                                        .executes(RunsCommand::draftShow))
+                                .then(Commands.literal("vote")
+                                        .then(Commands.argument("card", IntegerArgumentType.integer(1, 9))
+                                                .executes(RunsCommand::draftVote)))
+                                .then(Commands.literal("force")
+                                        .requires(source -> source.hasPermission(2))
+                                        .then(Commands.argument("run", UuidArgument.uuid())
+                                                .executes(RunsCommand::draftForce))))
                         .then(Commands.literal("list")
                                 .requires(source -> source.hasPermission(2))
                                 .executes(RunsCommand::list))
@@ -171,8 +192,28 @@ public final class RunsCommand {
             source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT, "    %s floor %d %s",
                     entry.kind(), entry.floorIndex(), entry.what())), false);
         }
+        // TDS #60: state, modifiers, seed and last transition, all keyed by run.
+        ModifierEffects effects = DraftService.effects(run);
+        source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
+                "  modifiers: %d drafted (%d locked in)  ->  level %+d, +%d opponent(s), boss level %+d,"
+                        + " boss hp %d%%, reward %d%%",
+                run.modifiers().accumulated().size(), run.modifiers().lockedIn().size(),
+                effects.levelOffset(), effects.extraOpponents(), effects.bossLevelOffset(),
+                effects.bossHealthPercent(), effects.rewardPercent())), false);
+        for (ResourceLocation modifier : run.modifiers().accumulated()) {
+            source.sendSuccess(() -> Component.literal("    " + modifier
+                    + (run.modifiers().lockedIn().contains(modifier) ? "  [LOCKED IN]" : "")), false);
+        }
+        run.modifiers().draft().ifPresent(draft -> source.sendSuccess(() -> Component.literal(
+                "  draft at floor " + draft.floorIndex() + (draft.lockIn() ? " (LOCK-IN)" : "")
+                        + ": " + draft.cards() + (draft.resolved()
+                        ? " -> " + draft.chosenModifier().orElse(null)
+                        + (draft.decidedByTieBreak() ? " (tie-break)" : "")
+                        : " OPEN, " + draft.votes().size() + " vote(s)")), false));
         TowerEncounters.of(runId).ifPresent(round -> source.sendSuccess(() -> Component.literal(
-                "  fighting now: " + round.phase() + " " + round.byPlayer()), false));
+                "  fighting now: " + round.phase() + " " + round.byPlayer()
+                        + (round.waves().values().stream().anyMatch(wave -> wave.remaining() > 0)
+                        ? "  waves " + round.waves() : "")), false));
         TowerBossAdapter.of(runId).ifPresent(boss -> source.sendSuccess(() -> Component.literal(
                 "  boss: " + boss.definition() + " at level " + boss.level()), false));
         for (PersistedParticipant participant : run.participants()) {
@@ -293,4 +334,84 @@ public final class RunsCommand {
         source.sendFailure(Component.literal(refusal.reason() + ": " + refusal.detail()));
         return 0;
     }
+
+    /**
+     * Prints the draft in front of the player, with its cards numbered from 1.
+     *
+     * <p>One-based for the player, zero-based inside: a card list that starts at zero is a thing
+     * only programmers vote on. The conversion happens here, at the edge, exactly once.
+     */
+    private static int draftShow(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        ServerPlayer player = source.getPlayerOrException();
+        Optional<PersistedRun> found = TowerRuns.forPlayer(player.getUUID());
+        if (found.isEmpty()) {
+            source.sendFailure(Component.literal("You are not in a tower run."));
+            return 0;
+        }
+        Optional<PersistedDraft> draft = found.get().modifiers().draft();
+        if (draft.isEmpty()) {
+            source.sendFailure(Component.literal("There is no draft open."));
+            return 0;
+        }
+        PersistedDraft open = draft.get();
+        TowerContent content = TowerDefinitionRegistry.content();
+        source.sendSuccess(() -> Component.literal((open.lockIn() ? "LOCK-IN draft" : "Draft")
+                + " at floor " + open.floorIndex()).withStyle(ChatFormatting.GOLD), false);
+        for (int index = 0; index < open.cards().size(); index++) {
+            int card = index;
+            ResourceLocation id = open.cards().get(index);
+            String name = content.modifier(id).map(ModifierDefinition::displayName).orElse(id.toString());
+            String risk = content.modifier(id).map(modifier -> modifier.risk().name()).orElse("?");
+            long votes = open.votes().values().stream().filter(choice -> choice == card).count();
+            source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
+                    "  [%d] %s (%s) - %d vote(s)%s", card + 1, name, risk, votes,
+                    open.chosen().isPresent() && open.chosen().getAsInt() == card ? "  <- CHOSEN" : "")), false);
+        }
+        if (open.resolved()) {
+            source.sendSuccess(() -> Component.literal("  settled"
+                    + (open.decidedByTieBreak() ? " on a seed tie-break" : " by majority")), false);
+        }
+        return open.cards().size();
+    }
+
+    /** Votes for a card, by its 1-based number. */
+    private static int draftVote(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        ServerPlayer player = source.getPlayerOrException();
+        Optional<PersistedRun> found = TowerRuns.forPlayer(player.getUUID());
+        if (found.isEmpty()) {
+            source.sendFailure(Component.literal("You are not in a tower run."));
+            return 0;
+        }
+        int card = IntegerArgumentType.getInteger(context, "card") - 1;
+        Optional<PersistedDraft> after = DraftService.vote(source.getServer(), found.get().runId(),
+                player.getUUID(), card, System.currentTimeMillis());
+        if (after.isEmpty()) {
+            source.sendFailure(Component.literal("There is no draft open to vote on."));
+            return 0;
+        }
+        boolean settled = after.get().resolved();
+        source.sendSuccess(() -> Component.literal(settled
+                ? "Vote recorded; the draft is settled."
+                : "Vote recorded."), false);
+        return 1;
+    }
+
+    /** Settles an open draft without waiting for the rest of the party. */
+    private static int draftForce(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        UUID runId = UuidArgument.getUuid(context, "run");
+        Optional<PersistedRun> found = TowerRuns.get(runId);
+        if (found.isEmpty() || found.get().modifiers().draft().isEmpty()) {
+            source.sendFailure(Component.literal("Run " + runId + " has no draft open."));
+            return 0;
+        }
+        PersistedDraft settled = DraftService.settle(source.getServer(), runId, System.currentTimeMillis());
+        source.sendSuccess(() -> Component.literal("Draft settled on "
+                + settled.chosenModifier().map(ResourceLocation::toString).orElse("nothing")
+                + (settled.decidedByTieBreak() ? " (seed tie-break)" : " (majority)")), true);
+        return 1;
+    }
 }
+

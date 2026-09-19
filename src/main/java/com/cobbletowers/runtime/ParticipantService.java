@@ -152,6 +152,6 @@ public final class ParticipantService {
         return new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), run.floorIndex(),
                 run.state(), participants, run.lastCheckpoint(), run.committedTransactions(), now, run.cell(),
-                run.ledger());
+                run.ledger(), run.modifiers());
     }
 }

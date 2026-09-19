@@ -7,11 +7,13 @@ import com.cobbletowers.definition.DefinitionKey;
 import com.cobbletowers.definition.EncounterPoolDefinition;
 import com.cobbletowers.definition.FloorDefinition;
 import com.cobbletowers.definition.MilestoneDefinition;
+import com.cobbletowers.definition.ModifierDefinition;
 import com.cobbletowers.definition.RulesetDefinition;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
+import com.cobbletowers.persistence.RunModifierState;
 import com.cobbletowers.runtime.RunFactory;
 import com.google.gson.JsonParser;
 import java.util.List;
@@ -43,7 +45,8 @@ public final class TestRuns {
         return new PersistedRun(runId, PersistedRun.SCHEMA_VERSION, TOWER, 3, "digest-abc", 2, 0, 42L,
                 RunFactory.FIRST_FLOOR, RunState.CREATED,
                 List.of(new PersistedParticipant(playerId, ParticipantState.joined(), List.of())),
-                Optional.empty(), List.of(), updatedAt, OptionalInt.empty(), List.of());
+                Optional.empty(), List.of(), updatedAt, OptionalInt.empty(), List.of(),
+                RunModifierState.EMPTY);
     }
 
     /** The same run moved to a state directly, for tests about storage rather than transitions. */
@@ -52,7 +55,7 @@ public final class TestRuns {
         return new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), run.floorIndex(),
                 state, run.participants(), run.lastCheckpoint(), run.committedTransactions(), updatedAt,
-                run.cell(), run.ledger());
+                run.cell(), run.ledger(), run.modifiers());
     }
 
     /** One tower, two floors, a ruleset and a boss milestone -- enough for every reference to resolve. */
@@ -72,8 +75,35 @@ public final class TestRuns {
                 List.of(one.id(), two.id()), List.of(boss.id()), Optional.empty());
 
         return TowerContent.of(Map.of(TOWER, tower), Map.of(one.id(), one, two.id(), two), Map.of(pool.id(), pool),
-                Map.of(ruleset.id(), ruleset), Map.of(boss.id(), boss), Map.of(),
+                Map.of(ruleset.id(), ruleset), Map.of(boss.id(), boss), Map.of(), Map.of(),
                 Map.of(DefinitionKey.tower(TOWER), "digest-abc"));
+    }
+
+    /** The same content, plus a set of modifiers to draft from. */
+    public static TowerContent contentWith(Map<ResourceLocation, ModifierDefinition> modifiers) {
+        TowerContent base = content();
+        return TowerContent.of(base.towers(), base.floors(), base.pools(), base.rulesets(), base.milestones(),
+                base.bossPools(), modifiers, base.digests());
+    }
+
+    /**
+     * One modifier, built from JSON so the tests exercise the same parser content does.
+     *
+     * @param extra additional top-level JSON fields, e.g. {@code "\"stack_limit\":2"}
+     */
+    public static ModifierDefinition modifier(String path, String type, String effect, String... extra) {
+        StringBuilder json = new StringBuilder("{\"schema_version\":1,\"type\":\"" + type
+                + "\",\"display_name\":\"" + path + "\",\"effect\":{" + effect + "}");
+        for (String field : extra) json.append(',').append(field);
+        return ModifierDefinition.fromJson(id(path),
+                JsonParser.parseString(json.append('}').toString()).getAsJsonObject());
+    }
+
+    /** The run with modifiers already drafted, as if it had taken them at earlier intermissions. */
+    public static PersistedRun holding(PersistedRun run, ResourceLocation... modifiers) {
+        RunModifierState state = run.modifiers();
+        for (ResourceLocation modifier : modifiers) state = state.accumulating(modifier);
+        return run.withModifiers(state, run.updatedAt());
     }
 
     private static FloorDefinition floor(int index, Optional<MilestoneKind> milestone) {

@@ -7,11 +7,13 @@ import com.cobbletowers.api.tower.participant.ParticipantState;
 import com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter;
 import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.persistence.PersistedParticipant;
+import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.persistence.PersistedRun;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Optional;
 import java.util.UUID;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -204,8 +206,18 @@ public final class TowerPresence {
      * <p>Public because {@code /cobbletowers runs watchdog} runs exactly this with the clock wound
      * forward. A test-only threshold would have proved a code path that only tests take.
      */
+    /**
+     * When each run's draft was first seen with nobody able to vote.
+     *
+     * <p>Deliberately not persisted. After a restart the clock starts again, which is what gives a
+     * party the full window to come back -- the alternative would count a server's downtime against
+     * the players who were waiting through it.
+     */
+    private static final Map<UUID, Long> DRAFT_EMPTY_SINCE = new ConcurrentHashMap<>();
+
     public static void sweep(MinecraftServer server, long now) {
         expireGraceWindows(server, now);
+        settleAbandonedDrafts(server, now);
 
         for (TowerEncounters.Round round : TowerEncounters.activeRounds()) {
             // The boss is CobbleRaids', and it has its own lifetime cap on a boss that goes nowhere.
@@ -228,6 +240,63 @@ public final class TowerPresence {
                         playerId, round.floorIndex(), round.runId(), PLAYER_STALL_MILLIS / 60_000);
                 TowerEncounters.dropPlayer(server, round.runId(), playerId, "stopped answering", now);
             }
+        }
+    }
+
+    /**
+     * Drafts nobody is left to answer.
+     *
+     * <p>The gap the untimed draft opened. TDS #21 keeps normal-mode preparation untimed, so a party
+     * may sit at an intermission as long as it likes -- but a party that has <b>gone</b> would sit
+     * there forever, holding a cell and its chunk tickets, because the floor watchdog above sweeps
+     * active floors and an intermission is not one.
+     *
+     * <p>So the condition is emptiness, not time: a draft with nobody connected who could vote is
+     * settled from the seed, exactly as an unvoted one would be when the last player votes. Nothing
+     * is taken from anybody who is still there -- with one player online this does nothing at all,
+     * however long they take.
+     */
+    private static void settleAbandonedDrafts(MinecraftServer server, long now) {
+        for (PersistedRun run : TowerRuns.all()) {
+            if (run.isRetired() || !run.modifiers().hasOpenDraft()) {
+                DRAFT_EMPTY_SINCE.remove(run.runId());
+                continue;
+            }
+            boolean anybodyHere = false;
+            for (UUID voter : DraftService.voters(run)) {
+                if (server.getPlayerList().getPlayer(voter) != null) {
+                    anybodyHere = true;
+                    break;
+                }
+            }
+            if (anybodyHere) {
+                DRAFT_EMPTY_SINCE.remove(run.runId());
+                continue;
+            }
+
+            // Empty is not the same as abandoned, and a live test proved it the expensive way: a
+            // restart sweeps before a single player has had time to reconnect, so the first sweep
+            // after every crash settled every open draft on the party's behalf. The party would
+            // come back to a challenge nobody chose.
+            //
+            // So emptiness has to last. The window is the one a disconnected player already gets --
+            // it is the same question, asked about a whole party rather than one person -- and it
+            // starts when the emptiness is first *seen*, which after a restart means the clock
+            // starts at the restart rather than at whenever the run was last written.
+            // Two clocks, on purpose. The stamp is when emptiness was actually OBSERVED, so it is
+            // real time; `now` is the clock the verdict is read against, which `runs watchdog`
+            // winds forward so a five-minute rule can be tested without waiting five minutes. In
+            // production they are the same clock and this is an ordinary elapsed-time check --
+            // stamping with a wound `now` instead would compare a wound clock against itself and
+            // the difference would be zero forever.
+            long since = DRAFT_EMPTY_SINCE.computeIfAbsent(run.runId(), ignored -> System.currentTimeMillis());
+            if (now - since <= ParticipantService.RECONNECT_WINDOW_MILLIS) continue;
+
+            DRAFT_EMPTY_SINCE.remove(run.runId());
+            TowerLog.warn("Run {} has had a draft open at floor {} with nobody to vote for {} minute(s);"
+                            + " settling it", run.runId(), run.floorIndex(),
+                    ParticipantService.RECONNECT_WINDOW_MILLIS / 60_000);
+            DraftService.settle(server, run.runId(), now);
         }
     }
 
@@ -286,6 +355,7 @@ public final class TowerPresence {
     /** Per-server state on a class that outlives a server: cleared, like every other index. */
     public static void onServerStopped() {
         DISCONNECTED_AT.clear();
+        DRAFT_EMPTY_SINCE.clear();
         lastSweep = 0;
     }
 
