@@ -54,9 +54,18 @@ CLASS_NAME = re.compile(r"L([^;<]+)")
 
 def mod_classes(source: Path | None) -> list[tuple[str, bytes]]:
     if source is None:
-        base = ROOT / "build" / "classes" / "java" / "main"
-        return [(str(p.relative_to(base)).replace("\\", "/"), p.read_bytes())
-                for p in sorted((base / MOD_PREFIX).rglob("*.class"))]
+        found = []
+        # "main" and "client" (P11's split environment source set) are two separate compile outputs of
+        # the same mod; persisted state has no business existing client-side, but this checks that
+        # rather than assuming it.
+        for env in ("main", "client"):
+            base = ROOT / "build" / "classes" / "java" / env
+            mod_dir = base / MOD_PREFIX
+            if not mod_dir.is_dir():
+                continue
+            found.extend((str(p.relative_to(base)).replace("\\", "/"), p.read_bytes())
+                         for p in sorted(mod_dir.rglob("*.class")))
+        return found
     with zipfile.ZipFile(source) as jar:
         return [(name, jar.read(name)) for name in sorted(jar.namelist())
                 if name.startswith(MOD_PREFIX) and name.endswith(".class")]

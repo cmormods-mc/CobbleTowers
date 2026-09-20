@@ -13,7 +13,8 @@
   "license": "MIT",
   "environment": "*",
   "entrypoints": {
-    "main": ["com.cobbletowers.CobbleTowers"]
+    "main": ["com.cobbletowers.CobbleTowers"],
+    "client": ["com.cobbletowers.client.CobbleTowersClient"]
   },
   "depends": {
     "fabricloader": ">=0.17.2",

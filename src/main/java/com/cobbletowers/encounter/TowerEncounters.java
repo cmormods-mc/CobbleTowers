@@ -29,6 +29,7 @@ import com.cobbletowers.api.tower.participant.ParticipantState;
 import com.cobbletowers.runtime.ParticipantService;
 import com.cobbletowers.runtime.RunTransitionService;
 import com.cobbletowers.runtime.TowerRuns;
+import com.cobbletowers.spectator.SpectatorPresentation;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,6 +39,9 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -281,6 +285,13 @@ public final class TowerEncounters {
                 round.startedAt());
         ROUNDS.put(binding.runId(), updated);
 
+        // This player's own floor participation just finished, win or loss -- anyone spectating them
+        // is watching a fight that no longer exists.
+        if (!stillFighting) {
+            TowerRuns.get(binding.runId())
+                    .ifPresent(run -> SpectatorPresentation.refreshFollowersOf(server, run, binding.playerId()));
+        }
+
         if (!playerWon) knockOut(server, binding.runId(), binding.playerId(), now);
 
         settle(server, updated, now);
@@ -358,9 +369,23 @@ public final class TowerEncounters {
         Optional<UUID> battle = CobblemonBattleAdapter.start(
                 level, player, snapshot.get(), where, round.runId(), run.floorIndex());
         if (battle.isEmpty()) return false;
+        theme.ifPresent(resolved -> announceJersey(player, resolved, snapshot.get()));
         TowerLog.info("Run {} floor {}: {} faces another opponent ({} left after this)",
                 round.runId(), run.floorIndex(), playerId, wave.remaining() - 1);
         return true;
+    }
+
+    /**
+     * TDS #68's "concise regional entrance/title presentation" -- plain vanilla title packets, not a
+     * custom screen. A two-line title card is exactly what these already do, and every client already
+     * understands them without needing the CobbleTowers mod installed.
+     */
+    private static void announceJersey(ServerPlayer player, RegionalThemeDefinition theme, EncounterSnapshot snapshot) {
+        if (snapshot.jerseyNumber().isEmpty()) return;
+        player.connection.send(new ClientboundSetTitleTextPacket(
+                Component.literal(theme.displayName() + " -- " + theme.doctrine())));
+        player.connection.send(new ClientboundSetSubtitleTextPacket(
+                Component.literal("#" + snapshot.jerseyNumber().getAsInt() + " " + snapshot.species().getPath())));
     }
 
     /**
@@ -404,7 +429,8 @@ public final class TowerEncounters {
         if (player == null) return;
         TowerRuns.get(runId).ifPresent(run -> {
             if (sendToSpectatorAnchor(server, run, player)) {
-                ParticipantService.update(server, runId, playerId, ParticipantState::spectating, now);
+                ParticipantService.update(server, runId, playerId, ParticipantState::spectating, now)
+                        .ifPresent(updated -> SpectatorPresentation.startSpectating(server, updated, player));
             }
         });
     }

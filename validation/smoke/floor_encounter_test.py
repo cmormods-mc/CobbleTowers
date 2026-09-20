@@ -260,8 +260,21 @@ def main() -> None:
             # returns nothing over RCON, so the probe answered "nothing there" whether or not there
             # was -- a check that could only ever pass. P7's crash test hit the same trap and that is
             # how this one was noticed.
+            #
+            # Scoped to this run's own cell, not the whole dimension. An unscoped @e[] here asserts
+            # ABSENCE, unlike participant_test.py's "something really is standing" check, which wants
+            # PRESENCE and so is safe unscoped -- any Pokemon anywhere proves its point. An absence
+            # check has no such safety: Cobblemon's ambient spawner can plant a wild Pokemon in any
+            # other warm-pool cell's pasted terrain over the minutes this test runs, and a query against
+            # the whole dimension fails on that wildlife with nothing to do with this floor's own
+            # cleanup. Found live: a Zigzagoon reported "left standing" when neither this pool, the
+            # boss pool nor the bot's own party names that species anywhere.
+            cell = int(re.search(r"cell (\d+)", shown).group(1))
+            cell_info = rcon.command(f"cobbletowers cells show {cell}")
+            ox, oy, oz = (int(part) for part in re.search(r"origin (-?\d+) (-?\d+) (-?\d+)", cell_info).groups())
             remaining = rcon.command(
-                "execute in cobbletowers:tower run data get entity @e[type=cobblemon:pokemon,limit=1] UUID")
+                "execute in cobbletowers:tower run data get entity "
+                f"@e[type=cobblemon:pokemon,x={ox},y={oy},z={oz},dx=256,dy=256,dz=256,limit=1] UUID")
             # Every Pokemon, not only the opponents: a player's own lead is left standing when a
             # floor ends, and the cleanup sweep does not care whose it is -- a non-player entity in
             # the cell is a quarantine. This is what the fixed probe found, and the floor now recalls

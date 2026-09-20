@@ -163,3 +163,20 @@ claim there is about the transition wiring, not the battle -- `floor_encounter_t
 proves a floor plays for real. The observable that matters throughout is each grant's own commit key,
 `run:<id>:floor:<n>:granted`, printed in `runs show`'s committed-transactions line: present only when
 a payout actually happened, and it is what tells "banked" apart from "merely advanced".
+
+### Gotcha found running `floor_encounter_test.py` during P11
+
+**An absence check needs a scoped selector; a presence check does not.** "nothing is left standing
+in the cell afterwards" queried `@e[type=cobblemon:pokemon,limit=1]` across the whole
+`cobbletowers:tower` dimension -- the same unscoped selector `participant_test.py`'s "something really
+is standing in the cell when the server dies" uses. That one is safe unscoped because it wants
+*presence*: any Pokemon anywhere proves its point. An absence check has no such safety net. Cobblemon's
+ambient spawner can plant a wild Pokemon in another warm-pool cell's own pasted terrain over the
+several minutes this test runs, and a query against the whole dimension fails on that wildlife with
+nothing to do with the floor under test. Caught live: a Zigzagoon reported "left standing" when
+neither the shipped encounter pool, the boss pool nor the bot's own party (`glaceon`/`magikarp`) names
+that species anywhere -- the only place it could have come from is ambient spawning in a cell nobody
+was using. The fix scopes the query to the run's own cell: read the cell index off `runs show`, resolve
+it to a world position with `cobbletowers cells show <cell>` (which already prints `origin X Y Z`), and
+query `@e[...,x=,y=,z=,dx=256,dy=256,dz=256,...]` -- `256` is `CellGrid.INTERIOR`, comfortably inside
+the ~512-block spacing between cell origins, so it cannot bleed into a neighbor.

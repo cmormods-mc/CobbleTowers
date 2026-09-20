@@ -1,6 +1,8 @@
 package com.cobbletowers.reward;
 
 import com.cobbletowers.TowerLog;
+import com.cobbletowers.network.RewardRevealPayload;
+import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.persistence.PendingTowerReward;
 import com.cobbletowers.persistence.TowerPendingRewardStore;
 import java.util.ArrayList;
@@ -45,8 +47,22 @@ public final class RewardDelivery {
         store.checkpoint(server);
         if (!delivered.isEmpty()) {
             player.sendSystemMessage(Component.literal("Tower rewards delivered: " + summarize(delivered)));
+            TowerNetworking.sendRewardReveal(player, revealOf(delivered));
         }
         return delivered.size();
+    }
+
+    /**
+     * The screen's payload, alongside the chat line above rather than instead of it (P11): a client
+     * without the channel registered still gets the grant as text, exactly as it does today.
+     */
+    private static RewardRevealPayload revealOf(List<PendingTowerReward> delivered) {
+        int throughFloor = delivered.stream().mapToInt(PendingTowerReward::floorIndex).max().orElse(0);
+        List<RewardRevealPayload.Grant> grants = new ArrayList<>(delivered.size());
+        for (PendingTowerReward reward : delivered) {
+            grants.add(new RewardRevealPayload.Grant(reward.item(), reward.amount()));
+        }
+        return new RewardRevealPayload(throughFloor, List.copyOf(grants));
     }
 
     /**

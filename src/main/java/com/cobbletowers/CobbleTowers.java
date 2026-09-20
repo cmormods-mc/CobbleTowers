@@ -8,6 +8,7 @@ import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.instance.CellTickets;
 import com.cobbletowers.instance.CellWarmPool;
 import com.cobbletowers.instance.InstanceAllocator;
+import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.reward.RewardBankService;
 import com.cobbletowers.reward.RewardDelivery;
 import com.cobbletowers.runtime.RecoverySweep;
@@ -95,6 +96,11 @@ public final class CobbleTowers implements ModInitializer {
         RecoverySweep.install();
         // Hands a player whatever the tower owes them the moment they are somewhere to receive it.
         RewardDelivery.install();
+        // Registered on every physical side that runs "main" -- a payload must be registered wherever
+        // it is encoded or decoded, and Fabric Loader calls this entrypoint on a dedicated server and
+        // on an integrated client's own server alike.
+        TowerNetworking.registerPayloadTypes();
+        TowerNetworking.installServerReceivers();
 
         TowerLog.info("CobbleTowers {} loaded", version);
     }
