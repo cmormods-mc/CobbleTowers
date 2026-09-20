@@ -2,8 +2,10 @@ package com.cobbletowers.persistence;
 
 import com.cobbletowers.api.tower.RunState;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -32,6 +34,8 @@ import net.minecraft.resources.ResourceLocation;
  * @param modifiers         what the run has drafted, and the draft it is sitting at (TDS #2)
  * @param lastBankedFloor   the floor index through which the ledger has already been priced and
  *                          granted (TDS #24, #30); 0 means nothing has been banked yet
+ * @param vendorPurchases   how many times this run has bought each vendor service (TDS #19); a
+ *                          service absent from this map has never been bought
  */
 public record PersistedRun(
         UUID runId,
@@ -51,22 +55,34 @@ public record PersistedRun(
         OptionalInt cell,
         List<LedgerEntry> ledger,
         RunModifierState modifiers,
-        int lastBankedFloor) {
+        int lastBankedFloor,
+        Map<ResourceLocation, Integer> vendorPurchases) {
 
     /**
      * The only shape this build writes or reads.
      *
      * <p>2 added the instance cell; 3 added the unclaimed ledger; 4 added the drafted modifiers; 5
-     * added how much of the ledger has been banked. Older files are migrated forward by {@code
-     * RunMigrations}, which is what that framework was shipped empty for.
+     * added how much of the ledger has been banked; 6 added vendor purchase counts. Older files are
+     * migrated forward by {@code RunMigrations}, which is what that framework was shipped empty for.
      */
-    public static final int SCHEMA_VERSION = 5;
+    public static final int SCHEMA_VERSION = 6;
 
     private static List<LedgerEntry> readLedger(CompoundTag tag) {
         List<LedgerEntry> ledger = new ArrayList<>();
         ListTag stored = tag.getList("ledger", Tag.TAG_COMPOUND);
         for (int i = 0; i < stored.size(); i++) ledger.add(LedgerEntry.fromTag(stored.getCompound(i)));
         return ledger;
+    }
+
+    private static Map<ResourceLocation, Integer> readVendorPurchases(CompoundTag tag) {
+        Map<ResourceLocation, Integer> purchases = new LinkedHashMap<>();
+        ListTag stored = tag.getList("vendor_purchases", Tag.TAG_COMPOUND);
+        for (int i = 0; i < stored.size(); i++) {
+            CompoundTag entry = stored.getCompound(i);
+            ResourceLocation serviceId = ResourceLocation.tryParse(entry.getString("service"));
+            if (serviceId != null) purchases.put(serviceId, entry.getInt("count"));
+        }
+        return purchases;
     }
 
     public PersistedRun {
@@ -79,6 +95,7 @@ public record PersistedRun(
         participants = List.copyOf(participants);
         committedTransactions = List.copyOf(committedTransactions);
         ledger = List.copyOf(ledger);
+        vendorPurchases = Map.copyOf(vendorPurchases);
         if (floorIndex < 0) throw new IllegalArgumentException("floorIndex must be >= 0, got " + floorIndex);
         if (lastBankedFloor < 0) {
             throw new IllegalArgumentException("lastBankedFloor must be >= 0, got " + lastBankedFloor);
@@ -111,6 +128,14 @@ public record PersistedRun(
         for (String key : committedTransactions) transactions.add(StringTag.valueOf(key));
         tag.put("committed_transactions", transactions);
         tag.putInt("last_banked_floor", lastBankedFloor);
+        ListTag purchases = new ListTag();
+        for (Map.Entry<ResourceLocation, Integer> entry : vendorPurchases.entrySet()) {
+            CompoundTag purchase = new CompoundTag();
+            purchase.putString("service", entry.getKey().toString());
+            purchase.putInt("count", entry.getValue());
+            purchases.add(purchase);
+        }
+        tag.put("vendor_purchases", purchases);
         return tag;
     }
 
@@ -156,14 +181,15 @@ public record PersistedRun(
                 tag.contains("modifiers", Tag.TAG_COMPOUND)
                         ? RunModifierState.fromTag(tag.getCompound("modifiers"))
                         : RunModifierState.EMPTY,
-                tag.getInt("last_banked_floor"));
+                tag.getInt("last_banked_floor"),
+                readVendorPurchases(tag));
     }
 
     /** The same run, recorded as it stands after {@code at}. */
     public PersistedRun touched(long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell, ledger, modifiers, lastBankedFloor);
+                at, cell, ledger, modifiers, lastBankedFloor, vendorPurchases);
     }
 
     /** The same run with one more thing earned. The pool only ever grows until it is banked. */
@@ -172,21 +198,35 @@ public record PersistedRun(
         next.add(entry);
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell, next, modifiers, lastBankedFloor);
+                at, cell, next, modifiers, lastBankedFloor, vendorPurchases);
     }
 
     /** The same run holding {@code leased}, or holding none when it is empty. */
     public PersistedRun withCell(OptionalInt leased, long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, leased, ledger, modifiers, lastBankedFloor);
+                at, leased, ledger, modifiers, lastBankedFloor, vendorPurchases);
     }
 
     /** The same run carrying {@code next} as its drafted state. */
     public PersistedRun withModifiers(RunModifierState next, long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell, ledger, next, lastBankedFloor);
+                at, cell, ledger, next, lastBankedFloor, vendorPurchases);
+    }
+
+    /** The same run with one more purchase of {@code serviceId} recorded (TDS #19). */
+    public PersistedRun withVendorPurchase(ResourceLocation serviceId, long at) {
+        Map<ResourceLocation, Integer> next = new LinkedHashMap<>(vendorPurchases);
+        next.merge(serviceId, 1, Integer::sum);
+        return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
+                structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
+                at, cell, ledger, modifiers, lastBankedFloor, next);
+    }
+
+    /** How many times this run has already bought {@code serviceId} (TDS #19). */
+    public int purchasesOf(ResourceLocation serviceId) {
+        return vendorPurchases.getOrDefault(serviceId, 0);
     }
 
     /**
@@ -204,7 +244,7 @@ public record PersistedRun(
         transactions.add(grantKey);
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, transactions,
-                at, cell, ledger, modifiers, throughFloor);
+                at, cell, ledger, modifiers, throughFloor, vendorPurchases);
     }
 
     /** True when this key has already been committed, so applying the move again must not repeat it. */

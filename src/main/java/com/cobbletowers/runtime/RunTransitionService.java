@@ -105,7 +105,7 @@ public final class RunTransitionService {
         PersistedRun next = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), floor,
                 transition.next(), run.participants(), checkpoint, committed, now, run.cell(), run.ledger(),
-                run.modifiers(), run.lastBankedFloor());
+                run.modifiers(), run.lastBankedFloor(), run.vendorPurchases());
         return new Move(next, run.state(), transition.checkpoint(), key);
     }
 
@@ -127,7 +127,7 @@ public final class RunTransitionService {
         PersistedRun next = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), run.floorIndex(),
                 target, run.participants(), run.lastCheckpoint(), run.committedTransactions(), now, run.cell(),
-                run.ledger(), run.modifiers(), run.lastBankedFloor());
+                run.ledger(), run.modifiers(), run.lastBankedFloor(), run.vendorPurchases());
         // Durable, because a resume that a crash undoes leaves a run reported as recovered and
         // parked on disk -- the two states nobody can tell apart afterwards.
         return new Move(next, run.state(), true, "");

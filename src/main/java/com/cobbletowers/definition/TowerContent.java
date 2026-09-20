@@ -34,13 +34,15 @@ public record TowerContent(
         Map<ResourceLocation, ModifierDefinition> modifiers,
         Map<ResourceLocation, RewardTableDefinition> rewardTables,
         Map<ResourceLocation, RegionalThemeDefinition> regionalThemes,
+        Map<ResourceLocation, VendorServiceDefinition> vendorServices,
+        Map<ResourceLocation, ScoutingProfileDefinition> scoutingProfiles,
         Map<DefinitionKey, String> digests,
         List<String> problems,
         List<ResourceLocation> sortedTowerIds) {
 
     public static final TowerContent EMPTY = new TowerContent(
             Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of(),
-            List.of(), List.of());
+            Map.of(), Map.of(), List.of(), List.of());
 
     public TowerContent {
         towers = Map.copyOf(towers);
@@ -52,6 +54,8 @@ public record TowerContent(
         modifiers = Map.copyOf(modifiers);
         rewardTables = Map.copyOf(rewardTables);
         regionalThemes = Map.copyOf(regionalThemes);
+        vendorServices = Map.copyOf(vendorServices);
+        scoutingProfiles = Map.copyOf(scoutingProfiles);
         digests = Map.copyOf(digests);
         problems = List.copyOf(problems);
         sortedTowerIds = List.copyOf(sortedTowerIds);
@@ -71,6 +75,8 @@ public record TowerContent(
                                   Map<ResourceLocation, ModifierDefinition> modifiers,
                                   Map<ResourceLocation, RewardTableDefinition> rewardTables,
                                   Map<ResourceLocation, RegionalThemeDefinition> regionalThemes,
+                                  Map<ResourceLocation, VendorServiceDefinition> vendorServices,
+                                  Map<ResourceLocation, ScoutingProfileDefinition> scoutingProfiles,
                                   Map<DefinitionKey, String> digests) {
         List<String> problems = new ArrayList<>();
         problems.addAll(modifierProblems(modifiers));
@@ -85,6 +91,11 @@ public record TowerContent(
             tower.regionalTheme().ifPresent(themeId -> {
                 if (!regionalThemes.containsKey(themeId)) {
                     problems.add(tower.id() + " names regional theme " + themeId + ", which is not loaded");
+                }
+            });
+            tower.scoutingProfile().ifPresent(profileId -> {
+                if (!scoutingProfiles.containsKey(profileId)) {
+                    problems.add(tower.id() + " names scouting profile " + profileId + ", which is not loaded");
                 }
             });
             List<Integer> indices = new ArrayList<>();
@@ -123,7 +134,7 @@ public record TowerContent(
                 .sorted(Comparator.comparing(ResourceLocation::toString))
                 .toList();
         return new TowerContent(towers, floors, pools, rulesets, milestones, bossPools, modifiers, rewardTables,
-                regionalThemes, digests, problems, sorted);
+                regionalThemes, vendorServices, scoutingProfiles, digests, problems, sorted);
     }
 
     /** Every loaded pool's {@code regional_pool}, if it names one, must resolve (P10). */
@@ -265,6 +276,30 @@ public record TowerContent(
         return Optional.ofNullable(rewardTables.get(rewardTableId));
     }
 
+    /** One vendor service by id. */
+    public Optional<VendorServiceDefinition> vendorService(ResourceLocation serviceId) {
+        return Optional.ofNullable(vendorServices.get(serviceId));
+    }
+
+    /** Every vendor service, in a stable order -- the shop's catalog is the same list for everyone. */
+    public List<VendorServiceDefinition> vendorCatalog() {
+        return vendorServices.values().stream()
+                .sorted(Comparator.comparing(service -> service.id().toString()))
+                .toList();
+    }
+
+    /** One scouting profile by id. */
+    public Optional<ScoutingProfileDefinition> scoutingProfile(ResourceLocation profileId) {
+        return Optional.ofNullable(scoutingProfiles.get(profileId));
+    }
+
+    /** The scouting profile a tower actually uses, if it names one. */
+    public Optional<ScoutingProfileDefinition> scoutingProfileFor(ResourceLocation towerId) {
+        TowerDefinition tower = towers.get(towerId);
+        if (tower == null) return Optional.empty();
+        return tower.scoutingProfile().flatMap(this::scoutingProfile);
+    }
+
     /** The milestone landing on this floor of this tower, if there is one. */
     public Optional<MilestoneDefinition> milestoneAt(ResourceLocation towerId, int floorIndex) {
         TowerDefinition tower = towers.get(towerId);
@@ -305,6 +340,7 @@ public record TowerContent(
 
     public int definitionCount() {
         return towers.size() + floors.size() + pools.size() + rulesets.size() + milestones.size()
-                + bossPools.size() + modifiers.size() + rewardTables.size() + regionalThemes.size();
+                + bossPools.size() + modifiers.size() + rewardTables.size() + regionalThemes.size()
+                + vendorServices.size() + scoutingProfiles.size();
     }
 }

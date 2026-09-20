@@ -73,6 +73,14 @@ public final class RunMigrations {
             tag.putInt("schema_version", 5);
             return tag;
         });
+        // 5 -> 6 added vendor purchase counts. An older run bought nothing -- the vendor did not
+        // exist yet -- and an absent list already reads as an empty map, but it is written here
+        // anyway so a migrated file matches what this build writes fresh.
+        STEPS.put(5, tag -> {
+            if (!tag.contains("vendor_purchases")) tag.put("vendor_purchases", new net.minecraft.nbt.ListTag());
+            tag.putInt("schema_version", 6);
+            return tag;
+        });
     }
 
     private RunMigrations() {}

@@ -44,7 +44,7 @@ ANCHORS = ("entry", "presentation", "spectator", "exit")
 # rather than approving one.
 NON_SUPPORTING = ("banner", "torch", "carpet", "button", "pressure_plate", "sign", "rail")
 KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones", "boss_pools", "modifiers",
-         "reward_tables")
+         "reward_tables", "vendor_services", "scouting_profiles")
 MAX_PARTY = 6
 MIN_LEVEL, MAX_LEVEL = 1, 100
 
@@ -137,6 +137,7 @@ def check_modifiers(content: dict, problems: list[str]) -> None:
         "player_constraint": ("banned_moves", "allow_switching", "allow_items"),
         "field": ("weather", "terrain"),
         "reward": ("reward_percent",),
+        "scouting": ("scouting_bonus",),
     }
     for modifier_id, modifier in content["modifiers"].items():
         for field in ("schema_version", "type", "display_name"):
@@ -221,6 +222,36 @@ def check_reward_tables(content: dict, problems: list[str]) -> None:
                                     " must be >= 1 and ordered")
 
 
+def check_vendor_services(content: dict, problems: list[str]) -> None:
+    """Structural checks only, the same posture as {@code check_reward_tables}."""
+    known_effects = ("full_heal", "cure_status")
+    for service_id, service in content["vendor_services"].items():
+        for field in ("schema_version", "display_name", "price_cobble_dollars", "effect"):
+            if field not in service:
+                problems.append(f"{service_id} is missing required field '{field}'")
+        if service.get("effect") is not None and service.get("effect") not in known_effects:
+            problems.append(f"{service_id} has unknown effect '{service.get('effect')}'; must be one of {known_effects}")
+        if service.get("price_cobble_dollars", 1) < 1:
+            problems.append(f"{service_id} has price_cobble_dollars {service.get('price_cobble_dollars')};"
+                            " must be >= 1")
+        if service.get("max_purchases_per_run", 0) < 0:
+            problems.append(f"{service_id} has max_purchases_per_run {service.get('max_purchases_per_run')};"
+                            " must be >= 0")
+
+
+def check_scouting_profiles(content: dict, problems: list[str]) -> None:
+    """Structural checks only, the same posture as {@code check_reward_tables}."""
+    for profile_id, profile in content["scouting_profiles"].items():
+        if "schema_version" not in profile:
+            problems.append(f"{profile_id} is missing required field 'schema_version'")
+        categories = profile.get("categories", [])
+        if not categories:
+            problems.append(f"{profile_id} has no categories")
+        for category in categories:
+            if "name" not in category:
+                problems.append(f"{profile_id} has a category with no name")
+
+
 def main() -> None:
     problems: list[str] = []
     counts = {kind: 0 for kind in KINDS}
@@ -284,6 +315,8 @@ def main() -> None:
 
     check_modifiers(content, problems)
     check_reward_tables(content, problems)
+    check_vendor_services(content, problems)
+    check_scouting_profiles(content, problems)
 
     for pool_id, pool in content["boss_pools"].items():
         entries = pool.get("entries", [])

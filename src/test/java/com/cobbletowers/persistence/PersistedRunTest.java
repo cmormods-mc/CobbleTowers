@@ -12,6 +12,7 @@ import com.cobbletowers.api.tower.participant.ConnectionState;
 import com.cobbletowers.api.tower.participant.MembershipState;
 import com.cobbletowers.api.tower.participant.ParticipantState;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
@@ -41,7 +42,8 @@ class PersistedRunTest {
                         List.of(TOWER),
                         Optional.of(PersistedDraft.opening(3, true, List.of(TOWER))
                                 .withVote(UUID.fromString("11111111-1111-1111-1111-111111111111"), 0))),
-                2);
+                2,
+                Map.of(ResourceLocation.fromNamespaceAndPath("cobbletowers", "full_heal"), 2));
     }
 
     @Test
@@ -74,7 +76,7 @@ class PersistedRunTest {
         // RunCheckpoint refuses a blank key precisely so that cannot be written in the first place.
         PersistedRun fresh = new PersistedRun(withCheckpoint.runId(), PersistedRun.SCHEMA_VERSION, TOWER, 4,
                 "abc123", 2, 7, 1L, 1, RunState.CREATED, List.of(), Optional.empty(), List.of(), 5L,
-                OptionalInt.empty(), List.of(), RunModifierState.EMPTY, 0);
+                OptionalInt.empty(), List.of(), RunModifierState.EMPTY, 0, Map.of());
         assertEquals(Optional.empty(), PersistedRun.fromTag(fresh.toTag()).lastCheckpoint());
     }
 

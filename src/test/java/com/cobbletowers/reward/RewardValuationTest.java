@@ -94,7 +94,7 @@ class RewardValuationTest {
                 {"schema_version": 1, "display_name": "x",
                  "tiers": {"floor_cleared": [{"item": "minecraft:emerald", "min_amount": 10, "max_amount": 10}]}}""");
         ModifierEffects doubled = new ModifierEffects(0, 0, 0, 100, 200, List.of(), true, true,
-                Optional.empty(), Optional.empty());
+                Optional.empty(), Optional.empty(), 0);
 
         int amount = RewardValuation.value(SEED, List.of(LedgerEntry.floorCleared(1, TOWER, 1L)),
                 table, doubled).get(0).amount();

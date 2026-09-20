@@ -107,6 +107,22 @@ class RunMigrationsTest {
     }
 
     @Test
+    @DisplayName("a version 5 run loads, and comes back having bought nothing from the vendor")
+    void versionFiveIsMigrated() {
+        CompoundTag v5 = TestRuns.fresh(RUN).toTag();
+        v5.putInt("schema_version", 5);
+        v5.remove("vendor_purchases");
+
+        PersistedRun run = PersistedRun.fromTag(RunMigrations.toCurrent(v5));
+
+        assertEquals(0, run.purchasesOf(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("cobbletowers", "full_heal")),
+                "a run that predates the vendor bought nothing from it, ever");
+        assertEquals(RUN, run.runId());
+        assertTrue(RunMigrations.canRead(5));
+    }
+
+    @Test
     @DisplayName("a migrated run has the same shape on disk as a freshly written one")
     void migrationMatchesAFreshWrite() {
         // A migration whose output differs from a fresh write is a difference that surfaces later,
@@ -122,6 +138,12 @@ class RunMigrationsTest {
         v4.remove("last_banked_floor");
 
         assertEquals(TestRuns.fresh(RUN).toTag(), RunMigrations.toCurrent(v4));
+
+        CompoundTag v5 = TestRuns.fresh(RUN).toTag();
+        v5.putInt("schema_version", 5);
+        v5.remove("vendor_purchases");
+
+        assertEquals(TestRuns.fresh(RUN).toTag(), RunMigrations.toCurrent(v5));
     }
 
     @Test

@@ -54,6 +54,9 @@ public record ModifierDefinition(
      * @param allowItems        whether the party may use items (PLAYER_CONSTRAINT, P8b)
      * @param weather           a Showdown weather id to set at battle start (FIELD, P8b)
      * @param terrain           a Showdown terrain id to set at battle start (FIELD, P8b)
+     * @param scoutingBonus     floors added to a scouting category's concealment threshold before it
+     *                          hides (SCOUTING, P12) -- pushes concealment deeper, never un-conceals
+     *                          something a profile already decided to hide sooner
      */
     public record Effect(
             int levelOffset,
@@ -65,11 +68,12 @@ public record ModifierDefinition(
             boolean allowSwitching,
             boolean allowItems,
             Optional<String> weather,
-            Optional<String> terrain) {
+            Optional<String> terrain,
+            int scoutingBonus) {
 
         /** Changes nothing: the baseline every field is measured against. */
         public static final Effect NEUTRAL =
-                new Effect(0, 0, 0, 100, 100, List.of(), true, true, Optional.empty(), Optional.empty());
+                new Effect(0, 0, 0, 100, 100, List.of(), true, true, Optional.empty(), Optional.empty(), 0);
 
         public Effect {
             bannedMoves = List.copyOf(bannedMoves);
@@ -107,6 +111,10 @@ public record ModifierDefinition(
             return weather.isPresent() || terrain.isPresent();
         }
 
+        public boolean touchesScouting() {
+            return scoutingBonus != 0;
+        }
+
         public static Effect fromJson(JsonObject root) {
             if (root == null) return NEUTRAL;
             return new Effect(
@@ -119,7 +127,8 @@ public record ModifierDefinition(
                     TowerJson.bool(root, "allow_switching", true),
                     TowerJson.bool(root, "allow_items", true),
                     optionalString(root, "weather"),
-                    optionalString(root, "terrain"));
+                    optionalString(root, "terrain"),
+                    TowerJson.integer(root, "scouting_bonus", 0));
         }
 
         private static Optional<String> optionalString(JsonObject root, String key) {
@@ -176,6 +185,7 @@ public record ModifierDefinition(
             case PLAYER_CONSTRAINT -> effect.touchesConstraints();
             case FIELD -> effect.touchesField();
             case REWARD -> effect.touchesReward();
+            case SCOUTING -> effect.touchesScouting();
         };
         if (!matches) {
             throw new IllegalArgumentException(id + " is type " + type

@@ -6,15 +6,18 @@ import com.cobbletowers.battle.cobbleraids.TowerBossAdapter;
 import com.cobbletowers.definition.ModifierDefinition;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.definition.VendorServiceDefinition;
 import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.modifier.ModifierEffects;
 import com.cobbletowers.modifier.ModifierResolver;
 import com.cobbletowers.encounter.TowerEncounters;
+import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.persistence.PendingTowerReward;
 import com.cobbletowers.persistence.PersistedDraft;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.TowerPendingRewardStore;
+import com.cobbletowers.persistence.TowerWalletStore;
 import com.cobbletowers.runtime.RunFactory;
 import com.cobbletowers.runtime.RunLifecycle;
 import com.cobbletowers.runtime.RunTransitionService;
@@ -65,6 +68,10 @@ public final class RunsCommand {
                         .then(Commands.literal("cashout").executes(RunsCommand::cashout))
                         .then(Commands.literal("reward")
                                 .then(Commands.literal("show").executes(RunsCommand::rewardShow)))
+                        // Player-facing, like leave/cashout: opens the caller's own shop screen
+                        // (P12). INTERMISSION-only is enforced by VendorPurchaseService itself, not
+                        // here -- the catalog can be requested any time; buying cannot.
+                        .then(Commands.literal("vendor").executes(RunsCommand::vendor))
                         // Drafting is the other thing a player does for themselves, so `vote` and
                         // `show` set no permission while `force` does. P7's trap is why each
                         // subcommand carries its own: Brigadier keeps the FIRST registration's
@@ -225,6 +232,33 @@ public final class RunsCommand {
                     + " (floor " + reward.floorIndex() + ")"), false);
         }
         return pending.size();
+    }
+
+    /**
+     * {@code /cobbletowers runs vendor}: sends the caller {@link VendorCatalogPayload} and, on a
+     * modded client, opens the shop screen -- a client without the channel registered gets a plain
+     * chat listing instead, the same graceful-degradation posture P11's reward reveal already takes.
+     */
+    private static int vendor(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        ServerPlayer player = source.getPlayerOrException();
+        Optional<PersistedRun> found = TowerRuns.forPlayer(player.getUUID());
+        if (found.isEmpty()) {
+            source.sendFailure(Component.literal("You are not in a tower run."));
+            return 0;
+        }
+        PersistedRun run = found.get();
+        TowerNetworking.sendVendorCatalog(source.getServer(), player, run);
+
+        long balance = TowerWalletStore.get(source.getServer()).balanceOf(player.getUUID());
+        source.sendSuccess(() -> Component.literal("CobbleDollars: " + balance).withStyle(ChatFormatting.GOLD), false);
+        for (VendorServiceDefinition service : TowerDefinitionRegistry.content().vendorCatalog()) {
+            int cap = service.maxPurchasesPerRun();
+            String remaining = cap <= 0 ? "unlimited" : (cap - run.purchasesOf(service.id())) + "/" + cap + " left";
+            source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT, "  %s -- %d CobbleDollars (%s)",
+                    service.displayName(), service.priceCobbleDollars(), remaining)), false);
+        }
+        return TowerDefinitionRegistry.content().vendorCatalog().size();
     }
 
     private static int list(CommandContext<CommandSourceStack> context) {

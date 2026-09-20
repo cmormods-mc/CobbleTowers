@@ -1,8 +1,10 @@
 package com.cobbletowers.encounter;
 
 import com.cobblemon.mod.common.Cobblemon;
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon;
 import com.cobblemon.mod.common.pokemon.Pokemon;
+import com.cobblemon.mod.common.pokemon.Species;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbleraids.api.encounter.EncounterResult;
@@ -15,6 +17,7 @@ import com.cobbletowers.definition.FloorDefinition;
 import com.cobbletowers.definition.MilestoneDefinition;
 import com.cobbletowers.definition.RegionalThemeDefinition;
 import com.cobbletowers.definition.RulesetDefinition;
+import com.cobbletowers.definition.ScoutingProfileDefinition;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
@@ -22,6 +25,8 @@ import com.cobbletowers.instance.CellPreparer;
 import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.modifier.ModifierEffects;
 import com.cobbletowers.instance.TowerDimension;
+import com.cobbletowers.network.ScoutingRevealPayload;
+import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.persistence.LedgerEntry;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
@@ -38,6 +43,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
@@ -370,9 +376,52 @@ public final class TowerEncounters {
                 level, player, snapshot.get(), where, round.runId(), run.floorIndex());
         if (battle.isEmpty()) return false;
         theme.ifPresent(resolved -> announceJersey(player, resolved, snapshot.get()));
+        sendScoutingReveal(player, content, tower, floor.get(), run, effects, snapshot.get());
         TowerLog.info("Run {} floor {}: {} faces another opponent ({} left after this)",
                 round.runId(), run.floorIndex(), playerId, wave.remaining() - 1);
         return true;
+    }
+
+    /**
+     * TDS #22/#49: sent alongside the encounter starting, never gating it -- a slow or absent
+     * scouting screen must not delay a floor.
+     */
+    private static void sendScoutingReveal(ServerPlayer player, TowerContent content, TowerDefinition tower,
+                                           FloorDefinition floor, PersistedRun run, ModifierEffects effects,
+                                           EncounterSnapshot snapshot) {
+        Optional<ScoutingProfileDefinition> profile = content.scoutingProfileFor(tower.id());
+        if (profile.isEmpty()) return;
+        List<ScoutingRevealPayload.Category> revealed = new ArrayList<>();
+        for (ScoutingProfileDefinition.RevealCategory category : profile.get().categories()) {
+            if (!ScoutingReveal.isRevealed(category, run.floorIndex(), effects.scoutingBonus())) continue;
+            revealed.add(new ScoutingRevealPayload.Category(category.name(),
+                    scoutingValue(category.name(), floor, snapshot)));
+        }
+        TowerNetworking.sendScoutingReveal(player, new ScoutingRevealPayload(run.floorIndex(), List.copyOf(revealed)));
+    }
+
+    /**
+     * A category's own display text, read from facts that already exist -- nothing here is a new
+     * source of gameplay data (P10's own prediction for this phase). An unrecognized category name is
+     * shown as revealed without a value rather than dropped, so a content author's typo is visible
+     * rather than silently swallowed.
+     */
+    private static String scoutingValue(String category, FloorDefinition floor, EncounterSnapshot snapshot) {
+        return switch (category) {
+            case "typing" -> typingOf(snapshot.species());
+            case "threat_level" -> "Level " + snapshot.level();
+            case "field_conditions" -> floor.modifierIds().isEmpty() ? "none"
+                    : floor.modifierIds().stream().map(ResourceLocation::getPath).collect(Collectors.joining(", "));
+            default -> "revealed";
+        };
+    }
+
+    private static String typingOf(ResourceLocation species) {
+        Species resolved = PokemonSpecies.INSTANCE.getByIdentifier(species);
+        if (resolved == null) return "unknown";
+        StringBuilder types = new StringBuilder(resolved.getPrimaryType().getName());
+        if (resolved.getSecondaryType() != null) types.append('/').append(resolved.getSecondaryType().getName());
+        return types.toString();
     }
 
     /**
