@@ -1,6 +1,7 @@
 package com.cobbletowers.runtime;
 
 import com.cobbletowers.TowerLog;
+import com.cobbletowers.diagnostics.TowerMetrics;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.TowerRunStore;
@@ -82,10 +83,14 @@ public final class TowerRuns {
         TowerRunStore store = TowerRunStore.get(server);
         if (!forceCheckpoint) {
             store.put(run);
+            // TDS section 11's "persistence backlog": how many writes have landed since the last
+            // checkpoint cleared it.
+            TowerMetrics.recordNonCheckpointedWrite(server);
             return;
         }
         try {
             store.checkpoint(server, run);
+            TowerMetrics.recordCheckpoint(server);
         } catch (RuntimeException ex) {
             // checkpoint() stores before it writes, so the run is held in memory either way.
             TowerLog.error("Checkpoint for tower run {} could not be written to disk; it will be saved"

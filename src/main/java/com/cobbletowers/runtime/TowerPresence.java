@@ -5,6 +5,7 @@ import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.api.tower.participant.ConnectionState;
 import com.cobbletowers.api.tower.participant.ParticipantState;
 import com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter;
+import com.cobbletowers.diagnostics.TowerMetrics;
 import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.modifier.DraftService;
@@ -79,7 +80,9 @@ public final class TowerPresence {
             long now = System.currentTimeMillis();
             if (now - lastSweep < SWEEP_INTERVAL_MILLIS) return;
             lastSweep = now;
+            long started = System.nanoTime();
             guarded("sweep the tower floors", () -> sweep(server, now));
+            TowerMetrics.recordTick(server, "presence sweep", (System.nanoTime() - started) / 1_000_000);
         });
     }
 

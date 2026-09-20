@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.13.6'
 }
 
-version = '0.12.0-p12-vendor-and-scouting'
+version = '0.13.0-p13-diagnostics'
 group = 'com.cobbletowers'
 
 base {

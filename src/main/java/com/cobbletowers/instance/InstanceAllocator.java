@@ -1,6 +1,7 @@
 package com.cobbletowers.instance;
 
 import com.cobbletowers.TowerLog;
+import com.cobbletowers.diagnostics.TowerMetrics;
 import com.cobbletowers.persistence.CellQuarantine;
 import com.cobbletowers.persistence.CellStateStore;
 import com.cobbletowers.persistence.PersistedRun;
@@ -132,6 +133,7 @@ public final class InstanceAllocator {
      */
     public static Release release(MinecraftServer server, UUID runId, int cell) {
         CellGrid.requireValid(cell);
+        long started = System.nanoTime();
         try {
             // Order is the whole of this method. Reset and sweep while the chunks are still held,
             // because both need them loaded; then let the chunks go; then check that they went.
@@ -148,6 +150,8 @@ public final class InstanceAllocator {
                     new CellQuarantine(cell, report.summary(), System.currentTimeMillis()));
             return new Quarantined(cell, report.summary());
         } finally {
+            // TDS #60/section 11: the sweep-and-verify path, timed the same way allocation is.
+            TowerMetrics.recordCleanup(server, (System.nanoTime() - started) / 1_000_000);
             // Must run whatever the verification did, including throwing: a lease nothing releases is
             // the one leak the allocator cannot recover from, because no later event refers to it.
             LEASED.clear(cell);
