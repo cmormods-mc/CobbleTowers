@@ -2,6 +2,7 @@ package com.cobbletowers;
 
 import com.cobbletowers.command.DefinitionsCommand;
 import com.cobbletowers.command.CellsCommand;
+import com.cobbletowers.command.DiagnosticsCommand;
 import com.cobbletowers.command.RunsCommand;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.encounter.TowerEncounters;
@@ -42,6 +43,7 @@ public final class CobbleTowers implements ModInitializer {
                 DefinitionsCommand.register(dispatcher);
                 RunsCommand.register(dispatcher);
                 CellsCommand.register(dispatcher);
+                DiagnosticsCommand.register(dispatcher);
                 SpikeCommand.register(dispatcher);
             } catch (RuntimeException ex) {
                 TowerLog.error("Could not register the CobbleTowers commands", ex);

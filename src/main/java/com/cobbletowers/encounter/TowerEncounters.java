@@ -21,6 +21,7 @@ import com.cobbletowers.definition.ScoutingProfileDefinition;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.diagnostics.TowerMetrics;
 import com.cobbletowers.instance.CellPreparer;
 import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.modifier.ModifierEffects;
@@ -226,6 +227,7 @@ public final class TowerEncounters {
         Map<UUID, Wave> waves = new LinkedHashMap<>();
         for (int ordinal = 0; ordinal < fighters.size(); ordinal++) {
             ServerPlayer player = fighters.get(ordinal);
+            long started = System.nanoTime();
             Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(pool, run.seed(), run.floorIndex(), ordinal,
                     partyLevels, ruleset, effects.levelOffset(), theme);
             if (snapshot.isEmpty()) continue;
@@ -237,6 +239,12 @@ public final class TowerEncounters {
             Optional<UUID> battle = CobblemonBattleAdapter.start(
                     level, player, snapshot.get(), where, runId, run.floorIndex());
             byPlayer.put(player.getUUID(), battle.isPresent() ? Status.FIGHTING : Status.OUT);
+            if (battle.isPresent()) {
+                // TDS #60/section 11: the floor's first opponent per player is drawn here, not in
+                // sendNextOpponent -- the same span, measured the same way, just a different call site
+                // for the same fact (every player's own first battle of the floor).
+                TowerMetrics.recordEncounterConstruction(server, runId, (System.nanoTime() - started) / 1_000_000);
+            }
         }
         if (byPlayer.isEmpty()) {
             TowerLog.error("Run {} drew no opponents at all for floor {}; pool {} produced nothing",
@@ -361,6 +369,7 @@ public final class TowerEncounters {
         Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), floor.get().layout().get());
         if (origin.isEmpty()) return false;
 
+        long started = System.nanoTime();
         ModifierEffects effects = DraftService.effects(run);
         Optional<RegionalThemeDefinition> theme = pool.regionalPool().flatMap(content::regionalTheme);
         // The level snapshot is taken from this player's own party, as the first draw was from the
@@ -375,6 +384,9 @@ public final class TowerEncounters {
         Optional<UUID> battle = CobblemonBattleAdapter.start(
                 level, player, snapshot.get(), where, round.runId(), run.floorIndex());
         if (battle.isEmpty()) return false;
+        // TDS #60/section 11: the same span the log line below already narrates, now measured --
+        // from the draw through the battle actually starting.
+        TowerMetrics.recordEncounterConstruction(server, round.runId(), (System.nanoTime() - started) / 1_000_000);
         theme.ifPresent(resolved -> announceJersey(player, resolved, snapshot.get()));
         sendScoutingReveal(player, content, tower, floor.get(), run, effects, snapshot.get());
         TowerLog.info("Run {} floor {}: {} faces another opponent ({} left after this)",

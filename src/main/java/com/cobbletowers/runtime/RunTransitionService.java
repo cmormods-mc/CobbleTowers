@@ -3,6 +3,7 @@ package com.cobbletowers.runtime;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.api.tower.RunState;
+import com.cobbletowers.diagnostics.TowerMetrics;
 import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.instance.InstanceAllocator;
 import com.cobbletowers.persistence.CellStateStore;
@@ -140,6 +141,7 @@ public final class RunTransitionService {
      * afterwards finds the run where it was left rather than where it was minutes ago.
      */
     public static Outcome apply(MinecraftServer server, UUID runId, RunEvent event, long now) {
+        long started = System.nanoTime();
         Optional<PersistedRun> found = TowerRuns.get(runId);
         if (found.isEmpty()) {
             return new Refusal(Reason.UNKNOWN_RUN, "no run with id " + runId);
@@ -186,6 +188,9 @@ public final class RunTransitionService {
             if (move.next().state().isTerminal()) {
                 releaseInstance(server, TowerRuns.get(runId).orElse(move.next()), now);
             }
+            // TDS #60/section 11: what a transition costs end to end, including the revival,
+            // reward-bank and draft side effects above -- not only the record write.
+            TowerMetrics.recordTransition(server, runId, (System.nanoTime() - started) / 1_000_000);
         }
         return outcome;
     }

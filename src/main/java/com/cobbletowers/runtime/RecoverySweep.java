@@ -1,6 +1,7 @@
 package com.cobbletowers.runtime;
 
 import com.cobbletowers.TowerLog;
+import com.cobbletowers.diagnostics.TowerMetrics;
 import com.cobbletowers.instance.CellCleanup;
 import com.cobbletowers.instance.CellGrid;
 import com.cobbletowers.instance.CellTickets;
@@ -56,10 +57,13 @@ public final class RecoverySweep {
     public static void install() {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (PENDING.isEmpty()) return;
+            long started = System.nanoTime();
             try {
                 tick(server);
             } catch (RuntimeException ex) {
                 TowerLog.error("A tower recovery sweep failed", ex);
+            } finally {
+                TowerMetrics.recordTick(server, "recovery sweep", (System.nanoTime() - started) / 1_000_000);
             }
         });
     }

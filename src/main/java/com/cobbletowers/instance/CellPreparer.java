@@ -2,6 +2,7 @@ package com.cobbletowers.instance;
 
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.definition.FloorLayout;
+import com.cobbletowers.diagnostics.TowerMetrics;
 import java.util.List;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
@@ -106,6 +107,7 @@ public final class CellPreparer {
         boolean placed = template.placeInWorld(level, origin, origin,
                 new StructurePlaceSettings().setIgnoreEntities(true), level.getRandom(), PLACE_FLAGS);
         long millis = (System.nanoTime() - started) / 1_000_000;
+        TowerMetrics.recordAllocation(server, millis);
         if (!placed) {
             TowerLog.error("Placing {} into cell {} failed", layout.structure(), cell);
             return Optional.empty();
