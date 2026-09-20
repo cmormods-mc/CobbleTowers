@@ -7,6 +7,7 @@ import com.cobbletowers.definition.ModifierDefinition;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.definition.VendorServiceDefinition;
+import com.cobbletowers.economy.VendorPurchaseService;
 import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.modifier.ModifierEffects;
 import com.cobbletowers.modifier.ModifierResolver;
@@ -71,7 +72,22 @@ public final class RunsCommand {
                         // Player-facing, like leave/cashout: opens the caller's own shop screen
                         // (P12). INTERMISSION-only is enforced by VendorPurchaseService itself, not
                         // here -- the catalog can be requested any time; buying cannot.
-                        .then(Commands.literal("vendor").executes(RunsCommand::vendor))
+                        .then(Commands.literal("vendor").executes(RunsCommand::vendor)
+                                // Operator tools, the same reason "grant" exists: a live test has no
+                                // client to earn CobbleDollars realistically or to send a purchase
+                                // over the wire, so these are the only way to pin either down.
+                                .then(Commands.literal("credit")
+                                        .requires(source -> source.hasPermission(2))
+                                        .then(Commands.argument("player", EntityArgument.player())
+                                                .then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                                                        .executes(RunsCommand::vendorCredit))))
+                                .then(Commands.literal("buy")
+                                        .requires(source -> source.hasPermission(2))
+                                        .then(Commands.argument("run", UuidArgument.uuid())
+                                                .then(Commands.argument("service", ResourceLocationArgument.id())
+                                                        .then(Commands.argument("payer", EntityArgument.player())
+                                                                .then(Commands.argument("target", EntityArgument.player())
+                                                                        .executes(RunsCommand::vendorBuy)))))))
                         // Drafting is the other thing a player does for themselves, so `vote` and
                         // `show` set no permission while `force` does. P7's trap is why each
                         // subcommand carries its own: Brigadier keeps the FIRST registration's
@@ -261,6 +277,39 @@ public final class RunsCommand {
         return TowerDefinitionRegistry.content().vendorCatalog().size();
     }
 
+    /** {@code /cobbletowers runs vendor credit <player> <amount>}: an operator's tool, not a reward. */
+    private static int vendorCredit(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        ServerPlayer player = EntityArgument.getPlayer(context, "player");
+        int amount = IntegerArgumentType.getInteger(context, "amount");
+
+        TowerWalletStore store = TowerWalletStore.get(source.getServer());
+        store.credit(player.getUUID(), amount);
+        store.checkpoint(source.getServer());
+        source.sendSuccess(() -> Component.literal("Credited " + amount + " CobbleDollars to "
+                + player.getGameProfile().getName()), true);
+        return amount;
+    }
+
+    /** {@code /cobbletowers runs vendor buy <run> <service> <payer> <target>}: an operator's tool. */
+    private static int vendorBuy(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        CommandSourceStack source = context.getSource();
+        UUID runId = UuidArgument.getUuid(context, "run");
+        ResourceLocation serviceId = ResourceLocationArgument.getId(context, "service");
+        ServerPlayer payer = EntityArgument.getPlayer(context, "payer");
+        ServerPlayer target = EntityArgument.getPlayer(context, "target");
+
+        VendorPurchaseService.Result result = VendorPurchaseService.purchase(
+                source.getServer(), runId, payer.getUUID(), target.getUUID(), serviceId);
+        if (result != VendorPurchaseService.Result.SUCCESS) {
+            source.sendFailure(Component.literal("Could not buy " + serviceId + ": " + result));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("Bought " + serviceId + " for "
+                + target.getGameProfile().getName() + ": " + result), true);
+        return 1;
+    }
+
     private static int list(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         List<PersistedRun> runs = TowerRuns.all();
@@ -313,6 +362,9 @@ public final class RunsCommand {
         for (ResourceLocation modifier : run.modifiers().accumulated()) {
             source.sendSuccess(() -> Component.literal("    " + modifier
                     + (run.modifiers().lockedIn().contains(modifier) ? "  [LOCKED IN]" : "")), false);
+        }
+        if (!run.vendorPurchases().isEmpty()) {
+            source.sendSuccess(() -> Component.literal("  vendor purchases: " + run.vendorPurchases()), false);
         }
         run.modifiers().draft().ifPresent(draft -> source.sendSuccess(() -> Component.literal(
                 "  draft at floor " + draft.floorIndex() + (draft.lockIn() ? " (LOCK-IN)" : "")
