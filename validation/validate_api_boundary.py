@@ -112,9 +112,18 @@ def parse_class(data: bytes) -> dict:
 
 def api_classes(source: Path | None) -> list[tuple[str, bytes]]:
     if source is None:
-        base = ROOT / "build" / "classes" / "java" / "main"
-        return [(str(p.relative_to(base)).replace("\\", "/"), p.read_bytes())
-                for p in sorted((base / API_PREFIX).rglob("*.class"))]
+        found = []
+        # "main" and "client" (P11's split environment source set) are two separate compile outputs of
+        # the same mod; the public API is not supposed to have a client-only member, but this checks
+        # that rather than assuming it, the same way it checks everything else about the boundary.
+        for env in ("main", "client"):
+            base = ROOT / "build" / "classes" / "java" / env
+            api_dir = base / API_PREFIX
+            if not api_dir.is_dir():
+                continue
+            found.extend((str(p.relative_to(base)).replace("\\", "/"), p.read_bytes())
+                         for p in sorted(api_dir.rglob("*.class")))
+        return found
     with zipfile.ZipFile(source) as jar:
         return [(name, jar.read(name)) for name in sorted(jar.namelist())
                 if name.startswith(API_PREFIX) and name.endswith(".class")]

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * Which opponents a floor puts up, drawn from its pool.
@@ -56,11 +57,14 @@ public final class EncounterDraw {
                                                    int ordinal, Collection<Integer> partyLevels,
                                                    RulesetDefinition ruleset, int modifierLevelOffset,
                                                    Optional<RegionalThemeDefinition> theme) {
-        EncounterPoolDefinition.Entry entry =
-                pick(pool, theme, floorIndex, EncounterSeed.of(runSeed, floorIndex, ordinal));
+        long seed = EncounterSeed.of(runSeed, floorIndex, ordinal);
+        EncounterPoolDefinition.Entry entry = pick(pool, theme, floorIndex, seed);
         int offset = entry.levelOffset() + modifierLevelOffset;
+        OptionalInt jerseyNumber = theme.isPresent() && theme.get().isJerseySpecies(entry.species())
+                ? OptionalInt.of(JerseyNumbers.forEncounter(seed))
+                : OptionalInt.empty();
         return TowerLevelPolicy.levelFor(partyLevels, floorIndex, offset, ruleset).stream()
-                .mapToObj(level -> new EncounterSnapshot(ordinal, entry.species(), entry.aspects(), level))
+                .mapToObj(level -> new EncounterSnapshot(ordinal, entry.species(), entry.aspects(), level, jerseyNumber))
                 .findFirst();
     }
 

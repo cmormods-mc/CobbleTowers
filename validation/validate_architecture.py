@@ -60,8 +60,17 @@ def utf8_constants(data: bytes) -> list[str]:
 
 def classes(source: Path | None) -> list[tuple[str, bytes]]:
     if source is None:
-        base = ROOT / "build" / "classes" / "java" / "main"
-        return [(str(p.relative_to(base)).replace("\\", "/"), p.read_bytes()) for p in sorted(base.rglob("*.class"))]
+        found = []
+        # "main" and "client" (P11's split environment source set) are two separate compile outputs of
+        # the same mod; a client-only violation must not go unchecked just because it compiled into a
+        # directory this script did not yet know to look in.
+        for env in ("main", "client"):
+            base = ROOT / "build" / "classes" / "java" / env
+            if not base.is_dir():
+                continue
+            found.extend((str(p.relative_to(base)).replace("\\", "/"), p.read_bytes())
+                         for p in sorted(base.rglob("*.class")))
+        return found
     with zipfile.ZipFile(source) as jar:
         return [(name, jar.read(name)) for name in sorted(jar.namelist()) if name.endswith(".class")]
 

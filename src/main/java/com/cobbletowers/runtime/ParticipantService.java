@@ -6,12 +6,14 @@ import com.cobbletowers.api.tower.participant.ConnectionState;
 import com.cobbletowers.api.tower.participant.ParticipantState;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
+import com.cobbletowers.spectator.SpectatorPresentation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * The one place a participant's state changes.
@@ -132,6 +134,15 @@ public final class ParticipantService {
         TowerRuns.get(runId).ifPresent(run -> {
             PersistedRun written = revivedAtIntermission(run, now);
             if (written == run) return;
+            // Read from the run as it stood before the write: exactly who this revival is taking off
+            // spectating, so their camera is released the same moment their combat state leaves it.
+            for (PersistedParticipant participant : run.participants()) {
+                if (!participant.state().isSpectating() && participant.state().combat() != CombatState.REVIVE_PENDING) {
+                    continue;
+                }
+                ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+                if (player != null) SpectatorPresentation.stopSpectating(player);
+            }
             TowerRuns.save(server, written, false);
             TowerLog.info("Run {} revived its spectators at the intermission", runId);
         });

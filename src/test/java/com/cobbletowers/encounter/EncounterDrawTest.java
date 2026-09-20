@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -199,5 +200,41 @@ class EncounterDrawTest {
         EncounterSnapshot alsoUntouched = EncounterDraw.draw(themedPool, RUN_SEED, 9, 0, PARTY, ruleset(),
                 0, Optional.empty()).orElseThrow();
         assertEquals(untouched, alsoUntouched);
+    }
+
+    @Test
+    @DisplayName("a jersey signature's snapshot carries a jersey number; a non-jersey one does not (TDS #67)")
+    void jerseyNumberOnlyForJerseySpecies() {
+        EncounterPoolDefinition themedPool = pool("""
+                [{"species":"cobblemon:gyarados","weight":100},
+                 {"species":"cobblemon:magikarp","weight":100}]""");
+        RegionalThemeDefinition theme = RegionalThemeDefinition.fromJson(id("tideforge"), JsonParser.parseString("""
+                {"schema_version":1,"display_name":"Tideforge","doctrine":"Momentum",
+                 "jersey_weight_growth_percent_per_floor":0,
+                 "jersey_signatures":[
+                   {"species":"cobblemon:gyarados"},{"species":"cobblemon:lanturn"},
+                   {"species":"cobblemon:kingdra"},{"species":"cobblemon:empoleon"},
+                   {"species":"cobblemon:milotic"}]}""").getAsJsonObject());
+        Optional<RegionalThemeDefinition> resolved = Optional.of(theme);
+
+        boolean sawJersey = false, sawPlain = false;
+        for (int seed = 0; seed < 200 && !(sawJersey && sawPlain); seed++) {
+            EncounterSnapshot snapshot = EncounterDraw.draw(themedPool, seed, 5, 0, PARTY, ruleset(), 0, resolved)
+                    .orElseThrow();
+            if (snapshot.species().getPath().equals("gyarados")) {
+                assertTrue(snapshot.jerseyNumber().isPresent(), "a jersey signature should carry a number");
+                assertTrue(snapshot.jerseyNumber().getAsInt() >= JerseyNumbers.MIN
+                        && snapshot.jerseyNumber().getAsInt() <= JerseyNumbers.MAX);
+                sawJersey = true;
+            } else {
+                assertEquals(OptionalInt.empty(), snapshot.jerseyNumber(), "a non-jersey opponent should carry no number");
+                sawPlain = true;
+            }
+        }
+        assertTrue(sawJersey && sawPlain, "expected to see both a jersey and a non-jersey draw across 200 seeds");
+
+        // No theme at all: never a jersey number, regardless of species.
+        EncounterSnapshot noTheme = EncounterDraw.draw(themedPool, RUN_SEED, 5, 0, PARTY, ruleset()).orElseThrow();
+        assertEquals(OptionalInt.empty(), noTheme.jerseyNumber());
     }
 }
