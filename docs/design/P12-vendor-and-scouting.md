@@ -205,6 +205,12 @@ shape:
 - **`/cobbletowers runs vendor`** -- opens the shop screen for the caller's own run (§4). Nested under
   `runs` rather than a new top-level literal, matching where `reward show` and `draft show` already
   sit: one player-facing namespace, not two.
+- **`/cobbletowers runs vendor credit <player> <amount>`** and **`/cobbletowers runs vendor buy <run>
+  <service> <payer> <target>`** -- operator tools, permission 2, added for the same reason `runs grant`
+  was: a live test has no client to earn CobbleDollars realistically (the reward table's own entry is
+  a probabilistic roll) or to send a purchase over the wire at all, so these are the only way to pin
+  either down outside a real Minecraft client. `buy` calls `VendorPurchaseService.purchase` directly
+  and reports its `Result`, exercising the exact same code path a real purchase would.
 - **`/cobbletowers definitions`**'s per-kind count line gains vendor services and scouting profiles,
   the two kinds this phase adds, the same place P10 added regional themes to and P9's reward tables
   should already be on.
