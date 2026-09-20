@@ -44,7 +44,7 @@ class TowerContentTest {
                         JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())) : Map.of(),
                 milestones, Map.of(), Map.of(),
                 withRewardTable ? Map.of(id("rewards"), rewardTable()) : Map.of(),
-                Map.of(),
+                Map.of(), Map.of(), Map.of(),
                 Map.of(DefinitionKey.tower(id("neutral")), "digest-abc"));
     }
 
@@ -60,7 +60,7 @@ class TowerContentTest {
     private static TowerDefinition tower(List<ResourceLocation> floorIds, List<ResourceLocation> milestoneIds,
                                          Optional<ResourceLocation> regionalTheme) {
         return new TowerDefinition(id("neutral"), "Neutral", 1, 1, id("standard"), id("rewards"), floorIds,
-                milestoneIds, regionalTheme);
+                milestoneIds, regionalTheme, Optional.empty());
     }
 
     @Test
@@ -104,7 +104,7 @@ class TowerContentTest {
                         JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())),
                 Map.of(), Map.of(), Map.of(),
                 Map.of(id("rewards"), rewardTable()),
-                Map.of(),
+                Map.of(), Map.of(), Map.of(),
                 digests);
 
         assertEquals("tower-digest", content.summary(id("neutral")).orElseThrow().contentDigest(),
@@ -143,12 +143,36 @@ class TowerContentTest {
                         JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())),
                 Map.of(), Map.of(), Map.of(),
                 Map.of(id("rewards"), rewardTable()),
-                Map.of(),
+                Map.of(), Map.of(), Map.of(),
                 Map.of(DefinitionKey.tower(id("neutral")), "digest-abc"));
 
         String problems = String.join(" | ", content.problems());
         assertTrue(problems.contains("names regional theme cobbletowers:missing_theme"), problems);
         assertTrue(problems.contains("names regional pool cobbletowers:missing_theme"), problems);
+    }
+
+    @Test
+    @DisplayName("a dangling scouting profile reference is named, not thrown (P12)")
+    void danglingScoutingProfile() {
+        FloorDefinition one = floor(1, Optional.empty());
+        TowerDefinition tower = new TowerDefinition(id("neutral"), "Neutral", 1, 1, id("standard"), id("rewards"),
+                List.of(one.id()), List.of(), Optional.empty(), Optional.of(id("missing_profile")));
+
+        TowerContent content = TowerContent.of(
+                Map.of(tower.id(), tower),
+                Map.of(one.id(), one),
+                Map.of(id("pool"), EncounterPoolDefinition.fromJson(id("pool"),
+                        JsonParser.parseString("{\"schema_version\":1,\"entries\":[{\"species\":\"cobblemon:machoke\"}]}")
+                                .getAsJsonObject())),
+                Map.of(id("standard"), RulesetDefinition.fromJson(id("standard"),
+                        JsonParser.parseString("{\"schema_version\":1}").getAsJsonObject())),
+                Map.of(), Map.of(), Map.of(),
+                Map.of(id("rewards"), rewardTable()),
+                Map.of(), Map.of(), Map.of(),
+                Map.of(DefinitionKey.tower(id("neutral")), "digest-abc"));
+
+        String problems = String.join(" | ", content.problems());
+        assertTrue(problems.contains("names scouting profile cobbletowers:missing_profile"), problems);
     }
 
     @Test

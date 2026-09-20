@@ -1,10 +1,12 @@
 package com.cobbletowers.reward;
 
 import com.cobbletowers.TowerLog;
+import com.cobbletowers.economy.CobbleDollars;
 import com.cobbletowers.network.RewardRevealPayload;
 import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.persistence.PendingTowerReward;
 import com.cobbletowers.persistence.TowerPendingRewardStore;
+import com.cobbletowers.persistence.TowerWalletStore;
 import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -41,10 +43,18 @@ public final class RewardDelivery {
         if (queue.isEmpty()) return 0;
 
         List<PendingTowerReward> delivered = new ArrayList<>(queue.size());
+        boolean creditedWallet = false;
         for (PendingTowerReward reward : queue) {
-            if (give(player, reward.item(), reward.amount())) delivered.add(reward);
+            if (reward.item().equals(CobbleDollars.ITEM_ID)) {
+                TowerWalletStore.get(server).credit(player.getUUID(), reward.amount());
+                delivered.add(reward);
+                creditedWallet = true;
+            } else if (give(player, reward.item(), reward.amount())) {
+                delivered.add(reward);
+            }
         }
         store.checkpoint(server);
+        if (creditedWallet) TowerWalletStore.get(server).checkpoint(server);
         if (!delivered.isEmpty()) {
             player.sendSystemMessage(Component.literal("Tower rewards delivered: " + summarize(delivered)));
             TowerNetworking.sendRewardReveal(player, revealOf(delivered));

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Full Heal",
+  "price_cobble_dollars": 25,
+  "effect": "full_heal",
+  "max_purchases_per_run": 0
+}

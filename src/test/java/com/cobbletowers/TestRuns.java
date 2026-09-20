@@ -47,7 +47,7 @@ public final class TestRuns {
                 RunFactory.FIRST_FLOOR, RunState.CREATED,
                 List.of(new PersistedParticipant(playerId, ParticipantState.joined(), List.of())),
                 Optional.empty(), List.of(), updatedAt, OptionalInt.empty(), List.of(),
-                RunModifierState.EMPTY, 0);
+                RunModifierState.EMPTY, 0, Map.of());
     }
 
     /** The same run moved to a state directly, for tests about storage rather than transitions. */
@@ -56,7 +56,7 @@ public final class TestRuns {
         return new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), run.floorIndex(),
                 state, run.participants(), run.lastCheckpoint(), run.committedTransactions(), updatedAt,
-                run.cell(), run.ledger(), run.modifiers(), run.lastBankedFloor());
+                run.cell(), run.ledger(), run.modifiers(), run.lastBankedFloor(), run.vendorPurchases());
     }
 
     /** One tower, two floors, a ruleset and a boss milestone -- enough for every reference to resolve. */
@@ -75,18 +75,20 @@ public final class TestRuns {
         RewardTableDefinition rewardTable = RewardTableDefinition.fromJson(id("rewards"),
                 JsonParser.parseString("{\"schema_version\":1,\"display_name\":\"Rewards\"}").getAsJsonObject());
         TowerDefinition tower = new TowerDefinition(TOWER, "Neutral", 1, 3, id("standard"), rewardTable.id(),
-                List.of(one.id(), two.id()), List.of(boss.id()), Optional.empty());
+                List.of(one.id(), two.id()), List.of(boss.id()), Optional.empty(), Optional.empty());
 
         return TowerContent.of(Map.of(TOWER, tower), Map.of(one.id(), one, two.id(), two), Map.of(pool.id(), pool),
                 Map.of(ruleset.id(), ruleset), Map.of(boss.id(), boss), Map.of(), Map.of(),
-                Map.of(rewardTable.id(), rewardTable), Map.of(), Map.of(DefinitionKey.tower(TOWER), "digest-abc"));
+                Map.of(rewardTable.id(), rewardTable), Map.of(), Map.of(), Map.of(),
+                Map.of(DefinitionKey.tower(TOWER), "digest-abc"));
     }
 
     /** The same content, plus a set of modifiers to draft from. */
     public static TowerContent contentWith(Map<ResourceLocation, ModifierDefinition> modifiers) {
         TowerContent base = content();
         return TowerContent.of(base.towers(), base.floors(), base.pools(), base.rulesets(), base.milestones(),
-                base.bossPools(), modifiers, base.rewardTables(), base.regionalThemes(), base.digests());
+                base.bossPools(), modifiers, base.rewardTables(), base.regionalThemes(), base.vendorServices(),
+                base.scoutingProfiles(), base.digests());
     }
 
     /**

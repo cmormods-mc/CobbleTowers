@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Cure Status",
+  "price_cobble_dollars": 10,
+  "effect": "cure_status",
+  "max_purchases_per_run": 0
+}

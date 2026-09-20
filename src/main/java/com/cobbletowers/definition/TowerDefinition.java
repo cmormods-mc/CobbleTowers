@@ -19,6 +19,8 @@ import net.minecraft.resources.ResourceLocation;
  * @param floorIds     every floor, in play order
  * @param milestoneIds milestone definitions this tower uses; their floor indices must exist
  * @param regionalTheme reserved for P10; parsed and carried, never resolved here
+ * @param scoutingProfile which reveal-threshold profile (P12) gates opponent info for this tower;
+ *                        empty means everything reveals naturally (TDS #49's baseline)
  */
 public record TowerDefinition(
         ResourceLocation id,
@@ -29,7 +31,8 @@ public record TowerDefinition(
         ResourceLocation rewardTableId,
         List<ResourceLocation> floorIds,
         List<ResourceLocation> milestoneIds,
-        Optional<ResourceLocation> regionalTheme) {
+        Optional<ResourceLocation> regionalTheme,
+        Optional<ResourceLocation> scoutingProfile) {
 
     /** The only shape this build understands. A newer file is skipped with a message, not guessed at. */
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
@@ -39,6 +42,7 @@ public record TowerDefinition(
         Objects.requireNonNull(rulesetId, "rulesetId");
         Objects.requireNonNull(rewardTableId, "rewardTableId");
         Objects.requireNonNull(regionalTheme, "regionalTheme");
+        Objects.requireNonNull(scoutingProfile, "scoutingProfile");
         if (displayName == null || displayName.isBlank()) {
             throw new IllegalArgumentException("display_name must not be blank");
         }
@@ -72,6 +76,7 @@ public record TowerDefinition(
                 TowerJson.requireId(root, "reward_table"),
                 TowerJson.requireIds(root, "floors"),
                 TowerJson.ids(root, "milestones"),
-                TowerJson.optionalId(root, "regional_theme"));
+                TowerJson.optionalId(root, "regional_theme"),
+                TowerJson.optionalId(root, "scouting_profile"));
     }
 }

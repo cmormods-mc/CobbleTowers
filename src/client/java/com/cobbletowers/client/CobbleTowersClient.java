@@ -2,7 +2,9 @@ package com.cobbletowers.client;
 
 import com.cobbletowers.network.CycleTeammatePayload;
 import com.cobbletowers.network.RewardRevealPayload;
+import com.cobbletowers.network.ScoutingRevealPayload;
 import com.cobbletowers.network.SpectatorPanelPayload;
+import com.cobbletowers.network.VendorCatalogPayload;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -11,9 +13,11 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 
 /**
- * The client half of P11: a HUD panel, a reward reveal screen, and the keybind that drives cycling.
+ * The client half of P11/P12: a HUD panel, a reward reveal screen, a vendor shop, a scouting report,
+ * and the keybind that drives spectator cycling.
  *
  * <p>CobbleTowers' first client entrypoint. Payload <em>types</em> are registered from the common
  * {@code main} entrypoint ({@code TowerNetworking.registerPayloadTypes}), which Fabric Loader also
@@ -35,6 +39,19 @@ public final class CobbleTowersClient implements ClientModInitializer {
                 (payload, context) -> context.client().execute(() -> SpectatorHud.updatePanel(payload)));
         ClientPlayNetworking.registerGlobalReceiver(RewardRevealPayload.TYPE, (payload, context) ->
                 context.client().execute(() -> Minecraft.getInstance().setScreen(new RewardRevealScreen(payload))));
+        ClientPlayNetworking.registerGlobalReceiver(ScoutingRevealPayload.TYPE, (payload, context) ->
+                context.client().execute(() -> Minecraft.getInstance().setScreen(new ScoutingScreen(payload))));
+        ClientPlayNetworking.registerGlobalReceiver(VendorCatalogPayload.TYPE, (payload, context) ->
+                context.client().execute(() -> {
+                    Screen current = Minecraft.getInstance().screen;
+                    if (current instanceof VendorScreen open) {
+                        // A refresh after a purchase: updated in place rather than replaced, so the
+                        // screen does not flicker closed-and-reopened under the player's own click.
+                        open.updateCatalog(payload);
+                    } else {
+                        Minecraft.getInstance().setScreen(new VendorScreen(payload));
+                    }
+                }));
 
         HudRenderCallback.EVENT.register(SpectatorHud.INSTANCE);
 

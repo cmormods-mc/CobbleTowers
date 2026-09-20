@@ -56,11 +56,11 @@ class RewardBankServiceTest {
         MilestoneDefinition boss = new MilestoneDefinition(id("boss"), 2, MilestoneKind.BOSS,
                 Optional.of(ResourceLocation.fromNamespaceAndPath("cobbleraids", "lucario")), banksRewards);
         TowerDefinition tower = new TowerDefinition(TestRuns.TOWER, "Neutral", 1, 1, ruleset.id(), rewardTable.id(),
-                List.of(one.id(), two.id()), List.of(boss.id()), Optional.empty());
+                List.of(one.id(), two.id()), List.of(boss.id()), Optional.empty(), Optional.empty());
 
         return TowerContent.of(Map.of(TestRuns.TOWER, tower), Map.of(one.id(), one, two.id(), two),
                 Map.of(pool.id(), pool), Map.of(ruleset.id(), ruleset), Map.of(boss.id(), boss), Map.of(), Map.of(),
-                Map.of(rewardTable.id(), rewardTable), Map.of(),
+                Map.of(rewardTable.id(), rewardTable), Map.of(), Map.of(), Map.of(),
                 Map.of(DefinitionKey.tower(TestRuns.TOWER), "digest"));
     }
 
@@ -98,7 +98,7 @@ class RewardBankServiceTest {
         PersistedRun run = new PersistedRun(RUN, PersistedRun.SCHEMA_VERSION, TestRuns.TOWER, 1, "digest", 1, 0, 1L,
                 2, RunState.COMPLETED, List.of(new PersistedParticipant(PLAYER_A, ParticipantState.joined(), List.of())),
                 Optional.empty(), List.of(), TestRuns.NOW, OptionalInt.empty(), List.of(),
-                RunModifierState.EMPTY, 0);
+                RunModifierState.EMPTY, 0, Map.of());
 
         assertEquals(noBanking.rewardTable(id("rewards")), RewardBankService.bankPoint(noBanking, run));
     }
@@ -115,7 +115,7 @@ class RewardBankServiceTest {
         PersistedRun onFloorTwo = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(),
                 run.towerRevision(), run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(),
                 2, run.state(), run.participants(), run.lastCheckpoint(), run.committedTransactions(),
-                run.updatedAt(), run.cell(), run.ledger(), run.modifiers(), 1);
+                run.updatedAt(), run.cell(), run.ledger(), run.modifiers(), 1, run.vendorPurchases());
 
         assertEquals(List.of(floorTwo), RewardBankService.unbanked(onFloorTwo));
     }
@@ -131,7 +131,7 @@ class RewardBankServiceTest {
                 fresh.towerRevision(), fresh.towerDigest(), fresh.rulesetRevision(), fresh.structureRevision(),
                 fresh.seed(), fresh.floorIndex(), fresh.state(), List.of(knockedOut, left), fresh.lastCheckpoint(),
                 fresh.committedTransactions(), fresh.updatedAt(), fresh.cell(), fresh.ledger(), fresh.modifiers(),
-                fresh.lastBankedFloor());
+                fresh.lastBankedFloor(), fresh.vendorPurchases());
 
         assertEquals(List.of(PLAYER_A), RewardBankService.currentParticipants(run),
                 "knocked out or disconnected still played the run; only a voluntary leaver is excluded");
@@ -171,7 +171,8 @@ class RewardBankServiceTest {
         return new PersistedRun(fresh.runId(), fresh.schemaVersion(), fresh.towerId(), fresh.towerRevision(),
                 fresh.towerDigest(), fresh.rulesetRevision(), fresh.structureRevision(), fresh.seed(), 1,
                 RunState.INTERMISSION, fresh.participants(), fresh.lastCheckpoint(), fresh.committedTransactions(),
-                fresh.updatedAt(), fresh.cell(), fresh.ledger(), fresh.modifiers(), fresh.lastBankedFloor());
+                fresh.updatedAt(), fresh.cell(), fresh.ledger(), fresh.modifiers(), fresh.lastBankedFloor(),
+                fresh.vendorPurchases());
     }
 
     private static PersistedRun floorTwoIntermissionRun() {
@@ -179,6 +180,7 @@ class RewardBankServiceTest {
         return new PersistedRun(fresh.runId(), fresh.schemaVersion(), fresh.towerId(), fresh.towerRevision(),
                 fresh.towerDigest(), fresh.rulesetRevision(), fresh.structureRevision(), fresh.seed(), 2,
                 RunState.INTERMISSION, fresh.participants(), fresh.lastCheckpoint(), fresh.committedTransactions(),
-                fresh.updatedAt(), fresh.cell(), fresh.ledger(), fresh.modifiers(), fresh.lastBankedFloor());
+                fresh.updatedAt(), fresh.cell(), fresh.ledger(), fresh.modifiers(), fresh.lastBankedFloor(),
+                fresh.vendorPurchases());
     }
 }

@@ -25,11 +25,12 @@ public record ModifierEffects(
         boolean switchingAllowed,
         boolean itemsAllowed,
         Optional<String> weather,
-        Optional<String> terrain) {
+        Optional<String> terrain,
+        int scoutingBonus) {
 
     /** A run carrying nothing: every field is the value that changes nothing. */
     public static final ModifierEffects NONE = new ModifierEffects(0, 0, 0, 100, 100,
-            List.of(), true, true, Optional.empty(), Optional.empty());
+            List.of(), true, true, Optional.empty(), Optional.empty(), 0);
 
     public ModifierEffects {
         bannedMoves = List.copyOf(bannedMoves);
@@ -57,6 +58,7 @@ public record ModifierEffects(
         boolean items = true;
         Optional<String> weather = Optional.empty();
         Optional<String> terrain = Optional.empty();
+        int scoutingBonus = 0;
         for (ModifierDefinition modifier : modifiers) {
             ModifierDefinition.Effect effect = modifier.effect();
             level += effect.levelOffset();
@@ -64,6 +66,7 @@ public record ModifierEffects(
             bossLevel += effect.bossLevelOffset();
             bossHealth = bossHealth * effect.bossHealthPercent() / 100;
             reward = reward * effect.rewardPercent() / 100;
+            scoutingBonus += effect.scoutingBonus();
 
             for (String move : effect.bannedMoves()) {
                 if (!banned.contains(move)) banned.add(move);
@@ -82,7 +85,7 @@ public record ModifierEffects(
         // A pool of zero is not a boss, it is a corpse: compounding reductions could reach it, and a
         // boss that dies to the first hit would read as a bug rather than as a drafted advantage.
         return new ModifierEffects(level, opponents, bossLevel, Math.max(bossHealth, 1), Math.max(reward, 0),
-                banned, switching, items, weather, terrain);
+                banned, switching, items, weather, terrain, scoutingBonus);
     }
 
     /** Whether anything here changes how the boss battle itself is fought. */

@@ -48,10 +48,11 @@ public final class DefinitionsCommand {
         // just written a modifiers/ folder no way to tell whether theirs was one of them.
         source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
                 "  %d floor(s), %d encounter pool(s), %d ruleset(s), %d milestone(s), %d boss pool(s),"
-                        + " %d modifier(s), %d regional theme(s)",
+                        + " %d modifier(s), %d regional theme(s), %d vendor service(s), %d scouting profile(s)",
                 content.floors().size(), content.pools().size(), content.rulesets().size(),
                 content.milestones().size(), content.bossPools().size(), content.modifiers().size(),
-                content.regionalThemes().size())), false);
+                content.regionalThemes().size(), content.vendorServices().size(),
+                content.scoutingProfiles().size())), false);
 
         for (ResourceLocation towerId : content.sortedTowerIds()) {
             TowerSummary summary = content.summary(towerId).orElseThrow();

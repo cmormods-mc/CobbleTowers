@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "scouting",
+  "display_name": "Keen Eye",
+  "risk": "minor",
+  "weight": 70,
+  "stack_limit": 2,
+  "effect": {
+    "scouting_bonus": 2
+  }
+}

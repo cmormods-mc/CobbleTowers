@@ -10,6 +10,7 @@ import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.RunModifierState;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
@@ -62,6 +63,8 @@ public final class RunFactory {
                 // Nothing drafted yet; the first draft opens at the first intermission.
                 RunModifierState.EMPTY,
                 // Nothing banked yet.
-                0));
+                0,
+                // Nothing bought yet; the vendor did not exist before this run's floor is reached.
+                Map.of()));
     }
 }
