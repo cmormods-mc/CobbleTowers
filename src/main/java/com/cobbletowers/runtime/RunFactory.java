@@ -38,6 +38,18 @@ public final class RunFactory {
      */
     public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
                                                 List<UUID> players, long seed, long now) {
+        return create(content, towerId, players, Map.of(), seed, now);
+    }
+
+    /**
+     * As {@link #create(TowerContent, ResourceLocation, List, long, long)}, registering each player's
+     * Pokemon from {@code parties} (player id to Cobblemon Pokemon uuids, in party order). A player
+     * with no entry registers nothing. The caller reads the live party, so this stays free of
+     * Cobblemon.
+     */
+    public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
+                                                List<UUID> players, Map<UUID, List<UUID>> parties,
+                                                long seed, long now) {
         TowerDefinition tower = content.towers().get(towerId);
         if (tower == null) return Optional.empty();
 
@@ -46,9 +58,10 @@ public final class RunFactory {
 
         List<PersistedParticipant> participants = new ArrayList<>(players.size());
         for (UUID player : players) {
-            // No registered Pokemon yet: the party is captured when it is validated, which is a
-            // floor's worth of work away and belongs to the phase that owns party rules.
-            participants.add(new PersistedParticipant(player, ParticipantState.joined(), List.of()));
+            // The party as it stood at creation (a snapshot, so reshuffling it between floors does not
+            // rewrite the run). Party rules are validated later, against the live party.
+            participants.add(new PersistedParticipant(player, ParticipantState.joined(),
+                    parties.getOrDefault(player, List.of())));
         }
 
         return Optional.of(new PersistedRun(UUID.randomUUID(), PersistedRun.SCHEMA_VERSION, towerId,

@@ -1,5 +1,7 @@
 package com.cobbletowers.command;
 
+import com.cobblemon.mod.common.Cobblemon;
+import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.battle.cobbleraids.TowerBossAdapter;
@@ -30,8 +32,10 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.ChatFormatting;
@@ -391,11 +395,17 @@ public final class RunsCommand {
         CommandSourceStack source = context.getSource();
         ResourceLocation towerId = ResourceLocationArgument.getId(context, "tower");
         List<UUID> players = new ArrayList<>();
+        Map<UUID, List<UUID>> parties = new HashMap<>();
         for (ServerPlayer player : EntityArgument.getPlayers(context, "players")) {
             players.add(player.getUUID());
+            List<UUID> party = new ArrayList<>();
+            for (Pokemon pokemon : Cobblemon.INSTANCE.getStorage().getParty(player)) {
+                party.add(pokemon.getUuid());
+            }
+            parties.put(player.getUUID(), party);
         }
 
-        Optional<PersistedRun> created = RunFactory.create(TowerDefinitionRegistry.content(), towerId, players,
+        Optional<PersistedRun> created = RunFactory.create(TowerDefinitionRegistry.content(), towerId, players, parties,
                 source.getServer().overworld().getRandom().nextLong(), System.currentTimeMillis());
         if (created.isEmpty()) {
             source.sendFailure(Component.literal("No tower " + towerId + " is loaded"));

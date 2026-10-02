@@ -33,7 +33,7 @@ class RunFactoryTest {
     }
 
     @Test
-    @DisplayName("every player is a member from the start, with no party captured yet")
+    @DisplayName("every player is a member from the start, with no party unless the caller supplies one")
     void participants() {
         UUID second = UUID.fromString("22222222-0000-0000-0000-000000000008");
         PersistedRun run = RunFactory.create(TestRuns.content(), TestRuns.TOWER,
@@ -42,7 +42,21 @@ class RunFactoryTest {
         assertEquals(2, run.participants().size());
         assertTrue(run.participants().stream().allMatch(participant -> participant.state().canFight()));
         assertTrue(run.participants().stream().allMatch(participant -> participant.registeredPokemon().isEmpty()),
-                "the party is captured when it is validated, which is not this phase's job");
+                "nothing registers a party the caller did not hand over");
+    }
+
+    @Test
+    @DisplayName("a supplied party is registered in order, and only for the player it belongs to")
+    void registersSuppliedParty() {
+        UUID second = UUID.fromString("22222222-0000-0000-0000-000000000008");
+        UUID a = UUID.fromString("33333333-0000-0000-0000-000000000001");
+        UUID b = UUID.fromString("33333333-0000-0000-0000-000000000002");
+        PersistedRun run = RunFactory.create(TestRuns.content(), TestRuns.TOWER,
+                List.of(TestRuns.PLAYER, second), java.util.Map.of(TestRuns.PLAYER, List.of(a, b)), 1L,
+                TestRuns.NOW).orElseThrow();
+
+        assertEquals(List.of(a, b), run.participants().get(0).registeredPokemon());
+        assertEquals(List.of(), run.participants().get(1).registeredPokemon());
     }
 
     @Test
