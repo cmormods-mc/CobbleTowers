@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "entries": [
+    { "definition": "cobbleraids:marshadow", "weight": 100 },
+    { "definition": "cobbleraids:tyranitar", "weight": 100 },
+    { "definition": "cobbleraids:hydreigon", "weight": 80 },
+    { "definition": "cobbleraids:zarude", "weight": 80 }
+  ]
+}

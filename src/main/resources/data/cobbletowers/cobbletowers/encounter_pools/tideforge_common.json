@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "regional_pool": "cobbletowers:tideforge",
+  "entries": [
+    { "species": "cobblemon:kyogre", "aspects": ["jersey"], "weight": 50, "level_offset": 3 },
+    { "species": "cobblemon:vaporeon", "aspects": ["jersey"], "weight": 50 },
+    { "species": "cobblemon:blastoise", "aspects": ["jersey"], "weight": 50 },
+    { "species": "cobblemon:golisopod", "aspects": ["jersey"], "weight": 50 },
+    { "species": "cobblemon:empoleon", "aspects": ["jersey"], "weight": 50 },
+    { "species": "cobblemon:floatzel", "weight": 100 },
+    { "species": "cobblemon:barraskewda", "weight": 100 },
+    { "species": "cobblemon:toxapex", "weight": 90 },
+    { "species": "cobblemon:lanturn", "weight": 90 },
+    { "species": "cobblemon:corviknight", "weight": 80 },
+    { "species": "cobblemon:perrserker", "weight": 80 },
+    { "species": "cobblemon:greninja", "weight": 70, "level_offset": 1 },
+    { "species": "cobblemon:drednaw", "weight": 70 },
+    { "species": "cobblemon:toxtricity", "weight": 60, "level_offset": 2 },
+    { "species": "cobblemon:basculin", "weight": 100 }
+  ]
+}

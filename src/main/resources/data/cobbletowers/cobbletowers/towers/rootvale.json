@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Rootvale Tower",
+  "ruleset": "cobbletowers:standard",
+  "reward_table": "cobbletowers:neutral",
+  "regional_theme": "cobbletowers:rootvale",
+  "floors": [
+    "cobbletowers:rootvale/floor_01",
+    "cobbletowers:rootvale/floor_02",
+    "cobbletowers:rootvale/floor_03",
+    "cobbletowers:rootvale/floor_04",
+    "cobbletowers:rootvale/floor_05",
+    "cobbletowers:rootvale/floor_06",
+    "cobbletowers:rootvale/floor_07",
+    "cobbletowers:rootvale/floor_08",
+    "cobbletowers:rootvale/floor_09",
+    "cobbletowers:rootvale/floor_10"
+  ],
+  "milestones": [
+    "cobbletowers:rootvale/boss_05",
+    "cobbletowers:rootvale/champion_10"
+  ]
+}

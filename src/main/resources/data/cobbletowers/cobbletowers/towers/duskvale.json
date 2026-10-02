@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Duskvale Tower",
+  "ruleset": "cobbletowers:standard",
+  "reward_table": "cobbletowers:neutral",
+  "regional_theme": "cobbletowers:duskvale",
+  "floors": [
+    "cobbletowers:duskvale/floor_01",
+    "cobbletowers:duskvale/floor_02",
+    "cobbletowers:duskvale/floor_03",
+    "cobbletowers:duskvale/floor_04",
+    "cobbletowers:duskvale/floor_05",
+    "cobbletowers:duskvale/floor_06",
+    "cobbletowers:duskvale/floor_07",
+    "cobbletowers:duskvale/floor_08",
+    "cobbletowers:duskvale/floor_09",
+    "cobbletowers:duskvale/floor_10"
+  ],
+  "milestones": [
+    "cobbletowers:duskvale/boss_05",
+    "cobbletowers:duskvale/champion_10"
+  ]
+}

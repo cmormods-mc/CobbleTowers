@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Tideforge",
+  "doctrine": "Momentum",
+  "jersey_signatures": [
+    { "species": "cobblemon:kyogre", "aspects": ["jersey"] },
+    { "species": "cobblemon:vaporeon", "aspects": ["jersey"] },
+    { "species": "cobblemon:blastoise", "aspects": ["jersey"] },
+    { "species": "cobblemon:golisopod", "aspects": ["jersey"] },
+    { "species": "cobblemon:empoleon", "aspects": ["jersey"] }
+  ],
+  "jersey_weight_growth_percent_per_floor": 15
+}

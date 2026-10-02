@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Tideforge Tower",
+  "ruleset": "cobbletowers:standard",
+  "reward_table": "cobbletowers:neutral",
+  "regional_theme": "cobbletowers:tideforge",
+  "floors": [
+    "cobbletowers:tideforge/floor_01",
+    "cobbletowers:tideforge/floor_02",
+    "cobbletowers:tideforge/floor_03",
+    "cobbletowers:tideforge/floor_04",
+    "cobbletowers:tideforge/floor_05",
+    "cobbletowers:tideforge/floor_06",
+    "cobbletowers:tideforge/floor_07",
+    "cobbletowers:tideforge/floor_08",
+    "cobbletowers:tideforge/floor_09",
+    "cobbletowers:tideforge/floor_10"
+  ],
+  "milestones": [
+    "cobbletowers:tideforge/boss_05",
+    "cobbletowers:tideforge/champion_10"
+  ]
+}

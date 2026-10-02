@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Duskvale",
+  "doctrine": "Disruption",
+  "jersey_signatures": [
+    { "species": "cobblemon:darkrai", "aspects": ["jersey"] },
+    { "species": "cobblemon:umbreon", "aspects": ["jersey"] },
+    { "species": "cobblemon:obstagoon", "aspects": ["jersey"] },
+    { "species": "cobblemon:marshadow", "aspects": ["jersey"] },
+    { "species": "cobblemon:dusknoir", "aspects": ["jersey"] }
+  ],
+  "jersey_weight_growth_percent_per_floor": 15
+}

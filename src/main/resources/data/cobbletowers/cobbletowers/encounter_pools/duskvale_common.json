@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "regional_pool": "cobbletowers:duskvale",
+  "entries": [
+    { "species": "cobblemon:darkrai", "aspects": ["jersey"], "weight": 50, "level_offset": 3 },
+    { "species": "cobblemon:umbreon", "aspects": ["jersey"], "weight": 50 },
+    { "species": "cobblemon:obstagoon", "aspects": ["jersey"], "weight": 50 },
+    { "species": "cobblemon:marshadow", "aspects": ["jersey"], "weight": 50, "level_offset": 2 },
+    { "species": "cobblemon:dusknoir", "aspects": ["jersey"], "weight": 50 },
+    { "species": "cobblemon:kingambit", "weight": 100, "level_offset": 1 },
+    { "species": "cobblemon:weavile", "weight": 100 },
+    { "species": "cobblemon:chandelure", "weight": 90 },
+    { "species": "cobblemon:zoroark", "weight": 90 },
+    { "species": "cobblemon:mismagius", "weight": 80 },
+    { "species": "cobblemon:grimmsnarl", "weight": 80 },
+    { "species": "cobblemon:absol", "weight": 70 },
+    { "species": "cobblemon:sableye", "weight": 70 },
+    { "species": "cobblemon:houndoom", "weight": 60 },
+    { "species": "cobblemon:mimikyu", "weight": 60, "level_offset": 2 }
+  ]
+}

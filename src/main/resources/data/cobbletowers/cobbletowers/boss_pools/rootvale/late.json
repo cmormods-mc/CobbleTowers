@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "entries": [
+    { "definition": "cobbleraids:serperior", "weight": 100, "level_offset": 2 },
+    { "definition": "cobbleraids:meganium", "weight": 100, "level_offset": 2 },
+    { "definition": "cobbleraids:venusaur", "weight": 80, "level_offset": 3 },
+    { "definition": "cobbleraids:virizion", "weight": 80, "level_offset": 3 }
+  ]
+}

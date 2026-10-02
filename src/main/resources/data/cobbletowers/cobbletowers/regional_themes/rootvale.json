@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Rootvale",
+  "doctrine": "Growth",
+  "jersey_signatures": [
+    { "species": "cobblemon:celebi", "aspects": ["jersey"] },
+    { "species": "cobblemon:hydrapple", "aspects": ["jersey"] },
+    { "species": "cobblemon:leafeon", "aspects": ["jersey"] },
+    { "species": "cobblemon:snivy", "aspects": ["jersey"] },
+    { "species": "cobblemon:breloom", "aspects": ["jersey"] }
+  ],
+  "jersey_weight_growth_percent_per_floor": 15
+}

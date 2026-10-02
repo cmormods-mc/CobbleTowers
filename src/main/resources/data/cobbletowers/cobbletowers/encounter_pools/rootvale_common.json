@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "regional_pool": "cobbletowers:rootvale",
+  "entries": [
+    { "species": "cobblemon:celebi", "aspects": ["jersey"], "weight": 50, "level_offset": 3 },
+    { "species": "cobblemon:hydrapple", "aspects": ["jersey"], "weight": 50 },
+    { "species": "cobblemon:leafeon", "aspects": ["jersey"], "weight": 50 },
+    { "species": "cobblemon:snivy", "aspects": ["jersey"], "weight": 50 },
+    { "species": "cobblemon:breloom", "aspects": ["jersey"], "weight": 50 },
+    { "species": "cobblemon:rillaboom", "weight": 100, "level_offset": 1 },
+    { "species": "cobblemon:tsareena", "weight": 100 },
+    { "species": "cobblemon:ferrothorn", "weight": 90 },
+    { "species": "cobblemon:amoonguss", "weight": 90 },
+    { "species": "cobblemon:trevenant", "weight": 80 },
+    { "species": "cobblemon:torterra", "weight": 80, "level_offset": 1 },
+    { "species": "cobblemon:tangrowth", "weight": 70 },
+    { "species": "cobblemon:roserade", "weight": 70 },
+    { "species": "cobblemon:toedscruel", "weight": 60 },
+    { "species": "cobblemon:decidueye", "weight": 60, "level_offset": 2 }
+  ]
+}

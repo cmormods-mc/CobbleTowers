@@ -44,7 +44,7 @@ ANCHORS = ("entry", "presentation", "spectator", "exit")
 # rather than approving one.
 NON_SUPPORTING = ("banner", "torch", "carpet", "button", "pressure_plate", "sign", "rail")
 KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones", "boss_pools", "modifiers",
-         "reward_tables", "vendor_services", "scouting_profiles")
+         "reward_tables", "vendor_services", "scouting_profiles", "regional_themes")
 MAX_PARTY = 6
 MIN_LEVEL, MAX_LEVEL = 1, 100
 
@@ -239,6 +239,27 @@ def check_vendor_services(content: dict, problems: list[str]) -> None:
                             " must be >= 0")
 
 
+def check_regional_themes(content: dict, problems: list[str]) -> None:
+    """Structural checks only, the same posture as {@code check_reward_tables}.
+
+    Species/aspect legality is not checked here for the same reason `check_encounter_pools`-shaped
+    logic never has: Cobblemon's species/aspect registries are not available outside a running game,
+    and its aspect property never throws for an unrecognized value anyway.
+    """
+    for theme_id, theme in content["regional_themes"].items():
+        for field in ("schema_version", "display_name", "doctrine"):
+            if field not in theme:
+                problems.append(f"{theme_id} is missing required field '{field}'")
+        signatures = theme.get("jersey_signatures", [])
+        if len(signatures) != 5:
+            problems.append(f"{theme_id} has {len(signatures)} jersey_signatures; a regional theme needs exactly 5")
+        for signature in signatures:
+            if "species" not in signature:
+                problems.append(f"{theme_id} has a jersey signature with no species")
+        if theme.get("jersey_weight_growth_percent_per_floor", 0) < 0:
+            problems.append(f"{theme_id} has a negative jersey_weight_growth_percent_per_floor")
+
+
 def check_scouting_profiles(content: dict, problems: list[str]) -> None:
     """Structural checks only, the same posture as {@code check_reward_tables}."""
     for profile_id, profile in content["scouting_profiles"].items():
@@ -275,6 +296,9 @@ def main() -> None:
             problems.append(f"{tower_id} names ruleset {tower.get('ruleset')}, which does not exist")
         if tower.get("reward_table") not in content["reward_tables"]:
             problems.append(f"{tower_id} names reward table {tower.get('reward_table')}, which does not exist")
+        regional_theme = tower.get("regional_theme")
+        if regional_theme is not None and regional_theme not in content["regional_themes"]:
+            problems.append(f"{tower_id} names regional theme {regional_theme}, which does not exist")
         floors = tower.get("floors", [])
         if len(set(floors)) != len(floors):
             problems.append(f"{tower_id} lists the same floor twice")
@@ -317,6 +341,7 @@ def main() -> None:
     check_reward_tables(content, problems)
     check_vendor_services(content, problems)
     check_scouting_profiles(content, problems)
+    check_regional_themes(content, problems)
 
     for pool_id, pool in content["boss_pools"].items():
         entries = pool.get("entries", [])
@@ -353,6 +378,9 @@ def main() -> None:
                 problems.append(f"{pool_id} has an entry with no species")
             if entry.get("weight", 100) < 1:
                 problems.append(f"{pool_id} has an entry with weight {entry.get('weight')}; weights must be >= 1")
+        regional_pool = pool.get("regional_pool")
+        if regional_pool is not None and regional_pool not in content["regional_themes"]:
+            problems.append(f"{pool_id} names regional pool {regional_pool}, which does not exist")
 
     for ruleset_id, ruleset in content["rulesets"].items():
         levels = ruleset.get("enemy_level", {})
