@@ -8,6 +8,7 @@ import com.cobbletowers.definition.VendorServiceDefinition;
 import com.cobbletowers.economy.VendorPurchaseService;
 import com.cobbletowers.intermission.IntermissionService;
 import com.cobbletowers.lobby.LobbyService;
+import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.TowerWalletStore;
 import com.cobbletowers.runtime.ParticipantService;
@@ -18,6 +19,7 @@ import java.util.UUID;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -144,19 +146,48 @@ public final class TowerNetworking {
         if (result != VendorPurchaseService.Result.SUCCESS) {
             TowerLog.info("Player {} could not buy {}: {}", buyer.getUUID(), payload.serviceId(), result);
         }
+        String targetName = nameOf(server, payload.targetPlayerId());
+        String message = VendorPurchaseService.describe(result, targetName, buyer.getUUID().equals(payload.targetPlayerId()));
+        if (result == VendorPurchaseService.Result.SUCCESS && !buyer.getUUID().equals(payload.targetPlayerId())) {
+            // The teammate is told who paid, since their party just changed under them (TDS #18).
+            ServerPlayer target = server.getPlayerList().getPlayer(payload.targetPlayerId());
+            if (target != null) {
+                target.sendSystemMessage(Component.literal(buyer.getGameProfile().getName() + " bought a service for you."));
+            }
+        }
         // Refreshed either way: a failed purchase (sold out, insufficient funds) still needs the
         // caller's screen to show the balance and remaining-purchase count it actually has now.
-        ParticipantService.runOf(buyer.getUUID()).ifPresent(current -> sendVendorCatalog(server, buyer, current));
+        ParticipantService.runOf(buyer.getUUID())
+                .ifPresent(current -> sendVendorCatalog(server, buyer, current, message));
+    }
+
+    private static String nameOf(MinecraftServer server, UUID playerId) {
+        ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+        return player == null ? playerId.toString().substring(0, 8) : player.getGameProfile().getName();
     }
 
     /** The catalog for one player's own run, sent on request (the vendor command) or after a purchase. */
     public static void sendVendorCatalog(MinecraftServer server, ServerPlayer player, PersistedRun run) {
+        sendVendorCatalog(server, player, run, "");
+    }
+
+    public static void sendVendorCatalog(MinecraftServer server, ServerPlayer player, PersistedRun run, String message) {
         TowerContent content = TowerDefinitionRegistry.content();
         long balance = TowerWalletStore.get(server).balanceOf(player.getUUID());
         List<VendorCatalogPayload.Entry> entries = content.vendorCatalog().stream()
                 .map(service -> catalogEntry(service, run))
                 .toList();
-        sendVendorCatalog(player, new VendorCatalogPayload(balance, entries));
+        // Everyone still in the run, the caller first: the picker defaults to "yourself".
+        List<VendorCatalogPayload.Teammate> team = new java.util.ArrayList<>();
+        for (PersistedParticipant participant : run.participants()) {
+            if (!participant.state().isInRun()) continue;
+            ServerPlayer member = server.getPlayerList().getPlayer(participant.playerId());
+            VendorCatalogPayload.Teammate entry = new VendorCatalogPayload.Teammate(participant.playerId(),
+                    nameOf(server, participant.playerId()), member != null);
+            if (participant.playerId().equals(player.getUUID())) team.add(0, entry);
+            else team.add(entry);
+        }
+        sendVendorCatalog(player, new VendorCatalogPayload(balance, entries, team, message));
     }
 
     private static VendorCatalogPayload.Entry catalogEntry(VendorServiceDefinition service, PersistedRun run) {

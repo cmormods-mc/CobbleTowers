@@ -31,6 +31,20 @@ public final class VendorPurchaseService {
 
     private VendorPurchaseService() {}
 
+    /** What a purchase attempt means to the player who made it, for the message line of the vendor screen. */
+    public static String describe(Result result, String targetName, boolean self) {
+        return switch (result) {
+            case SUCCESS -> self ? "Bought for yourself." : "Bought for " + targetName + ".";
+            case INSUFFICIENT_FUNDS -> "Not enough CobbleDollars.";
+            case SOLD_OUT -> "That service is sold out for this run.";
+            case TARGET_OFFLINE -> targetName + " is not online.";
+            case TARGET_NOT_IN_RUN -> targetName + " is no longer in the run.";
+            case NOT_INTERMISSION -> "The vendor is only open at an intermission.";
+            case UNKNOWN_SERVICE -> "That service does not exist.";
+            case RUN_NOT_FOUND -> "You are not in a run.";
+        };
+    }
+
     public static Result purchase(MinecraftServer server, UUID runId, UUID payingPlayerId, UUID targetPlayerId,
                                   ResourceLocation serviceId) {
         Optional<PersistedRun> found = TowerRuns.get(runId);

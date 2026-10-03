@@ -2,6 +2,7 @@ package com.cobbletowers.client;
 
 import com.cobbletowers.network.VendorCatalogPayload;
 import com.cobbletowers.network.VendorPurchasePayload;
+import java.util.UUID;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -12,27 +13,38 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The Tower Supply Vendor's shop (TDS #16), reached by {@code /cobbletowers runs vendor} rather than
- * a physical NPC (see the design doc's scope decision).
+ * The Tower Supply Vendor's shop (TDS #16), reached by {@code /cobbletowers runs vendor} or the
+ * intermission screen's Vendor button rather than a physical NPC (see the design doc's scope decision).
  *
- * <p>Every buy button targets the local player. TDS #18's "recovery targeted at teammates" is carried
- * by the wire protocol ({@link VendorPurchasePayload#targetPlayerId}) but not yet reachable from this
- * screen -- a teammate picker is a client-side enhancement the protocol does not need to change for.
+ * <p>P19: a row of teammate buttons chooses who a purchase is for (TDS #18: "may pay for recovery
+ * targeted at teammates"). The default is the buyer; the choice survives the refresh that follows every
+ * purchase, so buying two services for the same teammate takes no re-selecting. The server re-checks the
+ * target (in the run, online) and answers with a message that is shown at the bottom.
  */
 public final class VendorScreen extends Screen {
 
     private VendorCatalogPayload catalog;
+    /** Who a purchase is for. Null until the first catalog arrives, then the buyer. */
+    private UUID target;
 
     public VendorScreen(VendorCatalogPayload catalog) {
         super(Component.literal("Tower Supply Vendor"));
         this.catalog = catalog;
+        this.target = defaultTarget(catalog);
     }
 
     /** Called when a fresh catalog arrives (e.g. right after a purchase) while this screen is open. */
     public void updateCatalog(VendorCatalogPayload catalog) {
         this.catalog = catalog;
+        // Keep the choice unless that teammate has left the run.
+        boolean stillThere = catalog.team().stream().anyMatch(member -> member.id().equals(target));
+        if (!stillThere) target = defaultTarget(catalog);
         clearWidgets();
         buildWidgets();
+    }
+
+    private static UUID defaultTarget(VendorCatalogPayload catalog) {
+        return catalog.team().isEmpty() ? null : catalog.team().get(0).id();
     }
 
     @Override
@@ -40,8 +52,28 @@ public final class VendorScreen extends Screen {
         buildWidgets();
     }
 
+    private int top() {
+        int rows = catalog.services().size() + (catalog.team().size() > 1 ? 1 : 0);
+        return height / 2 - 12 * rows;
+    }
+
     private void buildWidgets() {
-        int y = height / 2 - 20 * catalog.services().size() / 2;
+        int y = top();
+        if (catalog.team().size() > 1) {
+            int count = catalog.team().size();
+            int each = Math.min(96, 200 / count);
+            int x = width / 2 - each * count / 2;
+            for (VendorCatalogPayload.Teammate member : catalog.team()) {
+                boolean chosen = member.id().equals(target);
+                Button button = Button.builder(Component.literal((chosen ? "> " : "") + member.name()),
+                                b -> choose(member.id()))
+                        .pos(x, y).size(each - 2, 20).build();
+                button.active = member.online() && !chosen;
+                addRenderableWidget(button);
+                x += each;
+            }
+            y += 26;
+        }
         for (VendorCatalogPayload.Entry entry : catalog.services()) {
             boolean canAfford = catalog.cobbleDollars() >= entry.priceCobbleDollars();
             boolean inStock = entry.remainingPurchases() != 0;
@@ -52,7 +84,7 @@ public final class VendorScreen extends Screen {
                     .pos(width / 2 - 100, y)
                     .size(200, 20)
                     .build();
-            button.active = canAfford && inStock;
+            button.active = canAfford && inStock && target != null;
             addRenderableWidget(button);
             y += 24;
         }
@@ -62,11 +94,17 @@ public final class VendorScreen extends Screen {
                 .build());
     }
 
+    private void choose(UUID id) {
+        target = id;
+        clearWidgets();
+        buildWidgets();
+    }
+
     private void buy(ResourceLocation serviceId) {
         LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null) return;
+        if (player == null || target == null) return;
         if (ClientPlayNetworking.canSend(VendorPurchasePayload.TYPE)) {
-            ClientPlayNetworking.send(new VendorPurchasePayload(serviceId, player.getUUID()));
+            ClientPlayNetworking.send(new VendorPurchasePayload(serviceId, target));
         }
     }
 
@@ -75,7 +113,13 @@ public final class VendorScreen extends Screen {
         renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(font, "CobbleDollars: " + catalog.cobbleDollars(),
-                width / 2, height / 2 - 20 * catalog.services().size() / 2 - 16, 0xFFFFFF);
+                width / 2, top() - 28, 0xFFFFFF);
+        if (catalog.team().size() > 1) {
+            graphics.drawCenteredString(font, "Buying for:", width / 2, top() - 14, 0xAAAAAA);
+        }
+        if (!catalog.message().isEmpty()) {
+            graphics.drawCenteredString(font, catalog.message(), width / 2, height - 20, 0xFFFF55);
+        }
     }
 
     @Override
