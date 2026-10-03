@@ -212,6 +212,13 @@ function applyTowerFx(battle) {
   }
   if (rules.dealt.length || rules.taken.length) wrapDamage(battle, rules);
   if (applied > 0) note(battle, 'Tower effects are in play.');
+  // To the server log, not just the battle log: the Java side logs what it HANDED to Showdown, and only this line
+  // proves the JavaScript received it and applied it (it did not, for a whole phase, and nothing said so).
+  try {
+    console.log(`[CobbleTowers] Applied ${applied} of ${Math.min(fx.length, MAX_OPS)} tower effect(s) to a battle.`);
+  } catch (err) {
+    /* logging is never worth a battle */
+  }
 }
 
 function install(sim) {

@@ -96,4 +96,22 @@ step "Validate public API boundary (jar)"
 step "Validate persisted state holds no live references (jar)"
 "$py" validation/validate_persistence.py "$jar"
 
+# Source compatibility is what the build above proves; this proves BINARY compatibility, which is what a jar built
+# against one Cobblemon needs to run on another (see check_cobblemon_binary_compat.py). Cobblemon is taken from the
+# Gradle cache by its Modrinth version id: gBW3vLC7 is 1.8.1, kF7CvxTo is 1.7.3 (the compile target, which must always
+# pass, or the checker itself is wrong). 1.8.1 is only there once somebody has built against it, so its absence is a
+# skipped check, not a failure.
+cache="${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1/maven.modrinth/MdwFAVRL"
+for pair in "kF7CvxTo:1.7.3" "gBW3vLC7:1.8.1"; do
+  id="${pair%%:*}"
+  name="${pair##*:}"
+  step "Binary compatibility with Cobblemon $name"
+  cobblemon_jar="$(find "$cache/$id" -name '*.jar' 2>/dev/null | head -1)"
+  if [ -n "$cobblemon_jar" ]; then
+    "$py" validation/check_cobblemon_binary_compat.py "$jar" "$cobblemon_jar"
+  else
+    echo "skipped: Cobblemon $name is not in the Gradle cache ($cache/$id)"
+  fi
+done
+
 printf '\n\033[32mci_local: all checks passed for %s\033[0m\n' "$version"

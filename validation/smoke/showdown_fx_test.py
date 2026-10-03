@@ -61,6 +61,15 @@ def main() -> None:
         server.wait_until_ready()
         ext = server_dir / "showdown" / "ext-cobbletowers-fx.js"
         results.append(Result("CobbleRaids installed the module on boot", ext.exists(), f"missing {ext}"))
+        manifest = server_dir / "showdown" / "extensions.js"
+        results.append(Result("and listed it in the manifest the loader reads",
+                              manifest.exists() and "cobbletowers-fx" in manifest.read_text(encoding="utf-8"), f"bad {manifest}"))
+        # The Java side only ever logs what it HANDED to Showdown. These two lines come from inside the simulator's
+        # own JavaScript runtime, and are the only proof the extension was actually loaded there.
+        boot_log = server.read_log()
+        results.append(Result("Showdown's own runtime loaded the extension (no 'Cannot load module')",
+                              "Showdown extension cobbletowers-fx loaded" in boot_log and "Cannot load module" not in boot_log,
+                              "; ".join(l for l in boot_log.splitlines() if "Showdown extension" in l or "Cannot load module" in l)[:300]))
         for name in BOTS:
             bots.append(start_battle_bot(rig, name, FIRST_MOVE))
 
@@ -98,8 +107,14 @@ def main() -> None:
                 results.append(Result("the effects were resolved to p1 (self) and p2 (foe's side untouched)",
                                       '"sides":["p1"]' in carried[0][1] and '"p2"' not in carried[0][1], carried[0][1][:200]))
 
+            applied = re.findall(r"\[CobbleTowers\] Applied (\d+) of (\d+) tower effect", server.read_log())
+            results.append(Result("the simulator itself applied the floor battle's effects (3 of 3)",
+                                  applied == [("3", "3")], str(applied)))
+
             wait_for_floor(server, rig, BOTS, seconds=180, pattern=r"Floor \d+ boss \S+ started at level \d+")
             time.sleep(2)
+            applied = re.findall(r"\[CobbleTowers\] Applied (\d+) of (\d+) tower effect", server.read_log())
+            results.append(Result("and the boss battle's too", applied == [("3", "3"), ("3", "3")], str(applied)))
             carried = re.findall(r"Tower battle \S+ carries (\d+) effect\(s\)", server.read_log())
             results.append(Result("the boss battle carried the queued effects too, and only that player's",
                                   len(carried) == 2, str(carried)))

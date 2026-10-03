@@ -248,28 +248,83 @@ test('towerFx on a battle that is a restored (deserialized) battle is not applie
   assert.strictEqual(stage(b, 0, 'atk'), 1, 'not applied twice');
 });
 
-test('the extension loader: a module that throws is skipped, a good one still loads, other files are ignored', async () => {
+/**
+ * Cobblemon runs Showdown inside GraalJS, where Node built-ins do not exist: require('fs') throws "Cannot load module".
+ * This preload makes plain Node behave the same for exactly the files an extension author controls (raid-patch.js and
+ * ext-*.js), so a loader or extension that leans on a built-in fails HERE instead of silently never loading on a
+ * real server -- which is what happened to the first version of this patch.
+ */
+const NO_NODE_BUILTINS = `
+  const Module = require('module');
+  const blocked = new Set(['fs', 'path', 'os', 'child_process', 'util', 'crypto', 'stream', 'events']);
+  const original = Module.prototype.require;
+  Module.prototype.require = function (id) {
+    const file = (this && this.filename) || '';
+    if (/[\\\\/](raid-patch|ext-[a-z0-9_-]+|extensions)\\.js$/.test(file) && blocked.has(String(id).replace(/^node:/, ''))) {
+      throw new TypeError("Cannot load module: '" + id + "'");
+    }
+    return original.apply(this, arguments);
+  };
+`;
+
+function writeLoaderRig(tmp, raidPatch, ids) {
+  for (const name of ['sim', 'data', 'lib', 'config', 'tools']) {
+    if (fs.existsSync(path.join(SHOWDOWN, name))) fs.symlinkSync(path.join(SHOWDOWN, name), path.join(tmp, name), 'junction');
+  }
+  fs.copyFileSync(raidPatch, path.join(tmp, 'raid-patch.js'));
+  fs.writeFileSync(path.join(tmp, 'extensions.js'), 'module.exports = ' + JSON.stringify(ids) + ';\n');
+  fs.writeFileSync(path.join(tmp, 'no-builtins.js'), NO_NODE_BUILTINS);
+}
+
+test('the extension loader: a module that throws is skipped, a good one still loads, unlisted files are ignored', async () => {
   const raidPatch = RAID_PATCH;
-  if (!fs.existsSync(raidPatch) || !/ext-\[a-z0-9\]/.test(fs.readFileSync(raidPatch, 'utf8'))) {
-    console.log('    (skipped: no raid-patch.js with the extension loader at ' + raidPatch + '; pass --raid-patch)');
+  if (!fs.existsSync(raidPatch) || !/extensions\.js/.test(fs.readFileSync(raidPatch, 'utf8'))) {
+    console.log('    (skipped: no raid-patch.js with the manifest-based extension loader at ' + raidPatch + '; pass --raid-patch)');
     return;
   }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'towerfx-loader-'));
   try {
-    for (const name of ['sim', 'data', 'lib', 'config', 'tools']) {
-      if (fs.existsSync(path.join(SHOWDOWN, name))) fs.symlinkSync(path.join(SHOWDOWN, name), path.join(tmp, name), 'junction');
-    }
-    fs.copyFileSync(raidPatch, path.join(tmp, 'raid-patch.js'));
+    writeLoaderRig(tmp, raidPatch, ['aaa-bad', 'zzz-good', 'Bad_Id', '../escape', 7]);
     fs.writeFileSync(path.join(tmp, 'ext-aaa-bad.js'), "throw new Error('this extension is broken');\n");
     fs.writeFileSync(path.join(tmp, 'ext-zzz-good.js'), "globalThis.__extGood = true;\n");
-    fs.writeFileSync(path.join(tmp, 'ext-Upper.js'), "globalThis.__extUpper = true;\n");
+    fs.writeFileSync(path.join(tmp, 'ext-unlisted.js'), "globalThis.__extUnlisted = true;\n");
     fs.writeFileSync(path.join(tmp, 'extra.js'), "globalThis.__extExtra = true;\n");
-    const result = spawnSync(process.execPath, ['-e',
-      "require('./raid-patch.js'); console.log(JSON.stringify({good: !!globalThis.__extGood, upper: !!globalThis.__extUpper, extra: !!globalThis.__extExtra}));"],
+    const result = spawnSync(process.execPath, ['-r', './no-builtins.js', '-e',
+      "require('./raid-patch.js'); console.log(JSON.stringify({good: !!globalThis.__extGood, unlisted: !!globalThis.__extUnlisted, extra: !!globalThis.__extExtra}));"],
     {cwd: tmp, encoding: 'utf8'});
     assert.strictEqual(result.status, 0, 'raid-patch.js loaded despite the broken extension: ' + result.stderr);
-    assert.match(result.stdout, /ext-aaa-bad\.js failed to load and was skipped/);
-    assert.match(result.stdout, /\{"good":true,"upper":false,"extra":false\}/);
+    assert.match(result.stdout, /Showdown extension aaa-bad failed to load and was skipped/);
+    assert.match(result.stdout, /Showdown extension zzz-good loaded/);
+    assert.doesNotMatch(result.stdout, /Could not load Showdown extensions|Cannot load module/, 'no built-in was needed');
+    assert.match(result.stdout, /\{"good":true,"unlisted":false,"extra":false\}/);
+  } finally {
+    fs.rmSync(tmp, {recursive: true, force: true});
+  }
+});
+
+test('the loader works with no manifest at all (an install that registered nothing)', async () => {
+  const raidPatch = RAID_PATCH;
+  if (!fs.existsSync(raidPatch) || !/extensions\.js/.test(fs.readFileSync(raidPatch, 'utf8'))) return;
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'towerfx-nomanifest-'));
+  try {
+    writeLoaderRig(tmp, raidPatch, []);
+    fs.rmSync(path.join(tmp, 'extensions.js'));
+    const result = spawnSync(process.execPath, ['-r', './no-builtins.js', '-e', "require('./raid-patch.js'); console.log('loaded');"], {cwd: tmp, encoding: 'utf8'});
+    assert.strictEqual(result.status, 0, result.stderr);
+    assert.match(result.stdout, /loaded/);
+    assert.doesNotMatch(result.stdout, /Could not load/);
+  } finally {
+    fs.rmSync(tmp, {recursive: true, force: true});
+  }
+});
+
+test('the old directory-scanning loader would have failed this harness (the harness can see the bug it missed)', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'towerfx-selfcheck-'));
+  try {
+    fs.writeFileSync(path.join(tmp, 'no-builtins.js'), NO_NODE_BUILTINS);
+    fs.writeFileSync(path.join(tmp, 'raid-patch.js'), "const fs = require('fs'); module.exports = fs.readdirSync(__dirname);\n");
+    const result = spawnSync(process.execPath, ['-r', './no-builtins.js', '-e', "try { require('./raid-patch.js'); console.log('ok'); } catch (e) { console.log('blocked: ' + e.message); }"], {cwd: tmp, encoding: 'utf8'});
+    assert.match(result.stdout, /blocked: Cannot load module: 'fs'/);
   } finally {
     fs.rmSync(tmp, {recursive: true, force: true});
   }
@@ -277,16 +332,13 @@ test('the extension loader: a module that throws is skipped, a good one still lo
 
 test('the full production chain: raid-patch.js loads the extension, which then applies effects to an ordinary battle', async () => {
   const raidPatch = RAID_PATCH;
-  if (!fs.existsSync(raidPatch) || !/ext-\[a-z0-9\]/.test(fs.readFileSync(raidPatch, 'utf8'))) {
-    console.log('    (skipped: no raid-patch.js with the extension loader; pass --raid-patch)');
+  if (!fs.existsSync(raidPatch) || !/extensions\.js/.test(fs.readFileSync(raidPatch, 'utf8'))) {
+    console.log('    (skipped: no raid-patch.js with the manifest-based extension loader; pass --raid-patch)');
     return;
   }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'towerfx-chain-'));
   try {
-    for (const name of ['sim', 'data', 'lib', 'config', 'tools']) {
-      if (fs.existsSync(path.join(SHOWDOWN, name))) fs.symlinkSync(path.join(SHOWDOWN, name), path.join(tmp, name), 'junction');
-    }
-    fs.copyFileSync(raidPatch, path.join(tmp, 'raid-patch.js'));
+    writeLoaderRig(tmp, raidPatch, ['cobbletowers-fx']);
     // Installed under the id CobbleTowers registers, with no test flag, exactly as CobbleRaids' installer writes it.
     fs.copyFileSync(FX_FILE, path.join(tmp, 'ext-cobbletowers-fx.js'));
     fs.writeFileSync(path.join(tmp, 'chain.js'), `
@@ -315,8 +367,10 @@ test('the full production chain: raid-patch.js loads the extension, which then a
         process.exit(0);
       })();
     `);
-    const result = spawnSync(process.execPath, ['chain.js'], {cwd: tmp, encoding: 'utf8'});
+    const result = spawnSync(process.execPath, ['-r', './no-builtins.js', 'chain.js'], {cwd: tmp, encoding: 'utf8'});
     assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /Showdown extension cobbletowers-fx loaded/);
+    assert.match(result.stdout, /\[CobbleTowers\] Applied 3 of 3 tower effect\(s\)/);
     const line = result.stdout.split('\n').filter(l => l.startsWith('{"plain"'))[0];
     assert.ok(line, 'the chain script reported: ' + result.stdout.slice(0, 300));
     const {plain, fx: withFx} = JSON.parse(line);

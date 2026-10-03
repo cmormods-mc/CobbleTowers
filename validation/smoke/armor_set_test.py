@@ -96,6 +96,9 @@ def main() -> None:
         boot = server.read_log()
         results.append(Result("the shipped armor sets loaded", bool(re.search(r"Loaded [4-9] armor set", boot)),
                               "no 'Loaded N armor set' line"))
+        results.append(Result("Showdown's own runtime loaded the CobbleTowers extension",
+                              "Showdown extension cobbletowers-fx loaded" in boot and "Cannot load module" not in boot,
+                              "; ".join(l for l in boot.splitlines() if "Showdown extension" in l or "Cannot load module" in l)[:300]))
         results.append(Result("a datapack set with a bad bonus is skipped and named",
                               "Skipping malformed armor set cobbletowers:smoke_bad" in boot, "no skip line for smoke_bad"))
         for name in BOTS:
@@ -162,6 +165,9 @@ def main() -> None:
                 results.append(Result("global rain, and the Water boost on the wearer's own side only",
                                       '"raindance"' in text and '"Water"' in text and '"sides":["p1"]' in text
                                       and '"p2"' not in text, text[:240]))
+
+            applied = re.findall(r"\[CobbleTowers\] Applied (\d+) of (\d+) tower effect", server.read_log())
+            results.append(Result("the simulator applied the full set's battle effects (2 of 2)", applied == [("2", "2")], str(applied)))
 
             wait_for_floor(server, rig, BOTS, seconds=180, pattern=r"Floor \d+ boss \S+ started at level \d+")
             time.sleep(2)
