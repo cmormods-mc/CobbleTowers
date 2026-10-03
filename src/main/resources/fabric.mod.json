@@ -23,6 +23,6 @@
     "minecraft": "1.21.1",
     "java": ">=21",
     "cobblemon": ">=1.8.1",
-    "cobbleraids": ">=0.8.163-towers-api"
+    "cobbleraids": ">=0.8.162-admin-helper"
   }
 }
