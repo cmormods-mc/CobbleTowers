@@ -1,7 +1,9 @@
 package com.cobbletowers.client;
 
+import com.cobbletowers.network.IntermissionActionPayload;
 import com.cobbletowers.network.RewardRevealPayload;
 import java.util.List;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -57,5 +59,11 @@ public final class RewardRevealScreen extends Screen {
     @Override
     public void onClose() {
         Minecraft.getInstance().setScreen(null);
+        // A floor that banks sends this on top of the intermission screen; ask for that one back so
+        // closing the reveal returns the player to the menu rather than to an empty arena. The server
+        // answers only if the player is actually at an intermission.
+        if (ClientPlayNetworking.canSend(IntermissionActionPayload.TYPE)) {
+            ClientPlayNetworking.send(new IntermissionActionPayload(IntermissionActionPayload.Action.REFRESH, 0));
+        }
     }
 }

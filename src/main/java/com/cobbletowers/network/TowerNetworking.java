@@ -6,6 +6,7 @@ import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.definition.VendorServiceDefinition;
 import com.cobbletowers.economy.VendorPurchaseService;
+import com.cobbletowers.intermission.IntermissionService;
 import com.cobbletowers.lobby.LobbyService;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.TowerWalletStore;
@@ -42,6 +43,8 @@ public final class TowerNetworking {
         PayloadTypeRegistry.playS2C().register(ScoutingRevealPayload.TYPE, ScoutingRevealPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(PlayStatePayload.TYPE, PlayStatePayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(PlayActionPayload.TYPE, PlayActionPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(IntermissionStatePayload.TYPE, IntermissionStatePayload.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(IntermissionActionPayload.TYPE, IntermissionActionPayload.STREAM_CODEC);
     }
 
     /** The server-side half. */
@@ -49,6 +52,10 @@ public final class TowerNetworking {
         ServerPlayNetworking.registerGlobalReceiver(CycleTeammatePayload.TYPE, (payload, context) -> {
             ServerPlayer spectator = context.player();
             context.server().execute(() -> handleCycle(spectator, payload.next()));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(IntermissionActionPayload.TYPE, (payload, context) -> {
+            ServerPlayer player = context.player();
+            context.server().execute(() -> handleIntermissionAction(context.server(), player, payload));
         });
         ServerPlayNetworking.registerGlobalReceiver(PlayActionPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
@@ -88,6 +95,23 @@ public final class TowerNetworking {
             reply = "That did not work.";
         }
         LobbyService.openScreenWithMessage(server, player, reply);
+    }
+
+    /** The intermission screen's buttons: each does what the matching {@code /cobbletowers play} subcommand does. */
+    private static void handleIntermissionAction(MinecraftServer server, ServerPlayer player,
+                                                 IntermissionActionPayload payload) {
+        String reply = switch (payload.action()) {
+            case PICK_CARD -> IntermissionService.pick(server, player, payload.argument());
+            case READY -> IntermissionService.ready(server, player, true);
+            case UNREADY -> IntermissionService.ready(server, player, false);
+            case CASH_OUT -> IntermissionService.cashOut(server, player, true);
+            case STAY -> IntermissionService.cashOut(server, player, false);
+            case VENDOR -> IntermissionService.vendor(server, player);
+            case REFRESH -> "";
+        };
+        if (payload.action() != IntermissionActionPayload.Action.VENDOR) {
+            IntermissionService.openScreen(server, player, reply);
+        }
     }
 
     private static void handleCycle(ServerPlayer spectator, boolean next) {
@@ -150,6 +174,13 @@ public final class TowerNetworking {
     /** Silently does nothing for a client that never registered the channel. */
     public static void sendSpectatorPanel(ServerPlayer player, SpectatorPanelPayload payload) {
         if (ServerPlayNetworking.canSend(player, SpectatorPanelPayload.TYPE)) {
+            ServerPlayNetworking.send(player, payload);
+        }
+    }
+
+    /** Silently does nothing for a client that never registered the channel (the commands still work). */
+    public static void sendIntermissionState(ServerPlayer player, IntermissionStatePayload payload) {
+        if (ServerPlayNetworking.canSend(player, IntermissionStatePayload.TYPE)) {
             ServerPlayNetworking.send(player, payload);
         }
     }

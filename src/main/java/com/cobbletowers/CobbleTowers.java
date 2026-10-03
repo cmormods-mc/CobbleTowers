@@ -92,6 +92,7 @@ public final class CobbleTowers implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> TowerPresence.onServerStopped());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> RecoverySweep.onServerStopped());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> com.cobbletowers.lobby.LobbyService.clear());
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> com.cobbletowers.intermission.IntermissionService.clear());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new TowerDefinitionRegistry());
         // Subscribed once, for the life of the JVM: Cobblemon's battle events are global, and the
         // adapter filters them by battle id rather than re-subscribing per floor.
@@ -99,6 +100,7 @@ public final class CobbleTowers implements ModInitializer {
         // Disconnects, rejoining, and the watchdog that ends a floor nobody is playing any more.
         TowerPresence.install();
         com.cobbletowers.lobby.LobbyService.install();
+        com.cobbletowers.intermission.IntermissionService.install();
         RecoverySweep.install();
         // Hands a player whatever the tower owes them the moment they are somewhere to receive it.
         RewardDelivery.install();

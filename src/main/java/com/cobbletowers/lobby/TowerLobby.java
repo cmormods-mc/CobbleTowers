@@ -136,6 +136,15 @@ public final class TowerLobby {
         return pending;
     }
 
+    private int lastAnnounced = -1;
+
+    /** True the first time a given whole-second figure is seen, so a countdown shows once per second, not per tick. */
+    public boolean announce(int secondsLeft) {
+        if (secondsLeft == lastAnnounced) return false;
+        lastAnnounced = secondsLeft;
+        return true;
+    }
+
     public void beginCountdown(long now, long millis) {
         countdownEndsAt = now + millis;
     }

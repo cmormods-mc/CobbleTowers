@@ -6,6 +6,7 @@ import com.cobbletowers.definition.FloorLayout;
 import com.cobbletowers.definition.RulesetDefinition;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.instance.CellPreparer;
 import com.cobbletowers.instance.CellWarmPool;
 import com.cobbletowers.instance.InstanceAllocator;
@@ -79,6 +80,81 @@ public final class RunLifecycle {
         }
         TowerLog.info("Run {} party rejected: {}", runId, problems);
         return RunTransitionService.apply(server, runId, RunEvent.PARTY_REJECTED, now);
+    }
+
+    /** How opening a floor went. */
+    public enum Opened {
+        /** The floor is up and the team is in it. */
+        OPENED,
+        /** The table refused the move (an open draft, say); nothing changed and the run is not parked. */
+        BLOCKED,
+        /** Something broke and the run was parked for recovery: broken content is not a loss. */
+        FAILED
+    }
+
+    /**
+     * ENCOUNTER_STARTED and the floor's first round, for a run already at FLOOR_READY. Parks the run with
+     * TECHNICAL_FAILURE if either step fails. Shared by a lobby's first floor and every later one.
+     */
+    public static boolean beginFloor(MinecraftServer server, UUID runId, long now) {
+        if (!(RunTransitionService.apply(server, runId, RunEvent.ENCOUNTER_STARTED, now)
+                instanceof RunTransitionService.Move)) {
+            RunTransitionService.apply(server, runId, RunEvent.TECHNICAL_FAILURE, now);
+            return false;
+        }
+        try {
+            if (TowerEncounters.begin(server, runId).isPresent()) return true;
+        } catch (RuntimeException ex) {
+            TowerLog.error("Opening floor of run {} threw", runId, ex);
+        }
+        RunTransitionService.apply(server, runId, RunEvent.TECHNICAL_FAILURE, now);
+        return false;
+    }
+
+    /**
+     * Leaves an intermission for the next floor: INTERMISSION_COMPLETE, NEXT_FLOOR_CONFIRMED, a rebuilt
+     * cell when the next floor is a different structure (a milestone arena, say), then the floor itself.
+     *
+     * <p>The cell is rebuilt in place on the lease the run already holds. Nothing did this before P17:
+     * a run's floor was pasted once at allocation, so floor 5 would have been fought in floor 4's arena.
+     */
+    public static Opened openNextFloor(MinecraftServer server, UUID runId, long now) {
+        if (!(RunTransitionService.apply(server, runId, RunEvent.INTERMISSION_COMPLETE, now)
+                instanceof RunTransitionService.Move)) {
+            return Opened.BLOCKED;
+        }
+        if (!(RunTransitionService.apply(server, runId, RunEvent.NEXT_FLOOR_CONFIRMED, now)
+                instanceof RunTransitionService.Move)) {
+            RunTransitionService.apply(server, runId, RunEvent.TECHNICAL_FAILURE, now);
+            return Opened.FAILED;
+        }
+        if (!rebuildIfStructureChanged(server, runId)) {
+            RunTransitionService.apply(server, runId, RunEvent.TECHNICAL_FAILURE, now);
+            return Opened.FAILED;
+        }
+        return beginFloor(server, runId, now) ? Opened.OPENED : Opened.FAILED;
+    }
+
+    private static boolean rebuildIfStructureChanged(MinecraftServer server, UUID runId) {
+        Optional<PersistedRun> found = TowerRuns.get(runId);
+        if (found.isEmpty() || found.get().cell().isEmpty()) return false;
+        PersistedRun run = found.get();
+        Optional<FloorLayout> next = TowerDefinitionRegistry.content().floorAt(run.towerId(), run.floorIndex())
+                .flatMap(floor -> floor.layout());
+        Optional<FloorLayout> previous = TowerDefinitionRegistry.content().floorAt(run.towerId(), run.floorIndex() - 1)
+                .flatMap(floor -> floor.layout());
+        if (next.isEmpty()) return false;
+        if (previous.isPresent() && previous.get().structure().equals(next.get().structure())) return true;
+
+        int cell = run.cell().getAsInt();
+        CellPreparer.reset(server, cell);
+        Optional<CellPreparer.Prepared> prepared = CellPreparer.prepare(server, cell, next.get());
+        if (prepared.isEmpty() || !prepared.get().isPlayable()) {
+            TowerLog.error("Cell {} could not be rebuilt as {} for run {}: {}", cell, next.get().structure(), runId,
+                    prepared.map(CellPreparer.Prepared::summary).orElse("the structure did not place"));
+            return false;
+        }
+        return true;
     }
 
     /**

@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.13.6'
 }
 
-version = '0.16.0-p16-entry-and-teams'
+version = '0.17.0-p17-intermission'
 group = 'com.cobbletowers'
 
 base {

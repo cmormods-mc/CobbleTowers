@@ -8,7 +8,6 @@ import com.cobbletowers.definition.RulesetDefinition;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
-import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.network.PlayStatePayload;
 import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.persistence.PersistedRun;
@@ -180,6 +179,7 @@ public final class LobbyService {
                 launch(server, lobby, now);
             } else {
                 int left = lobby.secondsLeft(now);
+                if (!lobby.announce(left)) continue;
                 for (UUID id : lobby.team()) {
                     ServerPlayer player = server.getPlayerList().getPlayer(id);
                     if (player != null) player.displayClientMessage(Component.literal("Starting in " + left + "..."), true);
@@ -263,25 +263,14 @@ public final class LobbyService {
         TowerLog.info("Lobby of {} started run {} on {}", players.size(), runId, lobby.tower());
     }
 
-    /** PREPARING -> FLOOR_READY -> ENCOUNTER_ACTIVE and the floor's first round; parks the run on failure. */
+    /** PREPARING -> FLOOR_READY, then the floor itself; parks the run on failure. */
     private static boolean openFloor(MinecraftServer server, UUID runId, long now) {
         if (!(RunTransitionService.apply(server, runId, RunEvent.PREPARATION_COMPLETE, now)
                 instanceof RunTransitionService.Move)) {
             RunTransitionService.apply(server, runId, RunEvent.TECHNICAL_FAILURE, now);
             return false;
         }
-        if (!(RunTransitionService.apply(server, runId, RunEvent.ENCOUNTER_STARTED, now)
-                instanceof RunTransitionService.Move)) {
-            RunTransitionService.apply(server, runId, RunEvent.TECHNICAL_FAILURE, now);
-            return false;
-        }
-        try {
-            if (TowerEncounters.begin(server, runId).isPresent()) return true;
-        } catch (RuntimeException ex) {
-            TowerLog.error("Opening floor 1 of run {} threw", runId, ex);
-        }
-        RunTransitionService.apply(server, runId, RunEvent.TECHNICAL_FAILURE, now);
-        return false;
+        return RunLifecycle.beginFloor(server, runId, now);
     }
 
     /** Frees a team held by a run that never got a cell, so they can retry (a parked run still holds them). */

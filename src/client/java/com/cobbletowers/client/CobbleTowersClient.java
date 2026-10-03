@@ -1,6 +1,8 @@
 package com.cobbletowers.client;
 
 import com.cobbletowers.network.CycleTeammatePayload;
+import com.cobbletowers.network.IntermissionActionPayload;
+import com.cobbletowers.network.IntermissionStatePayload;
 import com.cobbletowers.network.PlayStatePayload;
 import com.cobbletowers.network.RewardRevealPayload;
 import com.cobbletowers.network.ScoutingRevealPayload;
@@ -62,6 +64,18 @@ public final class CobbleTowersClient implements ClientModInitializer {
                         open.update(payload);
                     } else if (payload.open()) {
                         Minecraft.getInstance().setScreen(new PlayScreen(payload));
+                    }
+                }));
+
+        ClientPlayNetworking.registerGlobalReceiver(IntermissionStatePayload.TYPE, (payload, context) ->
+                context.client().execute(() -> {
+                    Screen current = Minecraft.getInstance().screen;
+                    if (current instanceof IntermissionScreen open) {
+                        open.update(payload);
+                    } else if (payload.open() && !(current instanceof RewardRevealScreen)) {
+                        // Never over a reveal the player is reading: that screen asks for this one back
+                        // when it closes.
+                        Minecraft.getInstance().setScreen(new IntermissionScreen(payload));
                     }
                 }));
 

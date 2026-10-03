@@ -12,6 +12,7 @@ import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.definition.VendorServiceDefinition;
 import com.cobbletowers.economy.VendorPurchaseService;
+import com.cobbletowers.intermission.IntermissionService;
 import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.modifier.ModifierEffects;
 import com.cobbletowers.modifier.ModifierResolver;
@@ -204,30 +205,19 @@ public final class RunsCommand {
     }
 
     /**
-     * {@code /cobbletowers runs cashout}: the party stops here, banking whatever it has earned.
+     * {@code /cobbletowers runs cashout}: casts the caller's vote to cash out (P17).
      *
-     * <p>Fires {@code CASH_OUT_CHOSEN} for the caller's own run, the same way {@code leave} resolves
-     * its run from the player rather than taking one as an argument. {@code RewardBankService} grants
-     * everything remaining the moment the run reaches {@code CASHED_OUT} (docs/design/P9-economy.md
-     * §4a) -- this command only asks for the transition.
+     * <p>No longer cashes out on one player's say-so: the run cashes out when a strict majority of the team
+     * votes to, so a solo player's own vote is enough and a team of three needs two.
+     * {@code RewardBankService} grants everything remaining the moment the run reaches
+     * {@code CASHED_OUT} (docs/design/P9-economy.md section 4a).
      */
     private static int cashout(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayerOrException();
-        Optional<PersistedRun> found = TowerRuns.forPlayer(player.getUUID());
-        if (found.isEmpty()) {
-            source.sendFailure(Component.literal("You are not in a tower run."));
-            return 0;
-        }
-        RunTransitionService.Outcome outcome = RunTransitionService.apply(source.getServer(), found.get().runId(),
-                RunEvent.CASH_OUT_CHOSEN, System.currentTimeMillis());
-        if (outcome instanceof RunTransitionService.Move) {
-            source.sendSuccess(() -> Component.literal("You have cashed out.").withStyle(ChatFormatting.GOLD), true);
-            return 1;
-        }
-        RunTransitionService.Refusal refusal = (RunTransitionService.Refusal) outcome;
-        source.sendFailure(Component.literal(refusal.reason() + ": " + refusal.detail()));
-        return 0;
+        String reply = IntermissionService.cashOut(source.getServer(), player, true);
+        source.sendSuccess(() -> Component.literal(reply).withStyle(ChatFormatting.GOLD), false);
+        return 1;
     }
 
     /**
@@ -377,6 +367,7 @@ public final class RunsCommand {
         if (!run.vendorPurchases().isEmpty()) {
             source.sendSuccess(() -> Component.literal("  vendor purchases: " + run.vendorPurchases()), false);
         }
+        source.sendSuccess(() -> Component.literal("  intermission: " + IntermissionService.describe(run)), false);
         run.modifiers().draft().ifPresent(draft -> source.sendSuccess(() -> Component.literal(
                 "  draft at floor " + draft.floorIndex() + (draft.lockIn() ? " (LOCK-IN)" : "")
                         + ": " + draft.cards() + (draft.resolved()

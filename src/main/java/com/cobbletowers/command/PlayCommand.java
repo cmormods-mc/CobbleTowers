@@ -1,8 +1,10 @@
 package com.cobbletowers.command;
 
+import com.cobbletowers.intermission.IntermissionService;
 import com.cobbletowers.lobby.LobbyService;
 import com.cobbletowers.lobby.TowerLobby;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.List;
@@ -41,6 +43,13 @@ public final class PlayCommand {
                         .then(Commands.literal("decline")
                                 .then(Commands.argument("host", EntityArgument.player())
                                         .executes(PlayCommand::decline)))
+                        .then(Commands.literal("ready").executes(context -> ready(context, true)))
+                        .then(Commands.literal("unready").executes(context -> ready(context, false)))
+                        .then(Commands.literal("cashout").executes(context -> cashOut(context, true)))
+                        .then(Commands.literal("stay").executes(context -> cashOut(context, false)))
+                        .then(Commands.literal("pick")
+                                .then(Commands.argument("card", IntegerArgumentType.integer(1, 9))
+                                        .executes(PlayCommand::pick)))
                         .then(Commands.literal("leave").executes(PlayCommand::leave))
                         .then(Commands.literal("start").executes(PlayCommand::start))
                         .then(Commands.literal("status").executes(PlayCommand::status))
@@ -51,7 +60,12 @@ public final class PlayCommand {
 
     private static int open(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
-        LobbyService.openScreen(context.getSource().getServer(), player);
+        // A team at an intermission wants that menu, not the tower picker.
+        if (IntermissionService.isAtIntermission(player)) {
+            IntermissionService.openScreen(context.getSource().getServer(), player, "");
+        } else {
+            LobbyService.openScreen(context.getSource().getServer(), player);
+        }
         return 1;
     }
 
@@ -73,6 +87,22 @@ public final class PlayCommand {
     private static int decline(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         return say(context, LobbyService.decline(context.getSource().getServer(),
                 context.getSource().getPlayerOrException(), EntityArgument.getPlayer(context, "host").getUUID()));
+    }
+
+    private static int ready(CommandContext<CommandSourceStack> context, boolean value) throws CommandSyntaxException {
+        return say(context, IntermissionService.ready(context.getSource().getServer(),
+                context.getSource().getPlayerOrException(), value));
+    }
+
+    private static int cashOut(CommandContext<CommandSourceStack> context, boolean value) throws CommandSyntaxException {
+        return say(context, IntermissionService.cashOut(context.getSource().getServer(),
+                context.getSource().getPlayerOrException(), value));
+    }
+
+    /** One-based, as a player counts the cards on screen. */
+    private static int pick(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return say(context, IntermissionService.pick(context.getSource().getServer(),
+                context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "card") - 1));
     }
 
     private static int leave(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

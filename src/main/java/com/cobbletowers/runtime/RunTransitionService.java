@@ -7,6 +7,7 @@ import com.cobbletowers.diagnostics.TowerMetrics;
 import com.cobbletowers.encounter.TowerEncounters;
 import com.cobbletowers.instance.InstanceAllocator;
 import com.cobbletowers.persistence.CellStateStore;
+import com.cobbletowers.intermission.IntermissionService;
 import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.RunCheckpoint;
@@ -165,6 +166,9 @@ public final class RunTransitionService {
             if (move.next().state() == RunState.INTERMISSION) {
                 ParticipantService.reviveAtIntermission(server, runId, now);
                 DraftService.open(server, runId, now);
+                // Before banking below, so a reward reveal sent when a floor banks lands on top of the
+                // intermission screen rather than under it.
+                IntermissionService.onArrival(server, runId);
             }
             // Tied to arrival for the same reason as above: REWARDS_BANKED always fires on a floor
             // clear, but bank() itself decides whether this particular arrival is a real payout point
