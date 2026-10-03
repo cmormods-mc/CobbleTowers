@@ -6,6 +6,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 
@@ -92,6 +94,27 @@ public final class CellCleanup {
                 entity -> !(entity instanceof Player));
         for (Entity entity : loose) entity.discard();
         return loose.size();
+    }
+
+    /**
+     * Removes the debris a fought-over cell expects to hold -- dropped items and experience orbs -- and says how
+     * many there were. Narrower than {@link #sweepEntities} on purpose.
+     *
+     * <p>A Pokemon that faints drops what Cobblemon's own drop rules give it, and nothing in a tower picks those
+     * items up (rewards come from the reward table, not from the floor). Left lying there they are "entities still
+     * inside", so the cell was quarantined: one cell lost per run that happened to drop anything. Anything else
+     * found in a cell at release -- a stray Pokemon, a mob -- is still a surprise, and still quarantines it,
+     * which is the point of the check.
+     */
+    public static int sweepDebris(MinecraftServer server, int cell) {
+        CellGrid.requireValid(cell);
+        ServerLevel level = TowerDimension.level(server);
+        if (level == null) return 0;
+
+        List<Entity> debris = level.getEntities((Entity) null, CellGrid.sweepBoundsOf(cell),
+                entity -> entity instanceof ItemEntity || entity instanceof ExperienceOrb);
+        for (Entity entity : debris) entity.discard();
+        return debris.size();
     }
 
     public static Report verify(MinecraftServer server, int cell) {

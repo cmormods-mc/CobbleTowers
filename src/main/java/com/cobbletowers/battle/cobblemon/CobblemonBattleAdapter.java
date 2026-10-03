@@ -9,7 +9,9 @@ import com.cobblemon.mod.common.battles.BattleRegistry;
 import com.cobblemon.mod.common.api.pokemon.PokemonProperties;
 import com.cobblemon.mod.common.battles.BattleBuilder;
 import com.cobblemon.mod.common.battles.BattleFormat;
+import com.cobblemon.mod.common.battles.BattleStartError;
 import com.cobblemon.mod.common.battles.BattleStartResult;
+import com.cobblemon.mod.common.battles.ErroredBattleStart;
 import com.cobblemon.mod.common.battles.SuccessfulBattleStart;
 import com.cobblemon.mod.common.entity.pokemon.PokemonEntity;
 import com.cobblemon.mod.common.pokemon.Pokemon;
@@ -122,7 +124,7 @@ public final class CobblemonBattleAdapter {
 
         if (!(result instanceof SuccessfulBattleStart success)) {
             TowerLog.error("Cobblemon refused a tower battle for {} on floor {}: {}",
-                    player.getGameProfile().getName(), floorIndex, result);
+                    player.getGameProfile().getName(), floorIndex, describe(result, player));
             opponent.discard();
             return Optional.empty();
         }
@@ -136,6 +138,19 @@ public final class CobblemonBattleAdapter {
         TowerLog.info("Floor {} battle {} started: {} vs {} at level {}", floorIndex, battleId,
                 player.getGameProfile().getName(), snapshot.species(), snapshot.level());
         return Optional.of(battleId);
+    }
+
+    /** Why a battle did not start, in words: the result's own toString is only an object id. */
+    private static String describe(BattleStartResult result, ServerPlayer player) {
+        if (result instanceof ErroredBattleStart errored) {
+            List<String> parts = new ArrayList<>();
+            for (BattleStartError error : errored.getGeneralErrors()) {
+                parts.add(error.getMessageFor(player).getString());
+            }
+            parts.add("participants: " + errored.getParticipantErrors());
+            return String.join("; ", parts);
+        }
+        return String.valueOf(result);
     }
 
     private static PokemonEntity spawn(ServerLevel level, EncounterSnapshot snapshot, BlockPos where) {
@@ -262,6 +277,28 @@ public final class CobblemonBattleAdapter {
             ended++;
         }
         return ended;
+    }
+
+    /**
+     * Ends whatever Cobblemon battle a player is still in, whoever started it.
+     *
+     * <p>{@link #endRun} only knows the battles this adapter started. A floor's boss is started by CobbleRaids,
+     * and aborting that removes the boss but leaves the player's Pokemon battle open, so the player was still
+     * "in battle" when the next one tried to start (Cobblemon's AlreadyInBattleError) for as long as it took the
+     * orphan to time out. Found by the stress test, which abandons a run the moment its boss appears.
+     *
+     * @return true if a battle was ended
+     */
+    public static boolean endBattleOf(ServerPlayer player) {
+        try {
+            PokemonBattle battle = BattleRegistry.getBattleByParticipatingPlayer(player);
+            if (battle == null || battle.getEnded()) return false;
+            battle.end();
+            return true;
+        } catch (RuntimeException ex) {
+            TowerLog.error("Could not end the battle of " + player.getUUID(), ex);
+            return false;
+        }
     }
 
     private static void discardOpponent(MinecraftServer server, Binding binding) {

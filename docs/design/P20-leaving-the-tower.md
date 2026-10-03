@@ -103,3 +103,32 @@ ended look like they had never been in one -- so they were moved instantly and t
 Not proven: a return point whose dimension has gone (falls back to spawn; not exercised live); an operator
 in creative being left alone (rule is unit tested, not driven live); a restart in the middle of the beat
 (the sweep treats the long-past beat as over, unit tested as a rule).
+
+## Two more cell and battle leaks the same stress test found
+
+Fixed in the same phase because they have the same shape (a finished run costing the tower something) and the
+same finder:
+
+- **Dropped items quarantined cells.** A Pokemon that faints drops what Cobblemon's drop rules give it, and
+  nothing in a tower picks those up. `CellCleanup.verify` counts any non-player entity as "still inside", so a
+  run that happened to drop an item lost its cell. `CellCleanup.sweepDebris` now discards **item entities and
+  experience orbs only** before verifying, in `InstanceAllocator.release`. A stray Pokemon or a mob is still a
+  surprise and still quarantines, which is what the check is for.
+- **Abandoning a run during the boss left the player "in battle".** `TowerBossAdapter.abort` removes the boss
+  through CobbleRaids but does not end the player's Pokemon battle with it, and `CobblemonBattleAdapter.endRun`
+  only knows battles it started itself. The next battle then failed with Cobblemon's `AlreadyInBattleError`
+  until the orphan timed out. `TowerEncounters.abandon` now also ends any battle the run's online participants
+  are in (`CobblemonBattleAdapter.endBattleOf`). The refusal is logged in words rather than as an object id.
+
+## The smoke bot
+
+The stress test (`bot_stress_test.py`) deals the bot many opponents in one session and records what happened,
+because one lucky pass proves nothing about a failure that depended on the draw. It found, in order: the old
+bot's refused moves (no `targetPnx` for a move that must be aimed -- Cobblemon rejects Freeze-Dry without one),
+its DEFAULT mode crashing CobbleRaids' patched Showdown on a forced switch, and the three leaks above.
+
+`validation/smoke/battlebot.js` is the replacement, in this repo instead of the rig directory where
+`raidbot.js` has vanished before. It decodes Cobblemon's own request packet, picks a move the battle will
+accept, supplies the target when the move needs one, and answers a forced switch itself. Result: 12/12
+opponents beaten, slowest 14 seconds, no refused choice, no quarantined cell. `SMOKE_BOT=raid` brings the old
+bot back.

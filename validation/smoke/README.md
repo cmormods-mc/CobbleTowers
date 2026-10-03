@@ -180,3 +180,16 @@ was using. The fix scopes the query to the run's own cell: read the cell index o
 it to a world position with `cobbletowers cells show <cell>` (which already prints `origin X Y Z`), and
 query `@e[...,x=,y=,z=,dx=256,dy=256,dz=256,...]` -- `256` is `CellGrid.INTERIOR`, comfortably inside
 the ~512-block spacing between cell origins, so it cannot bleed into a neighbor.
+
+## The battle bot, and the stress test
+
+Tests that fight a floor use `battlebot.js` (this directory), not the CobbleRaids rig's `raidbot.js`: it reads
+each battle request, so it never casts a move the battle refuses, aims moves that need a target, and answers
+a forced switch itself. The old bot stalled on some opponent draws and one lucky pass proved nothing, which is
+why `bot_stress_test.py` exists: it deals the bot a dozen opponents in one server session and records every
+species and outcome. Run it after touching anything that starts, ends or abandons a battle:
+
+    python validation/smoke/bot_stress_test.py --server-dir <rig> --java <jdk21 java> --jar <build> --rounds 12
+
+`SMOKE_BOT=raid` switches the shared helper back to `raidbot.js`. Cobblemon's wire format for the request is in
+the comments at the top of `battlebot.js`; the enum fields are four-byte ints, not varints.

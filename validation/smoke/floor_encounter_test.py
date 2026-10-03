@@ -60,12 +60,20 @@ BOTS = [f"TFa{int(time.time()) % 100000}", f"TFb{int(time.time()) % 100000}"]
 
 
 def start_battle_bot(rig: Path, name: str, move: str) -> subprocess.Popen:
-    """The raids rig's own battle bot: reads commands from bot/cmd_<name>.txt."""
+    """A bot that fights battles, logging to bot/<name>.log in the rig.
+
+    By default this is `battlebot.js`, which lives in this repo and reads each battle request to pick a move
+    the battle will accept and to answer a forced switch itself. SMOKE_BOT=raid uses the CobbleRaids rig's
+    `raidbot.js` instead (a named move, or DEFAULT); see BOT_MOVE above for why that stalls on some draws.
+    """
     env = dict(os.environ, NODE_PATH=str(rig / "bot" / "node_modules"))
     log = open(rig / "bot" / f"{name}.log", "w", encoding="utf-8", errors="replace")
-    # No move name means the bot sends DEFAULT and the battle picks a legal move.
-    return subprocess.Popen(["node", str(rig / "bot" / "raidbot.js"), name] + ([move] if move else []),
-                            cwd=str(rig / "bot"), stdout=log, stderr=subprocess.STDOUT, env=env)
+    if os.environ.get("SMOKE_BOT", "smart") == "raid":
+        # No move name means the bot sends DEFAULT and the battle picks a legal move.
+        command = ["node", str(rig / "bot" / "raidbot.js"), name] + ([move] if move else [])
+    else:
+        command = ["node", str(Path(__file__).resolve().parent / "battlebot.js"), name]
+    return subprocess.Popen(command, cwd=str(rig / "bot"), stdout=log, stderr=subprocess.STDOUT, env=env)
 
 
 def tell_bot(rig: Path, name: str, line: str) -> None:

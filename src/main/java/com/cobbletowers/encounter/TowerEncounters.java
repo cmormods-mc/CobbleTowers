@@ -688,6 +688,8 @@ public final class TowerEncounters {
         CobblemonBattleAdapter.endRun(server, runId);
         // The boss too, or it stands in the cell until the sweep quarantines it.
         TowerBossAdapter.abort(runId);
+        // Aborting the boss does not end the player's battle with it; end it here so they can fight again.
+        endParticipantBattles(server, runId);
         recallParties(server, runId);
     }
 
@@ -705,6 +707,15 @@ public final class TowerEncounters {
      * {@code execute ... run say}, which returns nothing over RCON, so it had been reporting an
      * empty cell whatever was in it.
      */
+    private static void endParticipantBattles(MinecraftServer server, UUID runId) {
+        TowerRuns.get(runId).ifPresent(run -> {
+            for (PersistedParticipant participant : run.participants()) {
+                ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+                if (player != null) CobblemonBattleAdapter.endBattleOf(player);
+            }
+        });
+    }
+
     private static void recallParties(MinecraftServer server, UUID runId) {
         TowerRuns.get(runId).ifPresent(run -> {
             for (PersistedParticipant participant : run.participants()) {

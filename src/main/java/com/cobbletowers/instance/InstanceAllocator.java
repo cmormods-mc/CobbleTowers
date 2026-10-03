@@ -138,6 +138,10 @@ public final class InstanceAllocator {
             // Order is the whole of this method. Reset and sweep while the chunks are still held,
             // because both need them loaded; then let the chunks go; then check that they went.
             CellPreparer.reset(server, cell);
+            // Items and experience orbs dropped by fallen opponents are expected debris, not a reason to lose
+            // the cell; anything else still fails the check below.
+            int debris = CellCleanup.sweepDebris(server, cell);
+            if (debris > 0) TowerLog.info("Cell {} had {} dropped item(s) or orb(s) swept", cell, debris);
             CellCleanup.Report contents = CellCleanup.verify(server, cell);
             CellTickets.drop(server, cell);
             CellCleanup.Report report = CellCleanup.verifyReleased(cell, contents);
