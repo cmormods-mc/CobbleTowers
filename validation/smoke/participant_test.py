@@ -177,11 +177,19 @@ def main() -> None:
             cleared = "cleared" in resolved
 
             if cleared:
+                # REVIVE_PENDING is a transient state: the server banks the cleared floor and enters
+                # INTERMISSION on its own, which revives spectators, and that can land before this
+                # reads the run. So "owed" means pending OR already given back -- never still
+                # spectating, which is the failure this is here to catch.
                 owed = rcon.command(f"cobbletowers runs show {run}")
+                owed_line = state_of(owed, leaver_id)
                 results.append(Result("a spectator is owed the intermission once the floor is done",
-                                      "REVIVE_PENDING" in state_of(owed, leaver_id), state_of(owed, leaver_id)))
+                                      "REVIVE_PENDING" in owed_line
+                                      or ("INTERMISSION" in owed and "ACTIVE" in owed_line),
+                                      owed_line))
 
-                rcon.command(f"cobbletowers runs advance {run} rewards_banked")
+                if "INTERMISSION" not in owed:
+                    rcon.command(f"cobbletowers runs advance {run} rewards_banked")
                 revived = rcon.command(f"cobbletowers runs show {run}")
                 results.append(Result("the intermission puts them back in the fight",
                                       "INTERMISSION" in revived and "ACTIVE" in state_of(revived, leaver_id),
