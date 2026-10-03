@@ -44,6 +44,8 @@ public final class TowerLobby {
     private ResourceLocation tower;
     private final Map<UUID, Member> members = new LinkedHashMap<>();
     private long countdownEndsAt = -1;
+    /** Pokemon each player chose to register (P18). Absent or empty means "my current party". */
+    private final Map<UUID, List<UUID>> chosen = new LinkedHashMap<>();
 
     public TowerLobby(UUID host, ResourceLocation tower) {
         this.host = host;
@@ -82,11 +84,13 @@ public final class TowerLobby {
     }
 
     public Result decline(UUID player) {
+        chosen.remove(player);
         return members.remove(player) == null ? Result.NO_INVITE : Result.OK;
     }
 
     /** Takes someone off the team, accepted or not. */
     public boolean remove(UUID player) {
+        chosen.remove(player);
         boolean removed = members.remove(player) != null;
         if (removed) cancelCountdown();
         return removed;
@@ -102,6 +106,17 @@ public final class TowerLobby {
             return old;
         });
         return lapsed;
+    }
+
+    /** What this player chose to register, in order; empty means they have not chosen and the party is used. */
+    public List<UUID> chosenOf(UUID player) {
+        return List.copyOf(chosen.getOrDefault(player, List.of()));
+    }
+
+    public void setChosen(UUID player, List<UUID> pokemon) {
+        if (pokemon.isEmpty()) chosen.remove(player);
+        else chosen.put(player, List.copyOf(pokemon));
+        cancelCountdown();
     }
 
     public Optional<Response> responseOf(UUID player) {

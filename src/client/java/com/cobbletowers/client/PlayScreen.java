@@ -87,6 +87,13 @@ public final class PlayScreen extends Screen {
             start.active = !lobby.selected().isEmpty() && lobby.countdown() < 0;
             addRenderableWidget(start);
         }
+        if (lobby.role() == 1 || lobby.role() == 3) {
+            y += 24;
+            addRenderableWidget(Button.builder(Component.literal("Choose party"),
+                            b -> send(PlayActionPayload.Action.OPEN_CHOOSER, ""))
+                    .pos(left, y).size(220, 20).build());
+            y -= 24;
+        }
         if (lobby.role() != 0) {
             addRenderableWidget(Button.builder(Component.literal(lobby.role() == 1 ? "End team" : "Leave"),
                             b -> send(PlayActionPayload.Action.LEAVE, ""))

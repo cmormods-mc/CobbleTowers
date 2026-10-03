@@ -4,6 +4,7 @@ import com.cobbletowers.network.CycleTeammatePayload;
 import com.cobbletowers.network.IntermissionActionPayload;
 import com.cobbletowers.network.IntermissionStatePayload;
 import com.cobbletowers.network.PlayStatePayload;
+import com.cobbletowers.network.RegistrationStatePayload;
 import com.cobbletowers.network.RewardRevealPayload;
 import com.cobbletowers.network.ScoutingRevealPayload;
 import com.cobbletowers.network.SpectatorPanelPayload;
@@ -76,6 +77,16 @@ public final class CobbleTowersClient implements ClientModInitializer {
                         // Never over a reveal the player is reading: that screen asks for this one back
                         // when it closes.
                         Minecraft.getInstance().setScreen(new IntermissionScreen(payload));
+                    }
+                }));
+
+        ClientPlayNetworking.registerGlobalReceiver(RegistrationStatePayload.TYPE, (payload, context) ->
+                context.client().execute(() -> {
+                    Screen current = Minecraft.getInstance().screen;
+                    if (current instanceof RegistrationScreen open) {
+                        open.update(payload);
+                    } else if (payload.open()) {
+                        Minecraft.getInstance().setScreen(new RegistrationScreen(payload));
                     }
                 }));
 

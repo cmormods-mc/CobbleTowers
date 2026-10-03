@@ -43,6 +43,7 @@ public final class TowerNetworking {
         PayloadTypeRegistry.playS2C().register(ScoutingRevealPayload.TYPE, ScoutingRevealPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(PlayStatePayload.TYPE, PlayStatePayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(PlayActionPayload.TYPE, PlayActionPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(RegistrationStatePayload.TYPE, RegistrationStatePayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(IntermissionStatePayload.TYPE, IntermissionStatePayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(IntermissionActionPayload.TYPE, IntermissionActionPayload.STREAM_CODEC);
     }
@@ -88,6 +89,12 @@ public final class TowerNetworking {
                 case START -> LobbyService.start(server, player);
                 case LEAVE -> LobbyService.leave(server, player);
                 case REFRESH -> "";
+                case OPEN_CHOOSER -> {
+                    LobbyService.sendRegistration(server, player, "", true);
+                    yield "";
+                }
+                case TOGGLE_POKEMON -> LobbyService.choose(server, player, java.util.UUID.fromString(payload.argument()));
+                case CLEAR_CHOICE -> LobbyService.clearChoice(server, player);
             };
         } catch (RuntimeException ex) {
             // A malformed id or similar from a modified client: refused, never trusted, never fatal.
@@ -181,6 +188,13 @@ public final class TowerNetworking {
     /** Silently does nothing for a client that never registered the channel (the commands still work). */
     public static void sendIntermissionState(ServerPlayer player, IntermissionStatePayload payload) {
         if (ServerPlayNetworking.canSend(player, IntermissionStatePayload.TYPE)) {
+            ServerPlayNetworking.send(player, payload);
+        }
+    }
+
+    /** Silently does nothing for a client that never registered the channel (the commands still work). */
+    public static void sendRegistration(ServerPlayer player, RegistrationStatePayload payload) {
+        if (ServerPlayNetworking.canSend(player, RegistrationStatePayload.TYPE)) {
             ServerPlayNetworking.send(player, payload);
         }
     }

@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 public record PlayActionPayload(Action action, String argument) implements CustomPacketPayload {
 
-    public enum Action { SELECT_TOWER, INVITE, ACCEPT, DECLINE, START, LEAVE, REFRESH }
+    public enum Action { SELECT_TOWER, INVITE, ACCEPT, DECLINE, START, LEAVE, REFRESH, OPEN_CHOOSER, TOGGLE_POKEMON, CLEAR_CHOICE }
 
     public static final CustomPacketPayload.Type<PlayActionPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "play_action"));

@@ -13,6 +13,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.UuidArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -50,6 +51,16 @@ public final class PlayCommand {
                         .then(Commands.literal("pick")
                                 .then(Commands.argument("card", IntegerArgumentType.integer(1, 9))
                                         .executes(PlayCommand::pick)))
+                        .then(Commands.literal("register")
+                                .executes(PlayCommand::openChooser)
+                                .then(Commands.literal("toggle")
+                                        .then(Commands.argument("pokemon", UuidArgument.uuid())
+                                                .executes(PlayCommand::toggle)))
+                                .then(Commands.literal("clear").executes(PlayCommand::clearChoice)))
+                        .then(Commands.literal("pokemon")
+                                .requires(source -> source.hasPermission(2))
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .executes(PlayCommand::pokemon)))
                         .then(Commands.literal("leave").executes(PlayCommand::leave))
                         .then(Commands.literal("start").executes(PlayCommand::start))
                         .then(Commands.literal("status").executes(PlayCommand::status))
@@ -103,6 +114,29 @@ public final class PlayCommand {
     private static int pick(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         return say(context, IntermissionService.pick(context.getSource().getServer(),
                 context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "card") - 1));
+    }
+
+    private static int openChooser(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        LobbyService.sendRegistration(context.getSource().getServer(), context.getSource().getPlayerOrException(), "", true);
+        return 1;
+    }
+
+    private static int toggle(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return say(context, LobbyService.choose(context.getSource().getServer(),
+                context.getSource().getPlayerOrException(), UuidArgument.getUuid(context, "pokemon")));
+    }
+
+    private static int clearChoice(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return say(context, LobbyService.clearChoice(context.getSource().getServer(),
+                context.getSource().getPlayerOrException()));
+    }
+
+    /** Operator view of everything a player owns, for a live test that cannot see a screen. */
+    private static int pokemon(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        List<String> lines = LobbyService.describePokemon(EntityArgument.getPlayer(context, "player"));
+        context.getSource().sendSuccess(() -> Component.literal(lines.size() + " pokemon"), false);
+        for (String line : lines) context.getSource().sendSuccess(() -> Component.literal("  " + line), false);
+        return lines.size();
     }
 
     private static int leave(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

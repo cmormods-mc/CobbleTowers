@@ -4,11 +4,13 @@ import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.api.tower.RunState;
 import com.cobbletowers.battle.cobblemon.PartyReader;
+import com.cobbletowers.battle.cobblemon.PartyStorage;
 import com.cobbletowers.definition.RulesetDefinition;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.network.PlayStatePayload;
+import com.cobbletowers.network.RegistrationStatePayload;
 import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.runtime.PartyValidation;
@@ -17,6 +19,8 @@ import com.cobbletowers.runtime.RunFactory;
 import com.cobbletowers.runtime.RunLifecycle;
 import com.cobbletowers.runtime.RunTransitionService;
 import com.cobbletowers.runtime.TowerRuns;
+import com.cobbletowers.storage.PartyArrangement;
+import com.cobbletowers.storage.PartyJournalService;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -206,6 +210,7 @@ public final class LobbyService {
         for (UUID id : lobby.pending()) lobby.remove(id);
         List<UUID> players = new ArrayList<>();
         Map<UUID, List<UUID>> parties = new LinkedHashMap<>();
+        Map<UUID, List<UUID>> locks = new LinkedHashMap<>();
         List<String> problems = new ArrayList<>();
         for (UUID id : lobby.team()) {
             ServerPlayer player = server.getPlayerList().getPlayer(id);
@@ -218,9 +223,27 @@ public final class LobbyService {
                 problems.add(name(player) + " is already in a tower run.");
                 continue;
             }
-            List<PartyMember> party = PartyReader.members(player);
+            List<UUID> picked = lobby.chosenOf(id);
+            PartyStorage.Snapshot snapshot = PartyStorage.snapshot(player);
+            List<PartyMember> party;
+            if (picked.isEmpty()) {
+                party = PartyReader.members(player);
+            } else {
+                party = new ArrayList<>();
+                for (UUID pokemon : picked) snapshot.member(pokemon).ifPresent(party::add);
+                if (party.size() != picked.size()) {
+                    problems.add(name(player) + " chose a Pokemon that is no longer theirs");
+                    continue;
+                }
+            }
             PartyValidation.Result checked = PartyValidation.validate(party, ruleset);
             checked.problems().forEach(problem -> problems.add(name(player) + " " + problem));
+            if (!picked.isEmpty()) {
+                // Dry-run before anyone is moved: a plan that cannot be carried out is refused up front.
+                PartyArrangement.Plan plan = PartyJournalService.dryRun(player, checked.registered());
+                if (!plan.ok()) problems.add(name(player) + " cannot register that party (" + plan.failure() + ")");
+                locks.put(id, checked.registered());
+            }
             players.add(id);
             parties.put(id, checked.registered());
         }
@@ -238,11 +261,30 @@ public final class LobbyService {
         UUID runId = created.get().runId();
         TowerRuns.save(server, created.get(), true);
 
+        // Move registered Pokemon into the party. Journaled and flushed first, per player, so a failure or
+        // a crash anywhere from here on can be undone; a failure here undoes the ones already done.
+        for (UUID id : players) {
+            List<UUID> target = locks.get(id);
+            if (target == null) continue;
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            PartyJournalService.Lock result = player == null ? PartyJournalService.Lock.FAILED
+                    : PartyJournalService.lockIn(server, runId, player, target);
+            if (result == PartyJournalService.Lock.FAILED || result == PartyJournalService.Lock.NOT_OWNED
+                    || result == PartyJournalService.Lock.NO_ROOM || result == PartyJournalService.Lock.TOO_MANY) {
+                RunTransitionService.apply(server, runId, RunEvent.ABANDON_REQUESTED, now);
+                restoreParties(server, players);
+                broadcast(server, lobby, "Cannot start: " + (player == null ? "a player went offline"
+                        : name(player) + " could not have their party arranged (" + result + ")") + ". Try again.");
+                return;
+            }
+        }
+
         RunTransitionService.Outcome validated = RunLifecycle.validateParty(server, runId, now,
                 id -> Optional.ofNullable(server.getPlayerList().getPlayer(id)).map(PartyReader::members));
         if (!(validated instanceof RunTransitionService.Move move) || move.next().state() != RunState.ALLOCATING_INSTANCE) {
             // Pre-checked above, so this is a party that changed in the gap. The run is abandoned by
             // the rejection; the team is left to try again.
+            restoreParties(server, players);
             broadcast(server, lobby, "Cannot start: a party changed while the run was being set up. Try again.");
             return;
         }
@@ -250,6 +292,7 @@ public final class LobbyService {
         RunTransitionService.Outcome allocated = RunLifecycle.allocateInstance(server, runId, now);
         if (!(allocated instanceof RunTransitionService.Move)) {
             abandonParked(server, runId, now);
+            restoreParties(server, players);
             broadcast(server, lobby, "Cannot start: no tower space is free right now. Try again in a moment.");
             return;
         }
@@ -273,9 +316,85 @@ public final class LobbyService {
         return RunLifecycle.beginFloor(server, runId, now);
     }
 
+    /** Puts every listed player's Pokemon back at once, after a start that did not happen. */
+    private static void restoreParties(MinecraftServer server, List<UUID> players) {
+        for (UUID id : players) {
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            if (player != null) PartyJournalService.restoreNow(server, player);
+        }
+    }
+
     /** Frees a team held by a run that never got a cell, so they can retry (a parked run still holds them). */
     private static void abandonParked(MinecraftServer server, UUID runId, long now) {
         RunTransitionService.apply(server, runId, RunEvent.RECOVERY_ABANDONED, now);
+    }
+
+    // ---- choosing what to register (P18) -----------------------------------------------------
+
+    /** Adds the Pokemon to the player's registration, or takes it off if it is already there. */
+    public static String choose(MinecraftServer server, ServerPlayer player, UUID pokemon) {
+        Optional<TowerLobby> found = lobbyOf(player.getUUID());
+        if (found.isEmpty()) return "Join or start a team first.";
+        TowerLobby lobby = found.get();
+        if (lobby.counting()) return "The run is already starting.";
+        if (!PartyStorage.snapshot(player).entries().containsKey(pokemon)) return "That Pokemon is not yours.";
+
+        List<UUID> now = new ArrayList<>(lobby.chosenOf(player.getUUID()));
+        String reply;
+        if (now.remove(pokemon)) {
+            reply = "Removed from your registration.";
+        } else if (now.size() >= registerLimit(lobby)) {
+            return "You can register at most " + registerLimit(lobby) + " for this tower.";
+        } else {
+            now.add(pokemon);
+            reply = "Registered.";
+        }
+        lobby.setChosen(player.getUUID(), now);
+        broadcast(server, lobby, "");
+        sendRegistration(server, player, reply, false);
+        return reply;
+    }
+
+    public static String clearChoice(MinecraftServer server, ServerPlayer player) {
+        Optional<TowerLobby> found = lobbyOf(player.getUUID());
+        if (found.isEmpty()) return "You are not in a team.";
+        if (found.get().counting()) return "The run is already starting.";
+        found.get().setChosen(player.getUUID(), List.of());
+        broadcast(server, found.get(), "");
+        sendRegistration(server, player, "Registration cleared: your current party will be used.", false);
+        return "Registration cleared.";
+    }
+
+    /** How many Pokemon the lobby's tower lets a player register. */
+    private static int registerLimit(TowerLobby lobby) {
+        TowerContent content = TowerDefinitionRegistry.content();
+        TowerDefinition tower = content.towers().get(lobby.tower());
+        RulesetDefinition ruleset = tower == null ? null : content.rulesets().get(tower.rulesetId());
+        return ruleset == null ? PartyArrangement.PARTY_SIZE : ruleset.registeredPartySize();
+    }
+
+    /** The chooser: everything the player owns, what they have chosen, and the limit. */
+    public static void sendRegistration(MinecraftServer server, ServerPlayer player, String message, boolean open) {
+        PartyStorage.Snapshot snapshot = PartyStorage.snapshot(player);
+        List<RegistrationStatePayload.Entry> entries = new ArrayList<>();
+        for (PartyStorage.Entry entry : snapshot.entries().values()) {
+            String where = entry.slot().isParty() ? "Party " + (entry.slot().index() + 1) : "Box " + (entry.slot().index() + 1);
+            entries.add(new RegistrationStatePayload.Entry(entry.id(), entry.name(), entry.level(), entry.fainted(), where));
+        }
+        Optional<TowerLobby> lobby = lobbyOf(player.getUUID());
+        TowerNetworking.sendRegistration(player, new RegistrationStatePayload(entries,
+                lobby.map(found -> found.chosenOf(player.getUUID())).orElse(List.of()),
+                lobby.map(LobbyService::registerLimit).orElse(PartyArrangement.PARTY_SIZE), message, open));
+    }
+
+    /** One line per Pokemon the player owns, for an operator or a test: place, id, name and level. */
+    public static List<String> describePokemon(ServerPlayer player) {
+        List<String> lines = new ArrayList<>();
+        for (PartyStorage.Entry entry : PartyStorage.snapshot(player).entries().values()) {
+            lines.add((entry.slot().isParty() ? "party " + entry.slot().index() : "box " + entry.slot().index() + "/" + entry.slot().sub())
+                    + " " + entry.id() + " " + entry.name() + " Lv" + entry.level() + (entry.fainted() ? " fainted" : ""));
+        }
+        return lines;
     }
 
     // ---- state shown to the screen -------------------------------------------------------------
