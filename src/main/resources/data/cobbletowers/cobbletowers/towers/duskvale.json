@@ -5,6 +5,7 @@
   "ruleset": "cobbletowers:standard",
   "reward_table": "cobbletowers:duskvale",
   "regional_theme": "cobbletowers:duskvale",
+  "scouting_profile": "cobbletowers:regional",
   "floors": [
     "cobbletowers:duskvale/floor_01",
     "cobbletowers:duskvale/floor_02",

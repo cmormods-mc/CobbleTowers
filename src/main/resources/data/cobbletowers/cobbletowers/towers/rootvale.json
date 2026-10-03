@@ -5,6 +5,7 @@
   "ruleset": "cobbletowers:standard",
   "reward_table": "cobbletowers:rootvale",
   "regional_theme": "cobbletowers:rootvale",
+  "scouting_profile": "cobbletowers:regional",
   "floors": [
     "cobbletowers:rootvale/floor_01",
     "cobbletowers:rootvale/floor_02",
