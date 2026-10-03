@@ -102,6 +102,7 @@ public final class CobbleTowers implements ModInitializer {
         com.cobbletowers.lobby.LobbyService.install();
         com.cobbletowers.intermission.IntermissionService.install();
         com.cobbletowers.storage.PartyJournalService.install();
+        com.cobbletowers.runtime.RunExitService.install();
         RecoverySweep.install();
         // Hands a player whatever the tower owes them the moment they are somewhere to receive it.
         RewardDelivery.install();

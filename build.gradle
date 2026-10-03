@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.13.6'
 }
 
-version = '0.19.0-p19-teammate-vendor'
+version = '0.20.0-p20-leaving-the-tower'
 group = 'com.cobbletowers'
 
 base {

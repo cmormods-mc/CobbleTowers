@@ -43,8 +43,14 @@ LEAD = "glaceon"
 # Freeze-Dry first: 20 PP against Blizzard's 5, and a floor plus its boss runs well past five turns
 # with no healing in between. The rest are this Glaceon's other moves, tried in turn when one is
 # refused -- Disable and an empty PP bar both look identical from out here.
-FIRST_MOVE = "freezedry"
-FALLBACK_MOVES = ("blizzard", "mirrorcoat", "lastresort")
+#
+# That named-move mode stalls on some opponent draws: every move comes back "Invalid action choice" and the
+# bot never re-prompts, so a floor can sit forever (found in P17). The bot's own DEFAULT action asks the
+# battle to choose a legal move itself, which cannot be refused, so it is now the default. Set
+# SMOKE_BOT_MOVE=freezedry to get the old behaviour back.
+BOT_MOVE = os.environ.get("SMOKE_BOT_MOVE", "default")
+FIRST_MOVE = "" if BOT_MOVE == "default" else BOT_MOVE
+FALLBACK_MOVES = ("blizzard", "mirrorcoat", "lastresort") if FIRST_MOVE else ()
 FILLERS = 5
 # Fresh names each run, because pokegiveother ADDS to a party: reusing a name across runs fills the
 # six slots with earlier tests' fillers until the lead is a level 1 Magikarp that knows nothing the
@@ -57,11 +63,16 @@ def start_battle_bot(rig: Path, name: str, move: str) -> subprocess.Popen:
     """The raids rig's own battle bot: reads commands from bot/cmd_<name>.txt."""
     env = dict(os.environ, NODE_PATH=str(rig / "bot" / "node_modules"))
     log = open(rig / "bot" / f"{name}.log", "w", encoding="utf-8", errors="replace")
-    return subprocess.Popen(["node", str(rig / "bot" / "raidbot.js"), name, move],
+    # No move name means the bot sends DEFAULT and the battle picks a legal move.
+    return subprocess.Popen(["node", str(rig / "bot" / "raidbot.js"), name] + ([move] if move else []),
                             cwd=str(rig / "bot"), stdout=log, stderr=subprocess.STDOUT, env=env)
 
 
 def tell_bot(rig: Path, name: str, line: str) -> None:
+    # "MOVE " with no name means "use DEFAULT". The bot trims its input, so it would arrive as a bare
+    # "MOVE", match nothing, and be sent to the chat as a message -- skip it instead.
+    if line.strip() in ("", "MOVE"):
+        return
     with open(rig / "bot" / f"cmd_{name}.txt", "a", encoding="utf-8") as handle:
         handle.write(line + "\n")
 

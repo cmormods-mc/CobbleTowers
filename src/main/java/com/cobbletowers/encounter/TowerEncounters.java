@@ -34,6 +34,7 @@ import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.api.tower.participant.ParticipantState;
 import com.cobbletowers.runtime.ParticipantService;
+import com.cobbletowers.runtime.RunExitService;
 import com.cobbletowers.runtime.PartyValidation;
 import com.cobbletowers.runtime.RunTransitionService;
 import com.cobbletowers.runtime.TowerRuns;
@@ -215,6 +216,8 @@ public final class TowerEncounters {
         BlockPos arrival = entry.in(origin);
         for (int ordinal = 0; ordinal < fighters.size(); ordinal++) {
             ServerPlayer player = fighters.get(ordinal);
+            // Where they stand now is where they go home to (P20); skipped if they are already inside.
+            RunExitService.remember(server, player);
             player.teleportTo(level, arrival.getX() + 0.5 + ordinal * 2, arrival.getY(),
                     arrival.getZ() + 0.5, entry.yaw(), 0.0f);
         }

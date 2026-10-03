@@ -213,6 +213,21 @@ public final class RunTransitionService {
         // a battle was not tidied up.
         TowerEncounters.abandon(server, run.runId());
 
+        if (run.cell().isEmpty()) return;
+        // P20: never reset a cell with a player standing in it. The run keeps its lease for the beat and the
+        // exit sweep releases it once everybody has been sent home; otherwise the cell is quarantined.
+        if (RunExitService.mustDefer(server, run)) {
+            RunExitService.announce(server, run);
+            return;
+        }
+        releaseCell(server, run, now);
+    }
+
+    /**
+     * The release itself: reset, verify, give the lease back and drop it from the run. Public so the exit sweep
+     * can finish one that was deferred while players were still inside.
+     */
+    public static void releaseCell(MinecraftServer server, PersistedRun run, long now) {
         OptionalInt cell = run.cell();
         if (cell.isEmpty()) return;
         InstanceAllocator.Release release = InstanceAllocator.release(server, run.runId(), cell.getAsInt());
