@@ -37,6 +37,13 @@ public final class CobbleTowers implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("unknown");
 
+        // Before the server starts: the Showdown simulator is unbundled during start-up. Guarded like the commands.
+        try {
+            com.cobbletowers.showdown.TowerShowdownFx.install();
+        } catch (RuntimeException | LinkageError ex) {
+            TowerLog.error("Could not register the Showdown extension; tower battle effects are off", ex);
+        }
+
         // Guarded: a failure to register a command must not take the rest of the server's command
         // tree down with it.
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {

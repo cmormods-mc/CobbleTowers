@@ -104,23 +104,15 @@ public final class CobblemonBattleAdapter {
         PokemonEntity opponent = spawn(level, snapshot, where);
         if (opponent == null) return Optional.empty();
 
-        BattleStartResult result = BattleBuilder.INSTANCE.pve(
-                player,
-                opponent,
-                // Leading Pokemon: null lets Cobblemon pick the party's first able one, which is the
-                // same choice a wild encounter makes.
-                null,
-                BattleFormat.Companion.getGEN_9_SINGLES(),
-                // Do not clone the party, and do not heal it first: a tower floor is fought with what
-                // the party has left, which is the whole of TDS #16.
-                false,
-                false,
-                Float.MAX_VALUE,
-                // The player's real party, not null: the full-arity method is Kotlin non-null, and
-                // only the generated pve$default overload fills this in. Passing null threw
-                // "Parameter specified as non-null is null" the first time a floor was played, and
-                // no unit test could have seen it -- there is no Cobblemon runtime in one.
-                Cobblemon.INSTANCE.getStorage().getParty(player));
+        // Armed only around the start itself: the effects ride this battle's >start and no other's.
+        com.cobbletowers.showdown.TowerBattleFx.armFloorBattle(player.getUUID());
+        BattleStartResult result;
+        try {
+            result = startPve(player, opponent);
+        } finally {
+            com.cobbletowers.showdown.TowerBattleFx.disarm(player.getUUID());
+        }
+
 
         if (!(result instanceof SuccessfulBattleStart success)) {
             TowerLog.error("Cobblemon refused a tower battle for {} on floor {}: {}",
@@ -138,6 +130,26 @@ public final class CobblemonBattleAdapter {
         TowerLog.info("Floor {} battle {} started: {} vs {} at level {}", floorIndex, battleId,
                 player.getGameProfile().getName(), snapshot.species(), snapshot.level());
         return Optional.of(battleId);
+    }
+
+    private static BattleStartResult startPve(ServerPlayer player, PokemonEntity opponent) {
+        return BattleBuilder.INSTANCE.pve(
+                player,
+                opponent,
+                // Leading Pokemon: null lets Cobblemon pick the party's first able one, which is the
+                // same choice a wild encounter makes.
+                null,
+                BattleFormat.Companion.getGEN_9_SINGLES(),
+                // Do not clone the party, and do not heal it first: a tower floor is fought with what
+                // the party has left, which is the whole of TDS #16.
+                false,
+                false,
+                Float.MAX_VALUE,
+                // The player's real party, not null: the full-arity method is Kotlin non-null, and
+                // only the generated pve$default overload fills this in. Passing null threw
+                // "Parameter specified as non-null is null" the first time a floor was played, and
+                // no unit test could have seen it -- there is no Cobblemon runtime in one.
+                Cobblemon.INSTANCE.getStorage().getParty(player));
     }
 
     /** Why a battle did not start, in words: the result's own toString is only an object id. */

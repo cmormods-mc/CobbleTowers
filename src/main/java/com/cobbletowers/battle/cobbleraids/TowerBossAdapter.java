@@ -119,12 +119,17 @@ public final class TowerBossAdapter {
                 // party size, which is the behaviour the spike measured.
                 OptionalLong.empty(), POLICY, rules);
 
+        List<java.util.UUID> playerIds = players.stream().map(ServerPlayer::getUUID).toList();
         StartResult result;
+        // Armed only around the start: the effects ride this boss battle's >start and no other's.
+        com.cobbletowers.showdown.TowerBattleFx.armBossBattle(playerIds);
         try {
             result = CobbleRaidsEncounters.start(request, new FloorListener(server));
         } catch (RuntimeException ex) {
             TowerLog.error("Starting the boss for floor {} of run {} threw", floorIndex, runId, ex);
             return Optional.empty();
+        } finally {
+            com.cobbletowers.showdown.TowerBattleFx.disarmAll(playerIds);
         }
         if (result instanceof StartResult.Refused refused) {
             TowerLog.error("CobbleRaids refused the boss for floor {} of run {}: {}",

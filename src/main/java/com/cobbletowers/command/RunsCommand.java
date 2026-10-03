@@ -135,6 +135,13 @@ public final class RunsCommand {
                                 .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("run", UuidArgument.uuid())
                                         .executes(RunsCommand::validate)))
+                        // Queues battle effects (P23) for a player's next tower battle: the seam armor-set bonuses
+                        // will use, and how a live test pins one down. `fx <player> clear` empties the queue.
+                        .then(Commands.literal("fx")
+                                .requires(source -> source.hasPermission(2))
+                                .then(Commands.argument("player", net.minecraft.commands.arguments.EntityArgument.player())
+                                        .then(Commands.argument("json", StringArgumentType.greedyString())
+                                                .executes(RunsCommand::fx))))
                         .then(Commands.literal("earn")
                                 .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("run", UuidArgument.uuid())
@@ -451,6 +458,31 @@ public final class RunsCommand {
      * as if it had just been earned on the run's current floor. A test seam, like {@code vendor credit}: a live
      * test cannot fight a real boss to earn a milestone, and rewards are paid from the ledger, not from events.
      */
+    private static int fx(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        try {
+            net.minecraft.server.level.ServerPlayer player = net.minecraft.commands.arguments.EntityArgument.getPlayer(context, "player");
+            String json = StringArgumentType.getString(context, "json").trim();
+            if (json.equals("clear")) {
+                com.cobbletowers.showdown.TowerBattleFx.clearQueued(player.getUUID());
+                source.sendSuccess(() -> Component.literal("Cleared the queued battle effects"), true);
+                return 1;
+            }
+            com.google.gson.JsonElement parsed = com.google.gson.JsonParser.parseString(json);
+            if (!parsed.isJsonArray()) {
+                source.sendFailure(Component.literal("Expected a JSON array of operations, or 'clear'"));
+                return 0;
+            }
+            int kept = com.cobbletowers.showdown.TowerBattleFx.queue(player.getUUID(), parsed.getAsJsonArray());
+            int offered = parsed.getAsJsonArray().size();
+            source.sendSuccess(() -> Component.literal("Queued " + kept + " of " + offered + " battle effect(s)"), true);
+            return kept;
+        } catch (com.google.gson.JsonParseException | com.mojang.brigadier.exceptions.CommandSyntaxException ex) {
+            source.sendFailure(Component.literal("Could not queue effects: " + ex.getMessage()));
+            return 0;
+        }
+    }
+
     private static int earn(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         UUID runId = UuidArgument.getUuid(context, "run");
