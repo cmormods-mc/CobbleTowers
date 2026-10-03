@@ -39,6 +39,9 @@ public final class CobbleTowersClient implements ClientModInitializer {
         KeyBindingHelper.registerKeyBinding(CYCLE_NEXT);
         KeyBindingHelper.registerKeyBinding(CYCLE_PREVIOUS);
 
+        // Armor set tooltips (P25): the sets the server describes, shown on their pieces.
+        ArmorTooltips.install();
+
         ClientPlayNetworking.registerGlobalReceiver(SpectatorPanelPayload.TYPE,
                 (payload, context) -> context.client().execute(() -> SpectatorHud.updatePanel(payload)));
         ClientPlayNetworking.registerGlobalReceiver(RewardRevealPayload.TYPE, (payload, context) ->

@@ -115,6 +115,18 @@ def main() -> None:
                 clear_armor(rcon, name)
             settle()
 
+            # Tooltip sync (P25). The bots are not Fabric clients, so they never receive the payload and canSend skips them;
+            # what this proves is that a join and a reload stay clean for a client without the channel, and that the reload
+            # re-runs the sync path (the sets are loaded again) without a send error.
+            before_reload = server.read_log().count("Loaded 4 armor set(s)")
+            rcon.command("reload")
+            time.sleep(5)
+            after = server.read_log()
+            results.append(Result("a datapack reload loads the armor sets again", after.count("Loaded 4 armor set(s)") > before_reload,
+                                  f"{before_reload} -> {after.count('Loaded 4 armor set(s)')}"))
+            results.append(Result("joining and reloading are clean for a client that cannot receive the tooltip data",
+                                  "Could not send the armor set tooltips" not in after, "a send error was logged"))
+
             breath = "minecraft:generic.oxygen_bonus"
             water = "minecraft:generic.water_movement_efficiency"
             results.append(Result("nothing worn: no bonus", attribute(rcon, a, breath) == 0.0, str(attribute(rcon, a, breath))))

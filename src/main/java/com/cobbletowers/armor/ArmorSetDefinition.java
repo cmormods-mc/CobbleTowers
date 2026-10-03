@@ -24,7 +24,11 @@ public record ArmorSetDefinition(
         int revision,
         String displayName,
         Map<String, ResourceLocation> pieces,
-        List<SetBonus> bonuses) {
+        List<SetBonus> bonuses,
+        int color) {
+
+    /** The tint used when a set names none: a neutral light grey. */
+    public static final int DEFAULT_COLOR = 0xB4B8C0;
 
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
     public static final int MAX_BONUSES = 16;
@@ -50,6 +54,14 @@ public record ArmorSetDefinition(
         if (bonuses.size() > MAX_BONUSES) {
             throw new IllegalArgumentException("a set has at most " + MAX_BONUSES + " bonuses, got " + bonuses.size());
         }
+        if (color < 0 || color > 0xFFFFFF) throw new IllegalArgumentException("color must be 0x000000..0xFFFFFF, got " + color);
+    }
+
+    /** Parses {@code "#rrggbb"} or {@code "rrggbb"}. */
+    static int parseColor(String text) {
+        String hex = text.startsWith("#") ? text.substring(1) : text;
+        if (!hex.matches("[0-9a-fA-F]{6}")) throw new IllegalArgumentException("color must be #rrggbb, got '" + text + "'");
+        return Integer.parseInt(hex, 16);
     }
 
     /** The slot {@code item} fills in this set, if it is one of its pieces. */
@@ -78,7 +90,8 @@ public record ArmorSetDefinition(
                 TowerJson.requireInt(root, "schema_version"),
                 TowerJson.integer(root, "revision", 1),
                 TowerJson.requireString(root, "display_name"),
-                pieces, bonuses);
+                pieces, bonuses,
+                root.has("color") ? parseColor(TowerJson.requireString(root, "color")) : DEFAULT_COLOR);
     }
 
     private static SetBonus parseBonus(JsonObject bonus) {

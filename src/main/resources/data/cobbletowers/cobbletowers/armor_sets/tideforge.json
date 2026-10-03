@@ -2,6 +2,7 @@
   "schema_version": 1,
   "revision": 1,
   "display_name": "Tideforged Plate",
+  "color": "#46B4E6",
   "pieces": {
     "head": "cobbletowers:tideforge_helmet",
     "chest": "cobbletowers:tideforge_chestplate",

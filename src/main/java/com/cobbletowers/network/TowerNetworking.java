@@ -48,6 +48,7 @@ public final class TowerNetworking {
         PayloadTypeRegistry.playS2C().register(RegistrationStatePayload.TYPE, RegistrationStatePayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(IntermissionStatePayload.TYPE, IntermissionStatePayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(IntermissionActionPayload.TYPE, IntermissionActionPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(ArmorSetsPayload.TYPE, ArmorSetsPayload.STREAM_CODEC);
     }
 
     /** The server-side half. */

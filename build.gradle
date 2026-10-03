@@ -73,6 +73,11 @@ tasks.named('test', Test) {
     }
 }
 
+// Sources contain a few non-ASCII glyphs (the armor tooltip symbols), so say so rather than lean on the platform default.
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)

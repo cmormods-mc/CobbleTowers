@@ -2,6 +2,7 @@
   "schema_version": 1,
   "revision": 1,
   "display_name": "Duskbound Guard",
+  "color": "#C08CEB",
   "pieces": {
     "head": "cobbletowers:duskvale_helmet",
     "chest": "cobbletowers:duskvale_chestplate",

@@ -2,6 +2,7 @@
   "schema_version": 1,
   "revision": 1,
   "display_name": "Challenger's Regalia",
+  "color": "#E8BE3E",
   "pieces": {
     "head": "cobbletowers:challenger_helmet",
     "chest": "cobbletowers:challenger_chestplate",
