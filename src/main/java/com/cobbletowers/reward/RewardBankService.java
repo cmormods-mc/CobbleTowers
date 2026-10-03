@@ -93,12 +93,24 @@ public final class RewardBankService {
 
     /** {@code amount} split as evenly as possible; the remainder goes to the first participants in order. */
     static Map<UUID, Integer> evenSplit(int amount, List<UUID> participants) {
+        return evenSplit(amount, participants, 0);
+    }
+
+    /**
+     * As above, but the remainder starts at participant {@code rotation} (wrapping) instead of always at the
+     * first one. With a catalog of single items, "the first player gets the remainder" meant a team's host
+     * received every lone Revive; rotating by floor and grant position spreads them out.
+     */
+    static Map<UUID, Integer> evenSplit(int amount, List<UUID> participants, int rotation) {
         Map<UUID, Integer> shares = new LinkedHashMap<>();
         if (participants.isEmpty() || amount <= 0) return shares;
-        int base = amount / participants.size();
-        int remainder = amount % participants.size();
-        for (int i = 0; i < participants.size(); i++) {
-            int share = base + (i < remainder ? 1 : 0);
+        int count = participants.size();
+        int base = amount / count;
+        int remainder = amount % count;
+        int start = Math.floorMod(rotation, count);
+        for (int i = 0; i < count; i++) {
+            int position = Math.floorMod(i - start, count);   // 0 = first in line for the remainder
+            int share = base + (position < remainder ? 1 : 0);
             if (share > 0) shares.put(participants.get(i), share);
         }
         return shares;
@@ -137,7 +149,8 @@ public final class RewardBankService {
 
         List<LedgerEntry> priced = unbanked(run);
         ModifierEffects effects = DraftService.effects(run);
-        List<RewardValuation.Grant> grants = RewardValuation.value(run.seed(), priced, table.get(), effects);
+        List<RewardValuation.Grant> grants = RewardValuation.value(run.seed(), priced, table.get(), effects,
+                id -> content.milestoneKindOf(id));
         List<UUID> participants = currentParticipants(run);
 
         TowerRuns.save(server, run.banked(run.floorIndex(), key, now), true);
@@ -146,11 +159,22 @@ public final class RewardBankService {
         if (grants.isEmpty() || participants.isEmpty()) return;
 
         TowerPendingRewardStore store = TowerPendingRewardStore.get(server);
+        int position = 0;
         for (RewardValuation.Grant grant : grants) {
-            for (Map.Entry<UUID, Integer> share : evenSplit(grant.amount(), participants).entrySet()) {
-                store.add(share.getKey(),
-                        new PendingTowerReward(runId, run.floorIndex(), grant.item(), share.getValue(), now));
+            if (grant.perPlayer()) {
+                // A milestone's guaranteed item: everybody gets the whole amount, not a share of it.
+                for (UUID playerId : participants) {
+                    store.add(playerId, new PendingTowerReward(runId, run.floorIndex(), grant.item(), grant.amount(), now));
+                }
+            } else {
+                // Rotated by floor and position so a one-item grant does not always reach the first player.
+                for (Map.Entry<UUID, Integer> share
+                        : evenSplit(grant.amount(), participants, run.floorIndex() + position).entrySet()) {
+                    store.add(share.getKey(),
+                            new PendingTowerReward(runId, run.floorIndex(), grant.item(), share.getValue(), now));
+                }
             }
+            position++;
         }
         store.checkpoint(server);
 

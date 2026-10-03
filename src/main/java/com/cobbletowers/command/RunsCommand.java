@@ -21,6 +21,7 @@ import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.persistence.PendingTowerReward;
 import com.cobbletowers.persistence.PersistedDraft;
 import com.cobbletowers.persistence.PersistedParticipant;
+import com.cobbletowers.persistence.LedgerEntry;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.TowerPendingRewardStore;
 import com.cobbletowers.persistence.TowerWalletStore;
@@ -134,6 +135,17 @@ public final class RunsCommand {
                                 .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("run", UuidArgument.uuid())
                                         .executes(RunsCommand::validate)))
+                        .then(Commands.literal("earn")
+                                .requires(source -> source.hasPermission(2))
+                                .then(Commands.argument("run", UuidArgument.uuid())
+                                        .then(Commands.argument("kind", StringArgumentType.word())
+                                                .suggests((context, builder) -> {
+                                                    for (String kind : new String[] {"opponent", "boss", "floor", "milestone"}) {
+                                                        builder.suggest(kind);
+                                                    }
+                                                    return builder.buildFuture();
+                                                })
+                                                .executes(RunsCommand::earn))))
                         .then(Commands.literal("allocate")
                                 .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("run", UuidArgument.uuid())
@@ -432,6 +444,57 @@ public final class RunsCommand {
         }
         source.sendFailure(Component.literal("Could not validate: " + outcome));
         return 0;
+    }
+
+    /**
+     * {@code /cobbletowers runs earn <run> opponent|boss|floor|milestone}: puts an entry in a run's unclaimed pool
+     * as if it had just been earned on the run's current floor. A test seam, like {@code vendor credit}: a live
+     * test cannot fight a real boss to earn a milestone, and rewards are paid from the ledger, not from events.
+     */
+    private static int earn(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        UUID runId = UuidArgument.getUuid(context, "run");
+        String kind = StringArgumentType.getString(context, "kind");
+        Optional<PersistedRun> found = TowerRuns.get(runId);
+        if (found.isEmpty()) {
+            source.sendFailure(Component.literal("No run " + runId));
+            return 0;
+        }
+        PersistedRun run = found.get();
+        long now = System.currentTimeMillis();
+        int floor = run.floorIndex();
+        TowerContent content = TowerDefinitionRegistry.content();
+
+        LedgerEntry entry;
+        switch (kind) {
+            case "opponent" -> entry = LedgerEntry.opponentDefeated(floor,
+                    ResourceLocation.fromNamespaceAndPath("cobblemon", "machoke"), run.participants().get(0).playerId(), now);
+            case "boss" -> entry = LedgerEntry.bossDefeated(floor,
+                    ResourceLocation.fromNamespaceAndPath("cobbleraids", "lucario"), now);
+            case "floor" -> {
+                Optional<com.cobbletowers.definition.FloorDefinition> definition = content.floorAt(run.towerId(), floor);
+                if (definition.isEmpty()) {
+                    source.sendFailure(Component.literal("Floor " + floor + " is not loaded"));
+                    return 0;
+                }
+                entry = LedgerEntry.floorCleared(floor, definition.get().id(), now);
+            }
+            case "milestone" -> {
+                Optional<com.cobbletowers.definition.MilestoneDefinition> milestone = content.milestoneAt(run.towerId(), floor);
+                if (milestone.isEmpty()) {
+                    source.sendFailure(Component.literal("Floor " + floor + " has no milestone"));
+                    return 0;
+                }
+                entry = LedgerEntry.milestoneCleared(floor, milestone.get().id(), now);
+            }
+            default -> {
+                source.sendFailure(Component.literal("kind must be opponent, boss, floor or milestone"));
+                return 0;
+            }
+        }
+        TowerEncounters.earn(source.getServer(), runId, entry);
+        source.sendSuccess(() -> Component.literal("Earned " + kind + " on floor " + floor), true);
+        return 1;
     }
 
     private static int allocate(CommandContext<CommandSourceStack> context) {

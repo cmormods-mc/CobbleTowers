@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "revision": 2,
+  "display_name": "Rootvale Tower Rewards",
+  "growth_percent_per_floor": 8,
+  "tiers": {
+    "opponent_defeated": [
+      {"item": "cobbletowers:cobble_dollar", "min_amount": 6, "max_amount": 12, "weight": 60},
+      {"item": "cobblemon:oran_berry", "min_amount": 1, "max_amount": 3, "weight": 60},
+      {"item": "cobblemon:sitrus_berry", "min_amount": 1, "max_amount": 3, "weight": 30},
+      {"item": "cobblemon:lum_berry", "min_amount": 1, "max_amount": 3, "weight": 30},
+      {"item": "cobblemon:pecha_berry", "min_amount": 1, "max_amount": 3, "weight": 30},
+      {"item": "cobblemon:potion", "min_amount": 1, "max_amount": 2, "weight": 45},
+      {"item": "cobblemon:super_potion", "min_amount": 1, "max_amount": 1, "weight": 20},
+      {"item": "cobblemon:nest_ball", "min_amount": 2, "max_amount": 4, "weight": 30},
+      {"item": "cobblemon:friend_ball", "min_amount": 2, "max_amount": 4, "weight": 20},
+      {"item": "cobblemon:great_ball", "min_amount": 2, "max_amount": 4, "weight": 20},
+      {"item": "cobblemon:antidote", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon:paralyze_heal", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon:awakening", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon:burn_heal", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon:ice_heal", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon:red_apricorn", "min_amount": 1, "max_amount": 2, "weight": 18},
+      {"item": "cobblemon:blue_apricorn", "min_amount": 1, "max_amount": 2, "weight": 18},
+      {"item": "cobblemon:green_apricorn", "min_amount": 1, "max_amount": 2, "weight": 18},
+      {"item": "cobblemon:exp_candy_xs", "min_amount": 1, "max_amount": 2, "weight": 22},
+      {"item": "cobblemon:hp_up", "min_amount": 1, "max_amount": 1, "weight": 6},
+      {"item": "cobblemon:protein", "min_amount": 1, "max_amount": 1, "weight": 6},
+      {"item": "cobblemon:iron", "min_amount": 1, "max_amount": 1, "weight": 6}
+    ],
+    "floor_cleared": [
+      {"item": "cobbletowers:cobble_dollar", "min_amount": 20, "max_amount": 40, "weight": 60},
+      {"item": "cobblemon:exp_candy_s", "min_amount": 1, "max_amount": 2, "weight": 40},
+      {"item": "cobblemon:exp_candy_m", "min_amount": 1, "max_amount": 1, "weight": 15},
+      {"item": "cobblemon:hyper_potion", "min_amount": 1, "max_amount": 1, "weight": 25},
+      {"item": "cobblemon:revive", "min_amount": 1, "max_amount": 1, "weight": 20},
+      {"item": "minecraft:emerald", "min_amount": 1, "max_amount": 3, "weight": 25},
+      {"item": "cobblemon:pp_up", "min_amount": 1, "max_amount": 1, "weight": 4},
+      {"item": "cobblemon:nest_ball", "min_amount": 1, "max_amount": 2, "weight": 20},
+      {"item": "cobblemon:heal_ball", "min_amount": 1, "max_amount": 2, "weight": 12},
+      {"item": "cobblemon:hp_up", "min_amount": 1, "max_amount": 1, "weight": 7},
+      {"item": "cobblemon:protein", "min_amount": 1, "max_amount": 1, "weight": 7},
+      {"item": "cobblemon:iron", "min_amount": 1, "max_amount": 1, "weight": 7},
+      {"item": "cobblemon:calcium", "min_amount": 1, "max_amount": 1, "weight": 7},
+      {"item": "cobblemon:zinc", "min_amount": 1, "max_amount": 1, "weight": 7},
+      {"item": "cobblemon:carbos", "min_amount": 1, "max_amount": 1, "weight": 7},
+      {"item": "cobblemon:leaf_stone", "min_amount": 1, "max_amount": 1, "weight": 6},
+      {"item": "cobblemon-cards:booster_pack_grass", "min_amount": 1, "max_amount": 1, "weight": 14}
+    ],
+    "boss_defeated": [
+      {"item": "cobbleraids:raid_points", "min_amount": 5, "max_amount": 10, "weight": 60},
+      {"item": "cobblemon:exp_candy_m", "min_amount": 1, "max_amount": 2, "weight": 35},
+      {"item": "cobblemon:exp_candy_l", "min_amount": 1, "max_amount": 1, "weight": 15},
+      {"item": "cobblemon:revive", "min_amount": 1, "max_amount": 2, "weight": 25},
+      {"item": "minecraft:diamond", "min_amount": 1, "max_amount": 2, "weight": 30},
+      {"item": "cobblemon:nest_ball", "min_amount": 2, "max_amount": 3, "weight": 20},
+      {"item": "cobblemon:hp_up", "min_amount": 1, "max_amount": 1, "weight": 9},
+      {"item": "cobblemon:protein", "min_amount": 1, "max_amount": 1, "weight": 9},
+      {"item": "cobblemon:iron", "min_amount": 1, "max_amount": 1, "weight": 9},
+      {"item": "cobblemon:calcium", "min_amount": 1, "max_amount": 1, "weight": 9},
+      {"item": "cobblemon:zinc", "min_amount": 1, "max_amount": 1, "weight": 9},
+      {"item": "cobblemon:carbos", "min_amount": 1, "max_amount": 1, "weight": 9},
+      {"item": "cobblemon:leaf_stone", "min_amount": 1, "max_amount": 1, "weight": 14},
+      {"item": "cobblemon:luminous_moss", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon:sweet_apple", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon:tart_apple", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon-cards:booster_pack_grass", "min_amount": 1, "max_amount": 1, "weight": 14},
+      {"item": "cobblemon-cards:booster_pack_bug", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon-cards:booster_pack_poison", "min_amount": 1, "max_amount": 1, "weight": 8}
+    ]
+  },
+  "milestones": {
+    "boss": {
+      "guaranteed": [
+        {"item": "cobblemon:exp_candy_xl", "amount": 1},
+        {"item": "cobblemon-cards:booster_pack_grass", "amount": 1},
+        {"item": "cobbleraids:raid_points", "amount": 25}
+      ],
+      "bonus_rolls": 2,
+      "bonus_pool": [
+        {"item": "cobblemon:exp_candy_l", "min_amount": 1, "max_amount": 2, "weight": 30},
+        {"item": "cobblemon:revive", "min_amount": 1, "max_amount": 2, "weight": 25},
+        {"item": "minecraft:diamond", "min_amount": 2, "max_amount": 4, "weight": 25},
+        {"item": "cobblemon:leaf_stone", "min_amount": 1, "max_amount": 1, "weight": 14},
+        {"item": "cobblemon:luminous_moss", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:sweet_apple", "min_amount": 1, "max_amount": 1, "weight": 8}
+      ]
+    },
+    "champion": {
+      "guaranteed": [
+        {"item": "cobblemon:exp_candy_xl", "amount": 1},
+        {"item": "cobblemon-cards:god_pack_ticket", "amount": 1},
+        {"item": "cobbleraids:raid_points", "amount": 75}
+      ],
+      "bonus_rolls": 3,
+      "bonus_pool": [
+        {"item": "cobblemon:exp_candy_l", "min_amount": 2, "max_amount": 3, "weight": 30},
+        {"item": "cobblemon:max_revive", "min_amount": 1, "max_amount": 1, "weight": 15},
+        {"item": "minecraft:diamond", "min_amount": 3, "max_amount": 6, "weight": 25},
+        {"item": "minecraft:netherite_scrap", "min_amount": 1, "max_amount": 1, "weight": 10},
+        {"item": "minecraft:golden_apple", "min_amount": 1, "max_amount": 2, "weight": 20},
+        {"item": "minecraft:enchanted_golden_apple", "min_amount": 1, "max_amount": 1, "weight": 3},
+        {"item": "cobblemon:pp_up", "min_amount": 1, "max_amount": 2, "weight": 10},
+        {"item": "cobblemon:hp_up", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:protein", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:iron", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:calcium", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:zinc", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:carbos", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:leaf_stone", "min_amount": 1, "max_amount": 1, "weight": 14},
+        {"item": "cobblemon:luminous_moss", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:sweet_apple", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:tart_apple", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:syrupy_apple", "min_amount": 1, "max_amount": 1, "weight": 6},
+        {"item": "cobblemon:rich_mulch", "min_amount": 1, "max_amount": 2, "weight": 8}
+      ]
+    }
+  }
+}

@@ -620,6 +620,11 @@ public final class TowerEncounters {
                         .flatMap(run -> TowerDefinitionRegistry.content().floorAt(run.towerId(), run.floorIndex()))
                         .ifPresent(floor -> earn(server, binding.runId(),
                                 LedgerEntry.floorCleared(binding.floorIndex(), floor.id(), now)));
+                // A milestone floor also pays its milestone reward (P21), banked with everything else.
+                TowerRuns.get(binding.runId())
+                        .flatMap(run -> TowerDefinitionRegistry.content().milestoneAt(run.towerId(), binding.floorIndex()))
+                        .ifPresent(milestone -> earn(server, binding.runId(),
+                                LedgerEntry.milestoneCleared(binding.floorIndex(), milestone.id(), now)));
                 // Said plainly, because completing a floor is the thing an operator reading a log is
                 // looking for. It moved here when the boss became the end of a floor, and stopped
                 // being logged at all for a run -- which the live test noticed before anyone else.
@@ -670,7 +675,8 @@ public final class TowerEncounters {
     }
 
     /** Appends to the unclaimed pool. No worth is decided here; that is P9's. */
-    private static void earn(MinecraftServer server, UUID runId, LedgerEntry entry) {
+    /** Adds an entry to a run's unclaimed pool. Public for the operator {@code runs earn} command, a test seam. */
+    public static void earn(MinecraftServer server, UUID runId, LedgerEntry entry) {
         TowerRuns.get(runId).ifPresent(run -> TowerRuns.save(server, run.withEarned(entry, entry.at()), false));
     }
 
@@ -693,6 +699,16 @@ public final class TowerEncounters {
         recallParties(server, runId);
     }
 
+    /** Ends whatever Cobblemon battle each of a run's online participants is still in (see {@code abandon}). */
+    private static void endParticipantBattles(MinecraftServer server, UUID runId) {
+        TowerRuns.get(runId).ifPresent(run -> {
+            for (PersistedParticipant participant : run.participants()) {
+                ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+                if (player != null) CobblemonBattleAdapter.endBattleOf(player);
+            }
+        });
+    }
+
     /**
      * Puts the party's own Pokemon back in their balls before the cell is handed back.
      *
@@ -707,15 +723,6 @@ public final class TowerEncounters {
      * {@code execute ... run say}, which returns nothing over RCON, so it had been reporting an
      * empty cell whatever was in it.
      */
-    private static void endParticipantBattles(MinecraftServer server, UUID runId) {
-        TowerRuns.get(runId).ifPresent(run -> {
-            for (PersistedParticipant participant : run.participants()) {
-                ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
-                if (player != null) CobblemonBattleAdapter.endBattleOf(player);
-            }
-        });
-    }
-
     private static void recallParties(MinecraftServer server, UUID runId) {
         TowerRuns.get(runId).ifPresent(run -> {
             for (PersistedParticipant participant : run.participants()) {

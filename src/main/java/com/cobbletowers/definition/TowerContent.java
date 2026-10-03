@@ -301,6 +301,12 @@ public record TowerContent(
     }
 
     /** The milestone landing on this floor of this tower, if there is one. */
+    /** Whether a milestone is a boss or a champion, by its id. Empty for an id no tower names. */
+    public Optional<com.cobbletowers.api.tower.MilestoneKind> milestoneKindOf(ResourceLocation milestoneId) {
+        MilestoneDefinition milestone = milestones().get(milestoneId);
+        return milestone == null ? Optional.empty() : Optional.of(milestone.kind());
+    }
+
     public Optional<MilestoneDefinition> milestoneAt(ResourceLocation towerId, int floorIndex) {
         TowerDefinition tower = towers.get(towerId);
         if (tower == null) return Optional.empty();

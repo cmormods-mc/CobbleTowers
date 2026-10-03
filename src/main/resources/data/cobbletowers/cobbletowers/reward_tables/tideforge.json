@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "revision": 2,
-  "display_name": "Neutral Tower Rewards",
+  "display_name": "Tideforge Tower Rewards",
   "growth_percent_per_floor": 8,
   "tiers": {
     "opponent_defeated": [
@@ -12,8 +12,9 @@
       {"item": "cobblemon:pecha_berry", "min_amount": 1, "max_amount": 3, "weight": 20},
       {"item": "cobblemon:potion", "min_amount": 1, "max_amount": 2, "weight": 45},
       {"item": "cobblemon:super_potion", "min_amount": 1, "max_amount": 1, "weight": 20},
-      {"item": "cobblemon:poke_ball", "min_amount": 2, "max_amount": 4, "weight": 40},
-      {"item": "cobblemon:great_ball", "min_amount": 2, "max_amount": 4, "weight": 25},
+      {"item": "cobblemon:dive_ball", "min_amount": 2, "max_amount": 4, "weight": 30},
+      {"item": "cobblemon:net_ball", "min_amount": 2, "max_amount": 4, "weight": 25},
+      {"item": "cobblemon:great_ball", "min_amount": 2, "max_amount": 4, "weight": 20},
       {"item": "cobblemon:antidote", "min_amount": 1, "max_amount": 1, "weight": 8},
       {"item": "cobblemon:paralyze_heal", "min_amount": 1, "max_amount": 1, "weight": 8},
       {"item": "cobblemon:awakening", "min_amount": 1, "max_amount": 1, "weight": 8},
@@ -32,14 +33,16 @@
       {"item": "cobblemon:revive", "min_amount": 1, "max_amount": 1, "weight": 20},
       {"item": "minecraft:emerald", "min_amount": 1, "max_amount": 3, "weight": 25},
       {"item": "cobblemon:pp_up", "min_amount": 1, "max_amount": 1, "weight": 4},
-      {"item": "cobblemon:ultra_ball", "min_amount": 1, "max_amount": 2, "weight": 20},
+      {"item": "cobblemon:dive_ball", "min_amount": 1, "max_amount": 2, "weight": 20},
+      {"item": "cobblemon:quick_ball", "min_amount": 1, "max_amount": 2, "weight": 12},
       {"item": "cobblemon:hp_up", "min_amount": 1, "max_amount": 1, "weight": 3},
       {"item": "cobblemon:protein", "min_amount": 1, "max_amount": 1, "weight": 3},
       {"item": "cobblemon:iron", "min_amount": 1, "max_amount": 1, "weight": 3},
       {"item": "cobblemon:calcium", "min_amount": 1, "max_amount": 1, "weight": 3},
       {"item": "cobblemon:zinc", "min_amount": 1, "max_amount": 1, "weight": 3},
       {"item": "cobblemon:carbos", "min_amount": 1, "max_amount": 1, "weight": 3},
-      {"item": "cobblemon-cards:booster_pack", "min_amount": 1, "max_amount": 1, "weight": 12}
+      {"item": "cobblemon:water_stone", "min_amount": 1, "max_amount": 1, "weight": 6},
+      {"item": "cobblemon-cards:booster_pack_water", "min_amount": 1, "max_amount": 1, "weight": 14}
     ],
     "boss_defeated": [
       {"item": "cobbleraids:raid_points", "min_amount": 5, "max_amount": 10, "weight": 60},
@@ -47,21 +50,27 @@
       {"item": "cobblemon:exp_candy_l", "min_amount": 1, "max_amount": 1, "weight": 15},
       {"item": "cobblemon:revive", "min_amount": 1, "max_amount": 2, "weight": 25},
       {"item": "minecraft:diamond", "min_amount": 1, "max_amount": 2, "weight": 30},
-      {"item": "cobblemon:ultra_ball", "min_amount": 2, "max_amount": 3, "weight": 20},
+      {"item": "cobblemon:dive_ball", "min_amount": 2, "max_amount": 3, "weight": 20},
       {"item": "cobblemon:hp_up", "min_amount": 1, "max_amount": 1, "weight": 5},
       {"item": "cobblemon:protein", "min_amount": 1, "max_amount": 1, "weight": 5},
       {"item": "cobblemon:iron", "min_amount": 1, "max_amount": 1, "weight": 5},
       {"item": "cobblemon:calcium", "min_amount": 1, "max_amount": 1, "weight": 5},
       {"item": "cobblemon:zinc", "min_amount": 1, "max_amount": 1, "weight": 5},
       {"item": "cobblemon:carbos", "min_amount": 1, "max_amount": 1, "weight": 5},
-      {"item": "cobblemon-cards:booster_pack", "min_amount": 1, "max_amount": 1, "weight": 18}
+      {"item": "cobblemon:water_stone", "min_amount": 1, "max_amount": 1, "weight": 14},
+      {"item": "cobblemon:deep_sea_scale", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon:deep_sea_tooth", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon:metal_coat", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon-cards:booster_pack_water", "min_amount": 1, "max_amount": 1, "weight": 14},
+      {"item": "cobblemon-cards:booster_pack_steel", "min_amount": 1, "max_amount": 1, "weight": 8},
+      {"item": "cobblemon-cards:booster_pack_electric", "min_amount": 1, "max_amount": 1, "weight": 8}
     ]
   },
   "milestones": {
     "boss": {
       "guaranteed": [
         {"item": "cobblemon:exp_candy_xl", "amount": 1},
-        {"item": "cobblemon-cards:booster_pack", "amount": 1},
+        {"item": "cobblemon-cards:booster_pack_water", "amount": 1},
         {"item": "cobbleraids:raid_points", "amount": 25}
       ],
       "bonus_rolls": 2,
@@ -69,9 +78,9 @@
         {"item": "cobblemon:exp_candy_l", "min_amount": 1, "max_amount": 2, "weight": 30},
         {"item": "cobblemon:revive", "min_amount": 1, "max_amount": 2, "weight": 25},
         {"item": "minecraft:diamond", "min_amount": 2, "max_amount": 4, "weight": 25},
-        {"item": "cobblemon:ultra_ball", "min_amount": 3, "max_amount": 5, "weight": 20},
-        {"item": "minecraft:experience_bottle", "min_amount": 4, "max_amount": 8, "weight": 20},
-        {"item": "cobblemon:hyper_potion", "min_amount": 2, "max_amount": 3, "weight": 20}
+        {"item": "cobblemon:water_stone", "min_amount": 1, "max_amount": 1, "weight": 14},
+        {"item": "cobblemon:deep_sea_scale", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:deep_sea_tooth", "min_amount": 1, "max_amount": 1, "weight": 8}
       ]
     },
     "champion": {
@@ -94,7 +103,13 @@
         {"item": "cobblemon:iron", "min_amount": 1, "max_amount": 1, "weight": 8},
         {"item": "cobblemon:calcium", "min_amount": 1, "max_amount": 1, "weight": 8},
         {"item": "cobblemon:zinc", "min_amount": 1, "max_amount": 1, "weight": 8},
-        {"item": "cobblemon:carbos", "min_amount": 1, "max_amount": 1, "weight": 8}
+        {"item": "cobblemon:carbos", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:water_stone", "min_amount": 1, "max_amount": 1, "weight": 14},
+        {"item": "cobblemon:deep_sea_scale", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:deep_sea_tooth", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:metal_coat", "min_amount": 1, "max_amount": 1, "weight": 8},
+        {"item": "cobblemon:mystic_water", "min_amount": 1, "max_amount": 1, "weight": 6},
+        {"item": "cobblemon:magnet", "min_amount": 1, "max_amount": 1, "weight": 6}
       ]
     }
   }

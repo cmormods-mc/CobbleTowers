@@ -1,6 +1,7 @@
 package com.cobbletowers.reward;
 
 import com.cobbletowers.api.reward.RewardKind;
+import com.cobbletowers.api.tower.MilestoneKind;
 import com.cobbletowers.definition.RewardTableDefinition;
 import com.cobbletowers.modifier.ModifierEffects;
 import com.cobbletowers.persistence.LedgerEntry;
@@ -23,7 +24,18 @@ public final class RewardValuation {
     private RewardValuation() {}
 
     /** One item, at the amount it was actually worth once growth and the run's modifiers applied. */
-    public record Grant(ResourceLocation item, int amount) {}
+    /**
+     * @param perPlayer true for a milestone's guaranteed item: every participant receives the whole amount,
+     *                  instead of the amount being split between them
+     */
+    public record Grant(ResourceLocation item, int amount, boolean perPlayer) {
+        public Grant(ResourceLocation item, int amount) {
+            this(item, amount, false);
+        }
+    }
+
+    /** Where bonus rolls draw their ordinals, disjoint from the ledger-position ordinals below it. */
+    static final int BONUS_ORDINAL_BASE = 100_000;
 
     /**
      * What {@code priced} is worth from {@code table}, scaled by floor depth and by {@code effects}'s
@@ -39,11 +51,27 @@ public final class RewardValuation {
      */
     public static List<Grant> value(long runSeed, List<LedgerEntry> priced, RewardTableDefinition table,
                                     ModifierEffects effects) {
+        return value(runSeed, priced, table, effects, id -> Optional.empty());
+    }
+
+    /**
+     * As above, also pricing a {@code MILESTONE_CLEARED} entry from the table's milestone section.
+     *
+     * @param milestoneKinds resolves a milestone's id to whether it is a boss or a champion; kept as a
+     *                       parameter so this stays pure
+     */
+    public static List<Grant> value(long runSeed, List<LedgerEntry> priced, RewardTableDefinition table,
+                                    ModifierEffects effects,
+                                    java.util.function.Function<ResourceLocation, Optional<MilestoneKind>> milestoneKinds) {
         List<Grant> grants = new ArrayList<>();
         int n = 0;
         for (LedgerEntry entry : priced) {
-            Optional<RewardKind> kind = toRewardKind(entry.kind());
             n++;
+            if (entry.kind() == LedgerEntry.Kind.MILESTONE_CLEARED) {
+                addMilestone(grants, runSeed, entry, n, table, effects, milestoneKinds);
+                continue;
+            }
+            Optional<RewardKind> kind = toRewardKind(entry.kind());
             if (kind.isEmpty()) continue;
             List<RewardTableDefinition.Entry> pool = table.entriesFor(kind.get());
             if (pool.isEmpty()) continue;
@@ -57,8 +85,32 @@ public final class RewardValuation {
         return List.copyOf(grants);
     }
 
+    /** The guaranteed items, each to everybody in full, then the bonus rolls valued like any other grant. */
+    private static void addMilestone(List<Grant> grants, long runSeed, LedgerEntry entry, int n,
+                                     RewardTableDefinition table, ModifierEffects effects,
+                                     java.util.function.Function<ResourceLocation, Optional<MilestoneKind>> milestoneKinds) {
+        Optional<RewardTableDefinition.MilestoneReward> reward =
+                milestoneKinds.apply(entry.what()).flatMap(table::milestoneReward);
+        if (reward.isEmpty()) return;
+
+        for (RewardTableDefinition.Guaranteed fixed : reward.get().guaranteed()) {
+            // Not grown and not scaled: "a guaranteed XL candy" must mean exactly that many.
+            grants.add(new Grant(fixed.item(), fixed.amount(), true));
+        }
+        for (int roll = 0; roll < reward.get().bonusRolls(); roll++) {
+            int ordinal = BONUS_ORDINAL_BASE + n * 16 + roll;
+            RewardTableDefinition.Entry rolled = RewardDraw.pickItem(runSeed, entry.floorIndex(), ordinal,
+                    reward.get().bonusPool());
+            int amount = RewardDraw.rollAmount(runSeed, entry.floorIndex(), ordinal, rolled.minAmount(), rolled.maxAmount());
+            int grown = amount + amount * table.growthPercentPerFloor() * entry.floorIndex() / 100;
+            int worth = effects.applyReward(grown);
+            if (worth > 0) grants.add(new Grant(rolled.item(), worth));
+        }
+    }
+
     private static Optional<RewardKind> toRewardKind(LedgerEntry.Kind kind) {
         return switch (kind) {
+            case MILESTONE_CLEARED -> Optional.empty();
             case OPPONENT_DEFEATED -> Optional.of(RewardKind.OPPONENT_DEFEATED);
             case BOSS_DEFEATED -> Optional.of(RewardKind.BOSS_DEFEATED);
             case FLOOR_CLEARED -> Optional.of(RewardKind.FLOOR_CLEARED);

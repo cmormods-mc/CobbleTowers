@@ -53,6 +53,8 @@ public final class CobbleTowers implements ModInitializer {
         });
         // Loading and recovery are separate steps, and separately guarded: a failure to park an
         // interrupted run must not also cost the index of the runs that loaded fine.
+        // P21: say, once, which reward items cannot be given, before a player earns one.
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> com.cobbletowers.reward.RewardCatalogCheck.report());
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             long now = System.currentTimeMillis();
             try {

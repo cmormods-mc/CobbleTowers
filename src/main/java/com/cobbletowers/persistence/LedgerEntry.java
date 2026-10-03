@@ -23,6 +23,8 @@ public record LedgerEntry(Kind kind, int floorIndex, ResourceLocation what, UUID
         /** The floor's CobbleRaids boss. Separate from an ordinary opponent so P9 can weigh it. */
         BOSS_DEFEATED,
         FLOOR_CLEARED,
+        /** A milestone floor was cleared (P21); {@code what} is the milestone's id. Priced from the table's milestone section. */
+        MILESTONE_CLEARED,
         /**
          * The run was lost, so everything above it is void.
          *
@@ -49,6 +51,11 @@ public record LedgerEntry(Kind kind, int floorIndex, ResourceLocation what, UUID
 
     public static LedgerEntry opponentDefeated(int floorIndex, ResourceLocation species, UUID player, long at) {
         return new LedgerEntry(Kind.OPPONENT_DEFEATED, floorIndex, species, Objects.requireNonNull(player), at);
+    }
+
+    /** Clearing a milestone floor belongs to the run, so it carries no player. */
+    public static LedgerEntry milestoneCleared(int floorIndex, ResourceLocation milestoneId, long at) {
+        return new LedgerEntry(Kind.MILESTONE_CLEARED, floorIndex, milestoneId, null, at);
     }
 
     /** A cleared floor belongs to the run, so it carries no player. */

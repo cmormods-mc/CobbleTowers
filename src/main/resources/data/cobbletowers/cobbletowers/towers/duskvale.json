@@ -3,7 +3,7 @@
   "revision": 1,
   "display_name": "Duskvale Tower",
   "ruleset": "cobbletowers:standard",
-  "reward_table": "cobbletowers:neutral",
+  "reward_table": "cobbletowers:duskvale",
   "regional_theme": "cobbletowers:duskvale",
   "floors": [
     "cobbletowers:duskvale/floor_01",

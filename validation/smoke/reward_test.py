@@ -186,11 +186,18 @@ def main() -> None:
             if banked_line:
                 print(f"  granted: {banked_line.group(1)}")
 
+            # What was granted is whatever the table rolled (P21 replaced the three vanilla items with a Cobblemon
+            # catalog), so read it from the banking line rather than hard-coding a list. Currencies are credited,
+            # not given, and an item from a mod that is not installed is skipped, so neither can be in the inventory.
             inventory = rcon.command(f"data get entity {BOT} Inventory")
-            granted_something = any(item in inventory for item in
-                                    ("minecraft:cobbled_deepslate", "minecraft:diamond", "minecraft:emerald"))
-            results.append(Result("the grant actually reached the player's inventory",
-                                  granted_something, inventory.strip()[:300]))
+            granted_ids = set(re.findall(r"item=([a-z0-9_.\-]+:[a-z0-9_/.\-]+)", banked_line.group(1))) if banked_line else set()
+            not_stacks = {"cobbletowers:cobble_dollar", "cobbleraids:raid_points"}
+            giveable = {item for item in granted_ids if item not in not_stacks and not item.startswith("cobblemon-cards:")}
+            reached = {item for item in giveable if item in inventory}
+            results.append(Result("every item that could be given actually reached the player's inventory",
+                                  reached == giveable and (giveable or granted_ids),
+                                  f"granted {sorted(granted_ids)}; missing {sorted(giveable - reached)}; "
+                                  + inventory.strip()[:200]))
 
             # === Run B: the state machine at a milestone and at the final floor =================
             #

@@ -193,14 +193,52 @@ def check_modifiers(content: dict, problems: list[str]) -> None:
                     stack.append(nxt)
 
 
+def load_known_items() -> dict:
+    """Item ids for the namespaces whose mods we can read, for catching a typo offline (P21)."""
+    path = Path(__file__).with_name("known_items.json")
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {namespace: set(ids) for namespace, ids in data.items() if not namespace.startswith("_")}
+
+
+# Credited, not given: never a registered item, so never checked against one.
+RESERVED_CURRENCIES = ("cobbletowers:cobble_dollar", "cobbleraids:raid_points")
+
+
+def check_item_id(table_id: str, where: str, item: str, known: dict, problems: list[str]) -> None:
+    if item in RESERVED_CURRENCIES:
+        return
+    if ":" not in item:
+        problems.append(f"{table_id} {where} names '{item}', which is not a namespaced id")
+        return
+    namespace, path = item.split(":", 1)
+    if namespace in known and path not in known[namespace]:
+        problems.append(f"{table_id} {where} names {item}, which is not a {namespace} item;"
+                        " a player would lose that drop (a typo?)")
+
+
+def check_entry(table_id: str, where: str, entry: dict, known: dict, problems: list[str]) -> None:
+    if "item" not in entry:
+        problems.append(f"{table_id} {where} has an entry with no item")
+        return
+    check_item_id(table_id, where, entry["item"], known, problems)
+    if entry.get("weight", 100) < 1:
+        problems.append(f"{table_id} {where} has an entry with weight {entry.get('weight')}; weights must be >= 1")
+    low, high = entry.get("min_amount", 1), entry.get("max_amount", 1)
+    if not 1 <= low <= high:
+        problems.append(f"{table_id} {where} has min_amount/max_amount {low}/{high}; must be >= 1 and ordered")
+
+
 def check_reward_tables(content: dict, problems: list[str]) -> None:
-    """Structural checks only. Whether an item id actually exists is not checked, here or on the Java
-    side: vanilla's item registry is not bootstrapped in this project's plain-JVM unit tests, the same
-    reasoning that already keeps this script (and BossPoolDefinition/EncounterPoolDefinition) from
-    checking CobbleRaids or Cobblemon ids -- an unknown item fails when it is actually granted,
-    reported as a technical fault.
+    """Structure, plus -- for the namespaces known_items.json covers -- that every item id really exists.
+
+    Items from any other namespace (vanilla, a mod we hold no list for) are only checked at runtime, by the
+    server's own RewardCatalogCheck at startup.
     """
     tier_keys = ("opponent_defeated", "boss_defeated", "floor_cleared")
+    milestone_keys = ("boss", "champion")
+    known = load_known_items()
     for table_id, table in content["reward_tables"].items():
         for field in ("schema_version", "display_name"):
             if field not in table:
@@ -211,15 +249,29 @@ def check_reward_tables(content: dict, problems: list[str]) -> None:
                 problems.append(f"{table_id} has an unknown tier '{key}'; must be one of {tier_keys}")
         for key, entries in tiers.items():
             for entry in entries:
+                check_entry(table_id, f"tier '{key}'", entry, known, problems)
+
+        for key, milestone in table.get("milestones", {}).items():
+            if key not in milestone_keys:
+                problems.append(f"{table_id} has an unknown milestone '{key}'; must be one of {milestone_keys}")
+                continue
+            guaranteed = milestone.get("guaranteed", [])
+            for entry in guaranteed:
                 if "item" not in entry:
-                    problems.append(f"{table_id} tier '{key}' has an entry with no item")
-                if entry.get("weight", 100) < 1:
-                    problems.append(f"{table_id} tier '{key}' has an entry with weight {entry.get('weight')};"
-                                    " weights must be >= 1")
-                low, high = entry.get("min_amount", 1), entry.get("max_amount", 1)
-                if not 1 <= low <= high:
-                    problems.append(f"{table_id} tier '{key}' has min_amount/max_amount {low}/{high};"
-                                    " must be >= 1 and ordered")
+                    problems.append(f"{table_id} milestone '{key}' has a guaranteed entry with no item")
+                    continue
+                check_item_id(table_id, f"milestone '{key}' guaranteed", entry["item"], known, problems)
+                if entry.get("amount", 1) < 1:
+                    problems.append(f"{table_id} milestone '{key}' guarantees {entry['item']} x{entry.get('amount')};"
+                                    " amounts must be >= 1")
+            pool = milestone.get("bonus_pool", [])
+            for entry in pool:
+                check_entry(table_id, f"milestone '{key}' bonus_pool", entry, known, problems)
+            rolls = milestone.get("bonus_rolls", 0)
+            if rolls < 0 or (rolls > 0 and not pool):
+                problems.append(f"{table_id} milestone '{key}' has bonus_rolls {rolls} and {len(pool)} bonus_pool entries")
+            if not guaranteed and rolls == 0:
+                problems.append(f"{table_id} milestone '{key}' pays nothing: no guaranteed items and no bonus_rolls")
 
 
 def check_vendor_services(content: dict, problems: list[str]) -> None:

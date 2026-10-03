@@ -1,7 +1,9 @@
 package com.cobbletowers.reward;
 
 import com.cobbletowers.TowerLog;
+import com.cobbleraids.api.points.CobbleRaidsPoints;
 import com.cobbletowers.economy.CobbleDollars;
+import com.cobbletowers.economy.RaidPointsCurrency;
 import com.cobbletowers.network.RewardRevealPayload;
 import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.persistence.PendingTowerReward;
@@ -49,6 +51,10 @@ public final class RewardDelivery {
                 TowerWalletStore.get(server).credit(player.getUUID(), reward.amount());
                 delivered.add(reward);
                 creditedWallet = true;
+            } else if (reward.item().equals(RaidPointsCurrency.ITEM_ID)) {
+                // CobbleRaids' own currency, credited through its public API (P21).
+                CobbleRaidsPoints.award(server, player.getUUID(), reward.amount());
+                delivered.add(reward);
             } else if (give(player, reward.item(), reward.amount())) {
                 delivered.add(reward);
             }

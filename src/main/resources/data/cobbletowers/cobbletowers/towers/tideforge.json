@@ -3,7 +3,7 @@
   "revision": 1,
   "display_name": "Tideforge Tower",
   "ruleset": "cobbletowers:standard",
-  "reward_table": "cobbletowers:neutral",
+  "reward_table": "cobbletowers:tideforge",
   "regional_theme": "cobbletowers:tideforge",
   "floors": [
     "cobbletowers:tideforge/floor_01",
