@@ -68,7 +68,8 @@ public final class VendorPurchaseService {
         int cap = service.get().maxPurchasesPerRun();
         if (cap > 0 && run.purchasesOf(serviceId) >= cap) return Result.SOLD_OUT;
 
-        if (!TowerWalletStore.get(server).debit(payingPlayerId, service.get().priceCobbleDollars())) {
+        if (!TowerWalletStore.get(server).debit(payingPlayerId,
+                com.cobbletowers.armor.ArmorBonusEffects.vendorPrice(payingPlayerId, service.get().priceCobbleDollars()))) {
             return Result.INSUFFICIENT_FUNDS;
         }
         // Flushed immediately: the same "the money has already moved" reasoning P9's own grant-then-

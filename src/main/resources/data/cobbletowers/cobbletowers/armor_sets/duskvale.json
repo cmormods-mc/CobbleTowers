@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Duskbound Guard",
+  "pieces": {
+    "head": "cobbletowers:duskvale_helmet",
+    "chest": "cobbletowers:duskvale_chestplate",
+    "legs": "cobbletowers:duskvale_leggings",
+    "feet": "cobbletowers:duskvale_boots"
+  },
+  "bonuses": [
+    {
+      "pieces": 2,
+      "kind": "player",
+      "attribute": "minecraft:generic.luck",
+      "operation": "add_value",
+      "amount": 1.0
+    },
+    {
+      "pieces": 2,
+      "kind": "cobblemon",
+      "modifier": "shiny_percent",
+      "percent": 10
+    },
+    {
+      "pieces": 4,
+      "kind": "battle",
+      "effects": [
+        {
+          "op": "damage",
+          "side": "self",
+          "type": "Dark",
+          "percent": 120
+        },
+        {
+          "op": "resist",
+          "side": "self",
+          "type": "any",
+          "percent": 90
+        }
+      ]
+    },
+    {
+      "pieces": 4,
+      "kind": "tower",
+      "modifier": "raid_points_percent",
+      "percent": 10
+    }
+  ]
+}

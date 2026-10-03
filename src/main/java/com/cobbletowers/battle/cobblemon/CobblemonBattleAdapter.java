@@ -105,7 +105,8 @@ public final class CobblemonBattleAdapter {
         if (opponent == null) return Optional.empty();
 
         // Armed only around the start itself: the effects ride this battle's >start and no other's.
-        com.cobbletowers.showdown.TowerBattleFx.armFloorBattle(player.getUUID());
+        com.cobbletowers.showdown.TowerBattleFx.armFloorBattle(player.getUUID(),
+                com.cobbletowers.armor.ArmorBonusEffects.battleEffects(player.getUUID()));
         BattleStartResult result;
         try {
             result = startPve(player, opponent);

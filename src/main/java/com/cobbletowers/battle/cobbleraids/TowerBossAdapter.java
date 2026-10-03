@@ -122,7 +122,7 @@ public final class TowerBossAdapter {
         List<java.util.UUID> playerIds = players.stream().map(ServerPlayer::getUUID).toList();
         StartResult result;
         // Armed only around the start: the effects ride this boss battle's >start and no other's.
-        com.cobbletowers.showdown.TowerBattleFx.armBossBattle(playerIds);
+        com.cobbletowers.showdown.TowerBattleFx.armBossBattle(playerIds, com.cobbletowers.armor.ArmorBonusEffects::battleEffects);
         try {
             result = CobbleRaidsEncounters.start(request, new FloorListener(server));
         } catch (RuntimeException ex) {

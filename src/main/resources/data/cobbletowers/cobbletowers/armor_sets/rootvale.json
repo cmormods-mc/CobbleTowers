@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Rootwoven Mail",
+  "pieces": {
+    "head": "cobbletowers:rootvale_helmet",
+    "chest": "cobbletowers:rootvale_chestplate",
+    "legs": "cobbletowers:rootvale_leggings",
+    "feet": "cobbletowers:rootvale_boots"
+  },
+  "bonuses": [
+    {
+      "pieces": 2,
+      "kind": "player",
+      "attribute": "minecraft:generic.max_health",
+      "operation": "add_value",
+      "amount": 2.0
+    },
+    {
+      "pieces": 2,
+      "kind": "cobblemon",
+      "modifier": "xp_percent",
+      "percent": 10
+    },
+    {
+      "pieces": 4,
+      "kind": "battle",
+      "effects": [
+        {
+          "op": "terrain",
+          "side": "both",
+          "id": "grassyterrain",
+          "duration": 5
+        },
+        {
+          "op": "damage",
+          "side": "self",
+          "type": "Grass",
+          "percent": 120
+        }
+      ]
+    },
+    {
+      "pieces": 4,
+      "kind": "tower",
+      "modifier": "vendor_discount_percent",
+      "percent": 10
+    }
+  ]
+}

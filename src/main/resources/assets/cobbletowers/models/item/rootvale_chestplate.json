@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "cobbletowers:item/rootvale_chestplate"
+  }
+}

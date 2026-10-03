@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Challenger's Regalia",
+  "pieces": {
+    "head": "cobbletowers:challenger_helmet",
+    "chest": "cobbletowers:challenger_chestplate",
+    "legs": "cobbletowers:challenger_leggings",
+    "feet": "cobbletowers:challenger_boots"
+  },
+  "bonuses": [
+    {
+      "pieces": 2,
+      "kind": "player",
+      "attribute": "minecraft:generic.movement_speed",
+      "operation": "add_multiplied_base",
+      "amount": 0.05
+    },
+    {
+      "pieces": 2,
+      "kind": "cobblemon",
+      "modifier": "xp_percent",
+      "percent": 5
+    },
+    {
+      "pieces": 4,
+      "kind": "battle",
+      "effects": [
+        {
+          "op": "boost",
+          "side": "self",
+          "stat": "spe",
+          "stages": 1
+        }
+      ]
+    },
+    {
+      "pieces": 4,
+      "kind": "tower",
+      "modifier": "vendor_discount_percent",
+      "percent": 10
+    }
+  ]
+}

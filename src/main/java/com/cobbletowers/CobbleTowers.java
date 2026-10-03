@@ -103,6 +103,11 @@ public final class CobbleTowers implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> com.cobbletowers.lobby.LobbyService.clear());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> com.cobbletowers.intermission.IntermissionService.clear());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new TowerDefinitionRegistry());
+        // Armor sets (P24): the items must exist before any datapack loads; what they do is data.
+        com.cobbletowers.armor.ArmorSetItems.register();
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.armor.ArmorSetRegistry());
+        com.cobbletowers.armor.WornSets.install();
+        com.cobbletowers.armor.ArmorBonusEffects.install();
         // Subscribed once, for the life of the JVM: Cobblemon's battle events are global, and the
         // adapter filters them by battle id rather than re-subscribing per floor.
         TowerEncounters.install();

@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Tideforged Plate",
+  "pieces": {
+    "head": "cobbletowers:tideforge_helmet",
+    "chest": "cobbletowers:tideforge_chestplate",
+    "legs": "cobbletowers:tideforge_leggings",
+    "feet": "cobbletowers:tideforge_boots"
+  },
+  "bonuses": [
+    {
+      "pieces": 2,
+      "kind": "player",
+      "attribute": "minecraft:generic.oxygen_bonus",
+      "operation": "add_value",
+      "amount": 1.0
+    },
+    {
+      "pieces": 2,
+      "kind": "player",
+      "attribute": "minecraft:generic.water_movement_efficiency",
+      "operation": "add_value",
+      "amount": 0.5
+    },
+    {
+      "pieces": 2,
+      "kind": "cobblemon",
+      "modifier": "catch_rate_percent",
+      "percent": 10
+    },
+    {
+      "pieces": 4,
+      "kind": "battle",
+      "effects": [
+        {
+          "op": "weather",
+          "side": "both",
+          "id": "raindance"
+        },
+        {
+          "op": "damage",
+          "side": "self",
+          "type": "Water",
+          "percent": 120
+        }
+      ]
+    },
+    {
+      "pieces": 4,
+      "kind": "tower",
+      "modifier": "raid_points_percent",
+      "percent": 10
+    }
+  ]
+}

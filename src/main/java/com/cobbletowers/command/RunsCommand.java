@@ -292,7 +292,9 @@ public final class RunsCommand {
             int cap = service.maxPurchasesPerRun();
             String remaining = cap <= 0 ? "unlimited" : (cap - run.purchasesOf(service.id())) + "/" + cap + " left";
             source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT, "  %s -- %d CobbleDollars (%s)",
-                    service.displayName(), service.priceCobbleDollars(), remaining)), false);
+                    service.displayName(),
+                    com.cobbletowers.armor.ArmorBonusEffects.vendorPrice(player.getUUID(), service.priceCobbleDollars()),
+                    remaining)), false);
         }
         return TowerDefinitionRegistry.content().vendorCatalog().size();
     }

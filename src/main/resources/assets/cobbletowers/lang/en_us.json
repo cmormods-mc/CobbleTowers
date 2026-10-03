@@ -1,4 +1,20 @@
 {
   "key.cobbletowers.cycle_next": "Follow next teammate",
-  "key.cobbletowers.cycle_previous": "Follow previous teammate"
+  "key.cobbletowers.cycle_previous": "Follow previous teammate",
+  "item.cobbletowers.challenger_helmet": "Challenger's Helm",
+  "item.cobbletowers.challenger_chestplate": "Challenger's Chestplate",
+  "item.cobbletowers.challenger_leggings": "Challenger's Leggings",
+  "item.cobbletowers.challenger_boots": "Challenger's Boots",
+  "item.cobbletowers.tideforge_helmet": "Tideforged Helm",
+  "item.cobbletowers.tideforge_chestplate": "Tideforged Chestplate",
+  "item.cobbletowers.tideforge_leggings": "Tideforged Leggings",
+  "item.cobbletowers.tideforge_boots": "Tideforged Boots",
+  "item.cobbletowers.rootvale_helmet": "Rootwoven Helm",
+  "item.cobbletowers.rootvale_chestplate": "Rootwoven Chestplate",
+  "item.cobbletowers.rootvale_leggings": "Rootwoven Leggings",
+  "item.cobbletowers.rootvale_boots": "Rootwoven Boots",
+  "item.cobbletowers.duskvale_helmet": "Duskbound Helm",
+  "item.cobbletowers.duskvale_chestplate": "Duskbound Chestplate",
+  "item.cobbletowers.duskvale_leggings": "Duskbound Leggings",
+  "item.cobbletowers.duskvale_boots": "Duskbound Boots"
 }

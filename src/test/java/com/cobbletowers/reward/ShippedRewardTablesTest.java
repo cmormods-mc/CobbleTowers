@@ -147,7 +147,7 @@ class ShippedRewardTablesTest {
                 assertTrue(items >= 35 && items <= 120, where + " -- item count out of the modest range (measured 47-78 when written)");
                 assertTrue(raidPoints >= 90 && raidPoints <= 220, where + " -- Raid Points out of range (measured 100-145 when written)");
                 assertTrue(candies >= 2, where + " -- the two guaranteed XL candies should always be there");
-                assertTrue(packs >= 2 && packs <= 8, where + " -- card pack grants out of range (measured 2-5 when written)");
+                assertTrue(packs >= 2 && packs <= 10, where + " -- card pack grants out of range (mean about 3.4, 2-9 over 400 seeds when re-measured in P24)");
                 // Exactly two guaranteed XL candies per participant, no more: one at each milestone.
                 long guaranteedCandies = grants.stream().filter(g -> g.perPlayer() && g.item().getPath().equals("exp_candy_xl")).count();
                 assertEquals(2, guaranteedCandies, where);

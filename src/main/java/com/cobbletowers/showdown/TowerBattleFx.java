@@ -83,7 +83,15 @@ public final class TowerBattleFx {
 
     /** A floor's own battle is p1 (the player) against p2 (the opponent). */
     public static void armFloorBattle(UUID player) {
-        arm(player, List.of("p1"), List.of("p2"));
+        armFloorBattle(player, new JsonArray());
+    }
+
+    /**
+     * The same, with {@code extra} logical operations the caller derived from the live player (a worn armor set,
+     * P24) merged after whatever is queued. The queue is the operator seam; the extras are never stored.
+     */
+    public static void armFloorBattle(UUID player, JsonArray extra) {
+        arm(player, List.of("p1"), List.of("p2"), extra);
     }
 
     /**
@@ -91,15 +99,23 @@ public final class TowerBattleFx {
      * against <b>their</b> side, so one player's bonus never lands on a teammate.
      */
     public static void armBossBattle(List<UUID> players) {
+        armBossBattle(players, player -> new JsonArray());
+    }
+
+    /** As above, with each player's own derived operations ({@code extras}). */
+    public static void armBossBattle(List<UUID> players, java.util.function.Function<UUID, JsonArray> extras) {
         String boss = "p" + (players.size() + 1);
         for (int i = 0; i < players.size(); i++) {
-            arm(players.get(i), List.of("p" + (i + 1)), List.of(boss));
+            arm(players.get(i), List.of("p" + (i + 1)), List.of(boss), extras.apply(players.get(i)));
         }
     }
 
-    private static void arm(UUID player, List<String> self, List<String> foe) {
-        JsonArray logical = QUEUED.get(player);
-        if (logical == null) return;
+    private static void arm(UUID player, List<String> self, List<String> foe, JsonArray extra) {
+        JsonArray logical = new JsonArray();
+        JsonArray queued = QUEUED.get(player);
+        if (queued != null) queued.forEach(logical::add);
+        extra.forEach(logical::add);
+        if (logical.isEmpty()) return;
         JsonArray resolved = resolve(logical, self, foe);
         if (!resolved.isEmpty()) ARMED.put(player, resolved);
     }
@@ -140,7 +156,7 @@ public final class TowerBattleFx {
      * is not an operation we will send. Unknown operations are refused here too: the JavaScript ignores them, but
      * there is no reason to send them.
      */
-    static Optional<JsonObject> validate(JsonElement element) {
+    public static Optional<JsonObject> validate(JsonElement element) {
         if (element == null || !element.isJsonObject()) return Optional.empty();
         JsonObject op = element.getAsJsonObject();
         String name = string(op, "op");

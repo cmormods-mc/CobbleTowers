@@ -175,7 +175,7 @@ public final class TowerNetworking {
         TowerContent content = TowerDefinitionRegistry.content();
         long balance = TowerWalletStore.get(server).balanceOf(player.getUUID());
         List<VendorCatalogPayload.Entry> entries = content.vendorCatalog().stream()
-                .map(service -> catalogEntry(service, run))
+                .map(service -> catalogEntry(service, run, player))
                 .toList();
         // Everyone still in the run, the caller first: the picker defaults to "yourself".
         List<VendorCatalogPayload.Teammate> team = new java.util.ArrayList<>();
@@ -190,10 +190,12 @@ public final class TowerNetworking {
         sendVendorCatalog(player, new VendorCatalogPayload(balance, entries, team, message));
     }
 
-    private static VendorCatalogPayload.Entry catalogEntry(VendorServiceDefinition service, PersistedRun run) {
+    private static VendorCatalogPayload.Entry catalogEntry(VendorServiceDefinition service, PersistedRun run,
+                                                          ServerPlayer player) {
         int cap = service.maxPurchasesPerRun();
         int remaining = cap <= 0 ? -1 : Math.max(0, cap - run.purchasesOf(service.id()));
-        return new VendorCatalogPayload.Entry(service.id(), service.displayName(), service.priceCobbleDollars(), remaining);
+        return new VendorCatalogPayload.Entry(service.id(), service.displayName(),
+                com.cobbletowers.armor.ArmorBonusEffects.vendorPrice(player.getUUID(), service.priceCobbleDollars()), remaining);
     }
 
     private static void sendVendorCatalog(ServerPlayer player, VendorCatalogPayload payload) {
