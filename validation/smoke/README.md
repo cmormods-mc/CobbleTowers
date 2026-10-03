@@ -32,7 +32,7 @@ python validation/smoke/run_durability_test.py \
 
 ### What the rig needs
 
-- Fabric 1.21.1 with fabric-api, Cobblemon 1.7.3, and a CobbleRaids jar at the version in
+- Fabric 1.21.1 with fabric-api, Cobblemon 1.8.1, and a CobbleRaids jar at the version in
   `gradle.properties` -- CobbleTowers will not load without it.
 - `enable-rcon=true`, an `rcon.password`, and `online-mode=false` so an offline bot can connect.
 - `node` on PATH, and a `node_modules` containing mineflayer. By default the script looks for the

@@ -1,13 +1,13 @@
 # CobbleTowers
 
-CobbleTowers is a Fabric 1.21.1 / Cobblemon 1.7.3 Battle Tower framework designed for private solo or party tower runs and integration with CobbleRaids bosses.
+CobbleTowers is a Fabric 1.21.1 / Cobblemon 1.8.1 Battle Tower framework designed for private solo or party tower runs and integration with CobbleRaids bosses.
 
 ## Project constraints
 
 - Java 21
 - Fabric / Minecraft 1.21.1
 - Mojang mappings
-- Cobblemon 1.7.3
+- Cobblemon 1.8.1
 - 1–4 players per run
 - 10-floor standard mode; architecture must permit a future infinite mode
 - One boss per floor
