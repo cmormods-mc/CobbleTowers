@@ -1,0 +1,32 @@
+{
+  "index": 1,
+  "encounter_pool": "cobbletowers:neutral_common",
+  "layout": {
+    "structure": "cobbletowers:poke_tower",
+    "entry": {
+      "x": 15,
+      "y": 9,
+      "z": 7,
+      "yaw": 0
+    },
+    "presentation": {
+      "x": 15,
+      "y": 9,
+      "z": 22,
+      "yaw": 180
+    },
+    "spectator": {
+      "x": 7,
+      "y": 9,
+      "z": 15,
+      "yaw": 270
+    },
+    "exit": {
+      "x": 23,
+      "y": 9,
+      "z": 15,
+      "yaw": 90
+    }
+  },
+  "boss_pool": "cobbletowers:neutral/early"
+}

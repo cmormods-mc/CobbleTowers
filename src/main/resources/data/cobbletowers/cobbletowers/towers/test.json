@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Test Tower (Poke Ball Spire)",
+  "ruleset": "cobbletowers:standard",
+  "reward_table": "cobbletowers:neutral",
+  "floors": [
+    "cobbletowers:test/floor_01",
+    "cobbletowers:test/floor_02",
+    "cobbletowers:test/floor_03",
+    "cobbletowers:test/floor_04"
+  ],
+  "milestones": []
+}

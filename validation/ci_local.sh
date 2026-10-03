@@ -60,6 +60,11 @@ for schematic in validation/schematics/*.schem; do
   name="$(basename "$schematic" .schem)"
   "$py" validation/schem_to_structure.py --check "$schematic"     "src/main/resources/data/cobbletowers/structure/${name}.nbt"
 done
+# BlockArchitect-style builds ship as .mcfunction (setblock lists), with an optional <name>.options.json for lighting.
+for build in validation/schematics/*.mcfunction; do
+  name="$(basename "$build" .mcfunction)"
+  "$py" validation/mcfunction_to_structure.py --check "$build" "src/main/resources/data/cobbletowers/structure/${name}.nbt"
+done
 
 step "Validate the bundled tower definitions"
 # Before the build: this reads the shipped JSON, and a dangling reference in our own content should

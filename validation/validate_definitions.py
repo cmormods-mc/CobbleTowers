@@ -73,6 +73,8 @@ def read_structure(name: str):
     occupied, supporting = set(), set()
     for block in root["blocks"]:
         position = tuple(block["pos"])
+        if palette[block["state"]] == "minecraft:light":
+            continue   # invisible and without collision: neither something to stand on nor something in the way
         occupied.add(position)
         if not any(weak in palette[block["state"]] for weak in NON_SUPPORTING):
             supporting.add(position)
