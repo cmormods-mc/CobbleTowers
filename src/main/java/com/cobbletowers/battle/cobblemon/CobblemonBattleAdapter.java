@@ -400,11 +400,7 @@ public final class CobblemonBattleAdapter {
      * its opponent still happen in that order.
      */
     private static void onServerThread(MinecraftServer server, Runnable task) {
-        if (server.isSameThread()) {
-            task.run();
-        } else {
-            server.execute(task);
-        }
+        com.cobbletowers.runtime.ServerThread.run(server, task);
     }
 
     /**

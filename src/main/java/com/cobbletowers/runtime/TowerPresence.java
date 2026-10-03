@@ -70,8 +70,12 @@ public final class TowerPresence {
     private TowerPresence() {}
 
     public static void install() {
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
-                guarded("handle a disconnect", () -> onDisconnect(server, handler.getPlayer())));
+        // Fabric fires this on the Netty thread that saw the socket close -- several at once when a party drops together --
+        // and everything onDisconnect touches is single-threaded state. ServerThread.run moves it onto the server thread.
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            ServerPlayer player = handler.getPlayer();
+            ServerThread.run(server, () -> guarded("handle a disconnect", () -> onDisconnect(server, player)));
+        });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 guarded("handle a join", () -> onJoin(server, handler.getPlayer())));
         // Per tick, this compares two longs and returns. The work itself happens on the interval
@@ -97,6 +101,10 @@ public final class TowerPresence {
     static void onDisconnect(MinecraftServer server, ServerPlayer player) {
         if (player == null) return;
         UUID playerId = player.getUUID();
+        // This now runs after the event fired, possibly a tick later. If the same person has already logged back in on a
+        // new connection, this is the OLD connection's disconnect, and marking them disconnected would be wrong.
+        ServerPlayer current = server.getPlayerList().getPlayer(playerId);
+        if (current != null && current != player) return;
         Optional<PersistedRun> run = ParticipantService.runOf(playerId);
         if (run.isEmpty() || !run.get().state().isLive()) return;
 
