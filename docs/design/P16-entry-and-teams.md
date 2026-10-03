@@ -76,11 +76,39 @@ and an expiry. The first persisted fact is the run itself, created when the host
   validated run reaching a cell; plus a decline, and a fifth invite refused. The screen itself is
   untestable on this rig, as with the vendor and reward screens.
 
-## Open questions
+## Decisions on the open questions (user, 2026-10-02)
 
-1. Invite expiry: five minutes, or none until the host cancels?
-2. Should the host be able to start with some invitees still pending (they are dropped), or must all
-   accept?
-3. Tower picker: show every loaded tower, or only ones the player has unlocked? (Nothing in the code
-   gates towers today.)
-4. If a validated run's allocation fails (no cell), does the lobby survive so the team can retry?
+1. **Invite expiry:** three minutes (`TowerLobby.INVITE_TTL_MILLIS`).
+2. **Starting early:** allowed. Unanswered invitees are dropped when the countdown ends.
+3. **Tower picker:** every loaded tower; an unlock path is the user's to design later (see the
+   come-back-later note).
+4. **Allocation failure:** the lobby survives so the team can retry. A run that took no cell is
+   abandoned (`RECOVERY_ABANDONED`) so it stops holding the team.
+
+Two further decisions made while scoping:
+
+- **How much of the run driver belongs here:** through floor 1. Nothing in production drove a run past
+  allocation (preparation, entering a floor and the between-floor steps were all operator commands), so
+  starting a lobby now takes the team through validation, allocation, preparation and the opening of
+  floor 1. The between-floor loop (draft, vendor, continue or cash out, next floor) is the next phase,
+  and the PC chooser with swap and restore follows it, renumbered P18.
+- **Start timing:** a five-second countdown, cancelled if anyone leaves.
+
+## Outcome
+
+Built: `TowerLobby` (pure state machine), `LobbyService` (the actions, the tick, the launch),
+`/cobbletowers play [tower|invite|accept|decline|leave|start|status]` (no operator level) plus an
+operator-only `play lobbies`, `PlayStatePayload`/`PlayActionPayload`, and a client `PlayScreen`. A
+`PlayStatePayload.open` flag keeps a lobby change from opening the screen over someone who is playing.
+The launch pre-checks every party with `PartyValidation` before any run record exists, so a team that
+cannot start finds out without leaving an abandoned run behind.
+
+Tests: `TowerLobbyTest` (8 unit tests) and the live `validation/smoke/lobby_test.py` (12/12): a player
+with no Pokemon does not start and the lobby survives; invite, decline, re-invite and accept; a countdown
+and then a run in ENCOUNTER_ACTIVE on floor 1 with both players and six registered Pokemon each; starting
+early with an unanswered invitee runs with one player. `participant_test.py` 26/26 and
+`floor_encounter_test.py` 17/17 re-run clean.
+
+Not proven: the screen itself (a headless bot cannot open one); the invite lapse timer live (unit tested
+with an injected clock); a failed allocation retry; a fifth invite refused (unit tested); a team member
+going offline during the countdown.

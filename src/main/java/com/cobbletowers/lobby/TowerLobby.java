@@ -1,0 +1,159 @@
+package com.cobbletowers.lobby;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import net.minecraft.resources.ResourceLocation;
+
+/**
+ * A team forming before a run exists: a host, a tower, and up to three invitees.
+ *
+ * <p>Pure and in-memory. It is never persisted on purpose -- a half-formed team that outlived a restart
+ * would need every invitee's consent asked again, and is worth nothing after a crash. The first thing
+ * written to disk is the run itself, created when the host starts.
+ *
+ * <p>Time is passed in, never read, so expiry and the start countdown are testable without waiting.
+ */
+public final class TowerLobby {
+
+    /** TDS: up to four players share a run. The host counts. */
+    public static final int MAX_PLAYERS = 4;
+
+    /** How long an invite stays open before it lapses. */
+    public static final long INVITE_TTL_MILLIS = 3 * 60 * 1000L;
+
+    public enum Response { INVITED, ACCEPTED }
+
+    public enum Result {
+        OK,
+        /** Host plus every invite, pending or accepted, already makes four. */
+        FULL,
+        /** That player already has an open invite or is on the team. */
+        ALREADY_ON_TEAM,
+        /** No open invite to answer (never sent, or it lapsed). */
+        NO_INVITE,
+        NOT_HOST
+    }
+
+    private record Member(Response response, long invitedAt) {}
+
+    private final UUID host;
+    private ResourceLocation tower;
+    private final Map<UUID, Member> members = new LinkedHashMap<>();
+    private long countdownEndsAt = -1;
+
+    public TowerLobby(UUID host, ResourceLocation tower) {
+        this.host = host;
+        this.tower = tower;
+    }
+
+    public UUID host() {
+        return host;
+    }
+
+    public ResourceLocation tower() {
+        return tower;
+    }
+
+    public void selectTower(ResourceLocation next) {
+        this.tower = next;
+        // A different tower is a different offer: anyone who already accepted agreed to the old one.
+        members.replaceAll((id, member) -> new Member(Response.INVITED, member.invitedAt()));
+        cancelCountdown();
+    }
+
+    public Result invite(UUID player, long now) {
+        if (player.equals(host) || members.containsKey(player)) return Result.ALREADY_ON_TEAM;
+        if (1 + members.size() >= MAX_PLAYERS) return Result.FULL;
+        members.put(player, new Member(Response.INVITED, now));
+        return Result.OK;
+    }
+
+    /** An invitee says yes. Lapsed invites are removed first, so one cannot be accepted late. */
+    public Result accept(UUID player, long now) {
+        expire(now);
+        Member member = members.get(player);
+        if (member == null) return Result.NO_INVITE;
+        members.put(player, new Member(Response.ACCEPTED, member.invitedAt()));
+        return Result.OK;
+    }
+
+    public Result decline(UUID player) {
+        return members.remove(player) == null ? Result.NO_INVITE : Result.OK;
+    }
+
+    /** Takes someone off the team, accepted or not. */
+    public boolean remove(UUID player) {
+        boolean removed = members.remove(player) != null;
+        if (removed) cancelCountdown();
+        return removed;
+    }
+
+    /** Drops invites older than {@link #INVITE_TTL_MILLIS} that were never answered; returns who. */
+    public List<UUID> expire(long now) {
+        List<UUID> lapsed = new ArrayList<>();
+        members.entrySet().removeIf(entry -> {
+            boolean old = entry.getValue().response() == Response.INVITED
+                    && now - entry.getValue().invitedAt() >= INVITE_TTL_MILLIS;
+            if (old) lapsed.add(entry.getKey());
+            return old;
+        });
+        return lapsed;
+    }
+
+    public Optional<Response> responseOf(UUID player) {
+        return Optional.ofNullable(members.get(player)).map(Member::response);
+    }
+
+    public boolean contains(UUID player) {
+        return player.equals(host) || members.containsKey(player);
+    }
+
+    /** The host and everyone who said yes, in invite order -- the team that would start. */
+    public List<UUID> team() {
+        List<UUID> team = new ArrayList<>();
+        team.add(host);
+        members.forEach((id, member) -> {
+            if (member.response() == Response.ACCEPTED) team.add(id);
+        });
+        return team;
+    }
+
+    /** Every invitee, accepted or still pending. */
+    public List<UUID> invitees() {
+        return List.copyOf(members.keySet());
+    }
+
+    /** Invitees who have not answered. Starting early drops these. */
+    public List<UUID> pending() {
+        List<UUID> pending = new ArrayList<>();
+        members.forEach((id, member) -> {
+            if (member.response() == Response.INVITED) pending.add(id);
+        });
+        return pending;
+    }
+
+    public void beginCountdown(long now, long millis) {
+        countdownEndsAt = now + millis;
+    }
+
+    public void cancelCountdown() {
+        countdownEndsAt = -1;
+    }
+
+    public boolean counting() {
+        return countdownEndsAt >= 0;
+    }
+
+    public boolean countdownDue(long now) {
+        return counting() && now >= countdownEndsAt;
+    }
+
+    /** Whole seconds left, rounded up, or -1 when not counting. */
+    public int secondsLeft(long now) {
+        return counting() ? (int) Math.max(0, (countdownEndsAt - now + 999) / 1000) : -1;
+    }
+}

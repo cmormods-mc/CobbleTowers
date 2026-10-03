@@ -1,6 +1,7 @@
 package com.cobbletowers.client;
 
 import com.cobbletowers.network.CycleTeammatePayload;
+import com.cobbletowers.network.PlayStatePayload;
 import com.cobbletowers.network.RewardRevealPayload;
 import com.cobbletowers.network.ScoutingRevealPayload;
 import com.cobbletowers.network.SpectatorPanelPayload;
@@ -50,6 +51,17 @@ public final class CobbleTowersClient implements ClientModInitializer {
                         open.updateCatalog(payload);
                     } else {
                         Minecraft.getInstance().setScreen(new VendorScreen(payload));
+                    }
+                }));
+
+        ClientPlayNetworking.registerGlobalReceiver(PlayStatePayload.TYPE, (payload, context) ->
+                context.client().execute(() -> {
+                    Screen current = Minecraft.getInstance().screen;
+                    if (current instanceof PlayScreen open) {
+                        // A change to the lobby: redrawn in place, as the vendor screen is.
+                        open.update(payload);
+                    } else if (payload.open()) {
+                        Minecraft.getInstance().setScreen(new PlayScreen(payload));
                     }
                 }));
 

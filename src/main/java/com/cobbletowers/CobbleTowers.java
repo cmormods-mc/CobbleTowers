@@ -3,6 +3,7 @@ package com.cobbletowers;
 import com.cobbletowers.command.DefinitionsCommand;
 import com.cobbletowers.command.CellsCommand;
 import com.cobbletowers.command.DiagnosticsCommand;
+import com.cobbletowers.command.PlayCommand;
 import com.cobbletowers.command.RunsCommand;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.encounter.TowerEncounters;
@@ -42,6 +43,7 @@ public final class CobbleTowers implements ModInitializer {
             try {
                 DefinitionsCommand.register(dispatcher);
                 RunsCommand.register(dispatcher);
+                PlayCommand.register(dispatcher);
                 CellsCommand.register(dispatcher);
                 DiagnosticsCommand.register(dispatcher);
                 SpikeCommand.register(dispatcher);
@@ -89,12 +91,14 @@ public final class CobbleTowers implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPED.register(TowerEncounters::onServerStopped);
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> TowerPresence.onServerStopped());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> RecoverySweep.onServerStopped());
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> com.cobbletowers.lobby.LobbyService.clear());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new TowerDefinitionRegistry());
         // Subscribed once, for the life of the JVM: Cobblemon's battle events are global, and the
         // adapter filters them by battle id rather than re-subscribing per floor.
         TowerEncounters.install();
         // Disconnects, rejoining, and the watchdog that ends a floor nobody is playing any more.
         TowerPresence.install();
+        com.cobbletowers.lobby.LobbyService.install();
         RecoverySweep.install();
         // Hands a player whatever the tower owes them the moment they are somewhere to receive it.
         RewardDelivery.install();

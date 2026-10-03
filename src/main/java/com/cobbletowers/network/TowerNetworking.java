@@ -6,6 +6,7 @@ import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.definition.VendorServiceDefinition;
 import com.cobbletowers.economy.VendorPurchaseService;
+import com.cobbletowers.lobby.LobbyService;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.TowerWalletStore;
 import com.cobbletowers.runtime.ParticipantService;
@@ -15,6 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -38,6 +40,8 @@ public final class TowerNetworking {
         PayloadTypeRegistry.playS2C().register(VendorCatalogPayload.TYPE, VendorCatalogPayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(VendorPurchasePayload.TYPE, VendorPurchasePayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(ScoutingRevealPayload.TYPE, ScoutingRevealPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(PlayStatePayload.TYPE, PlayStatePayload.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(PlayActionPayload.TYPE, PlayActionPayload.STREAM_CODEC);
     }
 
     /** The server-side half. */
@@ -46,10 +50,44 @@ public final class TowerNetworking {
             ServerPlayer spectator = context.player();
             context.server().execute(() -> handleCycle(spectator, payload.next()));
         });
+        ServerPlayNetworking.registerGlobalReceiver(PlayActionPayload.TYPE, (payload, context) -> {
+            ServerPlayer player = context.player();
+            context.server().execute(() -> handlePlayAction(context.server(), player, payload));
+        });
         ServerPlayNetworking.registerGlobalReceiver(VendorPurchasePayload.TYPE, (payload, context) -> {
             ServerPlayer buyer = context.player();
             context.server().execute(() -> handlePurchase(context.server(), buyer, payload));
         });
+    }
+
+    /** The play screen's buttons: each does what the matching {@code /cobbletowers play} subcommand does. */
+    private static void handlePlayAction(MinecraftServer server, ServerPlayer player, PlayActionPayload payload) {
+        String reply;
+        try {
+            reply = switch (payload.action()) {
+                case SELECT_TOWER -> LobbyService.select(server, player, ResourceLocation.parse(payload.argument()));
+                case INVITE -> {
+                    ServerPlayer target = server.getPlayerList().getPlayerByName(payload.argument());
+                    yield target == null ? "No player named " + payload.argument() + " is online."
+                            : LobbyService.invite(server, player, target);
+                }
+                case ACCEPT, DECLINE -> {
+                    ServerPlayer host = server.getPlayerList().getPlayerByName(payload.argument());
+                    if (host == null) yield "That team no longer exists.";
+                    yield payload.action() == PlayActionPayload.Action.ACCEPT
+                            ? LobbyService.accept(server, player, host.getUUID())
+                            : LobbyService.decline(server, player, host.getUUID());
+                }
+                case START -> LobbyService.start(server, player);
+                case LEAVE -> LobbyService.leave(server, player);
+                case REFRESH -> "";
+            };
+        } catch (RuntimeException ex) {
+            // A malformed id or similar from a modified client: refused, never trusted, never fatal.
+            TowerLog.warn("Play action {} from {} was refused: {}", payload.action(), player.getUUID(), ex.toString());
+            reply = "That did not work.";
+        }
+        LobbyService.openScreenWithMessage(server, player, reply);
     }
 
     private static void handleCycle(ServerPlayer spectator, boolean next) {
@@ -112,6 +150,13 @@ public final class TowerNetworking {
     /** Silently does nothing for a client that never registered the channel. */
     public static void sendSpectatorPanel(ServerPlayer player, SpectatorPanelPayload payload) {
         if (ServerPlayNetworking.canSend(player, SpectatorPanelPayload.TYPE)) {
+            ServerPlayNetworking.send(player, payload);
+        }
+    }
+
+    /** Silently does nothing for a client that never registered the channel (the commands still work). */
+    public static void sendPlayState(ServerPlayer player, PlayStatePayload payload) {
+        if (ServerPlayNetworking.canSend(player, PlayStatePayload.TYPE)) {
             ServerPlayNetworking.send(player, payload);
         }
     }

@@ -1,0 +1,32 @@
+package com.cobbletowers.network;
+
+import com.cobbletowers.CobbleTowers;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+
+/**
+ * One thing the player did on the play screen. {@code argument} is a tower id for {@code SELECT_TOWER}, a
+ * player name for {@code INVITE}, a host name for {@code ACCEPT}/{@code DECLINE}, and unused otherwise.
+ * The server re-checks everything; nothing here is trusted, the same posture as every other C2S payload.
+ */
+public record PlayActionPayload(Action action, String argument) implements CustomPacketPayload {
+
+    public enum Action { SELECT_TOWER, INVITE, ACCEPT, DECLINE, START, LEAVE, REFRESH }
+
+    public static final CustomPacketPayload.Type<PlayActionPayload> TYPE = new CustomPacketPayload.Type<>(
+            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "play_action"));
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, PlayActionPayload> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.idMapper(i -> Action.values()[Math.floorMod(i, Action.values().length)], Action::ordinal),
+            PlayActionPayload::action,
+            ByteBufCodecs.STRING_UTF8, PlayActionPayload::argument,
+            PlayActionPayload::new);
+
+    @Override
+    public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+}
