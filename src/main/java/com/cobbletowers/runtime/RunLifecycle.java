@@ -3,14 +3,21 @@ package com.cobbletowers.runtime;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.definition.FloorLayout;
+import com.cobbletowers.definition.RulesetDefinition;
+import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.instance.CellPreparer;
 import com.cobbletowers.instance.CellWarmPool;
 import com.cobbletowers.instance.InstanceAllocator;
+import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
+import com.cobbletowers.runtime.PartyValidation.PartyMember;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
+import java.util.function.Function;
 import net.minecraft.server.MinecraftServer;
 
 /**
@@ -23,6 +30,56 @@ import net.minecraft.server.MinecraftServer;
 public final class RunLifecycle {
 
     private RunLifecycle() {}
+
+    /**
+     * Submits a run's parties and settles them (TDS #41, #46): every participant's party is read,
+     * registered and checked against the ruleset, then the run moves on to instance allocation, or is
+     * abandoned with the reasons logged.
+     *
+     * <p>The registration is written <b>before</b> the verdict event, so the checkpoint that reaches
+     * disk already names what was registered. {@code partyOf} is how the party is read -- empty for a
+     * player who is not online, which rejects the run, since an absent party cannot be checked.
+     */
+    public static RunTransitionService.Outcome validateParty(MinecraftServer server, UUID runId, long now,
+                                                             Function<UUID, Optional<List<PartyMember>>> partyOf) {
+        Optional<PersistedRun> found = TowerRuns.get(runId);
+        if (found.isEmpty()) {
+            return new RunTransitionService.Refusal(RunTransitionService.Reason.UNKNOWN_RUN, "no run with id " + runId);
+        }
+        TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(found.get().towerId());
+        RulesetDefinition ruleset = tower == null ? null : TowerDefinitionRegistry.content().rulesets().get(tower.rulesetId());
+        if (ruleset == null) {
+            return new RunTransitionService.Refusal(RunTransitionService.Reason.ILLEGAL_EVENT,
+                    "run " + runId + " has no ruleset to validate against");
+        }
+
+        RunTransitionService.Outcome submitted = RunTransitionService.apply(server, runId, RunEvent.PARTY_SUBMITTED, now);
+        if (submitted instanceof RunTransitionService.Refusal) return submitted;
+
+        // Re-read after the submit move: apply() wrote a fresh record, and saving participants onto
+        // the stale one would undo the state change.
+        PersistedRun run = TowerRuns.get(runId).orElseThrow();
+        List<PersistedParticipant> registered = new ArrayList<>();
+        List<String> problems = new ArrayList<>();
+        for (PersistedParticipant participant : run.participants()) {
+            Optional<List<PartyMember>> party = partyOf.apply(participant.playerId());
+            if (party.isEmpty()) {
+                problems.add(participant.playerId() + " is not online to register a party");
+                registered.add(participant);
+                continue;
+            }
+            PartyValidation.Result result = PartyValidation.validate(party.get(), ruleset);
+            result.problems().forEach(problem -> problems.add(participant.playerId() + " " + problem));
+            registered.add(new PersistedParticipant(participant.playerId(), participant.state(), result.registered()));
+        }
+        TowerRuns.save(server, run.withParticipants(registered, now), false);
+
+        if (problems.isEmpty()) {
+            return RunTransitionService.apply(server, runId, RunEvent.PARTY_VALIDATED, now);
+        }
+        TowerLog.info("Run {} party rejected: {}", runId, problems);
+        return RunTransitionService.apply(server, runId, RunEvent.PARTY_REJECTED, now);
+    }
 
     /**
      * Finds the run a cell, builds its floor, and moves it on -- or parks it when it cannot.

@@ -9,6 +9,7 @@ import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbleraids.api.encounter.EncounterResult;
 import com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter;
+import com.cobbletowers.battle.cobblemon.PartyReader;
 import com.cobbletowers.battle.cobbleraids.TowerBossAdapter;
 import com.cobbletowers.definition.BossPoolDefinition;
 import com.cobbletowers.definition.EncounterPoolDefinition;
@@ -33,6 +34,7 @@ import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.api.tower.participant.ParticipantState;
 import com.cobbletowers.runtime.ParticipantService;
+import com.cobbletowers.runtime.PartyValidation;
 import com.cobbletowers.runtime.RunTransitionService;
 import com.cobbletowers.runtime.TowerRuns;
 import com.cobbletowers.spectator.SpectatorPresentation;
@@ -194,7 +196,7 @@ public final class TowerEncounters {
 
         // Taken once, from everybody, before a single battle starts (TDS #45): a party that faints or
         // disconnects during the floor cannot make the rest of it easier.
-        List<Integer> partyLevels = levelsOf(fighters);
+        List<Integer> partyLevels = levelsOf(run, fighters);
         if (partyLevels.isEmpty()) {
             // Said out loud, because the alternative was found the hard way: every opponent draw
             // silently returned empty, the round ended up with nobody in it, and `begin` returned
@@ -260,13 +262,18 @@ public final class TowerEncounters {
         return Optional.of(round);
     }
 
-    /** Every registered Pokemon of every fighter, fainted ones included. */
-    private static List<Integer> levelsOf(List<ServerPlayer> fighters) {
+    /**
+     * The levels of every fighter's registered Pokemon, fainted ones included (TDS #45). A run with
+     * nothing registered, or whose registered Pokemon can no longer be found, reads the live party
+     * instead -- see {@link PartyValidation#levels}.
+     */
+    private static List<Integer> levelsOf(PersistedRun run, List<ServerPlayer> fighters) {
         List<Integer> levels = new ArrayList<>();
         for (ServerPlayer player : fighters) {
-            for (BattlePokemon member : Cobblemon.INSTANCE.getStorage().getParty(player).toBattleTeam(true, false)) {
-                levels.add(member.getEffectedPokemon().getLevel());
-            }
+            List<UUID> registered = run.participants().stream()
+                    .filter(participant -> participant.playerId().equals(player.getUUID()))
+                    .findFirst().map(PersistedParticipant::registeredPokemon).orElse(List.of());
+            levels.addAll(PartyValidation.levels(PartyReader.members(player), registered));
         }
         return levels;
     }
@@ -376,7 +383,7 @@ public final class TowerEncounters {
         // whole party's. It cannot be lowered by the floor's progress: TowerLevelPolicy reads the
         // registered Pokemon, and a fainted one still counts (TDS #45).
         Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(pool, run.seed(), run.floorIndex(),
-                wave.nextOrdinal(), levelsOf(List.of(player)), ruleset, effects.levelOffset(), theme);
+                wave.nextOrdinal(), levelsOf(run, List.of(player)), ruleset, effects.levelOffset(), theme);
         if (snapshot.isEmpty()) return false;
 
         BlockPos where = floor.get().layout().get().presentation().in(origin.get())
@@ -557,7 +564,7 @@ public final class TowerEncounters {
                 .map(id -> content.bossPools().get(id))
                 .filter(Objects::nonNull);
         Optional<BossDraw.Boss> boss = BossDraw.draw(pool, handpickedBoss(content, tower, floor.get()),
-                run.seed(), run.floorIndex(), levelsOf(standing), ruleset,
+                run.seed(), run.floorIndex(), levelsOf(run, standing), ruleset,
                 DraftService.effects(run).bossLevelOffset());
         if (boss.isEmpty()) {
             TowerLog.error("Floor {} names neither a boss pool nor a milestone boss", floor.get().id());

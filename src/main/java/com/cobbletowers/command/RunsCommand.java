@@ -4,6 +4,8 @@ import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
+import com.cobbletowers.api.tower.RunState;
+import com.cobbletowers.battle.cobblemon.PartyReader;
 import com.cobbletowers.battle.cobbleraids.TowerBossAdapter;
 import com.cobbletowers.definition.ModifierDefinition;
 import com.cobbletowers.definition.TowerContent;
@@ -46,6 +48,7 @@ import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.commands.arguments.UuidArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -126,6 +129,10 @@ public final class RunsCommand {
                                 .then(Commands.argument("tower", ResourceLocationArgument.id())
                                         .then(Commands.argument("players", EntityArgument.players())
                                                 .executes(RunsCommand::create))))
+                        .then(Commands.literal("validate")
+                                .requires(source -> source.hasPermission(2))
+                                .then(Commands.argument("run", UuidArgument.uuid())
+                                        .executes(RunsCommand::validate)))
                         .then(Commands.literal("allocate")
                                 .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("run", UuidArgument.uuid())
@@ -417,6 +424,23 @@ public final class RunsCommand {
         source.sendSuccess(() -> Component.literal("Created run " + run.runId() + " on " + towerId
                 + " with " + players.size() + " player(s)").withStyle(ChatFormatting.GREEN), true);
         return 1;
+    }
+
+    /** {@code /cobbletowers runs validate <run>}: registers and checks every party, for real (TDS #41). */
+    private static int validate(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        UUID runId = UuidArgument.getUuid(context, "run");
+        MinecraftServer server = source.getServer();
+        RunTransitionService.Outcome outcome = RunLifecycle.validateParty(server, runId, System.currentTimeMillis(),
+                playerId -> Optional.ofNullable(server.getPlayerList().getPlayer(playerId)).map(PartyReader::members));
+        if (outcome instanceof RunTransitionService.Move move) {
+            boolean accepted = move.next().state() != RunState.ABANDONED;
+            source.sendSuccess(() -> Component.literal("Party " + (accepted ? "validated" : "rejected") + ": "
+                    + move.from() + " -> " + move.next().state()), true);
+            return accepted ? 1 : 0;
+        }
+        source.sendFailure(Component.literal("Could not validate: " + outcome));
+        return 0;
     }
 
     private static int allocate(CommandContext<CommandSourceStack> context) {

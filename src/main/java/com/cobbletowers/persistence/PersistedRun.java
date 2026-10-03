@@ -201,6 +201,13 @@ public record PersistedRun(
                 at, cell, next, modifiers, lastBankedFloor, vendorPurchases);
     }
 
+    /** The same run with these participants, as when a party is registered at validation (TDS #41). */
+    public PersistedRun withParticipants(List<PersistedParticipant> next, long at) {
+        return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
+                structureRevision, seed, floorIndex, state, next, lastCheckpoint, committedTransactions,
+                at, cell, ledger, modifiers, lastBankedFloor, vendorPurchases);
+    }
+
     /** The same run holding {@code leased}, or holding none when it is empty. */
     public PersistedRun withCell(OptionalInt leased, long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
