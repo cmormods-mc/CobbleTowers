@@ -86,12 +86,24 @@ public final class CellCleanup {
      * tickets and waits for them before asking.
      */
     public static int sweepEntities(MinecraftServer server, int cell) {
+        return sweepEntities(server, cell, entity -> false);
+    }
+
+    /**
+     * The same, except for entities {@code spare} says to keep.
+     *
+     * <p>The post-crash sweep waits for a cell's chunks to load, which can be later than the party takes to rejoin and
+     * start the next floor in that very cell. Without a way to spare what is live, it deleted the new floor's
+     * opponents and the players' own Pokemon mid-battle and the floor sat there forever (found as a one-in-three
+     * flake of the draft test). What it exists to remove is what the CRASH left, and none of that is in a battle.
+     */
+    public static int sweepEntities(MinecraftServer server, int cell, java.util.function.Predicate<Entity> spare) {
         CellGrid.requireValid(cell);
         ServerLevel level = TowerDimension.level(server);
         if (level == null) return 0;
 
         List<Entity> loose = level.getEntities((Entity) null, CellGrid.sweepBoundsOf(cell),
-                entity -> !(entity instanceof Player));
+                entity -> !(entity instanceof Player) && !spare.test(entity));
         for (Entity entity : loose) entity.discard();
         return loose.size();
     }

@@ -229,8 +229,18 @@ def main() -> None:
             chosen = found_chosen.group(1) if found_chosen else ""
             results.append(Result("the chosen modifier is accumulated onto the run",
                                   chosen in settled, effects_line(settled)))
-            results.append(Result("and it changes what the run's effects add up to",
-                                  NEUTRAL_EFFECTS not in effects_line(settled), effects_line(settled)))
+            # Only some cards move the numbers on this line (levels, opponents, boss level and health, reward). The rest
+            # change something it does not show -- the weather, switching, scouting -- and which card wins is the seed's
+            # business, so asserting "not neutral" for every card failed whenever one of those won the vote. What every
+            # card must do is show up as drafted.
+            numeric_cards = {"bulwark_boss", "champions_vigil", "crowded_floor", "double_trouble", "high_stakes",
+                             "sharpened_claws", "towering_presence"}
+            if chosen.split(":")[-1] in numeric_cards:
+                results.append(Result("and it changes what the run's effects add up to",
+                                      NEUTRAL_EFFECTS not in effects_line(settled), effects_line(settled)))
+            else:
+                results.append(Result("and it is counted as drafted (its effect is not one this summary line shows)",
+                                      "modifiers: 1 drafted" in effects_line(settled), f"{chosen}: {effects_line(settled)}"))
             print(f"  drafted {chosen}")
             print(f"  {effects_line(settled)}")
 
@@ -283,12 +293,25 @@ def main() -> None:
                     for name, bot in list(bots.items()):
                         bot.kill()
                     bots.clear()
-                    time.sleep(5)
+                    # Wait for the SERVER to have noticed, not for a fixed time: it handles a disconnect (and saves the
+                    # player) some seconds after the socket dies, and a sweep that runs first sees a full room and, quite
+                    # correctly, settles nothing. A fixed five-second sleep raced exactly that and failed about one run
+                    # in two.
+                    deadline = time.time() + 90
+                    while time.time() < deadline and not re.search(r"There are 0 of", rcon.command("list")):
+                        time.sleep(1)
                     rcon.command("cobbletowers runs watchdog player")
                     swept = rcon.command(f"cobbletowers runs show {run}")
+                    # Two correct outcomes, and which one happens is a matter of what the server had already noticed:
+                    # the draft is settled from the seed, or -- when the players' reconnect windows have also run out,
+                    # which the wound clock of `runs watchdog` makes true -- the whole run is abandoned and the cell
+                    # released, which frees the draft with it. Both leave nothing holding the cell; what must never
+                    # happen is a live run left waiting on a vote nobody can cast.
+                    abandoned = "ABANDONED" in swept
                     results.append(Result(
-                        "a draft with nobody left to vote is settled rather than holding the cell",
-                        "OPEN" not in draft_line(swept), draft_line(swept) or "(no draft)"))
+                        "a draft with nobody left to vote is settled, or the run is abandoned, rather than holding the cell",
+                        "OPEN" not in draft_line(swept) or abandoned,
+                        (draft_line(swept) or "(no draft)") + " / " + swept.strip()[:160]))
                 else:
                     results.append(Result("a second intermission offered another draft",
                                           False, "no draft at the second intermission"))

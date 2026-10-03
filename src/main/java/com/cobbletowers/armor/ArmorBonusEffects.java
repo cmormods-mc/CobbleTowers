@@ -6,7 +6,6 @@ import com.cobblemon.mod.common.api.events.pokemon.ExperienceGainedEvent;
 import com.cobblemon.mod.common.api.events.pokemon.ShinyChanceCalculationEvent;
 import com.cobbletowers.TowerLog;
 import com.google.gson.JsonArray;
-import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -35,7 +34,7 @@ public final class ArmorBonusEffects {
         try {
             ServerPlayer owner = event.getPokemon().getOwnerPlayer();
             if (owner == null) return;
-            int percent = WornSets.of(owner.getUUID()).xpPercent();
+            int percent = WornSets.current(owner).xpPercent();
             if (percent > 0) event.setExperience(scale(event.getExperience(), percent));
         } catch (RuntimeException ex) {
             TowerLog.error("The armor experience bonus failed; the experience is unchanged", ex);
@@ -45,7 +44,7 @@ public final class ArmorBonusEffects {
     private static void onCatchRate(PokemonCatchRateEvent event) {
         try {
             if (!(event.getThrower() instanceof ServerPlayer thrower)) return;
-            int percent = WornSets.of(thrower.getUUID()).catchRatePercent();
+            int percent = WornSets.current(thrower).catchRatePercent();
             if (percent > 0) event.setCatchRate(event.getCatchRate() * (1f + percent / 100f));
         } catch (RuntimeException ex) {
             TowerLog.error("The armor catch-rate bonus failed; the rate is unchanged", ex);
@@ -57,7 +56,7 @@ public final class ArmorBonusEffects {
             event.addModificationFunction((chance, player, pokemon) -> {
                 try {
                     if (player == null) return chance;
-                    int percent = WornSets.of(player.getUUID()).shinyPercent();
+                    int percent = WornSets.current(player).shinyPercent();
                     return percent > 0 ? chance * (1f + percent / 100f) : chance;
                 } catch (RuntimeException ex) {
                     return chance;
@@ -83,17 +82,17 @@ public final class ArmorBonusEffects {
     }
 
     /** The player's vendor price for a service listed at {@code base}. */
-    public static int vendorPrice(UUID player, int base) {
-        return discountedPrice(base, WornSets.of(player).vendorDiscountPercent());
+    public static int vendorPrice(ServerPlayer player, int base) {
+        return discountedPrice(base, WornSets.current(player).vendorDiscountPercent());
     }
 
     /** Raid Points to award {@code player} for a base grant of {@code base}. */
-    public static int raidPoints(UUID player, int base) {
-        return scale(base, WornSets.of(player).raidPointsPercent());
+    public static int raidPoints(ServerPlayer player, int base) {
+        return scale(base, WornSets.current(player).raidPointsPercent());
     }
 
     /** The wearer's battle operations, ready to merge into {@code TowerBattleFx.armFloorBattle}. */
-    public static JsonArray battleEffects(UUID player) {
-        return WornSets.of(player).battleEffects();
+    public static JsonArray battleEffects(ServerPlayer player) {
+        return WornSets.current(player).battleEffects();
     }
 }

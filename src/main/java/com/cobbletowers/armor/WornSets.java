@@ -60,7 +60,17 @@ public final class WornSets {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> CACHE.remove(handler.getPlayer().getUUID()));
     }
 
-    /** The player's active bonuses; {@link ActiveBonuses#NONE} for anyone not wearing a set (or not online). */
+    /**
+     * The player's bonuses right now: re-resolved first, so what a consumer reads is exact rather than up to half a
+     * second old. Resolving four armor slots is cheap, and every consumer is an occasional event (a battle, a purchase,
+     * a delivery), never a per-tick loop.
+     */
+    public static ActiveBonuses current(ServerPlayer player) {
+        refresh(player);
+        return of(player.getUUID());
+    }
+
+    /** The player's active bonuses as of the last check; {@link ActiveBonuses#NONE} for anyone not wearing a set (or not online). */
     public static ActiveBonuses of(UUID player) {
         return CACHE.getOrDefault(player, ActiveBonuses.NONE);
     }

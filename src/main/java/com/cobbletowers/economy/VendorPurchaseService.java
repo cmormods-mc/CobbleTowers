@@ -68,8 +68,12 @@ public final class VendorPurchaseService {
         int cap = service.get().maxPurchasesPerRun();
         if (cap > 0 && run.purchasesOf(serviceId) >= cap) return Result.SOLD_OUT;
 
-        if (!TowerWalletStore.get(server).debit(payingPlayerId,
-                com.cobbletowers.armor.ArmorBonusEffects.vendorPrice(payingPlayerId, service.get().priceCobbleDollars()))) {
+        // The payer's own price: their worn armor may discount it. An offline payer (possible when a teammate buys on
+        // their behalf) simply pays the listed price.
+        ServerPlayer payer = server.getPlayerList().getPlayer(payingPlayerId);
+        int price = payer == null ? service.get().priceCobbleDollars()
+                : com.cobbletowers.armor.ArmorBonusEffects.vendorPrice(payer, service.get().priceCobbleDollars());
+        if (!TowerWalletStore.get(server).debit(payingPlayerId, price)) {
             return Result.INSUFFICIENT_FUNDS;
         }
         // Flushed immediately: the same "the money has already moved" reasoning P9's own grant-then-

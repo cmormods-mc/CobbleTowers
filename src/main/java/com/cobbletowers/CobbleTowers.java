@@ -46,6 +46,7 @@ public final class CobbleTowers implements ModInitializer {
             try {
                 DefinitionsCommand.register(dispatcher);
                 RunsCommand.register(dispatcher);
+                com.cobbletowers.command.ArmorCommand.register(dispatcher);
                 PlayCommand.register(dispatcher);
                 CellsCommand.register(dispatcher);
                 DiagnosticsCommand.register(dispatcher);

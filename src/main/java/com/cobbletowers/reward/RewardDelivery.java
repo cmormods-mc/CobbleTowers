@@ -54,7 +54,7 @@ public final class RewardDelivery {
             } else if (reward.item().equals(RaidPointsCurrency.ITEM_ID)) {
                 // CobbleRaids' own currency, credited through its public API (P21).
                 CobbleRaidsPoints.award(server, player.getUUID(),
-                        com.cobbletowers.armor.ArmorBonusEffects.raidPoints(player.getUUID(), reward.amount()));
+                        com.cobbletowers.armor.ArmorBonusEffects.raidPoints(player, reward.amount()));
                 delivered.add(reward);
             } else if (give(player, reward.item(), reward.amount())) {
                 delivered.add(reward);

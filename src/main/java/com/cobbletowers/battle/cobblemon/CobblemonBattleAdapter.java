@@ -106,7 +106,7 @@ public final class CobblemonBattleAdapter {
 
         // Armed only around the start itself: the effects ride this battle's >start and no other's.
         com.cobbletowers.showdown.TowerBattleFx.armFloorBattle(player.getUUID(),
-                com.cobbletowers.armor.ArmorBonusEffects.battleEffects(player.getUUID()));
+                com.cobbletowers.armor.ArmorBonusEffects.battleEffects(player));
         BattleStartResult result;
         try {
             result = startPve(player, opponent);
@@ -151,6 +151,15 @@ public final class CobblemonBattleAdapter {
                 // "Parameter specified as non-null is null" the first time a floor was played, and
                 // no unit test could have seen it -- there is no Cobblemon runtime in one.
                 Cobblemon.INSTANCE.getStorage().getParty(player));
+    }
+
+    /**
+     * Whether {@code entity} is a Pokemon currently in a battle. What the post-crash cell sweep must never remove:
+     * a crash leaves Pokemon standing around, but never in a battle, so this separates the leftovers from a floor that
+     * has started since.
+     */
+    public static boolean inLiveBattle(net.minecraft.world.entity.Entity entity) {
+        return entity instanceof PokemonEntity pokemon && pokemon.isBattling();
     }
 
     /** Why a battle did not start, in words: the result's own toString is only an object id. */
@@ -285,7 +294,7 @@ public final class CobblemonBattleAdapter {
             Binding binding = BY_BATTLE.remove(battleId);
             LAST_ACTIVITY.remove(battleId);
             if (binding == null) continue;
-            closeBattle(battleId);
+            closeBattle(server, battleId);
             discardOpponent(server, binding);
             ended++;
         }
@@ -306,7 +315,13 @@ public final class CobblemonBattleAdapter {
         try {
             PokemonBattle battle = BattleRegistry.getBattleByParticipatingPlayer(player);
             if (battle == null || battle.getEnded()) return false;
-            battle.end();
+            onServerThread(player.getServer(), () -> {
+                try {
+                    if (!battle.getEnded()) battle.end();
+                } catch (RuntimeException ex) {
+                    TowerLog.error("Could not end the battle of " + player.getUUID(), ex);
+                }
+            });
             return true;
         } catch (RuntimeException ex) {
             TowerLog.error("Could not end the battle of " + player.getUUID(), ex);
@@ -315,6 +330,10 @@ public final class CobblemonBattleAdapter {
     }
 
     private static void discardOpponent(MinecraftServer server, Binding binding) {
+        onServerThread(server, () -> discardOpponentNow(server, binding));
+    }
+
+    private static void discardOpponentNow(MinecraftServer server, Binding binding) {
         for (ServerLevel level : server.getAllLevels()) {
             Entity entity = level.getEntity(binding.opponentEntity());
             if (entity != null) {
@@ -342,7 +361,7 @@ public final class CobblemonBattleAdapter {
                 battles.remove(entry.getKey());
                 if (battles.isEmpty()) BATTLES_BY_RUN.remove(runId);
             }
-            closeBattle(entry.getKey());
+            closeBattle(server, entry.getKey());
             discardOpponent(server, binding);
             return true;
         }
@@ -360,12 +379,31 @@ public final class CobblemonBattleAdapter {
      * <p>The index entry is removed before this is called, so a victory event raised on the way out
      * finds nothing to resolve and cannot score a battle that was cancelled.
      */
-    private static void closeBattle(UUID battleId) {
-        try {
-            PokemonBattle battle = BattleRegistry.getBattle(battleId);
-            if (battle != null && !battle.getEnded()) battle.end();
-        } catch (RuntimeException ex) {
-            TowerLog.error("Could not end tower battle " + battleId, ex);
+    private static void closeBattle(MinecraftServer server, UUID battleId) {
+        onServerThread(server, () -> {
+            try {
+                PokemonBattle battle = BattleRegistry.getBattle(battleId);
+                if (battle != null && !battle.getEnded()) battle.end();
+            } catch (RuntimeException ex) {
+                TowerLog.error("Could not end tower battle " + battleId, ex);
+            }
+        });
+    }
+
+    /**
+     * Runs {@code task} on the server thread: now if this already is it, otherwise queued, in order.
+     *
+     * <p>A disconnect is delivered on a Netty network thread, and ending a battle there reaches Cobblemon's Showdown
+     * service, whose GraalJS context may only be touched by the thread that owns it ("Multi threaded access requested
+     * ... but is not allowed for language(s) js", found on Cobblemon 1.8.1). Discarding the opponent entity from there
+     * is just as unsafe for the world. Queued tasks run in submission order, so ending a battle and then discarding
+     * its opponent still happen in that order.
+     */
+    private static void onServerThread(MinecraftServer server, Runnable task) {
+        if (server.isSameThread()) {
+            task.run();
+        } else {
+            server.execute(task);
         }
     }
 

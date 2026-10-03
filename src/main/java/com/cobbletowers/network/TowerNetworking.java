@@ -195,7 +195,7 @@ public final class TowerNetworking {
         int cap = service.maxPurchasesPerRun();
         int remaining = cap <= 0 ? -1 : Math.max(0, cap - run.purchasesOf(service.id()));
         return new VendorCatalogPayload.Entry(service.id(), service.displayName(),
-                com.cobbletowers.armor.ArmorBonusEffects.vendorPrice(player.getUUID(), service.priceCobbleDollars()), remaining);
+                com.cobbletowers.armor.ArmorBonusEffects.vendorPrice(player, service.priceCobbleDollars()), remaining);
     }
 
     private static void sendVendorCatalog(ServerPlayer player, VendorCatalogPayload payload) {

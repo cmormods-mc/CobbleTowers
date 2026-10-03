@@ -1,6 +1,7 @@
 package com.cobbletowers.runtime;
 
 import com.cobbletowers.TowerLog;
+import com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter;
 import com.cobbletowers.diagnostics.TowerMetrics;
 import com.cobbletowers.instance.CellCleanup;
 import com.cobbletowers.instance.CellGrid;
@@ -96,7 +97,9 @@ public final class RecoverySweep {
                 continue;
             }
 
-            int swept = CellCleanup.sweepEntities(server, cell);
+            // Only what the crash left behind: by now the party may have rejoined and the next floor started in this very
+            // cell, and its opponents and the players' own Pokemon are in a live battle.
+            int swept = CellCleanup.sweepEntities(server, cell, CobblemonBattleAdapter::inLiveBattle);
             if (swept > 0) {
                 TowerLog.info("Cell {} of interrupted run {} had {} entity/entities left in it; removed",
                         cell, pending.runId(), swept);

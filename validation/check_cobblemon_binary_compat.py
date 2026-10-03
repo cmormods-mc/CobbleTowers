@@ -79,7 +79,7 @@ class Cobblemon:
         out = javap(["-s", "-p", "-cp", str(self.jar), owner.replace("/", ".")])
         members: set[tuple[str, str]] = set()
         supers: list[str] = []
-        simple = owner.rsplit("/", 1)[-1].split("$")[-1]
+        simple = owner.rsplit("/", 1)[-1]   # javap prints a nested class constructor as Outer$Inner
         lines = out.splitlines()
         for i, line in enumerate(lines):
             if re.match(r"^(?:\w+ )*(?:class|interface|enum) ", line):
