@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "skarmory",
+  "level": 50,
+  "ability": "sturdy",
+  "nature": "impish",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "item": "cobblemon:rocky_helmet",
+  "moves": [
+    "bravebird",
+    "roost",
+    "spikes",
+    "whirlwind"
+  ],
+  "role": "defensive racer",
+  "rarity": "uncommon"
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "vaporeon",
+  "level": 50,
+  "ability": "waterabsorb",
+  "nature": "bold",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "scald",
+    "icebeam",
+    "wish",
+    "protect"
+  ],
+  "role": "bulky support",
+  "rarity": "common"
+}

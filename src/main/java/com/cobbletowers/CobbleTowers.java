@@ -106,6 +106,7 @@ public final class CobbleTowers implements ModInitializer {
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.PlaylistRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.TrialPoolRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.ContractTemplateRegistry());
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.RentalSetRegistry());
         // Armor sets (P24): the items must exist before any datapack loads; what they do is data.
         com.cobbletowers.armor.ArmorSetItems.register();
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.armor.ArmorSetRegistry());
@@ -120,6 +121,7 @@ public final class CobbleTowers implements ModInitializer {
         com.cobbletowers.lobby.LobbyService.install();
         com.cobbletowers.intermission.IntermissionService.install();
         com.cobbletowers.storage.PartyJournalService.install();
+        com.cobbletowers.storage.RentalPartyService.install();
         com.cobbletowers.runtime.RunExitService.install();
         com.cobbletowers.instance.TowerDropGuard.install();
         com.cobbletowers.vendor.VendorNpc.install();

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "scizor",
+  "level": 50,
+  "ability": "technician",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "item": "cobblemon:choice_band",
+  "moves": [
+    "bulletpunch",
+    "uturn",
+    "superpower",
+    "knockoff"
+  ],
+  "role": "priority attacker",
+  "rarity": "rare"
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "gholdengo",
+  "level": 50,
+  "ability": "goodasgold",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "makeitrain",
+    "shadowball",
+    "focusblast",
+    "thunderbolt"
+  ],
+  "role": "special attacker",
+  "rarity": "epic"
+}

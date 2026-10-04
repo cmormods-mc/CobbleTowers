@@ -19,12 +19,18 @@ import net.minecraft.nbt.Tag;
  * <em>before</em> any move, which is the whole of the feature's safety argument: a crash at any later point
  * leaves a record that describes where everything started.
  */
-public record PartyJournalEntry(UUID player, UUID runId, List<Original> originals) {
+public record PartyJournalEntry(UUID player, UUID runId, List<Original> originals, List<UUID> rentals) {
 
     public PartyJournalEntry {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(runId, "runId");
         originals = List.copyOf(originals);
+        rentals = List.copyOf(rentals);
+    }
+
+    /** A journal of moved Pokemon only, which is every run before the Rental Draft (P33). */
+    public PartyJournalEntry(UUID player, UUID runId, List<Original> originals) {
+        this(player, runId, originals, List.of());
     }
 
     public CompoundTag toTag() {
@@ -41,6 +47,15 @@ public record PartyJournalEntry(UUID player, UUID runId, List<Original> original
             list.add(entry);
         }
         tag.put("originals", list);
+        // The rentals the run was lent (P33): written with the rest, before anything moves, so a crash at any point can
+        // delete them again. Ids only, never a live Pokemon.
+        ListTag lent = new ListTag();
+        for (UUID rental : rentals) {
+            CompoundTag one = new CompoundTag();
+            one.putUUID("pokemon", rental);
+            lent.add(one);
+        }
+        tag.put("rentals", lent);
         return tag;
     }
 
@@ -53,6 +68,9 @@ public record PartyJournalEntry(UUID player, UUID runId, List<Original> original
             Slot.Kind kind = Slot.Kind.valueOf(entry.getString("kind").toUpperCase(Locale.ROOT));
             originals.add(new Original(entry.getUUID("pokemon"), new Slot(kind, entry.getInt("index"), entry.getInt("sub"))));
         }
-        return new PartyJournalEntry(tag.getUUID("player"), tag.getUUID("run"), originals);
+        List<UUID> rentals = new ArrayList<>();
+        ListTag lent = tag.getList("rentals", Tag.TAG_COMPOUND);
+        for (int i = 0; i < lent.size(); i++) rentals.add(lent.getCompound(i).getUUID("pokemon"));
+        return new PartyJournalEntry(tag.getUUID("player"), tag.getUUID("run"), originals, rentals);
     }
 }

@@ -20,6 +20,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param vendorClosed     whether the vendor refuses every purchase
  * @param maxPlayers       the most players a team may have, 0 for no limit
  * @param difficultyBonus  points added to the run's difficulty score
+ * @param rental           whether the party is a drafted rental team instead of the player's own Pokemon (P33)
  */
 public record PlaylistDefinition(
         ResourceLocation id,
@@ -31,7 +32,8 @@ public record PlaylistDefinition(
         List<ResourceLocation> forcedModifiers,
         boolean vendorClosed,
         int maxPlayers,
-        int difficultyBonus) {
+        int difficultyBonus,
+        boolean rental) {
 
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
 
@@ -97,6 +99,6 @@ public record PlaylistDefinition(
                         Set.copyOf(TowerJson.strings(party, "banned_labels")), TowerJson.integer(party, "max_party", 0)),
                 TowerJson.integer(root, "enemy_level_max", 0), TowerJson.ids(root, "forced_modifiers"),
                 TowerJson.bool(root, "vendor_closed", false), TowerJson.integer(root, "max_players", 0),
-                TowerJson.integer(root, "difficulty_bonus", 0));
+                TowerJson.integer(root, "difficulty_bonus", 0), TowerJson.bool(root, "rental", false));
     }
 }

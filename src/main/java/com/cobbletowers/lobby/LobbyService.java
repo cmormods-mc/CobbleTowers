@@ -25,7 +25,9 @@ import com.cobbletowers.runtime.RunLifecycle;
 import com.cobbletowers.runtime.RunTransitionService;
 import com.cobbletowers.runtime.TowerRuns;
 import com.cobbletowers.storage.PartyArrangement;
+import com.cobbletowers.rental.RentalDraft;
 import com.cobbletowers.storage.PartyJournalService;
+import com.cobbletowers.storage.RentalPartyService;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -104,6 +106,7 @@ public final class LobbyService {
             BY_HOST.put(player.getUUID(), created);
             return created;
         });
+        RentalDraftService.clearAll(lobby);
         lobby.selectTower(towerId);
         broadcast(server, lobby, "");
         return "Tower set to " + towerName(towerId) + ".";
@@ -180,6 +183,7 @@ public final class LobbyService {
             return "You ended the team.";
         }
         lobby.remove(player.getUUID());
+        RentalDraftService.clear(player.getUUID());
         sendState(server, player, null, "");
         broadcast(server, lobby, name(player) + " left the team.");
         return "You left the team.";
@@ -213,6 +217,7 @@ public final class LobbyService {
         if (playlist != null && playlist.maxPlayers() > 0 && lobby.team().size() + lobby.pending().size() > playlist.maxPlayers()) {
             return playlist.displayName() + " allows " + playlist.maxPlayers() + " player(s); the team is larger.";
         }
+        RentalDraftService.clearAll(lobby);
         lobby.selectTower(trial.entry().tower());
         lobby.setPlaylist(trial.entry().playlist());
         lobby.setTrial(Optional.of(trial));
@@ -231,6 +236,7 @@ public final class LobbyService {
         if (lobby.counting()) return "The run is already starting.";
         if (lobby.trial().isPresent()) return "A trial fixes the mode. Choose a tower to leave the trial.";
         if (raw.equalsIgnoreCase("standard") || raw.isBlank()) {
+            RentalDraftService.clearAll(lobby);
             lobby.setPlaylist(java.util.Optional.empty());
             broadcast(server, lobby, "");
             return "Mode: Standard.";
@@ -243,9 +249,11 @@ public final class LobbyService {
         if (playlist.get().maxPlayers() > 0 && lobby.team().size() + lobby.pending().size() > playlist.get().maxPlayers()) {
             return playlist.get().displayName() + " allows " + playlist.get().maxPlayers() + " player(s); the team is larger.";
         }
+        RentalDraftService.clearAll(lobby);
         lobby.setPlaylist(java.util.Optional.of(id));
         broadcast(server, lobby, "");
-        return "Mode: " + playlist.get().displayName() + ". " + playlist.get().description();
+        return "Mode: " + playlist.get().displayName() + ". " + playlist.get().description()
+                + (playlist.get().rental() ? " Open your packs with /tower draft." : "");
     }
 
     static String playlistName(java.util.Optional<ResourceLocation> playlist) {
@@ -338,6 +346,8 @@ public final class LobbyService {
         List<UUID> players = new ArrayList<>();
         Map<UUID, List<UUID>> parties = new LinkedHashMap<>();
         Map<UUID, List<UUID>> locks = new LinkedHashMap<>();
+        Map<UUID, RentalDraft.Team> rentalTeams = new LinkedHashMap<>();
+        boolean rentalRun = RentalDraftService.isRentalLobby(lobby);
         List<String> problems = new ArrayList<>();
         for (UUID id : lobby.team()) {
             ServerPlayer player = server.getPlayerList().getPlayer(id);
@@ -348,6 +358,23 @@ public final class LobbyService {
             }
             if (inRun(id)) {
                 problems.add(name(player) + " is already in a tower run.");
+                continue;
+            }
+            if (rentalRun) {
+                // A rental run (P33): the party is the drafted team, so the player's own Pokemon are not judged at all.
+                Optional<RentalDraft> draft = RentalDraftService.draftOf(id).filter(RentalDraft::complete);
+                if (draft.isEmpty()) {
+                    problems.add(name(player) + " has not finished their draft (/tower draft)");
+                    continue;
+                }
+                if (!RentalPartyService.canMakeRoom(player)) {
+                    problems.add(name(player) + " needs free box space for their own Pokemon while they play");
+                    continue;
+                }
+                RentalDraft.Team team = draft.get().finish(UUID::randomUUID);
+                rentalTeams.put(id, team);
+                players.add(id);
+                parties.put(id, team.ids());
                 continue;
             }
             List<UUID> picked = lobby.chosenOf(id);
@@ -419,13 +446,18 @@ public final class LobbyService {
         // Move registered Pokemon into the party. Journaled and flushed first, per player, so a failure or
         // a crash anywhere from here on can be undone; a failure here undoes the ones already done.
         for (UUID id : players) {
+            RentalDraft.Team lent = rentalTeams.get(id);
             List<UUID> target = locks.get(id);
-            if (target == null) continue;
+            if (target == null && lent == null) continue;
             ServerPlayer player = server.getPlayerList().getPlayer(id);
-            PartyJournalService.Lock result = player == null ? PartyJournalService.Lock.FAILED
-                    : PartyJournalService.lockIn(server, runId, player, target);
+            // A rental run (P33) lends the drafted team through the same journal; anything else moves the player's own Pokemon.
+            Object result = lent != null
+                    ? (player == null ? RentalPartyService.Lock.FAILED : RentalPartyService.lock(server, runId, player, lent))
+                    : (player == null ? PartyJournalService.Lock.FAILED : PartyJournalService.lockIn(server, runId, player, target));
             if (result == PartyJournalService.Lock.FAILED || result == PartyJournalService.Lock.NOT_OWNED
-                    || result == PartyJournalService.Lock.NO_ROOM || result == PartyJournalService.Lock.TOO_MANY) {
+                    || result == PartyJournalService.Lock.NO_ROOM || result == PartyJournalService.Lock.TOO_MANY
+                    || result == RentalPartyService.Lock.FAILED || result == RentalPartyService.Lock.NO_ROOM
+                    || result == RentalPartyService.Lock.IN_BATTLE) {
                 RunTransitionService.apply(server, runId, RunEvent.ABANDON_REQUESTED, now);
                 restoreParties(server, players);
                 broadcast(server, lobby, "Cannot start: " + (player == null ? "a player went offline"
@@ -556,9 +588,11 @@ public final class LobbyService {
     /** One line per Pokemon the player owns, for an operator or a test: place, id, name and level. */
     public static List<String> describePokemon(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
+        java.util.Set<UUID> lent = new java.util.HashSet<>(com.cobbletowers.battle.cobblemon.RentalStorage.tagged(player));
         for (PartyStorage.Entry entry : PartyStorage.snapshot(player).entries().values()) {
             lines.add((entry.slot().isParty() ? "party " + entry.slot().index() : "box " + entry.slot().index() + "/" + entry.slot().sub())
-                    + " " + entry.id() + " " + entry.name() + " Lv" + entry.level() + (entry.fainted() ? " fainted" : ""));
+                    + " " + entry.id() + " " + entry.name() + " Lv" + entry.level() + (entry.fainted() ? " fainted" : "")
+                    + (lent.contains(entry.id()) ? " RENTAL" : ""));
         }
         return lines;
     }
@@ -576,6 +610,7 @@ public final class LobbyService {
 
     private static void dissolve(MinecraftServer server, TowerLobby lobby, String message) {
         BY_HOST.remove(lobby.host());
+        RentalDraftService.clearAll(lobby);
         List<UUID> everyone = new ArrayList<>(lobby.team());
         everyone.addAll(lobby.pending());
         for (UUID id : everyone) {
@@ -637,7 +672,8 @@ public final class LobbyService {
                 modeIds.add(playlist.id().getPath());
                 modeNames.add(playlist.displayName());
             }
-            modes = new PlayStatePayload.Modes(modeIds, modeNames, lobby.playlist().map(ResourceLocation::getPath).orElse(""));
+            modes = new PlayStatePayload.Modes(modeIds, modeNames, lobby.playlist().map(ResourceLocation::getPath).orElse(""),
+                    RentalDraftService.isRentalLobby(lobby));
         }
         TowerNetworking.sendPlayState(player, new PlayStatePayload(towers,
                 new PlayStatePayload.Lobby(role, selected, hostName, members, countdown,

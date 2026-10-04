@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "floatzel",
+  "level": 50,
+  "ability": "swiftswim",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "item": "cobblemon:choice_band",
+  "moves": [
+    "waterfall",
+    "aquajet",
+    "icepunch",
+    "crunch"
+  ],
+  "role": "fast physical attacker",
+  "rarity": "common"
+}

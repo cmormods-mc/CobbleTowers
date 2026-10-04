@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "jolteon",
+  "level": 50,
+  "ability": "voltabsorb",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "item": "cobblemon:choice_specs",
+  "moves": [
+    "thunderbolt",
+    "shadowball",
+    "voltswitch",
+    "hypervoice"
+  ],
+  "role": "fast special attacker",
+  "rarity": "common"
+}

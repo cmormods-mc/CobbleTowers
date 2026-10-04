@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "lugia",
+  "level": 50,
+  "ability": "multiscale",
+  "nature": "calm",
+  "evs": [
+    252,
+    0,
+    0,
+    4,
+    0,
+    252
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "hurricane",
+    "psychic",
+    "earthpower",
+    "roost"
+  ],
+  "role": "bulky special attacker",
+  "rarity": "legendary"
+}

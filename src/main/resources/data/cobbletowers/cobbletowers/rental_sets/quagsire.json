@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "quagsire",
+  "level": 50,
+  "ability": "waterabsorb",
+  "nature": "relaxed",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "earthquake",
+    "waterfall",
+    "recover",
+    "icebeam"
+  ],
+  "role": "bulky bruiser",
+  "rarity": "common"
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "blastoise",
+  "level": 50,
+  "ability": "torrent",
+  "nature": "bold",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "scald",
+    "icebeam",
+    "rapidspin",
+    "darkpulse"
+  ],
+  "role": "bulky water with spin",
+  "rarity": "uncommon"
+}

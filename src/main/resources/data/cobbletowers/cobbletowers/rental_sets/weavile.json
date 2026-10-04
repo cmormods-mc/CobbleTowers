@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "weavile",
+  "level": 50,
+  "ability": "pressure",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "item": "cobblemon:focus_sash",
+  "moves": [
+    "knockoff",
+    "iceshard",
+    "iciclecrash",
+    "lowkick"
+  ],
+  "role": "fast physical attacker",
+  "rarity": "epic"
+}

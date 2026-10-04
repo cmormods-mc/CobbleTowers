@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "tyranitar",
+  "level": 50,
+  "ability": "sandstream",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "item": "cobblemon:lum_berry",
+  "moves": [
+    "stoneedge",
+    "crunch",
+    "earthquake",
+    "firepunch"
+  ],
+  "role": "bulky attacker",
+  "rarity": "rare"
+}

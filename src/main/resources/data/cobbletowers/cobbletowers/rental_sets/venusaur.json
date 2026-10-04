@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "venusaur",
+  "level": 50,
+  "ability": "chlorophyll",
+  "nature": "modest",
+  "evs": [
+    252,
+    0,
+    0,
+    252,
+    4,
+    0
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "energyball",
+    "sludgebomb",
+    "earthquake",
+    "sleeppowder"
+  ],
+  "role": "bulky special attacker",
+  "rarity": "common"
+}

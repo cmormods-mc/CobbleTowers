@@ -37,6 +37,29 @@ class TowerPartyJournalStoreTest {
     }
 
     @Test
+    @DisplayName("the rentals a run was lent (P33) survive a save and load with the moved Pokemon")
+    void rentalsRoundTrip() {
+        PartyJournalEntry lent = new PartyJournalEntry(PLAYER, RUN, entry().originals(), List.of(new UUID(7, 1), new UUID(7, 2)));
+        TowerPartyJournalStore store = new TowerPartyJournalStore();
+        store.put(lent);
+
+        PartyJournalEntry back = TowerPartyJournalStore.load(store.save(new CompoundTag(), null), null).entryFor(PLAYER).orElseThrow();
+
+        assertEquals(lent, back);
+        assertEquals(List.of(new UUID(7, 1), new UUID(7, 2)), back.rentals());
+    }
+
+    @Test
+    @DisplayName("a journal written before rentals existed still loads, with none lent")
+    void oldJournalHasNoRentals() {
+        CompoundTag written = entry().toTag();
+        written.remove("rentals");
+        PartyJournalEntry back = PartyJournalEntry.fromTag(written);
+        assertEquals(List.of(), back.rentals());
+        assertEquals(entry(), back);
+    }
+
+    @Test
     @DisplayName("removing an entry removes it")
     void removing() {
         TowerPartyJournalStore store = new TowerPartyJournalStore();

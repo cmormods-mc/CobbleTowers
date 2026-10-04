@@ -97,6 +97,16 @@ public final class CobbleTowersClient implements ClientModInitializer {
                     }
                 }));
 
+        ClientPlayNetworking.registerGlobalReceiver(com.cobbletowers.network.RentalDraftPayload.TYPE, (payload, context) ->
+                context.client().execute(() -> {
+                    Screen current = Minecraft.getInstance().screen;
+                    if (current instanceof RentalPackScreen open) {
+                        open.accept(payload);
+                    } else {
+                        Minecraft.getInstance().setScreen(new RentalPackScreen(payload));
+                    }
+                }));
+
         ClientPlayNetworking.registerGlobalReceiver(RegistrationStatePayload.TYPE, (payload, context) ->
                 context.client().execute(() -> {
                     Screen current = Minecraft.getInstance().screen;

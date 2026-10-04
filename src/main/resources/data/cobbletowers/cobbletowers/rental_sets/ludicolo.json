@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "ludicolo",
+  "level": 50,
+  "ability": "swiftswim",
+  "nature": "modest",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "item": "cobblemon:choice_specs",
+  "moves": [
+    "hydropump",
+    "gigadrain",
+    "icebeam",
+    "leafstorm"
+  ],
+  "role": "special attacker",
+  "rarity": "common"
+}

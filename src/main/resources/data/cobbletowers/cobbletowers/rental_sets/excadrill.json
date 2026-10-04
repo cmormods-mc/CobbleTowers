@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "excadrill",
+  "level": 50,
+  "ability": "sandrush",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "earthquake",
+    "ironhead",
+    "rockslide",
+    "poisonjab"
+  ],
+  "role": "fast ground attacker",
+  "rarity": "rare"
+}

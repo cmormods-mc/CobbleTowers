@@ -57,16 +57,17 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
         }
     }
 
-    /** The playlists (P32) on offer and the one chosen ({@code ""} is Standard). */
-    public record Modes(List<String> ids, List<String> names, String chosen) {
+    /** The playlists (P32) on offer and the one chosen ({@code ""} is Standard); {@code rental} when that one lends a drafted team (P33). */
+    public record Modes(List<String> ids, List<String> names, String chosen, boolean rental) {
         static final StreamCodec<RegistryFriendlyByteBuf, Modes> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()), Modes::ids,
                 ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()), Modes::names,
                 ByteBufCodecs.STRING_UTF8, Modes::chosen,
+                ByteBufCodecs.BOOL, Modes::rental,
                 Modes::new);
 
         public static Modes none() {
-            return new Modes(List.of(), List.of(), "");
+            return new Modes(List.of(), List.of(), "", false);
         }
     }
 

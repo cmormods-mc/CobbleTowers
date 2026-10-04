@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "mewtwo",
+  "level": 50,
+  "ability": "pressure",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "psystrike",
+    "aurasphere",
+    "icebeam",
+    "shadowball"
+  ],
+  "role": "fast special attacker",
+  "rarity": "legendary"
+}

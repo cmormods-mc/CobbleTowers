@@ -62,6 +62,12 @@
       ],
       "enemy_level": 50,
       "label": "Briar Cup"
+    },
+    {
+      "tower": "cobbletowers:tideforge",
+      "playlist": "cobbletowers:rental",
+      "enemy_level": 50,
+      "label": "Draft Marathon"
     }
   ]
 }

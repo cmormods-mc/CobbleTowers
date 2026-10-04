@@ -112,6 +112,13 @@ public final class PartyJournalService {
         if (found.isEmpty()) return;
         PartyJournalEntry entry = found.get();
 
+        // Rentals first (P33): they occupy the party, and the originals cannot come back to a full one. Deleted by the ids the
+        // journal recorded before they were created, so a crash mid-creation leaves nothing behind either.
+        if (!entry.rentals().isEmpty()) {
+            int removed = com.cobbletowers.battle.cobblemon.RentalStorage.removeAll(player, entry.rentals()::contains);
+            TowerLog.info("Deleted {} rental Pokemon of {} from run {}", removed, player.getUUID(), entry.runId());
+        }
+
         PartyStorage.Snapshot snapshot = PartyStorage.snapshot(player);
         Restoration restoration = PartyArrangement.restore(snapshot.contents(), snapshot.pcSlots(), entry.originals());
 

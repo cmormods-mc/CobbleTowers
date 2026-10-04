@@ -135,15 +135,17 @@ class PlaylistRulesTest {
     }
 
     @Test
-    @DisplayName("the five shipped playlists parse, carry a name and description, and Hardcore closes the vendor and forces a modifier")
+    @DisplayName("the six shipped playlists parse, carry a name and description, and Hardcore closes the vendor and forces a modifier")
     void shippedFiles() throws IOException {
         List<PlaylistDefinition> all = shipped();
-        assertEquals(5, all.size());
+        assertEquals(6, all.size());
         assertTrue(all.stream().allMatch(p -> !p.displayName().isBlank() && !p.description().isBlank() && p.difficultyBonus() > 0));
         PlaylistDefinition hardcore = shipped("hardcore");
         assertTrue(hardcore.vendorClosed());
         assertEquals(List.of(ResourceLocation.fromNamespaceAndPath("cobbletowers", "empty_pockets")), hardcore.forcedModifiers());
         assertEquals(1, shipped("solo_gauntlet").maxPlayers());
+        assertTrue(shipped("rental").rental(), "the Rental Draft playlist lends a drafted team (P33)");
+        assertTrue(all.stream().filter(PlaylistDefinition::rental).count() == 1, "and only that one does");
     }
 
     @Test

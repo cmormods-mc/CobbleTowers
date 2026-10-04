@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "tangrowth",
+  "level": 50,
+  "ability": "regenerator",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "powerwhip",
+    "knockoff",
+    "earthquake",
+    "sleeppowder"
+  ],
+  "role": "bulky grass with sleep",
+  "rarity": "common"
+}

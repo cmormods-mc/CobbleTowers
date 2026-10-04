@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "gengar",
+  "level": 50,
+  "ability": "cursedbody",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "item": "cobblemon:focus_sash",
+  "moves": [
+    "shadowball",
+    "sludgebomb",
+    "focusblast",
+    "thunderbolt"
+  ],
+  "role": "glass cannon",
+  "rarity": "common"
+}

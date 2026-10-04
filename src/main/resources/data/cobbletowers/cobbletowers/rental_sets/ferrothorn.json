@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "ferrothorn",
+  "level": 50,
+  "ability": "ironbarbs",
+  "nature": "relaxed",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "gyroball",
+    "leechseed",
+    "powerwhip",
+    "stealthrock"
+  ],
+  "role": "defensive wall",
+  "rarity": "uncommon"
+}

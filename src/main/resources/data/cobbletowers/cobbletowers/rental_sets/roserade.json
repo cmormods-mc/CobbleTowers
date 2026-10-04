@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "roserade",
+  "level": 50,
+  "ability": "technician",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "item": "cobblemon:choice_specs",
+  "moves": [
+    "sludgebomb",
+    "energyball",
+    "shadowball",
+    "leafstorm"
+  ],
+  "role": "fast special attacker",
+  "rarity": "common"
+}

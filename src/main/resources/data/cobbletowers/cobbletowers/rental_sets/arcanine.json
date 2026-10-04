@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "arcanine",
+  "level": 50,
+  "ability": "intimidate",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "flareblitz",
+    "extremespeed",
+    "closecombat",
+    "wildcharge"
+  ],
+  "role": "attacker with priority",
+  "rarity": "common"
+}

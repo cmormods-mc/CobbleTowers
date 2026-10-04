@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "lucario",
+  "level": 50,
+  "ability": "justified",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "closecombat",
+    "extremespeed",
+    "meteormash",
+    "crunch"
+  ],
+  "role": "fast fighter",
+  "rarity": "common"
+}

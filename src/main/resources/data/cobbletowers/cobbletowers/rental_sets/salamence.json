@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "salamence",
+  "level": 50,
+  "ability": "intimidate",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "outrage",
+    "earthquake",
+    "firefang",
+    "roost"
+  ],
+  "role": "fast dragon",
+  "rarity": "rare"
+}

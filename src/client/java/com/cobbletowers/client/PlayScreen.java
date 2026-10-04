@@ -42,31 +42,44 @@ public final class PlayScreen extends Screen {
         buildWidgets();
     }
 
+    /** Where the right-hand column controls end, so the team list can sit just under them. */
+    private int controlsBottom;
+
+    /**
+     * Two columns, so everything fits a short window (a 1080p screen at the automatic GUI scale is only 270 tall): the towers on the
+     * left, and on the right whatever the player can do right now (invite, depth, mode, draft, start, leave), with the team under it.
+     */
     private void buildWidgets() {
         PlayStatePayload.Lobby lobby = state.lobby();
-        int left = width / 2 - 100;
-        int y = 40;
+        int column = Math.min(200, (width - 24) / 2);
+        int half = (column - 4) / 2;
+        int leftX = width / 2 - column - 4;
+        int rightX = width / 2 + 4;
 
+        // The towers: 22 apart when there is room, packed closer when there are many.
         boolean canChoose = lobby.role() == 0 || lobby.role() == 1;
+        int towers = Math.max(1, state.towers().size());
+        int step = Math.max(14, Math.min(22, (height - 52) / towers));
+        int y = 40;
         for (PlayStatePayload.Tower tower : state.towers()) {
             boolean selected = tower.id().toString().equals(lobby.selected());
             Button button = Button.builder(Component.literal((selected ? "> " : "") + tower.displayName()),
                             b -> send(PlayActionPayload.Action.SELECT_TOWER, tower.id().toString()))
-                    .pos(left, y).size(200, 20).build();
+                    .pos(leftX, y).size(column, step - 2).build();
             button.active = canChoose && lobby.countdown() < 0;
             addRenderableWidget(button);
-            y += 22;
+            y += step;
         }
 
-        y += 8;
+        int ry = 40;
         if (lobby.role() == 1 && lobby.countdown() < 0) {
-            inviteName = new EditBox(font, left, y, 130, 20, Component.literal("Player name"));
+            inviteName = new EditBox(font, rightX, ry, column - 70, 20, Component.literal("Player name"));
             inviteName.setMaxLength(16);
             inviteName.setHint(Component.literal("Player name"));
             addRenderableWidget(inviteName);
             addRenderableWidget(Button.builder(Component.literal("Invite"), b -> invite())
-                    .pos(left + 134, y).size(66, 20).build());
-            y += 24;
+                    .pos(rightX + column - 66, ry).size(66, 20).build());
+            ry += 22;
         } else {
             inviteName = null;
         }
@@ -78,10 +91,10 @@ public final class PlayScreen extends Screen {
             Button ascend = Button.builder(Component.literal("Start at: " + (depth.chosen() == 0
                             ? "Floor 1" : "Ascension " + depth.chosen()) + (depth.max() > 0 ? "" : " (none reached)")),
                     button -> send(PlayActionPayload.Action.SET_ASCENSION, Integer.toString(next)))
-                    .pos(left, y).size(200, 20).build();
+                    .pos(rightX, ry).size(column, 20).build();
             ascend.active = depth.max() > 0 && lobby.countdown() < 0;
             addRenderableWidget(ascend);
-            y += 24;
+            ry += 22;
         }
 
         // Mode (P32): the host cycles Standard and the playlists; the house rules apply to the whole team.
@@ -93,43 +106,59 @@ public final class PlayScreen extends Screen {
             String label = chosenIndex < 0 ? "Standard" : modes.names().get(chosenIndex);
             Button mode = Button.builder(Component.literal("Mode: " + label),
                     button -> send(PlayActionPayload.Action.SET_PLAYLIST, nextId))
-                    .pos(left, y).size(200, 20).build();
+                    .pos(rightX, ry).size(column, 20).build();
             mode.active = lobby.countdown() < 0;
             addRenderableWidget(mode);
-            y += 24;
+            ry += 22;
+        }
+
+        // The Rental Draft (P33): every member opens their own packs; the host cannot start until all are done.
+        if (modes.rental() && (lobby.role() == 1 || lobby.role() == 3) && lobby.countdown() < 0) {
+            addRenderableWidget(Button.builder(Component.literal("Draft your team"),
+                            button -> {
+                                if (ClientPlayNetworking.canSend(com.cobbletowers.network.RentalDraftActionPayload.TYPE)) {
+                                    ClientPlayNetworking.send(new com.cobbletowers.network.RentalDraftActionPayload(
+                                            com.cobbletowers.network.RentalDraftActionPayload.Action.OPEN, 0, 0));
+                                }
+                            })
+                    .pos(rightX, ry).size(column, 20).build());
+            ry += 22;
         }
 
         if (lobby.role() == 2) {
             addRenderableWidget(Button.builder(Component.literal("Accept"),
                             b -> send(PlayActionPayload.Action.ACCEPT, lobby.hostName()))
-                    .pos(left, y).size(98, 20).build());
+                    .pos(rightX, ry).size(half, 20).build());
             addRenderableWidget(Button.builder(Component.literal("Decline"),
                             b -> send(PlayActionPayload.Action.DECLINE, lobby.hostName()))
-                    .pos(left + 102, y).size(98, 20).build());
-            y += 24;
+                    .pos(rightX + half + 4, ry).size(half, 20).build());
+            ry += 22;
         }
         if (lobby.role() == 1) {
             Button start = Button.builder(Component.literal(lobby.countdown() >= 0
                             ? "Starting in " + lobby.countdown() + "..." : "Start"),
-                    b -> send(PlayActionPayload.Action.START, "")).pos(left, y).size(98, 20).build();
+                    b -> send(PlayActionPayload.Action.START, "")).pos(rightX, ry).size(half, 20).build();
             start.active = !lobby.selected().isEmpty() && lobby.countdown() < 0;
             addRenderableWidget(start);
-        }
-        if (lobby.role() == 1 || lobby.role() == 3) {
-            y += 24;
-            addRenderableWidget(Button.builder(Component.literal("Choose party"),
-                            b -> send(PlayActionPayload.Action.OPEN_CHOOSER, ""))
-                    .pos(left, y).size(220, 20).build());
-            y -= 24;
-        }
-        if (lobby.role() != 0) {
-            addRenderableWidget(Button.builder(Component.literal(lobby.role() == 1 ? "End team" : "Leave"),
-                            b -> send(PlayActionPayload.Action.LEAVE, ""))
-                    .pos(left + 102, y).size(98, 20).build());
+            addRenderableWidget(Button.builder(Component.literal("End team"), b -> send(PlayActionPayload.Action.LEAVE, ""))
+                    .pos(rightX + half + 4, ry).size(half, 20).build());
+            ry += 22;
+        } else if (lobby.role() != 0) {
+            addRenderableWidget(Button.builder(Component.literal("Leave"), b -> send(PlayActionPayload.Action.LEAVE, ""))
+                    .pos(rightX, ry).size(column, 20).build());
+            ry += 22;
         } else {
             addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                    .pos(left + 102, y).size(98, 20).build());
+                    .pos(rightX, ry).size(column, 20).build());
+            ry += 22;
         }
+        if (lobby.role() == 1 || lobby.role() == 3) {
+            addRenderableWidget(Button.builder(Component.literal("Choose party"),
+                            b -> send(PlayActionPayload.Action.OPEN_CHOOSER, ""))
+                    .pos(rightX, ry).size(column, 20).build());
+            ry += 22;
+        }
+        controlsBottom = ry;
     }
 
     private void invite() {
@@ -146,19 +175,20 @@ public final class PlayScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(font, title, width / 2, 14, 0xFFFFFF);
         graphics.drawCenteredString(font, "Your party: " + partyLine(state.partyLevels()), width / 2, 26, 0xAAAAAA);
 
         PlayStatePayload.Lobby lobby = state.lobby();
-        int y = height - 20 - 10 * (lobby.members().size() + 3);
+        int column = Math.min(200, (width - 24) / 2);
+        int rightX = width / 2 + 4;
+        int y = controlsBottom + 4;
         if (lobby.role() != 0) {
-            graphics.drawCenteredString(font, "Host: " + lobby.hostName(), width / 2, y, 0xFFFF55);
+            graphics.drawString(font, "Host: " + lobby.hostName(), rightX, y, 0xFFFF55);
             y += 10;
             for (PlayStatePayload.Member member : lobby.members()) {
-                graphics.drawCenteredString(font, member.name() + (member.accepted() ? "  ready" : "  invited"),
-                        width / 2, y, member.accepted() ? 0x55FF55 : 0xAAAAAA);
+                graphics.drawString(font, font.plainSubstrByWidth(member.name() + (member.accepted() ? "  ready" : "  invited"), column),
+                        rightX, y, member.accepted() ? 0x55FF55 : 0xAAAAAA);
                 y += 10;
             }
         }

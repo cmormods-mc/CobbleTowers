@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "kyogre",
+  "level": 50,
+  "ability": "drizzle",
+  "nature": "modest",
+  "evs": [
+    252,
+    0,
+    0,
+    252,
+    4,
+    0
+  ],
+  "item": "cobblemon:choice_specs",
+  "moves": [
+    "originpulse",
+    "icebeam",
+    "thunder",
+    "scald"
+  ],
+  "role": "weather special attacker",
+  "rarity": "legendary"
+}

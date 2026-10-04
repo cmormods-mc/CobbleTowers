@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "mamoswine",
+  "level": 50,
+  "ability": "oblivious",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "item": "cobblemon:choice_band",
+  "moves": [
+    "earthquake",
+    "iceshard",
+    "iciclecrash",
+    "knockoff"
+  ],
+  "role": "ice and ground attacker",
+  "rarity": "rare"
+}

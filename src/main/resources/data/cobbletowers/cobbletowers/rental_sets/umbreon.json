@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "umbreon",
+  "level": 50,
+  "ability": "synchronize",
+  "nature": "calm",
+  "evs": [
+    252,
+    0,
+    4,
+    0,
+    252,
+    0
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "foulplay",
+    "wish",
+    "protect",
+    "toxic"
+  ],
+  "role": "defensive pivot",
+  "rarity": "common"
+}

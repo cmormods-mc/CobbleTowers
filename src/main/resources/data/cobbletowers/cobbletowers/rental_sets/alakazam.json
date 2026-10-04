@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "alakazam",
+  "level": 50,
+  "ability": "magicguard",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "item": "cobblemon:focus_sash",
+  "moves": [
+    "psychic",
+    "shadowball",
+    "focusblast",
+    "energyball"
+  ],
+  "role": "glass cannon",
+  "rarity": "uncommon"
+}

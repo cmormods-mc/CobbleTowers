@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "metagross",
+  "level": 50,
+  "ability": "clearbody",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "item": "cobblemon:expert_belt",
+  "moves": [
+    "meteormash",
+    "earthquake",
+    "zenheadbutt",
+    "icepunch"
+  ],
+  "role": "steel attacker",
+  "rarity": "rare"
+}

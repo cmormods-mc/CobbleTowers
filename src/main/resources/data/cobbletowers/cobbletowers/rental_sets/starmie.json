@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "starmie",
+  "level": 50,
+  "ability": "naturalcure",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "surf",
+    "psychic",
+    "icebeam",
+    "thunderbolt"
+  ],
+  "role": "fast special attacker",
+  "rarity": "uncommon"
+}

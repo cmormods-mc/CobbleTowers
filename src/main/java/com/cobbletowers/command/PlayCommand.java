@@ -46,6 +46,16 @@ public final class PlayCommand {
                         .then(Commands.literal("playlist")
                                 .then(Commands.argument("mode", com.mojang.brigadier.arguments.StringArgumentType.word())
                                         .executes(PlayCommand::playlist)))
+                        .then(Commands.literal("draft")
+                                .executes(PlayCommand::draft)
+                                .then(Commands.literal("restart").executes(PlayCommand::draftRestart))
+                                .then(Commands.literal("text").executes(context -> sayAll(context,
+                                        com.cobbletowers.lobby.RentalDraftService.text(context.getSource().getServer(),
+                                                context.getSource().getPlayerOrException()))))
+                                .then(Commands.literal("pick")
+                                        .then(Commands.argument("a", IntegerArgumentType.integer(1, 5))
+                                                .then(Commands.argument("b", IntegerArgumentType.integer(1, 5))
+                                                        .executes(PlayCommand::draftPick)))))
                         .then(Commands.literal("ascension")
                                 .then(Commands.argument("level", IntegerArgumentType.integer(0, 1000))
                                         .executes(PlayCommand::ascension)))
@@ -75,6 +85,17 @@ public final class PlayCommand {
                                 .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("player", EntityArgument.player())
                                         .executes(PlayCommand::pokemon)))
+                        .then(Commands.literal("rentals")
+                                .requires(source -> source.hasPermission(2))
+                                .then(Commands.argument("player", EntityArgument.player())
+                                        .executes(context -> sayAll(context, com.cobbletowers.lobby.RentalAdmin.describe(
+                                                EntityArgument.getPlayer(context, "player"))))
+                                        .then(Commands.literal("stray").executes(context -> sayAll(context,
+                                                com.cobbletowers.lobby.RentalAdmin.giveStray(EntityArgument.getPlayer(context, "player")))))
+                                        .then(Commands.literal("dex").executes(context -> sayAll(context,
+                                                com.cobbletowers.lobby.RentalAdmin.pokedex(EntityArgument.getPlayer(context, "player")))))
+                                        .then(Commands.literal("xp").executes(context -> sayAll(context,
+                                                com.cobbletowers.lobby.RentalAdmin.tryExperience(EntityArgument.getPlayer(context, "player")))))))
                         .then(Commands.literal("leave").executes(PlayCommand::leave))
                         .then(Commands.literal("start").executes(PlayCommand::start))
                         .then(Commands.literal("status").executes(PlayCommand::status))
@@ -107,6 +128,26 @@ public final class PlayCommand {
         return say(context, LobbyService.setPlaylist(context.getSource().getServer(),
                 context.getSource().getPlayerOrException(),
                 com.mojang.brigadier.arguments.StringArgumentType.getString(context, "mode")));
+    }
+
+    private static int draft(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return sayAll(context, com.cobbletowers.lobby.RentalDraftService.view(context.getSource().getServer(),
+                context.getSource().getPlayerOrException()));
+    }
+
+    private static int draftRestart(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return sayAll(context, com.cobbletowers.lobby.RentalDraftService.restart(context.getSource().getServer(),
+                context.getSource().getPlayerOrException()));
+    }
+
+    private static int draftPick(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return sayAll(context, com.cobbletowers.lobby.RentalDraftService.pick(context.getSource().getServer(),
+                context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "a"),
+                IntegerArgumentType.getInteger(context, "b")));
+    }
+
+    private static int sayAll(CommandContext<CommandSourceStack> context, java.util.List<String> lines) {
+        return say(context, String.join(System.lineSeparator(), lines));
     }
 
     private static int ascension(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

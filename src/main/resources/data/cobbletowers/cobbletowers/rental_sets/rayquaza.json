@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "rayquaza",
+  "level": 50,
+  "ability": "airlock",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "item": "cobblemon:choice_band",
+  "moves": [
+    "dragonascent",
+    "earthquake",
+    "extremespeed",
+    "uturn"
+  ],
+  "role": "physical attacker",
+  "rarity": "legendary"
+}

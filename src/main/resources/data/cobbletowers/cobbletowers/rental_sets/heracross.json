@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "heracross",
+  "level": 50,
+  "ability": "moxie",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "item": "cobblemon:choice_band",
+  "moves": [
+    "closecombat",
+    "megahorn",
+    "knockoff",
+    "stoneedge"
+  ],
+  "role": "physical attacker",
+  "rarity": "common"
+}

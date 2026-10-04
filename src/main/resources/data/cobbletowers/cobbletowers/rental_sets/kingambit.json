@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "kingambit",
+  "level": 50,
+  "ability": "defiant",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "item": "cobblemon:sitrus_berry",
+  "moves": [
+    "suckerpunch",
+    "ironhead",
+    "kowtowcleave",
+    "lowkick"
+  ],
+  "role": "physical attacker",
+  "rarity": "epic"
+}

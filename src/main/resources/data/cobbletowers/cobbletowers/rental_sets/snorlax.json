@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "species": "snorlax",
+  "level": 50,
+  "ability": "thickfat",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "bodyslam",
+    "earthquake",
+    "crunch",
+    "firepunch"
+  ],
+  "role": "bulky bruiser",
+  "rarity": "uncommon"
+}
