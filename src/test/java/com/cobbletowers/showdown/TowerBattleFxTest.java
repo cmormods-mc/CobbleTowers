@@ -79,6 +79,22 @@ class TowerBattleFxTest {
     }
 
     @Test
+    void evsOperationsAreValidatedAndClamped() {
+        UUID player = UUID.randomUUID();
+        int kept = TowerBattleFx.queue(player, ops("[{\"op\":\"evs\",\"side\":\"foe\",\"amount\":99999},"
+                + "{\"op\":\"evs\",\"side\":\"self\",\"amount\":40,\"stat\":\"hp\"},"
+                + "{\"op\":\"evs\",\"side\":\"self\",\"amount\":40,\"stat\":\"accuracy\"},"
+                + "{\"op\":\"evs\",\"side\":\"self\",\"amount\":\"many\"},"
+                + "{\"op\":\"evs\",\"amount\":40}]"));
+        assertEquals(2, kept);
+        TowerBattleFx.armFloorBattle(player);
+        JsonArray sent = ops(TowerBattleFx.fieldsFor(UUID.randomUUID(), List.of(player)).get("towerFx"));
+        assertEquals(2000, sent.get(0).getAsJsonObject().get("amount").getAsInt());
+        assertEquals("hp", sent.get(1).getAsJsonObject().get("stat").getAsString());
+        TowerBattleFx.clearQueued(player);
+    }
+
+    @Test
     void neverMoreThanTheCap() {
         UUID player = UUID.randomUUID();
         StringBuilder many = new StringBuilder("[");

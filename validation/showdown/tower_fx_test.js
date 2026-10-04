@@ -130,6 +130,58 @@ test('boost: stages are clamped to +-6 and a zero or non-number does nothing', a
   assert.strictEqual(stage(none, 0, 'spe'), 0);
 });
 
+// P30: over-the-cap EVs. The expected stat is Showdown's own formula, computed here from the species' base stats.
+const statOf = (base, ev, level = 50) => Math.trunc(Math.trunc(2 * base + 31 + Math.trunc(ev / 4)) * level / 100 + 5);
+const hpStatOf = (base, ev, level = 50) => Math.trunc(Math.trunc(2 * base + 31 + Math.trunc(ev / 4) + 100) * level / 100 + 10);
+
+test('evs: raises every stat of the named side beyond the 255 cap, and the other side is untouched', async () => {
+  const b = await battle({towerFx: [{op: 'evs', sides: ['p2'], amount: 1000}], turns: 0});
+  const foe = b.battle.sides[1].active[0];
+  const mine = b.battle.sides[0].active[0];
+  assert.strictEqual(foe.set.evs.atk, 1000, 'the raised value is held, not clamped to 255');
+  assert.strictEqual(foe.storedStats.atk, statOf(84, 1000));
+  assert.strictEqual(foe.storedStats.spe, statOf(100, 1000));
+  assert.strictEqual(foe.maxhp, hpStatOf(78, 1000));
+  assert.strictEqual(foe.hp, foe.maxhp, 'a full-health Pokemon stays full');
+  assert.strictEqual(mine.set.evs.atk, 0);
+  assert.strictEqual(mine.storedStats.atk, statOf(83, 0));
+});
+
+test('evs: the first switch-in line already reports the raised max HP (it runs before the battle starts)', async () => {
+  const b = await battle({towerFx: [{op: 'evs', sides: ['p2'], amount: 1000}], turns: 0});
+  const max = hpStatOf(78, 1000);
+  assert.ok(b.lines.some(line => line.startsWith('|switch|p2a') && line.includes(`${max}/${max}`)),
+    'switch line: ' + b.lines.filter(l => l.startsWith('|switch|p2a')).join(' '));
+});
+
+test('evs: one stat only when asked, and the HP stat scales HP', async () => {
+  const b = await battle({towerFx: [{op: 'evs', sides: ['p2'], amount: 400, stat: 'hp'}], turns: 0});
+  const foe = b.battle.sides[1].active[0];
+  assert.strictEqual(foe.maxhp, hpStatOf(78, 400));
+  assert.strictEqual(foe.storedStats.atk, statOf(84, 0), 'the other stats are untouched');
+});
+
+test('evs: a stronger Pokemon really deals more damage (same seed, same moves)', async () => {
+  const plain = await battle({moves: ['move 2', 'move 1']});
+  const strong = await battle({towerFx: [{op: 'evs', sides: ['p2'], amount: 2000}], moves: ['move 2', 'move 1']});
+  const lost = b => maxhp(b, 0) - hp(b, 0);
+  assert.ok(lost(strong) > lost(plain), `lost ${lost(strong)} vs ${lost(plain)}`);
+});
+
+test('evs: bounded - one operation at most 2000, a stat at most 4000 in total', async () => {
+  const b = await battle({towerFx: [
+    {op: 'evs', sides: ['p2'], amount: 99999}, {op: 'evs', sides: ['p2'], amount: 99999}, {op: 'evs', sides: ['p2'], amount: 99999},
+  ], turns: 0});
+  assert.strictEqual(b.battle.sides[1].active[0].set.evs.spa, 4000);
+});
+
+test('evs: a bad stat or amount is reported and skipped, and the battle still starts', async () => {
+  const b = await battle({towerFx: [{op: 'evs', sides: ['p2'], amount: 100, stat: 'luck'}, {op: 'evs', sides: ['p2'], amount: 'lots'}], turns: 0});
+  assert.ok(started(b));
+  assert.strictEqual(b.battle.sides[1].active[0].set.evs.atk, 0);
+  assert.ok(said(b, /could not be applied/));
+});
+
 test('hp: lowers the named side to a percentage and never raises it', async () => {
   const b = await battle({towerFx: [{op: 'hp', sides: ['p2'], percent: 50}], moves: ['move 4', 'move 4']});
   const full = maxhp(b, 1);

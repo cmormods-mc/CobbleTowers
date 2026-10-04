@@ -37,6 +37,8 @@ public final class TowerBattleFx {
     private static final Set<String> WEATHERS = Set.of("raindance", "sunnyday", "sandstorm", "hail", "snowscape");
     private static final Set<String> TERRAINS = Set.of("electricterrain", "grassyterrain", "mistyterrain", "psychicterrain");
     private static final Set<String> STATS = Set.of("atk", "def", "spa", "spd", "spe", "accuracy", "evasion");
+    /** The six stats an EV can go into, HP included (a boost's stat list has accuracy and evasion instead). */
+    private static final Set<String> EV_STATS = Set.of("hp", "atk", "def", "spa", "spd", "spe");
     private static final Set<String> STATUSES = Set.of("brn", "par", "psn", "tox", "slp", "frz");
     private static final Set<String> SIDE_CONDITIONS = Set.of("tailwind", "reflect", "lightscreen", "auroraveil", "safeguard", "mist");
     /** The eighteen types as Showdown names them. */
@@ -174,6 +176,15 @@ public final class TowerBattleFx {
             }
             case "boost" -> {
                 if (!side(op, clean) || !oneOf(op, "stat", STATS, clean) || !copyInt(op, "stages", -6, 6, clean)) return Optional.empty();
+            }
+            case "evs" -> {
+                // Over-the-cap EVs (P30), applied inside the battle only; see tower-fx.js.
+                if (!side(op, clean) || !copyInt(op, "amount", 1, 2000, clean)) return Optional.empty();
+                String stat = string(op, "stat");
+                if (stat != null && !stat.equals("all")) {
+                    if (!EV_STATS.contains(stat)) return Optional.empty();
+                    clean.addProperty("stat", stat);
+                }
             }
             case "hp" -> {
                 if (!side(op, clean) || !copyInt(op, "percent", 1, 100, clean)) return Optional.empty();

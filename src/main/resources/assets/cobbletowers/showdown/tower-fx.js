@@ -31,6 +31,13 @@ const WEATHERS = ['raindance', 'sunnyday', 'sandstorm', 'hail', 'snowscape'];
 const TERRAINS = ['electricterrain', 'grassyterrain', 'mistyterrain', 'psychicterrain'];
 const SIDE_CONDITIONS = ['tailwind', 'reflect', 'lightscreen', 'auroraveil', 'safeguard', 'mist'];
 const SIDE_ID = /^p[1-9]$/;
+// Over-the-cap EVs (P30). Cobblemon refuses more than 252 per stat, and Showdown clamps a team member's EVs to 255 when
+// it builds one, but neither limit applies to a Pokemon that already exists in a battle: the stat formula only ever
+// computes floor(ev / 4). So Ascension scaling is applied here, to the battle's own copy, and nothing is ever written
+// back to a player's Pokemon.
+const EV_STATS = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
+const MAX_EV_AMOUNT = 2000;   // one operation
+const MAX_EV_TOTAL = 4000;    // per stat, however many operations: already +1000 stat points before level scaling
 
 function clamp(value, low, high, fallback) {
   const n = Number(value);
@@ -144,6 +151,78 @@ function addDamageRule(battle, op, rules, key) {
   rules[key].push({sides, type, percent: clamp(op.percent, 1, 300, 100)});
 }
 
+/**
+ * Raises every Pokemon on the named sides (the whole team, not only the leads, so a switch-in is as strong) by `amount`
+ * EVs in one stat or in all six, then recomputes its stats the way the simulator itself does. Runs BEFORE the battle
+ * starts, so the HP the first switch-in line reports is already the real one; run afterwards, the client would see a
+ * max HP change under its feet.
+ */
+function applyEvs(battle, op) {
+  const amount = clamp(op.amount, 1, MAX_EV_AMOUNT, 0);
+  if (amount === 0) throw new Error('evs needs a positive amount');
+  let stats = EV_STATS;
+  if (op.stat !== undefined && op.stat !== null && op.stat !== 'all') {
+    if (!EV_STATS.includes(op.stat)) throw new Error(`${op.stat} is not a stat`);
+    stats = [op.stat];
+  }
+  for (const side of sidesOf(battle, op)) {
+    for (const pokemon of side.pokemon) {
+      if (!pokemon || !pokemon.set || !pokemon.species) continue;
+      const before = pokemon.maxhp;
+      for (const stat of stats) {
+        pokemon.set.evs[stat] = Math.min(MAX_EV_TOTAL, (Number(pokemon.set.evs[stat]) || 0) + amount);
+      }
+      restat(battle, pokemon);
+      (battle.towerFxEvLog = battle.towerFxEvLog || []).push(`${side.id}:${pokemon.species.name} +${amount} hp ${before}->${pokemon.maxhp} atk ${pokemon.storedStats.atk}`);
+    }
+  }
+}
+
+/** Recomputes a Pokemon's stored stats from its (possibly raised) EVs, keeping its HP at the same fraction. */
+function restat(battle, pokemon) {
+  const stats = battle.spreadModify(pokemon.species.baseStats, pokemon.set);
+  pokemon.baseStoredStats = Object.assign({}, stats);
+  for (const name of Object.keys(pokemon.storedStats)) {
+    pokemon.storedStats[name] = stats[name];
+    if (pokemon.modifiedStats) pokemon.modifiedStats[name] = stats[name];
+  }
+  pokemon.speed = pokemon.storedStats.spe;
+  if (pokemon.species.maxHP) return;   // a fixed-HP species (Shedinja) keeps its one HP
+  const oldMax = pokemon.maxhp || 1;
+  const newMax = stats.hp;
+  pokemon.hp = pokemon.hp > 0 ? Math.max(1, Math.min(newMax, Math.round(pokemon.hp * newMax / oldMax))) : 0;
+  pokemon.baseMaxhp = newMax;
+  pokemon.maxhp = newMax;
+}
+
+/** Operations that must be in place before the first switch-in is announced. */
+const PRE_START = {
+  evs: (battle, op) => applyEvs(battle, op),
+};
+
+function applyPreStart(battle) {
+  const fx = battle.format && battle.format.towerFx;
+  if (!Array.isArray(fx)) return;
+  let applied = 0;
+  for (const op of fx.slice(0, MAX_OPS)) {
+    const name = op && typeof op === 'object' ? op.op : undefined;
+    if (typeof name !== 'string' || !Object.prototype.hasOwnProperty.call(PRE_START, name)) continue;
+    try {
+      PRE_START[name](battle, op);
+      applied++;
+    } catch (err) {
+      note(battle, `A tower effect (${name}) could not be applied: ${err && err.message}`);
+    }
+  }
+  battle.towerFxPreApplied = applied;
+  // Said in the server log, like the main summary: only this proves the raised stats are the ones in the battle.
+  try {
+    if (battle.towerFxEvLog) console.log(`[CobbleTowers] EVs raised: ${battle.towerFxEvLog.join('; ')}`);
+  } catch (err) {
+    /* logging is never worth a battle */
+  }
+}
+
 const OPERATIONS = {
   weather: (battle, op) => applyWeather(battle, op),
   terrain: (battle, op) => applyTerrain(battle, op),
@@ -202,7 +281,7 @@ function applyTowerFx(battle) {
   for (const op of fx.slice(0, MAX_OPS)) {
     const name = op && typeof op === 'object' ? op.op : undefined;
     const handler = typeof name === 'string' && Object.prototype.hasOwnProperty.call(OPERATIONS, name) ? OPERATIONS[name] : null;
-    if (!handler) continue;   // an operation this version does not know is ignored, never guessed at
+    if (!handler) continue;   // an operation this version does not know is ignored, never guessed at (pre-start ones already ran)
     try {
       handler(battle, op, rules);
       applied++;
@@ -211,6 +290,7 @@ function applyTowerFx(battle) {
     }
   }
   if (rules.dealt.length || rules.taken.length) wrapDamage(battle, rules);
+  applied += battle.towerFxPreApplied || 0;
   if (applied > 0) note(battle, 'Tower effects are in play.');
   // To the server log, not just the battle log: the Java side logs what it HANDED to Showdown, and only this line
   // proves the JavaScript received it and applied it (it did not, for a whole phase, and nothing said so).
@@ -225,6 +305,14 @@ function install(sim) {
   const Battle = sim.Battle;
   const oldStart = Battle.prototype.start;
   Battle.prototype.start = function () {
+    // Over-the-cap EVs go in before anything is announced; a battle that has started or been restored is left alone.
+    if (!this.started && !this.deserialized) {
+      try {
+        applyPreStart(this);
+      } catch (err) {
+        note(this, 'Tower effects could not be prepared.');
+      }
+    }
     const result = oldStart.apply(this, arguments);
     if (this.deserialized) return result;   // a restored battle must not re-apply what already happened
     try {
@@ -236,7 +324,7 @@ function install(sim) {
   };
 }
 
-module.exports = {install, applyTowerFx, MAX_OPS};
+module.exports = {install, applyTowerFx, applyPreStart, MAX_OPS};
 
 // Loaded by Showdown (through CobbleRaids' extension loader): install against the simulator beside this file. The
 // tests set the flag and call install() themselves against a simulator they loaded.
