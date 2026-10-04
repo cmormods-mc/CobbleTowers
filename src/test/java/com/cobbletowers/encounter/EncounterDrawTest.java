@@ -203,6 +203,29 @@ class EncounterDrawTest {
     }
 
     @Test
+    @DisplayName("a jersey opponent is switched on for the Battle Tower Teams pack: league_team and a two-digit number")
+    void jerseyOpponentCarriesThePacksFeatures() {
+        EncounterPoolDefinition themedPool = pool("""
+                [{"species":"cobblemon:kyogre","aspects":["jersey"],"weight":100}]""");
+        RegionalThemeDefinition theme = RegionalThemeDefinition.fromJson(id("tideforge"), JsonParser.parseString("""
+                {"schema_version":1,"display_name":"Tideforge","doctrine":"Momentum",
+                 "jersey_weight_growth_percent_per_floor":0,
+                 "jersey_signatures":[
+                   {"species":"cobblemon:kyogre"},{"species":"cobblemon:vaporeon"},
+                   {"species":"cobblemon:blastoise"},{"species":"cobblemon:golisopod"},
+                   {"species":"cobblemon:empoleon"}]}""").getAsJsonObject());
+
+        EncounterSnapshot drawn = EncounterDraw.draw(themedPool, RUN_SEED, 3, 0, PARTY, ruleset(), 0,
+                Optional.of(theme)).orElseThrow();
+
+        String number = String.format("%02d", drawn.jerseyNumber().orElseThrow());
+        assertEquals(List.of("league_team=tideforge", "jersey_number=" + number), drawn.aspects());
+        assertTrue(drawn.toProperties().endsWith(" league_team=tideforge jersey_number=" + number));
+        // The fallback drops them with every other aspect, leaving the plain species.
+        assertEquals("cobblemon:kyogre level=" + drawn.level(), drawn.toProperties(false));
+    }
+
+    @Test
     @DisplayName("a jersey signature's snapshot carries a jersey number; a non-jersey one does not (TDS #67)")
     void jerseyNumberOnlyForJerseySpecies() {
         EncounterPoolDefinition themedPool = pool("""

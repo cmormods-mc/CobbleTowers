@@ -63,9 +63,26 @@ public final class EncounterDraw {
         OptionalInt jerseyNumber = theme.isPresent() && theme.get().isJerseySpecies(entry.species())
                 ? OptionalInt.of(JerseyNumbers.forEncounter(seed))
                 : OptionalInt.empty();
+        List<String> aspects = jerseyNumber.isPresent()
+                ? jerseyProperties(entry.aspects(), theme.get(), jerseyNumber.getAsInt())
+                : entry.aspects();
         return TowerLevelPolicy.levelFor(partyLevels, floorIndex, offset, ruleset).stream()
-                .mapToObj(level -> new EncounterSnapshot(ordinal, entry.species(), entry.aspects(), level, jerseyNumber))
+                .mapToObj(level -> new EncounterSnapshot(ordinal, entry.species(), aspects, level, jerseyNumber))
                 .findFirst();
+    }
+
+    /**
+     * The Battle Tower Teams pack's two persistent features, which is how its jersey models are switched on:
+     * {@code league_team=<region>} (the theme's own id: tideforge, rootvale or duskvale) and a two-digit
+     * {@code jersey_number}. They replace the placeholder {@code jersey} aspect P10 reserved. Without the pack
+     * installed Cobblemon ignores them, and {@code CobblemonBattleAdapter} retries without aspects if it does not.
+     */
+    static List<String> jerseyProperties(List<String> authored, RegionalThemeDefinition theme, int number) {
+        List<String> aspects = new ArrayList<>(authored);
+        aspects.remove("jersey");
+        aspects.add("league_team=" + theme.id().getPath());
+        aspects.add(String.format("jersey_number=%02d", number));
+        return aspects;
     }
 
     /** A floor's whole round: one opponent per player, in a stable order. */
