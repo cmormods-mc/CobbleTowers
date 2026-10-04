@@ -47,9 +47,12 @@ public final class IntermissionScreen extends Screen {
         return false;
     }
 
+    /** Where the buttons end, so the team list can sit just below them whatever the window height. */
+    private int buttonsBottom;
+
     private void buildWidgets() {
         int left = width / 2 - 110;
-        int y = 44;
+        int y = 52;
         IntermissionStatePayload.Draft draft = state.draft();
         boolean open = draft.state() == 1;
 
@@ -61,31 +64,32 @@ public final class IntermissionScreen extends Screen {
             Button button = Button.builder(
                             Component.literal(mark + card.displayName() + "  (" + card.votes() + ")"),
                             b -> send(IntermissionActionPayload.Action.PICK_CARD, index))
-                    .pos(left, y).size(220, 20).build();
+                    .pos(left, y).size(220, 18).build();
             button.active = open && state.countdown() < 0;
             addRenderableWidget(button);
-            y += 22;
+            y += 20;
         }
 
-        y += 8;
+        // Two buttons to a row, so a draft of four cards and a team of four still fit a short window.
+        y += 4;
         addRenderableWidget(Button.builder(Component.literal("Vendor"),
                         b -> send(IntermissionActionPayload.Action.VENDOR, 0))
-                .pos(left, y).size(106, 20).build());
+                .pos(left, y).size(106, 18).build());
         boolean ready = mine(true);
         Button readyButton = Button.builder(Component.literal(ready ? "Not ready" : "Ready"),
                         b -> send(ready ? IntermissionActionPayload.Action.UNREADY : IntermissionActionPayload.Action.READY, 0))
-                .pos(left + 114, y).size(106, 20).build();
+                .pos(left + 114, y).size(106, 18).build();
         readyButton.active = ready || !open;
         addRenderableWidget(readyButton);
-        y += 24;
+        y += 22;
 
         boolean cashing = mine(false);
         addRenderableWidget(Button.builder(Component.literal(cashing ? "Keep going" : "Cash out"),
                         b -> send(cashing ? IntermissionActionPayload.Action.STAY : IntermissionActionPayload.Action.CASH_OUT, 0))
-                .pos(left, y).size(220, 20).build());
-        y += 24;
+                .pos(left, y).size(106, 18).build());
         addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                .pos(left + 60, y).size(100, 20).build());
+                .pos(left + 114, y).size(106, 18).build());
+        buttonsBottom = y + 18;
     }
 
     private void send(IntermissionActionPayload.Action action, int argument) {
@@ -96,7 +100,6 @@ public final class IntermissionScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(font, "Floor " + state.floor() + " cleared", width / 2, 12, 0xFFFFFF);
         String hint = switch (state.draft().state()) {
@@ -106,7 +109,7 @@ public final class IntermissionScreen extends Screen {
         };
         graphics.drawCenteredString(font, hint, width / 2, 26, 0xAAAAAA);
 
-        int y = height - 14 - 10 * (state.members().size() + 1);
+        int y = buttonsBottom + 6;
         for (IntermissionStatePayload.Member member : state.members()) {
             String status = (member.ready() ? "ready" : "not ready") + (member.cashOut() ? ", cashing out" : "");
             graphics.drawCenteredString(font, member.name() + "  " + status, width / 2, y,
@@ -117,7 +120,7 @@ public final class IntermissionScreen extends Screen {
             graphics.drawCenteredString(font, "Next floor in " + state.countdown() + "...", width / 2, 38, 0xFFFF55);
         }
         if (!state.message().isEmpty()) {
-            graphics.drawCenteredString(font, state.message(), width / 2, height - 12, 0xFFFFFF);
+            graphics.drawCenteredString(font, state.message(), width / 2, Math.max(y + 2, height - 12), 0xFFFFFF);
         }
     }
 

@@ -74,15 +74,18 @@ public final class VendorScreen extends Screen {
             }
             y += 26;
         }
+        // As wide as the longest label needs (a long service name must not be cut off), never narrower than 200 or wider than the screen.
+        int wide = 200;
+        for (VendorCatalogPayload.Entry entry : catalog.services()) {
+            wide = Math.max(wide, font.width(label(entry)) + 16);
+        }
+        wide = Math.min(wide, width - 12);
         for (VendorCatalogPayload.Entry entry : catalog.services()) {
             boolean canAfford = catalog.cobbleDollars() >= entry.priceCobbleDollars();
             boolean inStock = entry.remainingPurchases() != 0;
-            String stock = entry.remainingPurchases() < 0 ? "" : " (" + entry.remainingPurchases() + " left)";
-            Button button = Button.builder(
-                    Component.literal(entry.displayName() + " -- " + entry.priceCobbleDollars() + stock),
-                    b -> buy(entry.id()))
-                    .pos(width / 2 - 100, y)
-                    .size(200, 20)
+            Button button = Button.builder(Component.literal(label(entry)), b -> buy(entry.id()))
+                    .pos(width / 2 - wide / 2, y)
+                    .size(wide, 20)
                     .build();
             button.active = canAfford && inStock && target != null;
             addRenderableWidget(button);
@@ -92,6 +95,11 @@ public final class VendorScreen extends Screen {
                 .pos(width / 2 - 50, y + 10)
                 .size(100, 20)
                 .build());
+    }
+
+    private static String label(VendorCatalogPayload.Entry entry) {
+        String stock = entry.remainingPurchases() < 0 ? "" : " (" + entry.remainingPurchases() + " left)";
+        return entry.displayName() + " -- " + entry.priceCobbleDollars() + stock;
     }
 
     private void choose(UUID id) {
@@ -110,7 +118,6 @@ public final class VendorScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(font, "CobbleDollars: " + catalog.cobbleDollars(),
                 width / 2, top() - 28, 0xFFFFFF);

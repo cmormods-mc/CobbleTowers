@@ -17,7 +17,7 @@ import net.minecraft.network.chat.Component;
  */
 public final class RegistrationScreen extends Screen {
 
-    private static final int PER_PAGE = 8;
+    private static final int MAX_PER_PAGE = 8;
 
     private RegistrationStatePayload state;
     private int page;
@@ -38,8 +38,13 @@ public final class RegistrationScreen extends Screen {
         buildWidgets();
     }
 
+    /** How many rows fit above the controls: eight on a tall window, fewer on a short one, so the buttons are never off the screen. */
+    private int perPage() {
+        return Math.max(3, Math.min(MAX_PER_PAGE, (height - 98) / 22));
+    }
+
     private int pages() {
-        return Math.max(1, (state.pokemon().size() + PER_PAGE - 1) / PER_PAGE);
+        return Math.max(1, (state.pokemon().size() + perPage() - 1) / perPage());
     }
 
     private void buildWidgets() {
@@ -47,7 +52,7 @@ public final class RegistrationScreen extends Screen {
         int left = width / 2 - 120;
         int y = 40;
         List<RegistrationStatePayload.Entry> all = state.pokemon();
-        for (int i = page * PER_PAGE; i < Math.min(all.size(), (page + 1) * PER_PAGE); i++) {
+        for (int i = page * perPage(); i < Math.min(all.size(), (page + 1) * perPage()); i++) {
             RegistrationStatePayload.Entry entry = all.get(i);
             int order = state.chosen().indexOf(entry.id());
             String mark = order >= 0 ? "[" + (order + 1) + "] " : "[ ] ";
@@ -59,7 +64,7 @@ public final class RegistrationScreen extends Screen {
             y += 22;
         }
 
-        int bottom = Math.max(y + 6, 40 + PER_PAGE * 22 + 6);
+        int bottom = Math.max(y + 6, 40 + perPage() * 22 + 6);
         Button previous = Button.builder(Component.literal("<"), b -> turn(-1)).pos(left, bottom).size(30, 20).build();
         previous.active = page > 0;
         addRenderableWidget(previous);
@@ -92,7 +97,6 @@ public final class RegistrationScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(font, title, width / 2, 12, 0xFFFFFF);
         String hint = state.chosen().isEmpty()

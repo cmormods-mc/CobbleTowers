@@ -59,11 +59,14 @@ public final class MasteryScreen extends Screen {
             y += 22;
         }
         int x = 150;
-        int each = Math.max(50, Math.min(80, (width - x - 10) / TABS.length));
+        // Each tab is as wide as its word needs, with the same small margin, so none is clipped on a narrow window.
+        int tabX = x;
         for (int i = 0; i < TABS.length; i++) {
             String tab = TABS[i];
+            int wide = font.width(TAB_NAMES[i]) + 12;
             Button button = Button.builder(Component.literal(TAB_NAMES[i]), b -> request(state.selected(), tab))
-                    .pos(x + i * each, 8).size(each - 2, 18).build();
+                    .pos(tabX, 8).size(wide, 18).build();
+            tabX += wide + 2;
             button.active = !tab.equals(state.tab());
             addRenderableWidget(button);
         }
@@ -110,25 +113,46 @@ public final class MasteryScreen extends Screen {
 
     private record Line(String text, int color) {}
 
+    /** A line of the view as drawn: one row of a wrapped line, indented when it continues the one above. */
+    private record Visual(net.minecraft.util.FormattedCharSequence text, int color, int indent) {}
+
+    /** The view wrapped to the width of the panel: a long achievement description runs on to a second row rather than being cut off. */
+    private List<Visual> visuals() {
+        int wrap = Math.max(60, width - 150 - 10);
+        List<Visual> out = new ArrayList<>();
+        for (Line line : lines()) {
+            if (line.text().isEmpty()) {
+                out.add(new Visual(net.minecraft.util.FormattedCharSequence.EMPTY, line.color(), 0));
+                continue;
+            }
+            boolean first = true;
+            for (net.minecraft.util.FormattedCharSequence part : font.split(Component.literal(line.text()), wrap - 12)) {
+                out.add(new Visual(part, line.color(), first ? 0 : 12));
+                first = false;
+            }
+        }
+        return out;
+    }
+
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
         int visible = Math.max(1, (height - 60) / LINE);
-        int max = Math.max(0, lines().size() - visible);
+        int max = Math.max(0, visuals().size() - visible);
         scroll = Math.max(0, Math.min(max, scroll - (int) Math.signum(vertical) * 3));
         return true;
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         int x = 150;
         int y = 36;
         int visible = Math.max(1, (height - 60) / LINE);
-        List<Line> lines = lines();
+        List<Visual> lines = visuals();
+        scroll = Math.max(0, Math.min(scroll, Math.max(0, lines.size() - visible)));
         for (int i = scroll; i < Math.min(lines.size(), scroll + visible); i++) {
-            Line line = lines.get(i);
-            graphics.drawString(font, font.plainSubstrByWidth(line.text(), width - x - 10), x, y, line.color());
+            Visual line = lines.get(i);
+            graphics.drawString(font, line.text(), x + line.indent(), y, line.color());
             y += LINE;
         }
         if (lines.size() > visible) {

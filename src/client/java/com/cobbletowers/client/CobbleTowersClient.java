@@ -43,6 +43,10 @@ public final class CobbleTowersClient implements ClientModInitializer {
         KeyBindingHelper.registerKeyBinding(CYCLE_NEXT);
         KeyBindingHelper.registerKeyBinding(CYCLE_PREVIOUS);
 
+        // Development only: pictures of the screens, when COBBLETOWERS_SCREENSHOTS names a directory.
+        ScreenshotHarness.installIfRequested();
+        ClientRemote.installIfRequested();
+
         // Armor set tooltips (P25): the sets the server describes, shown on their pieces.
         ArmorTooltips.install();
 
