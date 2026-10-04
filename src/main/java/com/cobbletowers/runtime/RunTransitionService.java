@@ -159,6 +159,10 @@ public final class RunTransitionService {
             TowerRuns.save(server, move.next(), move.checkpoint());
             TowerLog.info("Run {} {} -> {} on {}{}", runId, move.from(), move.next().state(), event,
                     move.checkpoint() ? " [checkpoint " + move.key() + "]" : "");
+            // The physical vendor stands only for an intermission (P28), so it goes the moment the run leaves one.
+            if (move.from() == RunState.INTERMISSION) {
+                com.cobbletowers.vendor.VendorNpc.despawn(server, run);
+            }
             // Everybody who is out comes back here, and only here. Tied to arriving at the state
             // rather than to the event that got there, so every road into an intermission revives
             // the same people -- which is what makes "until the next intermission" a promise a
@@ -230,6 +234,7 @@ public final class RunTransitionService {
     public static void releaseCell(MinecraftServer server, PersistedRun run, long now) {
         OptionalInt cell = run.cell();
         if (cell.isEmpty()) return;
+        com.cobbletowers.vendor.VendorNpc.despawn(server, run);
         InstanceAllocator.Release release = InstanceAllocator.release(server, run.runId(), cell.getAsInt());
         if (release instanceof InstanceAllocator.Quarantined quarantined) {
             TowerLog.warn("Run {} ended leaving cell {} unfit for reuse: {}",

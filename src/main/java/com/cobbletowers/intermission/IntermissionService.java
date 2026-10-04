@@ -65,7 +65,10 @@ public final class IntermissionService {
      */
     public static void onArrival(MinecraftServer server, UUID runId) {
         ROUNDS.put(runId, new IntermissionRound());
-        TowerRuns.get(runId).ifPresent(run -> broadcast(server, run, "", true));
+        TowerRuns.get(runId).ifPresent(run -> {
+            com.cobbletowers.vendor.VendorNpc.spawn(server, run);
+            broadcast(server, run, "", true);
+        });
     }
 
     // ---- actions -----------------------------------------------------------------------------
