@@ -59,6 +59,9 @@ public final class RewardDelivery {
                 CobbleRaidsPoints.award(server, player.getUUID(),
                         com.cobbletowers.armor.ArmorBonusEffects.raidPoints(player, reward.amount(), reward.runId()));
                 delivered.add(reward);
+            } else if (!reward.components().isEmpty()) {
+                // A card (P33b): an item that is its data. Not handed over, and not lost, if the mod that owns it is gone.
+                if (giveWithComponents(player, reward)) delivered.add(reward);
             } else if (give(player, reward.item(), reward.amount())) {
                 delivered.add(reward);
             }
@@ -80,7 +83,7 @@ public final class RewardDelivery {
         int throughFloor = delivered.stream().mapToInt(PendingTowerReward::floorIndex).max().orElse(0);
         List<RewardRevealPayload.Grant> grants = new ArrayList<>(delivered.size());
         for (PendingTowerReward reward : delivered) {
-            grants.add(new RewardRevealPayload.Grant(reward.item(), reward.amount()));
+            grants.add(new RewardRevealPayload.Grant(reward.item(), reward.amount(), reward.label()));
         }
         return new RewardRevealPayload(throughFloor, List.copyOf(grants));
     }
@@ -111,11 +114,30 @@ public final class RewardDelivery {
         return true;
     }
 
+    /** Builds the stack the pending reward describes and places it in the inventory; false, granting nothing, if it does not resolve. */
+    private static boolean giveWithComponents(ServerPlayer player, PendingTowerReward reward) {
+        java.util.Optional<ItemStack> built = com.cobbletowers.rental.CardStacks.parse(player.registryAccess(), reward.components());
+        if (built.isEmpty()) {
+            TowerLog.error("A pending tower reward ({}) could not be turned into an item; skipping it. Is the mod that owns {} installed?",
+                    reward.label().isEmpty() ? reward.item() : reward.label(), reward.item());
+            return false;
+        }
+        ItemStack stack = built.get();
+        stack.setCount(reward.amount());
+        player.getInventory().placeItemBackInInventory(stack);
+        return true;
+    }
+
     private static String summarize(List<PendingTowerReward> rewards) {
         StringBuilder builder = new StringBuilder();
         for (PendingTowerReward reward : rewards) {
             if (builder.length() > 0) builder.append(", ");
-            builder.append(reward.item()).append(" x").append(reward.amount());
+            if (!reward.label().isEmpty()) {
+                builder.append(reward.label());
+                if (reward.amount() > 1) builder.append(" x").append(reward.amount());
+            } else {
+                builder.append(reward.item()).append(" x").append(reward.amount());
+            }
         }
         return builder.toString();
     }

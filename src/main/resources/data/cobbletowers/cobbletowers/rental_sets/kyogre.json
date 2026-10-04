@@ -12,6 +12,9 @@
     4,
     0
   ],
+  "types": [
+    "water"
+  ],
   "item": "cobblemon:choice_specs",
   "moves": [
     "originpulse",

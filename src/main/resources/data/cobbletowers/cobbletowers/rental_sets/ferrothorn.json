@@ -12,6 +12,10 @@
     4,
     0
   ],
+  "types": [
+    "grass",
+    "steel"
+  ],
   "item": "cobblemon:leftovers",
   "moves": [
     "gyroball",

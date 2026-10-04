@@ -12,6 +12,10 @@
     4,
     0
   ],
+  "types": [
+    "bug",
+    "steel"
+  ],
   "item": "cobblemon:choice_band",
   "moves": [
     "bulletpunch",

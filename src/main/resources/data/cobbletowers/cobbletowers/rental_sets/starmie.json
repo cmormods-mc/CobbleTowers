@@ -12,6 +12,10 @@
     0,
     252
   ],
+  "types": [
+    "water",
+    "psychic"
+  ],
   "item": "cobblemon:life_orb",
   "moves": [
     "surf",

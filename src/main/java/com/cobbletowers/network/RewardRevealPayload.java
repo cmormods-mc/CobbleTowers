@@ -16,11 +16,20 @@ import net.minecraft.resources.ResourceLocation;
  */
 public record RewardRevealPayload(int floorIndex, List<Grant> grants) implements CustomPacketPayload {
 
-    /** One item and how many of it, exactly as {@code RewardValuation.Grant} priced it. */
-    public record Grant(ResourceLocation item, int amount) {
+    /**
+     * One item and how many of it, exactly as {@code RewardValuation.Grant} priced it.
+     *
+     * @param label what to call it when its id says too little (a card is "Garchomp card (epic)"), or empty
+     */
+    public record Grant(ResourceLocation item, int amount, String label) {
+        public Grant(ResourceLocation item, int amount) {
+            this(item, amount, "");
+        }
+
         static final StreamCodec<RegistryFriendlyByteBuf, Grant> STREAM_CODEC = StreamCodec.composite(
                 ResourceLocation.STREAM_CODEC, Grant::item,
                 ByteBufCodecs.VAR_INT, Grant::amount,
+                ByteBufCodecs.STRING_UTF8, Grant::label,
                 Grant::new);
     }
 

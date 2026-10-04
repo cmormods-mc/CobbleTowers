@@ -12,6 +12,10 @@
     0,
     252
   ],
+  "types": [
+    "psychic",
+    "flying"
+  ],
   "item": "cobblemon:leftovers",
   "moves": [
     "hurricane",

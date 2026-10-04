@@ -12,6 +12,9 @@
     0,
     252
   ],
+  "types": [
+    "fire"
+  ],
   "item": "cobblemon:life_orb",
   "moves": [
     "flareblitz",

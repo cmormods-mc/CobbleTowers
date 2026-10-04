@@ -12,6 +12,10 @@
     0,
     252
   ],
+  "types": [
+    "normal",
+    "flying"
+  ],
   "item": "cobblemon:choice_band",
   "moves": [
     "bravebird",

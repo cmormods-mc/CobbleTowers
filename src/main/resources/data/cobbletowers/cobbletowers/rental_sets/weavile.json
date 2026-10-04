@@ -12,6 +12,10 @@
     0,
     252
   ],
+  "types": [
+    "dark",
+    "ice"
+  ],
   "item": "cobblemon:focus_sash",
   "moves": [
     "knockoff",

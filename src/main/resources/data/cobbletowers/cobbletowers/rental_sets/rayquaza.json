@@ -12,6 +12,10 @@
     0,
     252
   ],
+  "types": [
+    "dragon",
+    "flying"
+  ],
   "item": "cobblemon:choice_band",
   "moves": [
     "dragonascent",

@@ -1,0 +1,13 @@
+// Prints the client source set's runtime classpath (Minecraft's libraries, Fabric Loader, and the development-only entries that the
+// launcher filters out), for validation/client_launch.py. Used as an init script: gradlew -q -I validation/print_client_classpath.gradle printClientLibs
+allprojects {
+    afterEvaluate { project ->
+        if (project.extensions.findByName('sourceSets') != null && project.sourceSets.findByName('client') != null) {
+            project.tasks.register('printClientLibs') {
+                doLast {
+                    println 'CLIENTLIBS=' + project.sourceSets.client.runtimeClasspath.files.join(';')
+                }
+            }
+        }
+    }
+}

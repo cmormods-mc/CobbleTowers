@@ -12,6 +12,10 @@
     0,
     252
   ],
+  "types": [
+    "dragon",
+    "ghost"
+  ],
   "item": "cobblemon:choice_specs",
   "moves": [
     "shadowball",

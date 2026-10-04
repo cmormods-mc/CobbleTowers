@@ -32,20 +32,28 @@ public final class RewardRevealScreen extends Screen {
     @Override
     protected void init() {
         addRenderableWidget(Button.builder(Component.literal("Close"), button -> onClose())
-                .pos(width / 2 - 50, height / 2 + 40)
+                .pos(width / 2 - 50, top() + 14 + 12 * grants.size() + 10)
                 .size(100, 20)
                 .build());
+    }
+
+    /** The block of lines is centred, whatever their number (a completed rental run grants up to six cards), with the button under it. */
+    private int top() {
+        return Math.max(10, height / 2 - (14 + 12 * grants.size() + 30) / 2);
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
 
-        int y = height / 2 - 40;
+        int y = top();
         graphics.drawCenteredString(font, "Rewards through floor " + floorIndex, width / 2, y, 0xFFFFFF);
         y += 14;
         for (RewardRevealPayload.Grant grant : grants) {
-            graphics.drawCenteredString(font, grant.item().getPath() + " x" + grant.amount(), width / 2, y, 0xFFFFFF);
+            // A card is named by what it is ("Garchomp card (epic)"), a plain item by its id.
+            String line = grant.label().isEmpty() ? grant.item().getPath() + " x" + grant.amount()
+                    : grant.label() + (grant.amount() > 1 ? " x" + grant.amount() : "");
+            graphics.drawCenteredString(font, line, width / 2, y, 0xFFFFFF);
             y += 12;
         }
     }

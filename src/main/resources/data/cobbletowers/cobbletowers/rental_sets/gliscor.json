@@ -12,6 +12,10 @@
     4,
     0
   ],
+  "types": [
+    "ground",
+    "flying"
+  ],
   "item": "cobblemon:toxic_orb",
   "moves": [
     "earthquake",

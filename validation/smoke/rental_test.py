@@ -124,6 +124,17 @@ def draft_team(rcon: Rcon, results: list[Result] | None = None) -> bool:
     return "Your team is drafted" in play(rcon, "draft")
 
 
+def start_rental_run_for(rcon: Rcon) -> str:
+    """Picks the test tower and the Rental playlist, drafts a team in chat, starts, and returns the run id."""
+    play(rcon, f"tower {TOWER}")
+    play(rcon, "playlist rental")
+    if not draft_team(rcon):
+        raise RuntimeError("could not draft a team: " + play(rcon, "draft")[:300])
+    play(rcon, "start")
+    wait_for(lambda: live_run(rcon) != "", 40)
+    return live_run(rcon)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--server-dir", required=True, type=Path)

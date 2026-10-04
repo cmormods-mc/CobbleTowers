@@ -12,6 +12,9 @@
     252,
     0
   ],
+  "types": [
+    "dark"
+  ],
   "item": "cobblemon:leftovers",
   "moves": [
     "foulplay",

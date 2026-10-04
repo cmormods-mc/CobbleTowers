@@ -12,6 +12,10 @@
     4,
     0
   ],
+  "types": [
+    "water",
+    "ground"
+  ],
   "item": "cobblemon:leftovers",
   "moves": [
     "earthquake",

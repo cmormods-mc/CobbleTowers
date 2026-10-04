@@ -12,6 +12,9 @@
     0,
     252
   ],
+  "types": [
+    "psychic"
+  ],
   "item": "cobblemon:focus_sash",
   "moves": [
     "psychic",

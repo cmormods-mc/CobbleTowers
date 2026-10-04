@@ -19,18 +19,37 @@ import net.minecraft.nbt.Tag;
  * <em>before</em> any move, which is the whole of the feature's safety argument: a crash at any later point
  * leaves a record that describes where everything started.
  */
-public record PartyJournalEntry(UUID player, UUID runId, List<Original> originals, List<UUID> rentals) {
+public record PartyJournalEntry(UUID player, UUID runId, List<Original> originals, List<UUID> rentals, List<LentCard> cards) {
+
+    /**
+     * Which set a rental was made from and whether it came from a God Pack (P33b): enough to make the player the card of every
+     * Pokemon they ran with when the run completes, even if they are offline then and the Pokemon are long deleted.
+     *
+     * @param set a rental set id, such as {@code cobbletowers:garchomp}
+     */
+    public record LentCard(UUID pokemon, String set, boolean god) {
+        public LentCard {
+            Objects.requireNonNull(pokemon, "pokemon");
+            set = set == null ? "" : set;
+        }
+    }
 
     public PartyJournalEntry {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(runId, "runId");
         originals = List.copyOf(originals);
         rentals = List.copyOf(rentals);
+        cards = List.copyOf(cards);
+    }
+
+    /** A journal that lent Pokemon but names no sets, which is every run before the card rewards (P33b). */
+    public PartyJournalEntry(UUID player, UUID runId, List<Original> originals, List<UUID> rentals) {
+        this(player, runId, originals, rentals, List.of());
     }
 
     /** A journal of moved Pokemon only, which is every run before the Rental Draft (P33). */
     public PartyJournalEntry(UUID player, UUID runId, List<Original> originals) {
-        this(player, runId, originals, List.of());
+        this(player, runId, originals, List.of(), List.of());
     }
 
     public CompoundTag toTag() {
@@ -56,6 +75,15 @@ public record PartyJournalEntry(UUID player, UUID runId, List<Original> original
             lent.add(one);
         }
         tag.put("rentals", lent);
+        ListTag cardList = new ListTag();
+        for (LentCard card : cards) {
+            CompoundTag one = new CompoundTag();
+            one.putUUID("pokemon", card.pokemon());
+            one.putString("set", card.set());
+            one.putBoolean("god", card.god());
+            cardList.add(one);
+        }
+        tag.put("cards", cardList);
         return tag;
     }
 
@@ -71,6 +99,12 @@ public record PartyJournalEntry(UUID player, UUID runId, List<Original> original
         List<UUID> rentals = new ArrayList<>();
         ListTag lent = tag.getList("rentals", Tag.TAG_COMPOUND);
         for (int i = 0; i < lent.size(); i++) rentals.add(lent.getCompound(i).getUUID("pokemon"));
-        return new PartyJournalEntry(tag.getUUID("player"), tag.getUUID("run"), originals, rentals);
+        List<LentCard> cards = new ArrayList<>();
+        ListTag cardList = tag.getList("cards", Tag.TAG_COMPOUND);
+        for (int i = 0; i < cardList.size(); i++) {
+            CompoundTag one = cardList.getCompound(i);
+            cards.add(new LentCard(one.getUUID("pokemon"), one.getString("set"), one.getBoolean("god")));
+        }
+        return new PartyJournalEntry(tag.getUUID("player"), tag.getUUID("run"), originals, rentals, cards);
     }
 }

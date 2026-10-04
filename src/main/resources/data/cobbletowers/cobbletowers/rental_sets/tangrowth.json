@@ -12,6 +12,9 @@
     4,
     0
   ],
+  "types": [
+    "grass"
+  ],
   "item": "cobblemon:life_orb",
   "moves": [
     "powerwhip",

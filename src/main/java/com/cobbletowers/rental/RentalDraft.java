@@ -82,12 +82,26 @@ public final class RentalDraft {
         return List.copyOf(team);
     }
 
-    /** Names a finished team's Pokemon with the ids they will have, so registration can be written before they exist. */
-    public record Team(List<RentalSetDefinition> sets, List<UUID> ids) {
+    /**
+     * Names a finished team's Pokemon with the ids they will have, so registration can be written before they exist.
+     *
+     * @param god for each Pokemon, whether it was drawn from a God Pack
+     */
+    public record Team(List<RentalSetDefinition> sets, List<UUID> ids, List<Boolean> god) {
         public Team {
             sets = List.copyOf(sets);
             ids = List.copyOf(ids);
+            god = List.copyOf(god);
         }
+    }
+
+    /** For each kept Pokemon, in pick order, whether its pack was the God Pack. */
+    public List<Boolean> godFlags() {
+        List<Boolean> flags = new ArrayList<>();
+        for (int pack = 0; pack < picks.size(); pack++) {
+            for (int ignored : picks.get(pack)) flags.add(offer.packs().get(pack).god());
+        }
+        return List.copyOf(flags);
     }
 
     /** The finished team with a new id for each Pokemon, or null while the draft is not complete. */
@@ -96,6 +110,6 @@ public final class RentalDraft {
         List<RentalSetDefinition> sets = team();
         List<UUID> ids = new ArrayList<>();
         for (int i = 0; i < sets.size(); i++) ids.add(newId.get());
-        return new Team(sets, ids);
+        return new Team(sets, ids, godFlags());
     }
 }

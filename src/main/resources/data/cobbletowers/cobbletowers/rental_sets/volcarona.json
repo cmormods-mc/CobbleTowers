@@ -12,6 +12,10 @@
     0,
     252
   ],
+  "types": [
+    "bug",
+    "fire"
+  ],
   "item": "cobblemon:life_orb",
   "moves": [
     "bugbuzz",

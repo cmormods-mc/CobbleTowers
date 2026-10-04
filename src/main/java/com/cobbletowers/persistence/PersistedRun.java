@@ -276,6 +276,15 @@ public record PersistedRun(
                 at, cell, ledger, modifiers, throughFloor, vendorPurchases, options);
     }
 
+    /** The same run with one more transaction key recorded, for a side effect (the card rewards, P33b) that must happen once. */
+    public PersistedRun committed(String key, long at) {
+        List<String> transactions = new ArrayList<>(committedTransactions);
+        transactions.add(key);
+        return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
+                structureRevision, seed, floorIndex, state, participants, lastCheckpoint, transactions,
+                at, cell, ledger, modifiers, lastBankedFloor, vendorPurchases, options);
+    }
+
     /** True when this key has already been committed, so applying the move again must not repeat it. */
     public boolean hasCommitted(String key) {
         return committedTransactions.contains(key);

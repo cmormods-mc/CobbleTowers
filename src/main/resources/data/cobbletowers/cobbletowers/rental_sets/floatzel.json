@@ -12,6 +12,9 @@
     0,
     252
   ],
+  "types": [
+    "water"
+  ],
   "item": "cobblemon:choice_band",
   "moves": [
     "waterfall",

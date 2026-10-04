@@ -21,6 +21,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param maxPlayers       the most players a team may have, 0 for no limit
  * @param difficultyBonus  points added to the run's difficulty score
  * @param rental           whether the party is a drafted rental team instead of the player's own Pokemon (P33)
+ * @param cardRewards      the real CobblemonCards cards a completed run grants (P33b), or {@link CardRewards#NONE}
  */
 public record PlaylistDefinition(
         ResourceLocation id,
@@ -33,9 +34,36 @@ public record PlaylistDefinition(
         boolean vendorClosed,
         int maxPlayers,
         int difficultyBonus,
-        boolean rental) {
+        boolean rental,
+        CardRewards cardRewards) {
 
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
+
+    /**
+     * Real CobblemonCards cards for completing a run of this playlist (P33b): one for each Pokemon the player ran with, never above
+     * {@code maxRarity}, and from at most {@code runsPerDay} completed runs a day.
+     */
+    public record CardRewards(boolean enabled, RentalSetDefinition.Rarity maxRarity, int runsPerDay) {
+        public static final CardRewards NONE = new CardRewards(false, RentalSetDefinition.Rarity.EPIC, 0);
+
+        public CardRewards {
+            if (runsPerDay < 0) throw new IllegalArgumentException("runs_per_day must not be negative");
+            if (enabled && runsPerDay < 1) throw new IllegalArgumentException("card rewards need runs_per_day of at least 1");
+        }
+
+        static CardRewards fromJson(JsonObject root) {
+            if (!root.has("card_rewards")) return NONE;
+            JsonObject object = TowerJson.object(root, "card_rewards");
+            RentalSetDefinition.Rarity max;
+            String raw = TowerJson.string(object, "max_rarity", "epic");
+            try {
+                max = RentalSetDefinition.Rarity.valueOf(raw.toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException("card_rewards.max_rarity must be common, uncommon, rare, epic, legendary or mythic, got " + raw);
+            }
+            return new CardRewards(TowerJson.bool(object, "enabled", false), max, TowerJson.integer(object, "runs_per_day", 3));
+        }
+    }
 
     /**
      * What a party must satisfy. Every clause is neutral when unset.
@@ -99,6 +127,6 @@ public record PlaylistDefinition(
                         Set.copyOf(TowerJson.strings(party, "banned_labels")), TowerJson.integer(party, "max_party", 0)),
                 TowerJson.integer(root, "enemy_level_max", 0), TowerJson.ids(root, "forced_modifiers"),
                 TowerJson.bool(root, "vendor_closed", false), TowerJson.integer(root, "max_players", 0),
-                TowerJson.integer(root, "difficulty_bonus", 0), TowerJson.bool(root, "rental", false));
+                TowerJson.integer(root, "difficulty_bonus", 0), TowerJson.bool(root, "rental", false), CardRewards.fromJson(root));
     }
 }

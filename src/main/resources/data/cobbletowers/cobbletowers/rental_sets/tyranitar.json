@@ -12,6 +12,10 @@
     4,
     0
   ],
+  "types": [
+    "rock",
+    "dark"
+  ],
   "item": "cobblemon:lum_berry",
   "moves": [
     "stoneedge",

@@ -12,6 +12,10 @@
     0,
     252
   ],
+  "types": [
+    "water",
+    "flying"
+  ],
   "item": "cobblemon:life_orb",
   "moves": [
     "waterfall",

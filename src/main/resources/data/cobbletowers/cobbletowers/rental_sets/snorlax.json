@@ -12,6 +12,9 @@
     4,
     0
   ],
+  "types": [
+    "normal"
+  ],
   "item": "cobblemon:leftovers",
   "moves": [
     "bodyslam",

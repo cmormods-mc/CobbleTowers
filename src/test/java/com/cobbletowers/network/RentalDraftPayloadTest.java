@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.UUID;
 import java.util.List;
 import java.util.stream.Stream;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -106,5 +107,74 @@ class RentalDraftPayloadTest {
         buffer.writeVarInt(0);
         RentalDraftActionPayload bent = RentalDraftActionPayload.STREAM_CODEC.decode(buffer);
         assertTrue(bent.action() != null);
+    }
+
+    @Test
+    @DisplayName("a card carries the look of its collectible card: rarity, background and effect, and shiny only from a God Pack")
+    void look() throws IOException {
+        List<RentalSetDefinition> pool = pool();
+        RentalDraft draft = null;
+        RentalDraft godDraft = null;
+        for (long seed = 0; seed < 5000 && (draft == null || godDraft == null); seed++) {
+            RentalDraw.Offer offer = RentalDraw.draw(pool, seed, true);
+            if (offer.hasGodPack() && godDraft == null) godDraft = new RentalDraft(offer);
+            if (!offer.hasGodPack() && draft == null) draft = new RentalDraft(offer);
+        }
+        RentalDraftPayload plain = RentalDraftPayload.of(draft, "");
+        for (RentalDraftPayload.Pack pack : plain.packs()) {
+            for (RentalDraftPayload.Card card : pack.cards()) {
+                assertFalse(card.look().shiny());
+                assertEquals(card.rarity(), card.look().rarity(), "the table shows the set's own rarity, uncapped");
+                assertEquals(card.rarity().equals("common") ? "" : "set", card.look().background().isEmpty() ? "" : "set");
+            }
+        }
+        RentalDraftPayload god = RentalDraftPayload.of(godDraft, "");
+        RentalDraftPayload.Pack godPack = god.packs().stream().filter(RentalDraftPayload.Pack::god).findFirst().orElseThrow();
+        assertTrue(godPack.cards().stream().allMatch(card -> card.look().shiny() && !card.look().background().isEmpty()));
+        assertEquals(god, roundTrip(RentalDraftPayload.STREAM_CODEC, god));
+    }
+
+    @Test
+    @DisplayName("the draft says which kept Pokemon came from a God Pack")
+    void godFlags() throws IOException {
+        List<RentalSetDefinition> pool = pool();
+        for (long seed = 0; seed < 5000; seed++) {
+            RentalDraw.Offer offer = RentalDraw.draw(pool, seed, true);
+            if (!offer.hasGodPack()) continue;
+            RentalDraft draft = new RentalDraft(offer);
+            for (int pack = 0; pack < 3; pack++) {
+                int a = 0;
+                int b = 1;
+                // keep two that are not both legendary, so the cap never interferes
+                List<RentalSetDefinition> cards = offer.packs().get(pack).cards();
+                for (int i = 0; i < cards.size() && draft.currentPack() == pack; i++) {
+                    for (int j = i + 1; j < cards.size() && draft.currentPack() == pack; j++) {
+                        draft.pick(pack, List.of(i, j));
+                    }
+                }
+            }
+            if (!draft.complete()) continue;
+            List<Boolean> flags = draft.godFlags();
+            assertEquals(6, flags.size());
+            for (int pack = 0; pack < 3; pack++) {
+                assertEquals(offer.packs().get(pack).god(), flags.get(pack * 2));
+                assertEquals(offer.packs().get(pack).god(), flags.get(pack * 2 + 1));
+            }
+            assertEquals(flags, draft.finish(UUID::randomUUID).god());
+            return;
+        }
+        throw new AssertionError("no seed gave a God Pack and a legal team");
+    }
+
+    @Test
+    @DisplayName("a reward reveal names a card by its label, and a plain item by nothing, over the wire")
+    void rewardLabel() {
+        RewardRevealPayload sent = new RewardRevealPayload(3, List.of(
+                new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("cobblemon-cards", "card"), 1, "Garchomp card (epic)"),
+                new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("minecraft", "diamond"), 2)));
+        RewardRevealPayload back = roundTrip(RewardRevealPayload.STREAM_CODEC, sent);
+        assertEquals(sent, back);
+        assertEquals("Garchomp card (epic)", back.grants().get(0).label());
+        assertEquals("", back.grants().get(1).label());
     }
 }

@@ -12,6 +12,10 @@
     4,
     0
   ],
+  "types": [
+    "flying",
+    "steel"
+  ],
   "item": "cobblemon:leftovers",
   "moves": [
     "bravebird",

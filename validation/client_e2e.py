@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -82,6 +83,9 @@ def main() -> None:
     parser.add_argument("--jar", type=Path, default=None, help="the CobbleTowers jar (default: the one in build/libs)")
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--gui-scale", type=int, default=3)
+    parser.add_argument("--cards", action="store_true",
+                        help="install CobblemonCards (and the Accessories and owo-lib mods it needs) on the server and the client: "
+                             "the pack screen draws real cards, and completing the run grants real ones")
     args = parser.parse_args()
 
     server_dir = args.server_dir.resolve()
@@ -95,6 +99,10 @@ def main() -> None:
 
     results: list[Result] = []
     server = Server(server_dir, args.java)
+    card_jars = client_launch.card_mods(server_dir) if args.cards else []
+    on_server = [server_dir / "mods" / jar.name for jar in card_jars]
+    for jar in on_server:
+        jar.unlink(missing_ok=True)
     client: subprocess.Popen | None = None
     password = read_password(server_dir)
     port = server_port(server_dir)
@@ -104,16 +112,19 @@ def main() -> None:
             return rcon.command(command)
 
     try:
-        print("Booting the server")
+        print("Booting the server" + (" with CobblemonCards" if args.cards else ""))
+        for jar in card_jars:
+            shutil.copy2(jar, server_dir / "mods" / jar.name)
         server.start()
         server.wait_until_ready()
 
         game = out.parent / "clientrig"
-        client_launch.prepare(game, server_dir, tower_jar, args.gui_scale)
+        client_launch.prepare(game, server_dir, tower_jar, args.gui_scale, card_jars)
         env = dict(os.environ, COBBLETOWERS_REMOTE=str(out))
         remote = Remote(out)
         print("Launching the client")
-        client = subprocess.Popen(client_launch.command(args.java, game, ["--quickPlayMultiplayer", f"127.0.0.1:{port}"]), cwd=game, env=env,
+        client = subprocess.Popen(client_launch.command(args.java, game, ["--quickPlayMultiplayer", f"127.0.0.1:{port}"],
+                                                                        server_dir if args.cards else None), cwd=game, env=env,
                                   stdout=open(game / "client_output.log", "w", encoding="utf-8", errors="replace"),
                                   stderr=subprocess.STDOUT)
         joined = False
@@ -129,6 +140,8 @@ def main() -> None:
 
         with Rcon("127.0.0.1", 25575, password) as rcon:
             clear_tower(rcon)
+            if args.cards:
+                rcon.command(f"clear {PLAYER} cobblemon-cards:card")   # a player keeps their inventory between runs of this script
             rcon.command(f"pokegiveother {PLAYER} glaceon level=100")
             for _ in range(5):
                 rcon.command(f"pokegiveother {PLAYER} magikarp level=1")
@@ -150,6 +163,12 @@ def main() -> None:
             remote.send("center")                     # tear the pack open
             remote.send("wait 5600")                  # the tear and the five-card reveal
             remote.shot(f"e2e_{3 + pack * 2:02d}_pack{pack + 1}_cards")
+            if args.cards and pack == 0:
+                remote.send("press Cards:")           # the plain text cards, for comparison
+                remote.send("wait 400")
+                remote.shot("e2e_04_pack1_plain_look")
+                remote.send("press Cards:")           # and back to the collection look
+                remote.send("wait 400")
             remote.send("card 0")
             remote.send("card 1")
             remote.send("wait 300")
@@ -192,7 +211,34 @@ def main() -> None:
             results.append(Result("the vendor screen opens from the real catalogue", remote.shot("e2e_13_vendor_screen"), ""))
             remote.send("press Close")
             remote.send("wait 800")
-        if started:
+        if started and args.cards:
+            # Finish the run: floors 2 to 4 by operator event, so the run COMPLETES and the cards are granted.
+            for floor in range(2, 5):
+                rcon_run(f"execute as {PLAYER} run cobbletowers play pick 1")
+                rcon_run(f"execute as {PLAYER} run cobbletowers play ready")
+                for _ in range(90):
+                    if re.search(re.escape(started) + r"\s+\S+\s+ENCOUNTER_ACTIVE", rcon_run("cobbletowers runs list")):
+                        break
+                    time.sleep(1)
+                rcon_run(f"cobbletowers runs advance {started} encounter_resolved_cleared")
+                if floor == 4:
+                    rcon_run(f"cobbletowers runs advance {started} final_floor_cleared")
+                else:
+                    rcon_run(f"cobbletowers runs advance {started} rewards_banked")
+                    time.sleep(3)
+            time.sleep(1.2)   # the reveal opens as the run completes, and the exit home closes it a few seconds later
+            results.append(Result("the real reward reveal names each real card", remote.shot("e2e_15_reward_reveal"), ""))
+            time.sleep(4)
+            remote.send("close")
+            remote.send("wait 600")
+            remote.send("inventory")
+            remote.send("wait 1500")
+            results.append(Result("the real cards are in the player's inventory, drawn by the mod", remote.shot("e2e_16_inventory_cards"), ""))
+            remote.send("close")
+            held = rcon_run(f"data get entity {PLAYER} Inventory")
+            cards = len(re.findall(r'cobblemon-cards:card"', held))
+            results.append(Result("six real cards were granted for completing the run", cards == 6, f"{cards} card item(s)"))
+        elif started:
             rcon_run(f"cobbletowers runs advance {started} abandon_requested")
         time.sleep(8)
         left = rcon_run(f"cobbletowers play rentals {PLAYER}")
@@ -200,6 +246,8 @@ def main() -> None:
         remote.shot("e2e_14_after")
         remote.send("quit", wait=False)
     except Exception as exc:  # noqa: BLE001
+        import traceback
+        traceback.print_exc()
         results.append(Result("client end-to-end run", False, repr(exc)))
     finally:
         if client is not None:
@@ -208,6 +256,8 @@ def main() -> None:
             except subprocess.TimeoutExpired:
                 client.kill()
         server.stop()
+        for jar in on_server:
+            jar.unlink(missing_ok=True)
 
     print()
     width = max(len(result.name) for result in results) if results else 0

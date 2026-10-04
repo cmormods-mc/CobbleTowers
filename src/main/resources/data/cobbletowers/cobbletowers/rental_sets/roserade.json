@@ -12,6 +12,10 @@
     0,
     252
   ],
+  "types": [
+    "grass",
+    "poison"
+  ],
   "item": "cobblemon:choice_specs",
   "moves": [
     "sludgebomb",

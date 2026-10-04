@@ -79,6 +79,10 @@ for (const file of fs.readdirSync(SETS).filter(f => f.endsWith('.json')).sort())
     }
   }
   if (!Dex.natures.get(set.nature).exists) problems.push(`no such nature ${set.nature}`);
+  if (mon.exists) {
+    const want = mon.types.map(t => t.toLowerCase());
+    if (JSON.stringify(set.types || []) !== JSON.stringify(want)) problems.push(`types ${JSON.stringify(set.types)} but Showdown has ${JSON.stringify(want)}`);
+  }
   if (set.item) {
     const name = set.item.replace(/^cobblemon:/, '');
     if (!set.item.startsWith('cobblemon:')) problems.push(`item ${set.item} is not a Cobblemon item`);

@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
  * click 213 120          clicks the open screen at a GUI position
  * center                 clicks the middle of the open screen
  * card 3                 clicks card 3 (0-based) of the open rental pack screen
+ * inventory              opens the player's inventory screen; close closes the open screen
  * shot name              saves a picture of the frame as name.png
  * wait 800               waits that many milliseconds before the next command
  * quit                   closes the client
@@ -119,6 +120,10 @@ public final class ClientRemote {
                     pack.mouseClicked(r[0] + r[2] / 2.0, r[1] + r[3] / 2.0, 0);
                 }
             }
+            case "inventory" -> {
+                if (minecraft.player != null) minecraft.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(minecraft.player));
+            }
+            case "close" -> minecraft.setScreen(null);
             case "shot" -> shot(minecraft, rest);
             case "quit" -> minecraft.stop();
             default -> LOGGER.warn("Unknown remote command '{}'", line);

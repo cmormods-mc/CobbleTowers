@@ -2,6 +2,7 @@ package com.cobbletowers.network;
 
 import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.definition.RentalSetDefinition;
+import com.cobbletowers.rental.RentalCards;
 import com.cobbletowers.rental.RentalDraft;
 import com.cobbletowers.rental.RentalDraw;
 import java.util.ArrayList;
@@ -30,14 +31,28 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
                 Details::new);
     }
 
-    /** One card: the set's id, its species (for the model and the name) and its rarity ({@code common} ... {@code mythic}). */
-    public record Card(ResourceLocation set, String species, String name, String rarity, Details details) {
+    /**
+     * What the collectible card of a set looks like (P33b), for a client that has CobblemonCards: whether it is shiny (it came from a
+     * God Pack), its rarity, and the background and holographic effect the card carries (empty for none).
+     */
+    public record Look(boolean shiny, String rarity, String background, String effect) {
+        static final StreamCodec<RegistryFriendlyByteBuf, Look> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.BOOL, Look::shiny,
+                ByteBufCodecs.STRING_UTF8, Look::rarity,
+                ByteBufCodecs.STRING_UTF8, Look::background,
+                ByteBufCodecs.STRING_UTF8, Look::effect,
+                Look::new);
+    }
+
+    /** One card: the set's id, its species (for the model and the name), its rarity ({@code common} ... {@code mythic}) and its look. */
+    public record Card(ResourceLocation set, String species, String name, String rarity, Details details, Look look) {
         static final StreamCodec<RegistryFriendlyByteBuf, Card> STREAM_CODEC = StreamCodec.composite(
                 ResourceLocation.STREAM_CODEC, Card::set,
                 ByteBufCodecs.STRING_UTF8, Card::species,
                 ByteBufCodecs.STRING_UTF8, Card::name,
                 ByteBufCodecs.STRING_UTF8, Card::rarity,
                 Details.STREAM_CODEC, Card::details,
+                Look.STREAM_CODEC, Card::look,
                 Card::new);
     }
 
@@ -58,9 +73,12 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
             RentalDraw.Pack pack = draft.offer().packs().get(i);
             List<Card> cards = new ArrayList<>();
             for (RentalSetDefinition set : pack.cards()) {
+                // The card as the collection would print it, uncapped: what is on the table is the set's own rarity.
+                RentalCards.Spec card = RentalCards.of(set, pack.god(), RentalSetDefinition.Rarity.MYTHIC);
                 cards.add(new Card(set.id(), set.species(), set.displayName(), set.rarity().lower(),
                         new Details(set.level(), set.ability(), set.nature(), set.item().map(item -> item.getPath()).orElse(""),
-                                set.role(), set.moves())));
+                                set.role(), set.moves()),
+                        new Look(card.shiny(), card.rarity(), card.background().orElse(""), card.effect().orElse(""))));
             }
             packs.add(new Pack(pack.god(), cards, i < picks.size() ? picks.get(i) : List.of()));
         }

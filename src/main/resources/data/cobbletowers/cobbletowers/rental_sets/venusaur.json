@@ -12,6 +12,10 @@
     4,
     0
   ],
+  "types": [
+    "grass",
+    "poison"
+  ],
   "item": "cobblemon:life_orb",
   "moves": [
     "energyball",

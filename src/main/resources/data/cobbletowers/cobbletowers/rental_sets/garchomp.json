@@ -12,6 +12,10 @@
     0,
     252
   ],
+  "types": [
+    "dragon",
+    "ground"
+  ],
   "item": "cobblemon:life_orb",
   "moves": [
     "earthquake",

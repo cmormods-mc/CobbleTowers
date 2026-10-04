@@ -12,6 +12,10 @@
     4,
     0
   ],
+  "types": [
+    "steel",
+    "flying"
+  ],
   "item": "cobblemon:rocky_helmet",
   "moves": [
     "bravebird",

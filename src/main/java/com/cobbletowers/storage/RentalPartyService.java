@@ -98,7 +98,11 @@ public final class RentalPartyService {
         if (!plan.ok()) return Lock.NO_ROOM;
 
         // The whole safety argument: the rental ids and the originals, written and flushed before a single Pokemon moves.
-        store.put(new PartyJournalEntry(player.getUUID(), runId, plan.originals(), team.ids()));
+        List<PartyJournalEntry.LentCard> cards = new ArrayList<>();
+        for (int i = 0; i < team.ids().size(); i++) {
+            cards.add(new PartyJournalEntry.LentCard(team.ids().get(i), team.sets().get(i).id().toString(), team.god().get(i)));
+        }
+        store.put(new PartyJournalEntry(player.getUUID(), runId, plan.originals(), team.ids(), cards));
         store.checkpoint(server);
 
         try {

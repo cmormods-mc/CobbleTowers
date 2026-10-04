@@ -37,7 +37,12 @@ public final class RentalPackScreen extends Screen {
     private static final int CARD_H = 140;
     private static final int GAP = 8;
 
-    private final CardFace face = FallbackCardFace.INSTANCE;
+    /** Whether to draw cards as CobblemonCards cards when that mod is installed; kept for the session like the animation setting. */
+    private static boolean collectionLook = true;
+
+    private CardFace face() {
+        return collectionLook && CobblemonCardFace.available() ? CobblemonCardFace.INSTANCE : FallbackCardFace.INSTANCE;
+    }
     private RentalDraftPayload draft;
     private Stage stage;
     private long stageStart;
@@ -53,6 +58,7 @@ public final class RentalPackScreen extends Screen {
     private Button restart;
     private Button toggle;
     private Button done;
+    private Button lookToggle;
 
     public RentalPackScreen(RentalDraftPayload draft) {
         super(Component.literal("Rental Draft"));
@@ -118,8 +124,18 @@ public final class RentalPackScreen extends Screen {
                     animations = !animations;
                     toggle.setMessage(animLabel());
                     if (!animations && (stage == Stage.TEARING || stage == Stage.REVEALING)) enter(Stage.CHOOSING);
-                }).pos(width - 108, 6).size(102, 16).build());
+                }).pos(6, height - 24).size(102, 16).build());
+        if (CobblemonCardFace.available()) {
+            lookToggle = addRenderableWidget(Button.builder(lookLabel(), b -> {
+                        collectionLook = !collectionLook;
+                        lookToggle.setMessage(lookLabel());
+                    }).pos(width - 108, height - 24).size(102, 16).build());
+        }
         refreshButtons();
+    }
+
+    private static Component lookLabel() {
+        return Component.literal("Cards: " + (collectionLook ? "Collection" : "Plain"));
     }
 
     private static Component animLabel() {
@@ -370,13 +386,13 @@ public final class RentalPackScreen extends Screen {
             graphics.pose().pushPose();
             graphics.pose().translate(x, y, 0);
             graphics.pose().scale(scale, scale, 1f);
-            face.drawFace(graphics, font, card, 0, 0, CARD_W, CARD_H, chosen, t);
+            face().drawFace(graphics, font, card, 0, 0, CARD_W, CARD_H, chosen, t);
             graphics.pose().popPose();
         } else {
             graphics.pose().pushPose();
             graphics.pose().translate(x, y, 0);
             graphics.pose().scale(scale, scale, 1f);
-            face.drawBack(graphics, font, 0, 0, CARD_W, CARD_H, t);
+            face().drawBack(graphics, font, 0, 0, CARD_W, CARD_H, t);
             graphics.pose().popPose();
         }
         graphics.pose().popPose();

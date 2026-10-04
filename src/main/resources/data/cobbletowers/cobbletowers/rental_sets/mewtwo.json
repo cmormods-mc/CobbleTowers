@@ -12,6 +12,9 @@
     0,
     252
   ],
+  "types": [
+    "psychic"
+  ],
   "item": "cobblemon:life_orb",
   "moves": [
     "psystrike",

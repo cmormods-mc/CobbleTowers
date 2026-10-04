@@ -183,6 +183,15 @@ public final class RunTransitionService {
                     || move.next().state() == RunState.CASHED_OUT) {
                 RewardBankService.bank(server, runId, now);
             }
+            // A rental run that completed earns real cards (P33b), read from the party journal before the player is given their own
+            // Pokemon back. Banked above, granted here, each once.
+            if (move.next().state() == RunState.COMPLETED) {
+                try {
+                    com.cobbletowers.reward.CardRewardService.onCompleted(server, runId, now);
+                } catch (RuntimeException ex) {
+                    TowerLog.error("Could not grant the card rewards of run {}", runId, ex);
+                }
+            }
             // The settled draft is cleared on the way out rather than when it settles, so that
             // `runs show` and the reward-reveal still have it to read for the whole intermission.
             if (move.next().state() == RunState.NEXT_FLOOR_READY) {

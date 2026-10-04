@@ -12,6 +12,10 @@
     0,
     252
   ],
+  "types": [
+    "steel",
+    "psychic"
+  ],
   "item": "cobblemon:expert_belt",
   "moves": [
     "meteormash",

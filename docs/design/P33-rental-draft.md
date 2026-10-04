@@ -147,6 +147,6 @@ greedy player AI under-rates support sets, so the numbers rank sets relative to 
 
 ### Left open
 
-The 2-legendary cap is built as proposed; the CobblemonCards crossover (real cards, a tower-owned collection, or none) is still
-undecided and is **none** for now; a Pokemon model on the card can now be tuned with the screenshot harness but is not built; how the
+The 2-legendary cap is built as proposed. The CobblemonCards crossover was decided afterwards and is built as **both** a visual
+face (real card art on the table) and real card rewards for a completed run: see `P33b-cobblemon-cards-crossover.md`. How the
 animation feels at a real frame rate, and the sound, need a person.

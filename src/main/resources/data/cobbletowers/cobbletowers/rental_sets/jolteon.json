@@ -12,6 +12,9 @@
     0,
     252
   ],
+  "types": [
+    "electric"
+  ],
   "item": "cobblemon:choice_specs",
   "moves": [
     "thunderbolt",

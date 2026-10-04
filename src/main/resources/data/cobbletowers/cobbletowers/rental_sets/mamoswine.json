@@ -12,6 +12,10 @@
     0,
     252
   ],
+  "types": [
+    "ice",
+    "ground"
+  ],
   "item": "cobblemon:choice_band",
   "moves": [
     "earthquake",

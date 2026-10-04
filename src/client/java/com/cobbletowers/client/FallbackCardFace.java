@@ -104,7 +104,7 @@ public final class FallbackCardFace implements CardFace {
     }
 
     /** Draws text no wider than {@code maxWidth}: at {@code scale} if it fits, smaller if it does not. */
-    private static void fit(GuiGraphics graphics, Font font, Component text, int x, int y, int maxWidth, int color, float scale) {
+    static void fit(GuiGraphics graphics, Font font, Component text, int x, int y, int maxWidth, int color, float scale) {
         int natural = font.width(text);
         float use = natural * scale > maxWidth ? maxWidth / (float) Math.max(1, natural) : scale;
         graphics.pose().pushPose();

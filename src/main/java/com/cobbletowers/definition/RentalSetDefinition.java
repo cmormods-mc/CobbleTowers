@@ -21,6 +21,8 @@ import net.minecraft.resources.ResourceLocation;
  * @param evs     hp, atk, def, spa, spd, spe
  * @param item    a held item, if any, such as {@code cobblemon:life_orb}
  * @param role    a short description of what it does ("fast sweeper", "defensive pivot")
+ * @param types   the species' types, first the primary one, as lower-case names ({@code dragon}, {@code ground}); the card a set
+ *                makes (P33b) takes its stat and background from the first
  */
 public record RentalSetDefinition(
         ResourceLocation id,
@@ -34,12 +36,16 @@ public record RentalSetDefinition(
         Optional<ResourceLocation> item,
         List<String> moves,
         String role,
+        List<String> types,
         Rarity rarity) {
 
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
     /** Cobblemon refuses more than 510 EVs in total and 252 in one stat. */
     public static final int MAX_EVS_TOTAL = 510;
     public static final int MAX_EVS_PER_STAT = 252;
+    /** The eighteen types, as Cobblemon and CobblemonCards spell them. */
+    public static final List<String> TYPE_NAMES = List.of("normal", "fire", "water", "grass", "electric", "ice", "fighting", "poison",
+            "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "steel", "fairy", "dark");
 
     /** CobblemonCards' rarity vocabulary, so a rental looks native next to a card from the collection. */
     public enum Rarity {
@@ -66,6 +72,7 @@ public record RentalSetDefinition(
         evs = List.copyOf(evs);
         ivs = List.copyOf(ivs);
         moves = List.copyOf(moves);
+        types = List.copyOf(types);
         if (schemaVersion != SUPPORTED_SCHEMA_VERSION) {
             throw new IllegalArgumentException("schema_version " + schemaVersion + " is not supported; expected "
                     + SUPPORTED_SCHEMA_VERSION);
@@ -84,6 +91,15 @@ public record RentalSetDefinition(
         if (ability == null || ability.isBlank()) throw new IllegalArgumentException("ability must not be blank");
         if (nature == null || nature.isBlank()) throw new IllegalArgumentException("nature must not be blank");
         role = role == null ? "" : role;
+        if (types.size() > 2) throw new IllegalArgumentException("a Pokemon has at most two types, got " + types.size());
+        for (String type : types) {
+            if (!TYPE_NAMES.contains(type)) throw new IllegalArgumentException("unknown type '" + type + "'");
+        }
+    }
+
+    /** The primary type, or {@code normal} for a set that does not say. */
+    public String primaryType() {
+        return types.isEmpty() ? "normal" : types.get(0);
     }
 
     /** A readable name for the species: {@code garchomp} becomes {@code Garchomp}. */
@@ -105,7 +121,7 @@ public record RentalSetDefinition(
                 TowerJson.integer(root, "level", 50), TowerJson.requireString(root, "ability"),
                 TowerJson.string(root, "nature", "hardy"), numbers(root, "evs", 0), numbers(root, "ivs", 31),
                 TowerJson.optionalId(root, "item"), TowerJson.strings(root, "moves"), TowerJson.string(root, "role", ""),
-                rarity(TowerJson.requireString(root, "rarity")));
+                TowerJson.strings(root, "types"), rarity(TowerJson.requireString(root, "rarity")));
     }
 
     private static Rarity rarity(String raw) {

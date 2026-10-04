@@ -88,6 +88,11 @@ public final class CobbleTowers implements ModInitializer {
             } catch (RuntimeException ex) {
                 TowerLog.error("Could not sweep unbanked tower rewards", ex);
             }
+            try {
+                com.cobbletowers.reward.CardRewardService.sweep(server, now);
+            } catch (RuntimeException ex) {
+                TowerLog.error("Could not sweep unfinished card rewards", ex);
+            }
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> SpikeEncounters.onServerStopped());
         // Per-server state on a class that is not per-server: an integrated client keeps this JVM
