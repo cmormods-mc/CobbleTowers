@@ -150,7 +150,7 @@ public final class RewardBankService {
         List<LedgerEntry> priced = unbanked(run);
         ModifierEffects effects = DraftService.effects(run);
         List<RewardValuation.Grant> grants = RewardValuation.value(run.seed(), priced, table.get(), effects,
-                id -> content.milestoneKindOf(id));
+                DraftService.customs(run), id -> content.milestoneKindOf(id));
         List<UUID> participants = currentParticipants(run);
 
         TowerRuns.save(server, run.banked(run.floorIndex(), key, now), true);

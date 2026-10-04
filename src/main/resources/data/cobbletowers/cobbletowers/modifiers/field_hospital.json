@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Field Hospital",
+  "risk": "severe",
+  "weight": 5,
+  "stack_limit": 1,
+  "effect": {
+    "custom": "field_hospital",
+    "boss_health_percent": 130
+  }
+}

@@ -54,6 +54,9 @@ public record ModifierDefinition(
      * @param allowItems        whether the party may use items (PLAYER_CONSTRAINT, P8b)
      * @param weather           a Showdown weather id to set at battle start (FIELD, P8b)
      * @param terrain           a Showdown terrain id to set at battle start (FIELD, P8b)
+     * @param custom            the id of a coded behavior ({@link CustomBehavior}), for the rare modifiers whose
+     *                          effect is not a number or a flag (CUSTOM, P29); everything else about the modifier
+     *                          still goes through the fields above
      * @param scoutingBonus     floors added to a scouting category's concealment threshold before it
      *                          hides (SCOUTING, P12) -- pushes concealment deeper, never un-conceals
      *                          something a profile already decided to hide sooner
@@ -69,16 +72,33 @@ public record ModifierDefinition(
             boolean allowItems,
             Optional<String> weather,
             Optional<String> terrain,
-            int scoutingBonus) {
+            int scoutingBonus,
+            Optional<String> custom) {
 
         /** Changes nothing: the baseline every field is measured against. */
         public static final Effect NEUTRAL =
-                new Effect(0, 0, 0, 100, 100, List.of(), true, true, Optional.empty(), Optional.empty(), 0);
+                new Effect(0, 0, 0, 100, 100, List.of(), true, true, Optional.empty(), Optional.empty(), 0,
+                        Optional.empty());
+
+        /** Everything except a coded behavior, which is what every modifier before P29 declared. */
+        public Effect(int levelOffset, int extraOpponents, int bossLevelOffset, int bossHealthPercent,
+                      int rewardPercent, List<String> bannedMoves, boolean allowSwitching, boolean allowItems,
+                      Optional<String> weather, Optional<String> terrain, int scoutingBonus) {
+            this(levelOffset, extraOpponents, bossLevelOffset, bossHealthPercent, rewardPercent, bannedMoves,
+                    allowSwitching, allowItems, weather, terrain, scoutingBonus, Optional.empty());
+        }
 
         public Effect {
             bannedMoves = List.copyOf(bannedMoves);
             Objects.requireNonNull(weather, "weather");
             Objects.requireNonNull(terrain, "terrain");
+            Objects.requireNonNull(custom, "custom");
+            custom.ifPresent(id -> {
+                if (CustomBehavior.fromId(id).isEmpty()) {
+                    throw new IllegalArgumentException("custom '" + id + "' is not a coded behavior; known: "
+                            + CustomBehavior.ids());
+                }
+            });
             if (bossHealthPercent < 1) {
                 throw new IllegalArgumentException("boss_health_percent must be >= 1, got " + bossHealthPercent);
             }
@@ -115,6 +135,10 @@ public record ModifierDefinition(
             return scoutingBonus != 0;
         }
 
+        public boolean touchesCustom() {
+            return custom.isPresent();
+        }
+
         public static Effect fromJson(JsonObject root) {
             if (root == null) return NEUTRAL;
             return new Effect(
@@ -128,7 +152,8 @@ public record ModifierDefinition(
                     TowerJson.bool(root, "allow_items", true),
                     optionalString(root, "weather"),
                     optionalString(root, "terrain"),
-                    TowerJson.integer(root, "scouting_bonus", 0));
+                    TowerJson.integer(root, "scouting_bonus", 0),
+                    optionalString(root, "custom"));
         }
 
         private static Optional<String> optionalString(JsonObject root, String key) {
@@ -186,6 +211,7 @@ public record ModifierDefinition(
             case FIELD -> effect.touchesField();
             case REWARD -> effect.touchesReward();
             case SCOUTING -> effect.touchesScouting();
+            case CUSTOM -> effect.touchesCustom();
         };
         if (!matches) {
             throw new IllegalArgumentException(id + " is type " + type

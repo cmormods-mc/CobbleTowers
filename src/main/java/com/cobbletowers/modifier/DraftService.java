@@ -84,6 +84,11 @@ public final class DraftService {
         return ModifierEffects.of(counted);
     }
 
+    /** What a run's CUSTOM modifiers (P29) reduce to; locked-in copies do not matter, a behavior is held or it is not. */
+    public static CustomEffects customs(PersistedRun run) {
+        return CustomEffects.of(held(TowerDefinitionRegistry.content(), run.modifiers()));
+    }
+
     /** A run's effects, read from whatever content is loaded now. */
     public static ModifierEffects effects(PersistedRun run) {
         return effects(TowerDefinitionRegistry.content(), run.modifiers());

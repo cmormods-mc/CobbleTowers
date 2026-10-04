@@ -38,5 +38,11 @@ public enum ModifierType {
     REWARD,
 
     /** How much of a floor's scouting profile a run can see (TDS #49). Effective in P12. */
-    SCOUTING
+    SCOUTING,
+
+    /**
+     * A rare, game-changing modifier whose effect is a coded behavior rather than a number (P29). It may also
+     * set ordinary effect fields as its price or its bonus; the behavior is the part no field can say.
+     */
+    CUSTOM
 }

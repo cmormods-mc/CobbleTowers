@@ -63,12 +63,19 @@ public final class RewardValuation {
     public static List<Grant> value(long runSeed, List<LedgerEntry> priced, RewardTableDefinition table,
                                     ModifierEffects effects,
                                     java.util.function.Function<ResourceLocation, Optional<MilestoneKind>> milestoneKinds) {
+        return value(runSeed, priced, table, effects, com.cobbletowers.modifier.CustomEffects.NONE, milestoneKinds);
+    }
+
+    /** As above, with the run's CUSTOM modifiers (P29): the Wheel scales each rolled grant by its own spin. */
+    public static List<Grant> value(long runSeed, List<LedgerEntry> priced, RewardTableDefinition table,
+                                    ModifierEffects effects, com.cobbletowers.modifier.CustomEffects customs,
+                                    java.util.function.Function<ResourceLocation, Optional<MilestoneKind>> milestoneKinds) {
         List<Grant> grants = new ArrayList<>();
         int n = 0;
         for (LedgerEntry entry : priced) {
             n++;
             if (entry.kind() == LedgerEntry.Kind.MILESTONE_CLEARED) {
-                addMilestone(grants, runSeed, entry, n, table, effects, milestoneKinds);
+                addMilestone(grants, runSeed, entry, n, table, effects, customs, milestoneKinds);
                 continue;
             }
             Optional<RewardKind> kind = toRewardKind(entry.kind());
@@ -79,7 +86,7 @@ public final class RewardValuation {
             RewardTableDefinition.Entry rolled = RewardDraw.pickItem(runSeed, entry.floorIndex(), n, pool);
             int amount = RewardDraw.rollAmount(runSeed, entry.floorIndex(), n, rolled.minAmount(), rolled.maxAmount());
             int grown = amount + amount * table.growthPercentPerFloor() * entry.floorIndex() / 100;
-            int worth = effects.applyReward(grown);
+            int worth = effects.applyReward(grown) * customs.rewardPercent(runSeed, entry.floorIndex(), n) / 100;
             if (worth > 0) grants.add(new Grant(rolled.item(), worth));
         }
         return List.copyOf(grants);
@@ -88,6 +95,7 @@ public final class RewardValuation {
     /** The guaranteed items, each to everybody in full, then the bonus rolls valued like any other grant. */
     private static void addMilestone(List<Grant> grants, long runSeed, LedgerEntry entry, int n,
                                      RewardTableDefinition table, ModifierEffects effects,
+                                     com.cobbletowers.modifier.CustomEffects customs,
                                      java.util.function.Function<ResourceLocation, Optional<MilestoneKind>> milestoneKinds) {
         Optional<RewardTableDefinition.MilestoneReward> reward =
                 milestoneKinds.apply(entry.what()).flatMap(table::milestoneReward);
@@ -103,7 +111,7 @@ public final class RewardValuation {
                     reward.get().bonusPool());
             int amount = RewardDraw.rollAmount(runSeed, entry.floorIndex(), ordinal, rolled.minAmount(), rolled.maxAmount());
             int grown = amount + amount * table.growthPercentPerFloor() * entry.floorIndex() / 100;
-            int worth = effects.applyReward(grown);
+            int worth = effects.applyReward(grown) * customs.rewardPercent(runSeed, entry.floorIndex(), ordinal) / 100;
             if (worth > 0) grants.add(new Grant(rolled.item(), worth));
         }
     }

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Glass Cannon",
+  "risk": "severe",
+  "weight": 6,
+  "stack_limit": 1,
+  "effect": {
+    "custom": "glass_cannon"
+  }
+}

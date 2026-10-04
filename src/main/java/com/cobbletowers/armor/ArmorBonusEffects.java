@@ -83,7 +83,11 @@ public final class ArmorBonusEffects {
 
     /** The player's vendor price for a service listed at {@code base}. */
     public static int vendorPrice(ServerPlayer player, int base) {
-        return discountedPrice(base, WornSets.current(player).vendorDiscountPercent());
+        int price = discountedPrice(base, WornSets.current(player).vendorDiscountPercent());
+        // A run's CUSTOM modifiers (P29) apply on top of any armor discount.
+        int percent = com.cobbletowers.runtime.TowerRuns.forPlayer(player.getUUID())
+                .map(run -> com.cobbletowers.modifier.DraftService.customs(run).vendorPricePercent()).orElse(100);
+        return percent == 100 ? price : Math.max(price > 0 ? 1 : 0, (int) Math.round(price * percent / 100.0));
     }
 
     /** Raid Points to award {@code player} for a base grant of {@code base}. */
@@ -94,5 +98,13 @@ public final class ArmorBonusEffects {
     /** The wearer's battle operations, ready to merge into {@code TowerBattleFx.armFloorBattle}. */
     public static JsonArray battleEffects(ServerPlayer player) {
         return WornSets.current(player).battleEffects();
+    }
+
+    /** The armor's operations plus the run's CUSTOM modifiers' (P29), for a battle in {@code runId}. */
+    public static JsonArray battleEffects(ServerPlayer player, java.util.UUID runId) {
+        JsonArray ops = battleEffects(player);
+        com.cobbletowers.runtime.TowerRuns.get(runId)
+                .ifPresent(run -> com.cobbletowers.modifier.DraftService.customs(run).battleOps().forEach(ops::add));
+        return ops;
     }
 }

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Fortune's Wheel",
+  "risk": "severe",
+  "weight": 5,
+  "stack_limit": 1,
+  "effect": {
+    "custom": "fortunes_wheel"
+  }
+}

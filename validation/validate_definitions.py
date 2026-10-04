@@ -153,7 +153,9 @@ def check_modifiers(content: dict, problems: list[str]) -> None:
         "field": ("weather", "terrain"),
         "reward": ("reward_percent",),
         "scouting": ("scouting_bonus",),
+        "custom": ("custom",),
     }
+    known_customs = ("glass_cannon", "field_hospital", "fortunes_wheel", "black_market")
     for modifier_id, modifier in content["modifiers"].items():
         for field in ("schema_version", "type", "display_name"):
             if field not in modifier:
@@ -183,6 +185,11 @@ def check_modifiers(content: dict, problems: list[str]) -> None:
             problems.append(f"{modifier_id} has stack_limit {modifier.get('stack_limit')}; it must be >= 1")
         if modifier.get("weight", 100) < 1:
             problems.append(f"{modifier_id} has weight {modifier.get('weight')}; weights must be >= 1")
+
+        custom = modifier.get("effect", {}).get("custom")
+        if custom is not None and custom not in known_customs:
+            problems.append(f"{modifier_id} names custom behavior '{custom}', which is not coded "
+                            f"(known: {', '.join(known_customs)})")
 
         # The mistake content actually makes: copy a modifier, change its type, keep the payload.
         effect = modifier.get("effect", {})

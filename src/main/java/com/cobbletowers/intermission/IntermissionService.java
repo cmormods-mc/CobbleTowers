@@ -67,6 +67,14 @@ public final class IntermissionService {
         ROUNDS.put(runId, new IntermissionRound());
         TowerRuns.get(runId).ifPresent(run -> {
             com.cobbletowers.vendor.VendorNpc.spawn(server, run);
+            if (com.cobbletowers.modifier.DraftService.customs(run).healsEachIntermission()) {
+                for (PersistedParticipant participant : run.participants()) {
+                    ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+                    if (player == null) continue;
+                    com.cobbletowers.economy.VendorServices.apply(com.cobbletowers.definition.VendorEffect.FULL_HEAL, player);
+                    player.displayClientMessage(Component.literal("Field Hospital: your party is fully healed."), true);
+                }
+            }
             broadcast(server, run, "", true);
         });
     }
