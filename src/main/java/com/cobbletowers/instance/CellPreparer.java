@@ -6,12 +6,16 @@ import com.cobbletowers.diagnostics.TowerMetrics;
 import java.util.List;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
@@ -33,16 +37,16 @@ public final class CellPreparer {
     private static final int PLACE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
 
     /**
-     * The box {@link #reset} sweeps, around the cell centre at floor height.
+     * What {@link #reset} sweeps: every chunk the cell holds ({@link CellTickets#RADIUS_CHUNKS} either side of the
+     * centre), from just under the floor to the top of the world.
      *
-     * <p>Wide and tall enough for any arena this phase ships (the largest is 51x10x51) with margin.
-     * A cell is not told what was pasted into it -- after a restart nothing remembers -- so the
-     * reset sweeps a fixed volume and clears whatever it finds. A tower-sized structure, like the
-     * 127-block Tideforge interior, would need this raised with it.
+     * <p>This used to be a 64x64 box 17 blocks tall, "wide and tall enough for any arena". The Battle Tower is 93 wide
+     * and 163 tall, and the Test Tower 64 tall, so a reset left everything outside that box behind -- the upper floors
+     * of an earlier build stood inside the next run's tower. A cell is not told what was pasted into it (after a
+     * restart nothing remembers), so the sweep covers all of it, and skips chunk sections that hold only air so that
+     * a clean cell costs almost nothing.
      */
-    private static final int RESET_RADIUS = 32;
     private static final int RESET_BELOW = 1;
-    private static final int RESET_ABOVE = 16;
 
     private CellPreparer() {}
 
@@ -102,6 +106,11 @@ public final class CellPreparer {
         // originFor() must agree with this; it is the same call, kept together on purpose.
 
         CellTickets.hold(server, cell);
+        // A structure does not place its air, so whatever is already in the cell would show through it. Cells are
+        // reset when a run releases them, but a cell used before the sweep covered the whole building (or after a
+        // crash) can still hold an older build; clearing here makes the paste independent of that history.
+        int leftover = reset(server, cell);
+        if (leftover > 0) TowerLog.warn("Cell {} held {} leftover block(s) before it was prepared; cleared", cell, leftover);
 
         long started = System.nanoTime();
         boolean placed = template.placeInWorld(level, origin, origin,
@@ -139,14 +148,30 @@ public final class CellPreparer {
         BlockPos centre = CellGrid.centerOf(cell);
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        ChunkPos middle = new ChunkPos(centre);
+        int lowest = CellGrid.FLOOR_Y - RESET_BELOW;
         int cleared = 0;
-        for (int y = CellGrid.FLOOR_Y - RESET_BELOW; y <= CellGrid.FLOOR_Y + RESET_ABOVE; y++) {
-            for (int x = centre.getX() - RESET_RADIUS; x < centre.getX() + RESET_RADIUS; x++) {
-                for (int z = centre.getZ() - RESET_RADIUS; z < centre.getZ() + RESET_RADIUS; z++) {
-                    cursor.set(x, y, z);
-                    if (level.getBlockState(cursor).isAir()) continue;
-                    level.setBlock(cursor, air, PLACE_FLAGS);
-                    cleared++;
+        int reach = CellTickets.RADIUS_CHUNKS;
+        for (int chunkX = middle.x - reach; chunkX <= middle.x + reach; chunkX++) {
+            for (int chunkZ = middle.z - reach; chunkZ <= middle.z + reach; chunkZ++) {
+                LevelChunk chunk = level.getChunk(chunkX, chunkZ);
+                LevelChunkSection[] sections = chunk.getSections();
+                for (int index = 0; index < sections.length; index++) {
+                    LevelChunkSection section = sections[index];
+                    if (section.hasOnlyAir()) continue;
+                    int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(index));
+                    for (int localY = 0; localY < 16; localY++) {
+                        int y = baseY + localY;
+                        if (y < lowest) continue;
+                        for (int localX = 0; localX < 16; localX++) {
+                            for (int localZ = 0; localZ < 16; localZ++) {
+                                if (section.getBlockState(localX, localY, localZ).isAir()) continue;
+                                cursor.set(chunkX * 16 + localX, y, chunkZ * 16 + localZ);
+                                level.setBlock(cursor, air, PLACE_FLAGS);
+                                cleared++;
+                            }
+                        }
+                    }
                 }
             }
         }
