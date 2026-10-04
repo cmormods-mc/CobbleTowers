@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "enemy",
+  "display_name": "Colossus",
+  "risk": "severe",
+  "weight": 40,
+  "group": "boss_pressure",
+  "stack_limit": 1,
+  "excludes": [
+    "cobbletowers:bulwark_boss",
+    "cobbletowers:fragile_champion"
+  ],
+  "effect": {
+    "boss_health_percent": 175,
+    "boss_level_offset": 3
+  }
+}

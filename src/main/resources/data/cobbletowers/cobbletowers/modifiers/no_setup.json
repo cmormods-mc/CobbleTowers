@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "player_constraint",
+  "display_name": "No Setup",
+  "risk": "moderate",
+  "weight": 50,
+  "stack_limit": 1,
+  "effect": {
+    "banned_moves": [
+      "swordsdance",
+      "nastyplot",
+      "dragondance",
+      "calmmind",
+      "bulkup",
+      "quiverdance",
+      "shellsmash",
+      "irondefense",
+      "agility",
+      "bellydrum",
+      "coil",
+      "tailglow"
+    ]
+  }
+}

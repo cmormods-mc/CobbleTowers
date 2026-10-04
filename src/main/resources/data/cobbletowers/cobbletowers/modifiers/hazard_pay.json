@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "reward",
+  "display_name": "Hazard Pay",
+  "risk": "minor",
+  "weight": 65,
+  "stack_limit": 1,
+  "requires": [
+    "cobbletowers:no_retreat"
+  ],
+  "effect": {
+    "reward_percent": 175
+  }
+}

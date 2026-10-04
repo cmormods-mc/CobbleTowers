@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "enemy",
+  "display_name": "Seasoned Ranks",
+  "risk": "moderate",
+  "weight": 80,
+  "stack_limit": 1,
+  "excludes": [
+    "cobbletowers:double_trouble",
+    "cobbletowers:sharpened_claws"
+  ],
+  "effect": {
+    "level_offset": 5
+  }
+}

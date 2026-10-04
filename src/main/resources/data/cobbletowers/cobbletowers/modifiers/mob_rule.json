@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "encounter",
+  "display_name": "Mob Rule",
+  "risk": "severe",
+  "weight": 35,
+  "stack_limit": 1,
+  "excludes": [
+    "cobbletowers:crowded_floor",
+    "cobbletowers:gauntlet"
+  ],
+  "effect": {
+    "extra_opponents": 2
+  }
+}

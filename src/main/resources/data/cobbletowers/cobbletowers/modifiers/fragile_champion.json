@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "enemy",
+  "display_name": "Fragile Champion",
+  "risk": "minor",
+  "weight": 70,
+  "stack_limit": 1,
+  "excludes": [
+    "cobbletowers:bulwark_boss",
+    "cobbletowers:colossus"
+  ],
+  "effect": {
+    "boss_health_percent": 70
+  }
+}

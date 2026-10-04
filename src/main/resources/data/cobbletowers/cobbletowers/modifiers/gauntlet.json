@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "encounter",
+  "display_name": "Gauntlet",
+  "risk": "moderate",
+  "weight": 70,
+  "stack_limit": 1,
+  "excludes": [
+    "cobbletowers:crowded_floor"
+  ],
+  "effect": {
+    "extra_opponents": 1,
+    "reward_percent": 120
+  }
+}
