@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "display_name": "Double Boss",
+  "description": "Defeat 2 bosses.",
+  "period": "daily",
+  "condition": {
+    "type": "bosses_defeated",
+    "count": 2
+  },
+  "reward": 100
+}

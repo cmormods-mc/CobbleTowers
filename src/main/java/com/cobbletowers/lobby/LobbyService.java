@@ -6,6 +6,11 @@ import com.cobbletowers.api.tower.RunState;
 import com.cobbletowers.battle.cobblemon.PartyReader;
 import com.cobbletowers.battle.cobblemon.PartyStorage;
 import com.cobbletowers.definition.RulesetDefinition;
+import com.cobbletowers.runtime.PlaylistRules;
+import com.cobbletowers.persistence.RunOptions;
+import com.cobbletowers.definition.RulesetResolver;
+import com.cobbletowers.definition.PlaylistRegistry;
+import com.cobbletowers.definition.PlaylistDefinition;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
@@ -112,6 +117,10 @@ public final class LobbyService {
         if (inRun(target.getUUID())) return name(target) + " is already in a tower run.";
         if (lobbyOf(target.getUUID()).isPresent()) return name(target) + " is already in a team.";
 
+        int teamCap = lobby.playlist().flatMap(PlaylistRegistry::get).map(PlaylistDefinition::maxPlayers).orElse(0);
+        if (teamCap > 0 && 1 + lobby.invitees().size() >= teamCap) {
+            return playlistName(lobby.playlist()) + " allows " + teamCap + " player" + (teamCap == 1 ? "" : "s") + ".";
+        }
         TowerLobby.Result result = lobby.invite(target.getUUID(), System.currentTimeMillis());
         if (result == TowerLobby.Result.FULL) return "A team is at most " + TowerLobby.MAX_PLAYERS + " players.";
         if (result != TowerLobby.Result.OK) return name(target) + " is already invited.";
@@ -178,6 +187,72 @@ public final class LobbyService {
 
     /** The host confirms; the countdown runs and {@link #tick} launches the run when it ends. */
     /**
+     * The host picks today's trial (P32): the tower, playlist, mutators, level and seed come from the trial, so the lobby is
+     * fixed to it until the host chooses a tower again.
+     */
+    public static String selectTrial(MinecraftServer server, ServerPlayer player,
+                                     com.cobbletowers.definition.TrialPoolDefinition.Kind kind) {
+        if (inRun(player.getUUID())) return "You are already in a tower run.";
+        Optional<TowerLobby> existing = lobbyOf(player.getUUID());
+        if (existing.isPresent() && !existing.get().host().equals(player.getUUID())) {
+            return "Only the host can choose the trial. Leave first to host your own.";
+        }
+        if (existing.isPresent() && existing.get().counting()) return "The run is already starting.";
+        Optional<com.cobbletowers.trial.TrialSchedule.Instance> found = com.cobbletowers.trial.TrialService.current(kind);
+        if (found.isEmpty()) return "There is no " + kind.name().toLowerCase(java.util.Locale.ROOT) + " trial on this server.";
+        com.cobbletowers.trial.TrialSchedule.Instance trial = found.get();
+        if (!TowerDefinitionRegistry.content().towers().containsKey(trial.entry().tower())) {
+            return "Today's trial uses " + trial.entry().tower() + ", which is not loaded.";
+        }
+        PlaylistDefinition playlist = trial.entry().playlist().flatMap(PlaylistRegistry::get).orElse(null);
+        TowerLobby lobby = existing.orElseGet(() -> {
+            TowerLobby created = new TowerLobby(player.getUUID(), trial.entry().tower());
+            BY_HOST.put(player.getUUID(), created);
+            return created;
+        });
+        if (playlist != null && playlist.maxPlayers() > 0 && lobby.team().size() + lobby.pending().size() > playlist.maxPlayers()) {
+            return playlist.displayName() + " allows " + playlist.maxPlayers() + " player(s); the team is larger.";
+        }
+        lobby.selectTower(trial.entry().tower());
+        lobby.setPlaylist(trial.entry().playlist());
+        lobby.setTrial(Optional.of(trial));
+        broadcast(server, lobby, "");
+        boolean scored = com.cobbletowers.trial.TrialService.wouldBeScored(server, new ArrayList<>(lobby.team()), trial.id());
+        return trial.title() + " selected: " + trial.floors() + " floors on " + towerName(trial.entry().tower())
+                + (playlist == null ? "" : ", " + playlist.displayName())
+                + (scored ? ". This will be your scored attempt: it cannot be retried. Use /tower start."
+                        : ". Someone on the team has already used this trial's attempt, so this run is practice and will not post. Use /tower start.");
+    }
+
+    /** The host picks the playlist (P32): its house rules apply to the whole team. {@code "standard"} clears it. */
+    public static String setPlaylist(MinecraftServer server, ServerPlayer player, String raw) {
+        TowerLobby lobby = BY_HOST.get(player.getUUID());
+        if (lobby == null) return lobbyOf(player.getUUID()).isPresent() ? "Only the host can choose the mode." : "Pick a tower first.";
+        if (lobby.counting()) return "The run is already starting.";
+        if (lobby.trial().isPresent()) return "A trial fixes the mode. Choose a tower to leave the trial.";
+        if (raw.equalsIgnoreCase("standard") || raw.isBlank()) {
+            lobby.setPlaylist(java.util.Optional.empty());
+            broadcast(server, lobby, "");
+            return "Mode: Standard.";
+        }
+        ResourceLocation id = raw.contains(":") ? ResourceLocation.tryParse(raw)
+                : ResourceLocation.fromNamespaceAndPath("cobbletowers", raw.toLowerCase(java.util.Locale.ROOT));
+        java.util.Optional<PlaylistDefinition> playlist = id == null ? java.util.Optional.empty() : PlaylistRegistry.get(id);
+        if (playlist.isEmpty()) return "No mode called " + raw + ". Try: standard, "
+                + PlaylistRegistry.all().stream().map(p -> p.id().getPath()).collect(java.util.stream.Collectors.joining(", ")) + ".";
+        if (playlist.get().maxPlayers() > 0 && lobby.team().size() + lobby.pending().size() > playlist.get().maxPlayers()) {
+            return playlist.get().displayName() + " allows " + playlist.get().maxPlayers() + " player(s); the team is larger.";
+        }
+        lobby.setPlaylist(java.util.Optional.of(id));
+        broadcast(server, lobby, "");
+        return "Mode: " + playlist.get().displayName() + ". " + playlist.get().description();
+    }
+
+    static String playlistName(java.util.Optional<ResourceLocation> playlist) {
+        return playlist.flatMap(PlaylistRegistry::get).map(PlaylistDefinition::displayName).orElse("Standard");
+    }
+
+    /**
      * The deepest Ascension the whole team may start at (P30): the lowest record on the team, since nobody should be thrown
      * into depth they have not earned.
      */
@@ -196,6 +271,7 @@ public final class LobbyService {
         if (lobby == null) return lobbyOf(player.getUUID()).isPresent() ? "Only the host can choose the Ascension."
                 : "Pick a tower first.";
         if (lobby.counting()) return "The run is already starting.";
+        if (lobby.trial().isPresent()) return "A trial always starts from the first floor. Choose a tower to leave the trial.";
         TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(lobby.tower());
         if (tower == null || !tower.ascension()) return towerName(lobby.tower()) + " does not ascend.";
         int max = maxAscension(server, lobby);
@@ -251,7 +327,7 @@ public final class LobbyService {
         lobby.cancelCountdown();
         TowerContent content = TowerDefinitionRegistry.content();
         TowerDefinition tower = content.towers().get(lobby.tower());
-        RulesetDefinition ruleset = tower == null ? null : content.rulesets().get(tower.rulesetId());
+        RulesetDefinition ruleset = RulesetResolver.forTower(content, tower, lobby.playlist());
         if (ruleset == null) {
             broadcast(server, lobby, "That tower is no longer available.");
             return;
@@ -289,6 +365,10 @@ public final class LobbyService {
             }
             PartyValidation.Result checked = PartyValidation.validate(party, ruleset);
             checked.problems().forEach(problem -> problems.add(name(player) + " " + problem));
+            // The playlist's clauses (P32) apply to what would be registered.
+            lobby.playlist().flatMap(PlaylistRegistry::get).ifPresent(playlist ->
+                    PlaylistRules.problems(party.stream().filter(member -> checked.registered().contains(member.id())).toList(),
+                            playlist).forEach(problem -> problems.add(name(player) + ": " + problem)));
             if (!picked.isEmpty()) {
                 // Dry-run before anyone is moved: a plan that cannot be carried out is refused up front.
                 PartyArrangement.Plan plan = PartyJournalService.dryRun(player, checked.registered());
@@ -310,12 +390,25 @@ public final class LobbyService {
             }
         }
         if (!problems.isEmpty()) {
+            TowerLog.info("The lobby of {} could not start {}: {}", lobby.host(), lobby.tower(), String.join("; ", problems));
             broadcast(server, lobby, "Cannot start: " + String.join("; ", problems));
             return;
         }
 
         long seed = server.overworld().getRandom().nextLong();
-        Optional<PersistedRun> created = RunFactory.create(content, lobby.tower(), players, parties, startAt, seed, now);
+        RunOptions options = RunOptions.of(lobby.playlist());
+        List<ResourceLocation> trialModifiers = List.of();
+        if (lobby.trial().isPresent()) {
+            // A trial (P32): the same seed, mutators and enemy level for everybody, limited to its floors, from floor 1.
+            com.cobbletowers.trial.TrialSchedule.Instance trial = lobby.trial().get();
+            boolean scored = com.cobbletowers.trial.TrialService.wouldBeScored(server, players, trial.id());
+            options = new RunOptions(lobby.playlist(), Optional.of(trial.id()), trial.floors(), scored, trial.entry().enemyLevel());
+            trialModifiers = trial.entry().modifiers();
+            seed = trial.seed();
+            startAt = 0;
+        }
+        Optional<PersistedRun> created = RunFactory.create(content, lobby.tower(), players, parties, startAt, options,
+                trialModifiers, seed, now);
         if (created.isEmpty()) {
             broadcast(server, lobby, "That tower is no longer available.");
             return;
@@ -364,6 +457,17 @@ public final class LobbyService {
             dissolve(server, lobby, "The floor could not be opened; the run is parked for recovery.");
             return;
         }
+        // The attempt is spent only now that the run has really started: a launch that failed above costs nothing.
+        TowerRuns.get(runId).ifPresent(started -> {
+            com.cobbletowers.trial.TrialService.recordLaunch(server, started);
+            if (started.options().isTrial()) {
+                String note = started.options().scored() ? "This is your scored attempt." : "This run is practice and will not post.";
+                for (UUID id : players) {
+                    ServerPlayer player = server.getPlayerList().getPlayer(id);
+                    if (player != null) player.sendSystemMessage(Component.literal(note));
+                }
+            }
+        });
         dissolve(server, lobby, "");
         TowerLog.info("Lobby of {} started run {} on {}", players.size(), runId, lobby.tower());
     }
@@ -431,7 +535,7 @@ public final class LobbyService {
     private static int registerLimit(TowerLobby lobby) {
         TowerContent content = TowerDefinitionRegistry.content();
         TowerDefinition tower = content.towers().get(lobby.tower());
-        RulesetDefinition ruleset = tower == null ? null : content.rulesets().get(tower.rulesetId());
+        RulesetDefinition ruleset = RulesetResolver.forTower(content, tower, lobby.playlist());
         return ruleset == null ? PartyArrangement.PARTY_SIZE : ruleset.registeredPartySize();
     }
 
@@ -510,6 +614,7 @@ public final class LobbyService {
         List<PlayStatePayload.Member> members = new ArrayList<>();
         int countdown = -1;
         PlayStatePayload.Depth depth = PlayStatePayload.Depth.none();
+        PlayStatePayload.Modes modes = PlayStatePayload.Modes.none();
         if (lobby != null) {
             long now = System.currentTimeMillis();
             selected = lobby.tower().toString();
@@ -526,9 +631,17 @@ public final class LobbyService {
             countdown = lobby.secondsLeft(now);
             TowerDefinition chosen = content.towers().get(lobby.tower());
             depth = new PlayStatePayload.Depth(lobby.ascension(), maxAscension(server, lobby), chosen != null && chosen.ascension());
+            List<String> modeIds = new ArrayList<>();
+            List<String> modeNames = new ArrayList<>();
+            for (PlaylistDefinition playlist : PlaylistRegistry.all()) {
+                modeIds.add(playlist.id().getPath());
+                modeNames.add(playlist.displayName());
+            }
+            modes = new PlayStatePayload.Modes(modeIds, modeNames, lobby.playlist().map(ResourceLocation::getPath).orElse(""));
         }
         TowerNetworking.sendPlayState(player, new PlayStatePayload(towers,
-                new PlayStatePayload.Lobby(role, selected, hostName, members, countdown, depth), levels, message, open));
+                new PlayStatePayload.Lobby(role, selected, hostName, members, countdown,
+                        new PlayStatePayload.Options(depth, modes)), levels, message, open));
     }
 
     // ---- helpers -------------------------------------------------------------------------------

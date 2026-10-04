@@ -57,6 +57,11 @@ public final class TowerLeaderboardStore extends SavedData {
         return all.subList(0, Math.min(limit, all.size()));
     }
 
+    /** Drops every board the predicate names (old trials), writing only if something went. */
+    public void prune(java.util.function.Predicate<Key> stale) {
+        if (boards.keySet().removeIf(stale)) setDirty();
+    }
+
     /** An operator's tool, and what a test uses to start clean. */
     public void clear() {
         if (!boards.isEmpty()) {
@@ -77,7 +82,8 @@ public final class TowerLeaderboardStore extends SavedData {
             try {
                 ResourceLocation tower = ResourceLocation.tryParse(item.getString("tower"));
                 if (tower == null) continue;
-                Key key = new Key(Board.valueOf(item.getString("board")), tower, Mode.valueOf(item.getString("mode")));
+                Key key = new Key(Board.valueOf(item.getString("board")), tower, Mode.valueOf(item.getString("mode")),
+                        item.getString("playlist"));
                 List<Entry> entries = new ArrayList<>();
                 ListTag rows = item.getList("entries", Tag.TAG_COMPOUND);
                 for (int j = 0; j < rows.size(); j++) entries.add(entryOf(rows.getCompound(j)));
@@ -130,6 +136,7 @@ public final class TowerLeaderboardStore extends SavedData {
             item.putString("board", board.getKey().board().name());
             item.putString("tower", board.getKey().tower().toString());
             item.putString("mode", board.getKey().mode().name());
+            item.putString("playlist", board.getKey().playlist());
             ListTag rows = new ListTag();
             for (Entry entry : board.getValue()) rows.add(tagOf(entry));
             item.put("entries", rows);

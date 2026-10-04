@@ -26,7 +26,7 @@ public final class VendorPurchaseService {
     /** Why a purchase did or did not go through -- named so a client can show the actual reason. */
     public enum Result {
         SUCCESS, RUN_NOT_FOUND, NOT_INTERMISSION, UNKNOWN_SERVICE, TARGET_NOT_IN_RUN, TARGET_OFFLINE,
-        SOLD_OUT, INSUFFICIENT_FUNDS
+        SOLD_OUT, INSUFFICIENT_FUNDS, VENDOR_CLOSED
     }
 
     private VendorPurchaseService() {}
@@ -42,6 +42,7 @@ public final class VendorPurchaseService {
             case NOT_INTERMISSION -> "The vendor is only open at an intermission.";
             case UNKNOWN_SERVICE -> "That service does not exist.";
             case RUN_NOT_FOUND -> "You are not in a run.";
+            case VENDOR_CLOSED -> "The vendor is closed in this mode.";
         };
     }
 
@@ -50,6 +51,8 @@ public final class VendorPurchaseService {
         Optional<PersistedRun> found = TowerRuns.get(runId);
         if (found.isEmpty()) return Result.RUN_NOT_FOUND;
         PersistedRun run = found.get();
+        // A playlist can close the vendor outright (Hardcore, P32).
+        if (com.cobbletowers.definition.PlaylistRegistry.vendorClosed(run)) return Result.VENDOR_CLOSED;
         // TDS #16's "no automatic free BETWEEN-FLOOR healing": the vendor is not reachable mid-fight.
         if (run.state() != RunState.INTERMISSION) return Result.NOT_INTERMISSION;
 
@@ -86,6 +89,8 @@ public final class VendorPurchaseService {
         long now = System.currentTimeMillis();
         TowerRuns.save(server, run.withVendorPurchase(serviceId, now), false);
         TowerLog.info("Run {}: {} bought {} for {}", runId, payingPlayerId, serviceId, targetPlayerId);
+        com.cobbletowers.events.TowerEvents.emit(new com.cobbletowers.events.TowerEvent.Purchased(runId,
+                java.util.List.of(payingPlayerId), serviceId));
         return Result.SUCCESS;
     }
 }

@@ -33,6 +33,11 @@ public final class TowerRunStatsStore extends SavedData {
         public long floorStartedAt;
         /** Player Pokemon that have fainted in the current cycle. */
         public int faints;
+        /** {@link #faints} when the floor now being fought began, so the floor's own faints are the difference (P32c). */
+        public int faintsAtFloorStart;
+        /** Floors in a row with no faint, and the most there has been in the run (the Run Report, P32d). */
+        public int flawlessStreak;
+        public int bestFlawlessStreak;
 
         Stats(int startSize) {
             this.startSize = startSize;
@@ -83,6 +88,9 @@ public final class TowerRunStatsStore extends SavedData {
             stats.activeMillis = item.getLong("active");
             stats.floorStartedAt = item.getLong("floor_started");
             stats.faints = item.getInt("faints");
+            stats.faintsAtFloorStart = item.getInt("faints_at_floor_start");
+            stats.flawlessStreak = item.getInt("flawless_streak");
+            stats.bestFlawlessStreak = item.getInt("best_flawless_streak");
             store.byRun.put(item.getUUID("run"), stats);
         }
         return store;
@@ -98,6 +106,9 @@ public final class TowerRunStatsStore extends SavedData {
             item.putLong("active", entry.getValue().activeMillis);
             item.putLong("floor_started", entry.getValue().floorStartedAt);
             item.putInt("faints", entry.getValue().faints);
+            item.putInt("faints_at_floor_start", entry.getValue().faintsAtFloorStart);
+            item.putInt("flawless_streak", entry.getValue().flawlessStreak);
+            item.putInt("best_flawless_streak", entry.getValue().bestFlawlessStreak);
             list.add(item);
         }
         tag.put("runs", list);

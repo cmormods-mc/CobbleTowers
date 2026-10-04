@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "display_name": "Marathon",
+  "description": "Clear 25 floors this week.",
+  "period": "weekly",
+  "condition": {
+    "type": "floors_cleared",
+    "count": 25
+  },
+  "reward": 250
+}

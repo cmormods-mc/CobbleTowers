@@ -46,6 +46,10 @@ public final class TowerLobby {
     private long countdownEndsAt = -1;
     /** The Ascension the team will start at (P30); 0 is the ordinary start. */
     private int ascension;
+    /** The trial (P32) the team will attempt, empty for an ordinary run. It fixes the tower, playlist, seed and floor limit. */
+    private java.util.Optional<com.cobbletowers.trial.TrialSchedule.Instance> trial = java.util.Optional.empty();
+    /** The playlist (P32) the team will play, empty for Standard. */
+    private java.util.Optional<ResourceLocation> playlist = java.util.Optional.empty();
     /** Pokemon each player chose to register (P18). Absent or empty means "my current party". */
     private final Map<UUID, List<UUID>> chosen = new LinkedHashMap<>();
 
@@ -66,6 +70,24 @@ public final class TowerLobby {
         return ascension;
     }
 
+    public java.util.Optional<com.cobbletowers.trial.TrialSchedule.Instance> trial() {
+        return trial;
+    }
+
+    public void setTrial(java.util.Optional<com.cobbletowers.trial.TrialSchedule.Instance> next) {
+        this.trial = next;
+        cancelCountdown();
+    }
+
+    public java.util.Optional<ResourceLocation> playlist() {
+        return playlist;
+    }
+
+    public void setPlaylist(java.util.Optional<ResourceLocation> next) {
+        this.playlist = next;
+        cancelCountdown();
+    }
+
     public void setAscension(int next) {
         this.ascension = Math.max(0, next);
         cancelCountdown();
@@ -75,6 +97,8 @@ public final class TowerLobby {
         this.tower = next;
         // Records are per tower, so the Ascension chosen for the old one means nothing for the new one.
         this.ascension = 0;
+        this.playlist = java.util.Optional.empty();
+        this.trial = java.util.Optional.empty();
         // A different tower is a different offer: anyone who already accepted agreed to the old one.
         members.replaceAll((id, member) -> new Member(Response.INVITED, member.invitedAt()));
         cancelCountdown();

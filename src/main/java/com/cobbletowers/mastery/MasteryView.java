@@ -32,6 +32,7 @@ public final class MasteryView {
             case ASCENSION -> "Ascension " + value;
             case DIFFICULTY -> "score " + value;
             case CLEARS -> value + (value == 1 ? " cycle" : " cycles");
+            case TRIAL -> "score " + value;
         };
     }
 

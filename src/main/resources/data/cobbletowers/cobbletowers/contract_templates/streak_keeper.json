@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "display_name": "Streak Keeper",
+  "description": "Finish 3 daily trials this week.",
+  "period": "weekly",
+  "condition": {
+    "type": "daily_trials_finished",
+    "count": 3
+  },
+  "reward": 200
+}

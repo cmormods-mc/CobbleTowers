@@ -1,6 +1,6 @@
 # Player engagement: systems and signature features
 
-Status: **direction chosen, nothing built.** It maps what the tower already gives a player, where it runs thin, and a set of
+Status: **direction chosen; P32 (the daily habit and Playlists) is built, see `P32-daily-habit-and-playlists.md`.** It maps what the tower already gives a player, where it runs thin, and a set of
 features chosen because they are cheap *for this codebase* (they reuse seeds, boards, the modifier and battle-operation
 machinery, the intermission) rather than because they are generic. Phase numbers (P32 onward) are the working plan.
 

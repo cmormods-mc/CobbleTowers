@@ -19,7 +19,9 @@ public final class LeaderboardRules {
         ASCENSION("Deepest Ascension", false, true),
         SPEED("Fastest cycle", true, true),
         DIFFICULTY("Highest difficulty", false, true),
-        CLEARS("Most cycles cleared", false, false);
+        CLEARS("Most cycles cleared", false, false),
+        /** One trial's results (P32): the key's tower is the trial's board id, such as {@code daily/2026-10-05}. */
+        TRIAL("Trial", false, true);
 
         private final String title;
         private final boolean lowerIsBetter;
@@ -106,10 +108,19 @@ public final class LeaderboardRules {
         return byValue.thenComparingLong(Entry::at);
     }
 
-    /** A board's identity in storage: board, tower and mode (ANY for a board that has no mode). */
-    public record Key(Board board, ResourceLocation tower, Mode mode) {
+    /**
+     * A board's identity in storage: board, tower, mode (ANY for a board that has no mode) and playlist ({@code ""} for
+     * Standard), so a Monotype clear is ranked apart from a Standard one (P32).
+     */
+    public record Key(Board board, ResourceLocation tower, Mode mode, String playlist) {
         public Key {
             if (!board.hasMode()) mode = Mode.ANY;
+            playlist = playlist == null ? "" : playlist;
+        }
+
+        /** A Standard board. */
+        public Key(Board board, ResourceLocation tower, Mode mode) {
+            this(board, tower, mode, "");
         }
     }
 

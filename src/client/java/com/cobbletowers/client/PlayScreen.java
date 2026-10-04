@@ -72,7 +72,7 @@ public final class PlayScreen extends Screen {
         }
 
         // Ascension (P30): the host cycles through the depths the whole team has reached; 0 is the ordinary start.
-        PlayStatePayload.Depth depth = lobby.depth();
+        PlayStatePayload.Depth depth = lobby.options().depth();
         if (lobby.role() == 1 && depth.offered()) {
             int next = depth.chosen() >= depth.max() ? 0 : depth.chosen() + 1;
             Button ascend = Button.builder(Component.literal("Start at: " + (depth.chosen() == 0
@@ -81,6 +81,21 @@ public final class PlayScreen extends Screen {
                     .pos(left, y).size(200, 20).build();
             ascend.active = depth.max() > 0 && lobby.countdown() < 0;
             addRenderableWidget(ascend);
+            y += 24;
+        }
+
+        // Mode (P32): the host cycles Standard and the playlists; the house rules apply to the whole team.
+        PlayStatePayload.Modes modes = lobby.options().modes();
+        if (lobby.role() == 1 && !modes.ids().isEmpty()) {
+            int chosenIndex = modes.ids().indexOf(modes.chosen());
+            int nextIndex = chosenIndex + 1 >= modes.ids().size() ? -1 : chosenIndex + 1;
+            String nextId = nextIndex < 0 ? "standard" : modes.ids().get(nextIndex);
+            String label = chosenIndex < 0 ? "Standard" : modes.names().get(chosenIndex);
+            Button mode = Button.builder(Component.literal("Mode: " + label),
+                    button -> send(PlayActionPayload.Action.SET_PLAYLIST, nextId))
+                    .pos(left, y).size(200, 20).build();
+            mode.active = lobby.countdown() < 0;
+            addRenderableWidget(mode);
             y += 24;
         }
 

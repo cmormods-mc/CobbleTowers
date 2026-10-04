@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "display_name": "Trial Taker",
+  "description": "Finish today's daily trial.",
+  "period": "daily",
+  "condition": {
+    "type": "daily_trials_finished",
+    "count": 1
+  },
+  "reward": 70
+}

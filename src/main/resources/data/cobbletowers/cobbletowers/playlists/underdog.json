@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "display_name": "Underdog",
+  "description": "No fully evolved Pokemon, and no legendaries, mythicals, ultra beasts or paradox Pokemon.",
+  "party": {
+    "no_fully_evolved": true,
+    "banned_labels": [
+      "legendary",
+      "mythical",
+      "ultra_beast",
+      "paradox"
+    ]
+  },
+  "difficulty_bonus": 10
+}

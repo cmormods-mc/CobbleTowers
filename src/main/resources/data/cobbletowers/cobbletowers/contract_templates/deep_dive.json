@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "display_name": "Deep Dive",
+  "description": "Clear 5 floors.",
+  "period": "daily",
+  "condition": {
+    "type": "floors_cleared",
+    "count": 5
+  },
+  "reward": 70
+}

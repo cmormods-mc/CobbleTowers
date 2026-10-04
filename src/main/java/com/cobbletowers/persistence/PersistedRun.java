@@ -56,16 +56,28 @@ public record PersistedRun(
         List<LedgerEntry> ledger,
         RunModifierState modifiers,
         int lastBankedFloor,
-        Map<ResourceLocation, Integer> vendorPurchases) {
+        Map<ResourceLocation, Integer> vendorPurchases,
+        RunOptions options) {
+
+    /** An ordinary run: every run written before P32 had no options, and most tests build runs this way. */
+    public PersistedRun(UUID runId, int schemaVersion, ResourceLocation towerId, int towerRevision, String towerDigest,
+                        int rulesetRevision, int structureRevision, long seed, int floorIndex, RunState state,
+                        List<PersistedParticipant> participants, Optional<RunCheckpoint> lastCheckpoint,
+                        List<String> committedTransactions, long updatedAt, OptionalInt cell, List<LedgerEntry> ledger,
+                        RunModifierState modifiers, int lastBankedFloor, Map<ResourceLocation, Integer> vendorPurchases) {
+        this(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision, structureRevision, seed,
+                floorIndex, state, participants, lastCheckpoint, committedTransactions, updatedAt, cell, ledger,
+                modifiers, lastBankedFloor, vendorPurchases, RunOptions.NONE);
+    }
 
     /**
      * The only shape this build writes or reads.
      *
      * <p>2 added the instance cell; 3 added the unclaimed ledger; 4 added the drafted modifiers; 5
-     * added how much of the ledger has been banked; 6 added vendor purchase counts. Older files are
+     * added how much of the ledger has been banked; 6 added vendor purchase counts; 7 added the run's options (playlist and trial). Older files are
      * migrated forward by {@code RunMigrations}, which is what that framework was shipped empty for.
      */
-    public static final int SCHEMA_VERSION = 6;
+    public static final int SCHEMA_VERSION = 7;
 
     private static List<LedgerEntry> readLedger(CompoundTag tag) {
         List<LedgerEntry> ledger = new ArrayList<>();
@@ -92,6 +104,7 @@ public record PersistedRun(
         Objects.requireNonNull(state, "state");
         Objects.requireNonNull(lastCheckpoint, "lastCheckpoint");
         Objects.requireNonNull(modifiers, "modifiers");
+        Objects.requireNonNull(options, "options");
         participants = List.copyOf(participants);
         committedTransactions = List.copyOf(committedTransactions);
         ledger = List.copyOf(ledger);
@@ -136,6 +149,7 @@ public record PersistedRun(
             purchases.add(purchase);
         }
         tag.put("vendor_purchases", purchases);
+        tag.put("options", options.toTag());
         return tag;
     }
 
@@ -182,14 +196,15 @@ public record PersistedRun(
                         ? RunModifierState.fromTag(tag.getCompound("modifiers"))
                         : RunModifierState.EMPTY,
                 tag.getInt("last_banked_floor"),
-                readVendorPurchases(tag));
+                readVendorPurchases(tag),
+                tag.contains("options", Tag.TAG_COMPOUND) ? RunOptions.fromTag(tag.getCompound("options")) : RunOptions.NONE);
     }
 
     /** The same run, recorded as it stands after {@code at}. */
     public PersistedRun touched(long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell, ledger, modifiers, lastBankedFloor, vendorPurchases);
+                at, cell, ledger, modifiers, lastBankedFloor, vendorPurchases, options);
     }
 
     /** The same run with one more thing earned. The pool only ever grows until it is banked. */
@@ -198,28 +213,28 @@ public record PersistedRun(
         next.add(entry);
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell, next, modifiers, lastBankedFloor, vendorPurchases);
+                at, cell, next, modifiers, lastBankedFloor, vendorPurchases, options);
     }
 
     /** The same run with these participants, as when a party is registered at validation (TDS #41). */
     public PersistedRun withParticipants(List<PersistedParticipant> next, long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, next, lastCheckpoint, committedTransactions,
-                at, cell, ledger, modifiers, lastBankedFloor, vendorPurchases);
+                at, cell, ledger, modifiers, lastBankedFloor, vendorPurchases, options);
     }
 
     /** The same run holding {@code leased}, or holding none when it is empty. */
     public PersistedRun withCell(OptionalInt leased, long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, leased, ledger, modifiers, lastBankedFloor, vendorPurchases);
+                at, leased, ledger, modifiers, lastBankedFloor, vendorPurchases, options);
     }
 
     /** The same run carrying {@code next} as its drafted state. */
     public PersistedRun withModifiers(RunModifierState next, long at) {
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell, ledger, next, lastBankedFloor, vendorPurchases);
+                at, cell, ledger, next, lastBankedFloor, vendorPurchases, options);
     }
 
     /** The same run with one more purchase of {@code serviceId} recorded (TDS #19). */
@@ -228,7 +243,14 @@ public record PersistedRun(
         next.merge(serviceId, 1, Integer::sum);
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
-                at, cell, ledger, modifiers, lastBankedFloor, next);
+                at, cell, ledger, modifiers, lastBankedFloor, next, options);
+    }
+
+    /** The same run with these options; set once, when the run is made. */
+    public PersistedRun withOptions(RunOptions next, long at) {
+        return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
+                structureRevision, seed, floorIndex, state, participants, lastCheckpoint, committedTransactions,
+                at, cell, ledger, modifiers, lastBankedFloor, vendorPurchases, next);
     }
 
     /** How many times this run has already bought {@code serviceId} (TDS #19). */
@@ -251,7 +273,7 @@ public record PersistedRun(
         transactions.add(grantKey);
         return new PersistedRun(runId, schemaVersion, towerId, towerRevision, towerDigest, rulesetRevision,
                 structureRevision, seed, floorIndex, state, participants, lastCheckpoint, transactions,
-                at, cell, ledger, modifiers, throughFloor, vendorPurchases);
+                at, cell, ledger, modifiers, throughFloor, vendorPurchases, options);
     }
 
     /** True when this key has already been committed, so applying the move again must not repeat it. */

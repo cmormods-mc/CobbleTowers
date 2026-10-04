@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "display_name": "Boss Breaker",
+  "description": "Defeat a boss.",
+  "period": "daily",
+  "condition": {
+    "type": "bosses_defeated",
+    "count": 1
+  },
+  "reward": 60
+}

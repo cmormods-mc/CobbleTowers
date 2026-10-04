@@ -81,6 +81,14 @@ public final class RunMigrations {
             tag.putInt("schema_version", 6);
             return tag;
         });
+        // 6 -> 7 added the run's options (playlist and trial). An older run was an ordinary one, and an
+        // absent block already reads as RunOptions.NONE; it is written here anyway so a migrated file matches
+        // what this build writes fresh.
+        STEPS.put(6, tag -> {
+            if (!tag.contains("options")) tag.put("options", com.cobbletowers.persistence.RunOptions.NONE.toTag());
+            tag.putInt("schema_version", 7);
+            return tag;
+        });
     }
 
     private RunMigrations() {}

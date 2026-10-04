@@ -6,7 +6,9 @@ import com.cobbletowers.definition.RulesetDefinition;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.persistence.PersistedParticipant;
+import com.cobbletowers.definition.PlaylistRegistry;
 import com.cobbletowers.persistence.PersistedRun;
+import com.cobbletowers.persistence.RunOptions;
 import com.cobbletowers.persistence.RunModifierState;
 import com.cobbletowers.ascension.AscensionPolicy;
 import com.cobbletowers.definition.ModifierDefinition;
@@ -64,6 +66,26 @@ public final class RunFactory {
     public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
                                                 List<UUID> players, Map<UUID, List<UUID>> parties,
                                                 int ascension, long seed, long now) {
+        return create(content, towerId, players, parties, ascension, RunOptions.NONE, seed, now);
+    }
+
+    /**
+     * As above, under {@code options} (P32): a playlist whose forced modifiers the run starts holding, and whether it is an
+     * attempt at a trial. The options are written once and never change.
+     */
+    public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
+                                                List<UUID> players, Map<UUID, List<UUID>> parties,
+                                                int ascension, RunOptions options, long seed, long now) {
+        return create(content, towerId, players, parties, ascension, options, List.of(), seed, now);
+    }
+
+    /**
+     * As above, also starting with {@code extraModifiers} in force: a trial's mutators (P32). Unknown ids are skipped.
+     */
+    public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
+                                                List<UUID> players, Map<UUID, List<UUID>> parties,
+                                                int ascension, RunOptions options, List<ResourceLocation> extraModifiers,
+                                                long seed, long now) {
         TowerDefinition tower = content.towers().get(towerId);
         if (tower == null) return Optional.empty();
         int startAscension = tower.ascension() ? Math.max(0, ascension) : 0;
@@ -73,8 +95,16 @@ public final class RunFactory {
                 seed, startAscension)) {
             startModifiers = startModifiers.accumulating(forced.id());
         }
+        // A playlist's house rules (Hardcore forces Empty Pockets) are modifiers the run starts holding.
+        for (ResourceLocation forcedId : options.playlist().flatMap(PlaylistRegistry::get)
+                .map(playlist -> playlist.forcedModifiers()).orElse(List.of())) {
+            if (content.modifier(forcedId).isPresent()) startModifiers = startModifiers.accumulating(forcedId);
+        }
+        for (ResourceLocation extra : extraModifiers) {
+            if (content.modifier(extra).isPresent()) startModifiers = startModifiers.accumulating(extra);
+        }
 
-        RulesetDefinition ruleset = content.rulesets().get(tower.rulesetId());
+        RulesetDefinition ruleset = com.cobbletowers.definition.RulesetResolver.forTower(content, tower, options.playlist());
         String digest = content.summary(towerId).map(summary -> summary.contentDigest()).orElse("");
 
         List<PersistedParticipant> participants = new ArrayList<>(players.size());
@@ -100,6 +130,7 @@ public final class RunFactory {
                 // Nothing banked yet.
                 0,
                 // Nothing bought yet; the vendor did not exist before this run's floor is reached.
-                Map.of()));
+                Map.of(),
+                options));
     }
 }

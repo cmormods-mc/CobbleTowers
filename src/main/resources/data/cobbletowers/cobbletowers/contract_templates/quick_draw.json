@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "display_name": "Quick Draw",
+  "description": "Clear a floor (floor 2 or deeper) in under 90 seconds.",
+  "period": "daily",
+  "condition": {
+    "type": "floors_cleared",
+    "count": 1,
+    "max_seconds": 90,
+    "min_floor": 2
+  },
+  "reward": 50
+}

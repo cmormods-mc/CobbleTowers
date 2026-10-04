@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "display_name": "Weekly Trial",
+  "kind": "weekly",
+  "floors": 10,
+  "streak_min_floors": 0,
+  "entries": [
+    {
+      "tower": "cobbletowers:tideforge",
+      "playlist": "cobbletowers:level_cap_50",
+      "modifiers": [
+        "cobbletowers:double_trouble",
+        "cobbletowers:downpour"
+      ],
+      "enemy_level": 60,
+      "label": "The Long Tide"
+    },
+    {
+      "tower": "cobbletowers:rootvale",
+      "playlist": "cobbletowers:underdog",
+      "modifiers": [
+        "cobbletowers:mob_rule"
+      ],
+      "enemy_level": 55,
+      "label": "Rootbound Siege"
+    },
+    {
+      "tower": "cobbletowers:duskvale",
+      "playlist": "cobbletowers:hardcore",
+      "modifiers": [
+        "cobbletowers:seasoned_ranks"
+      ],
+      "enemy_level": 60,
+      "label": "Nightfall Gauntlet"
+    },
+    {
+      "tower": "cobbletowers:neutral",
+      "playlist": "cobbletowers:monotype",
+      "modifiers": [
+        "cobbletowers:crowded_floor",
+        "cobbletowers:sandstorm"
+      ],
+      "enemy_level": 60,
+      "label": "Neutral Ground Mono"
+    },
+    {
+      "tower": "cobbletowers:tideforge",
+      "playlist": "cobbletowers:monotype",
+      "modifiers": [
+        "cobbletowers:no_recovery",
+        "cobbletowers:electric_terrain"
+      ],
+      "enemy_level": 65,
+      "label": "Storm Mono"
+    },
+    {
+      "tower": "cobbletowers:rootvale",
+      "playlist": "cobbletowers:level_cap_50",
+      "modifiers": [
+        "cobbletowers:no_setup",
+        "cobbletowers:grassy_terrain"
+      ],
+      "enemy_level": 50,
+      "label": "Briar Cup"
+    }
+  ]
+}

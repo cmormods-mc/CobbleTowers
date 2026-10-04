@@ -56,7 +56,7 @@ def supports(name: str, properties: dict) -> bool:
         return properties.get("half") == "top"
     return not any(weak in name for weak in NON_SUPPORTING)
 KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones", "boss_pools", "modifiers",
-         "reward_tables", "vendor_services", "scouting_profiles", "regional_themes", "achievements")
+         "reward_tables", "vendor_services", "scouting_profiles", "regional_themes", "achievements", "playlists", "trial_pools", "contract_templates")
 MAX_PARTY = 6
 MIN_LEVEL, MAX_LEVEL = 1, 100
 
@@ -363,6 +363,88 @@ def check_achievements(content: dict, problems: list[str]) -> None:
         problems.append(f"{len(content['achievements'])} achievements are loaded; mastery levels stop at 30")
 
 
+def check_playlists(content: dict, problems: list[str]) -> None:
+    """Playlists (P32): readable, sensible limits, and every forced modifier exists."""
+    names = {}
+    for playlist_id, playlist in content["playlists"].items():
+        for field in ("schema_version", "display_name"):
+            if field not in playlist:
+                problems.append(f"{playlist_id} is missing required field '{field}'")
+        name = playlist.get("display_name")
+        if name in names:
+            problems.append(f"{playlist_id} and {names[name]} share the display name '{name}'")
+        names[name] = playlist_id
+        if not 0 <= playlist.get("enemy_level_max", 0) <= 100:
+            problems.append(f"{playlist_id} has enemy_level_max {playlist.get('enemy_level_max')}; it must be 0..100")
+        if not 0 <= playlist.get("max_players", 0) <= 4:
+            problems.append(f"{playlist_id} has max_players {playlist.get('max_players')}; it must be 0..4")
+        party = playlist.get("party", {})
+        if party.get("max_party", 0) < 0 or party.get("max_level", 0) < 0:
+            problems.append(f"{playlist_id} has a negative party limit")
+        for modifier_id in playlist.get("forced_modifiers", []):
+            if modifier_id not in content["modifiers"]:
+                problems.append(f"{playlist_id} forces modifier {modifier_id}, which does not exist")
+
+
+def check_trial_pools(content: dict, problems: list[str]) -> None:
+    """Trial pools (P32): a known kind, a sensible length, and every entry names a tower, playlist and modifiers that exist."""
+    kinds = {}
+    for pool_id, pool in content["trial_pools"].items():
+        for field in ("schema_version", "display_name", "kind", "floors", "entries"):
+            if field not in pool:
+                problems.append(f"{pool_id} is missing required field '{field}'")
+        if pool.get("kind") not in ("daily", "weekly"):
+            problems.append(f"{pool_id} has kind '{pool.get('kind')}'; it must be daily or weekly")
+        kinds[pool.get("kind")] = kinds.get(pool.get("kind"), 0) + 1
+        if not 1 <= pool.get("floors", 0) <= 10:
+            problems.append(f"{pool_id} has floors {pool.get('floors')}; it must be 1..10")
+        if not 0 <= pool.get("streak_min_floors", 0) <= pool.get("floors", 0):
+            problems.append(f"{pool_id} has streak_min_floors {pool.get('streak_min_floors')} outside 0..floors")
+        if not pool.get("entries"):
+            problems.append(f"{pool_id} has no entries")
+        for index, entry in enumerate(pool.get("entries", [])):
+            where = f"{pool_id} entry {index} ({entry.get('label', '?')})"
+            if entry.get("tower") not in content["towers"]:
+                problems.append(f"{where} names tower {entry.get('tower')}, which does not exist")
+            tower = content["towers"].get(entry.get("tower"), {})
+            if pool.get("kind") and len(tower.get("floors", [])) and pool.get("floors", 0) > len(tower.get("floors", [])):
+                problems.append(f"{where}: the trial is {pool.get('floors')} floors but {entry.get('tower')} has {len(tower.get('floors', []))}")
+            if entry.get("playlist") is not None and entry.get("playlist") not in content["playlists"]:
+                problems.append(f"{where} names playlist {entry.get('playlist')}, which does not exist")
+            for modifier_id in entry.get("modifiers", []):
+                if modifier_id not in content["modifiers"]:
+                    problems.append(f"{where} names modifier {modifier_id}, which does not exist")
+            if not 0 <= entry.get("enemy_level", 0) <= 100:
+                problems.append(f"{where} has enemy_level {entry.get('enemy_level')} outside 0..100")
+    for kind, count in kinds.items():
+        if count > 1:
+            problems.append(f"{count} {kind} trial pools are loaded; only the first would be used")
+
+
+def check_contract_templates(content: dict, problems: list[str]) -> None:
+    """Contract templates (P32c): a known period and condition, a count, a bounded reward, and enough of each period to draw from."""
+    kinds = ("floors_cleared", "bosses_defeated", "purchases", "severe_drafts", "trials_finished", "daily_trials_finished")
+    per_period = {}
+    for template_id, template in content["contract_templates"].items():
+        for field in ("schema_version", "display_name", "period", "condition"):
+            if field not in template:
+                problems.append(f"{template_id} is missing required field '{field}'")
+        if template.get("period") not in ("daily", "weekly"):
+            problems.append(f"{template_id} has period '{template.get('period')}'; it must be daily or weekly")
+        per_period[template.get("period")] = per_period.get(template.get("period"), 0) + 1
+        condition = template.get("condition", {})
+        if condition.get("type") not in kinds:
+            problems.append(f"{template_id} has unknown condition type '{condition.get('type')}'")
+        if condition.get("count", 0) < 1:
+            problems.append(f"{template_id} needs a count of at least 1")
+        if not 0 <= template.get("reward", 0) <= 2000:
+            problems.append(f"{template_id} has reward {template.get('reward')}; it must be 0..2000")
+    if per_period.get("daily", 0) < 3:
+        problems.append(f"only {per_period.get('daily', 0)} daily contract templates; a day draws three distinct ones")
+    if per_period.get("weekly", 0) < 2:
+        problems.append(f"only {per_period.get('weekly', 0)} weekly contract templates; a week draws two distinct ones")
+
+
 def check_scouting_profiles(content: dict, problems: list[str]) -> None:
     """Structural checks only, the same posture as {@code check_reward_tables}."""
     for profile_id, profile in content["scouting_profiles"].items():
@@ -447,6 +529,9 @@ def main() -> None:
     check_vendor_services(content, problems)
     check_scouting_profiles(content, problems)
     check_achievements(content, problems)
+    check_playlists(content, problems)
+    check_trial_pools(content, problems)
+    check_contract_templates(content, problems)
     check_regional_themes(content, problems)
 
     for pool_id, pool in content["boss_pools"].items():

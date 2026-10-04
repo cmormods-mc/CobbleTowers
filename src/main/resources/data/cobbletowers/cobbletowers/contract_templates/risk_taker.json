@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "display_name": "Risk Taker",
+  "description": "Draft a severe modifier.",
+  "period": "daily",
+  "condition": {
+    "type": "severe_drafts",
+    "count": 1
+  },
+  "reward": 40
+}

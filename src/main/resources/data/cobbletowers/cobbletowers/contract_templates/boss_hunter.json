@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "display_name": "Boss Hunter",
+  "description": "Defeat 5 bosses this week.",
+  "period": "weekly",
+  "condition": {
+    "type": "bosses_defeated",
+    "count": 5
+  },
+  "reward": 250
+}

@@ -65,7 +65,7 @@ public final class MasteryService {
                 floorEnded(server, run, now);
             }
             if (from == RunState.FLOOR_RESOLVING && isCycleClear(run, to)) cycleCleared(server, run, now);
-            if (to.isTerminal()) runEnded(server, run);
+            if (to.isTerminal()) runEnded(server, run, from, to);
         } catch (RuntimeException ex) {
             TowerLog.error("Mastery bookkeeping for run {} failed", runId, ex);
         }
@@ -89,6 +89,8 @@ public final class MasteryService {
     private static boolean isCycleClear(PersistedRun run, RunState to) {
         TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(run.towerId());
         if (tower == null) return false;
+        // A trial is its own thing (P32): it has its own boards and does not count as a cycle of the tower.
+        if (run.options().isTrial()) return false;
         if (to == RunState.COMPLETED) return true;
         return to == RunState.INTERMISSION && tower.ascension()
                 && AscensionPolicy.isCycleEnd(run.floorIndex(), tower.floorCount());
@@ -104,6 +106,7 @@ public final class MasteryService {
             stats.faints = 0;
         }
         stats.floorStartedAt = now;
+        stats.faintsAtFloorStart = stats.faints;
         store.touch();
         // A run that started at a deeper Ascension has reached it, whether or not it crossed into it.
         int ascension = tower.ascensionOf(run.floorIndex());
@@ -119,9 +122,23 @@ public final class MasteryService {
         TowerRunStatsStore store = TowerRunStatsStore.get(server);
         TowerRunStatsStore.Stats stats = store.peek(run.runId());
         if (stats == null || stats.floorStartedAt <= 0) return;
-        stats.activeMillis += Math.max(0, now - stats.floorStartedAt);
+        long floorMillis = Math.max(0, now - stats.floorStartedAt);
+        stats.activeMillis += floorMillis;
         stats.floorStartedAt = 0;
         store.touch();
+        // The floor is cleared: tell whoever cares (contracts, P32c).
+        List<UUID> players = new ArrayList<>();
+        for (PersistedParticipant participant : run.participants()) players.add(participant.playerId());
+        boolean solo = stats.startSize == 1;
+        boolean flawlessFloor = stats.faints == stats.faintsAtFloorStart;
+        stats.flawlessStreak = flawlessFloor ? stats.flawlessStreak + 1 : 0;
+        stats.bestFlawlessStreak = Math.max(stats.bestFlawlessStreak, stats.flawlessStreak);
+        com.cobbletowers.events.TowerEvents.emit(new com.cobbletowers.events.TowerEvent.FloorCleared(run.runId(), players,
+                run.towerId(), run.floorIndex(), floorMillis, flawlessFloor, solo));
+        if (TowerDefinitionRegistry.content().milestoneAt(run.towerId(), run.floorIndex()).isPresent()) {
+            com.cobbletowers.events.TowerEvents.emit(new com.cobbletowers.events.TowerEvent.BossDefeated(run.runId(), players,
+                    run.towerId(), run.floorIndex(), solo));
+        }
     }
 
     private static void onFaintedSafely(BattleFaintedEvent event) {
@@ -145,7 +162,7 @@ public final class MasteryService {
     // ---- a cycle clear --------------------------------------------------------------------------------------------
 
     /** Builds the result of the cycle the run just cleared, from what the run and its stats hold. */
-    static CycleResult resultOf(MinecraftServer server, PersistedRun run, long now) {
+    public static CycleResult resultOf(MinecraftServer server, PersistedRun run, long now) {
         TowerContent content = TowerDefinitionRegistry.content();
         TowerDefinition tower = content.towers().get(run.towerId());
         TowerRunStatsStore.Stats stats = TowerRunStatsStore.get(server).of(run.runId(), run.participants().size());
@@ -156,7 +173,8 @@ public final class MasteryService {
         List<UUID> players = new ArrayList<>();
         for (PersistedParticipant participant : run.participants()) players.add(participant.playerId());
         return new CycleResult(run.runId(), run.towerId(), ascension, players, stats.startSize == 1, stats.activeMillis,
-                stats.faints == 0, DifficultyScore.severeIn(risks), DifficultyScore.of(risks, ascension, stats.startSize),
+                stats.faints == 0, DifficultyScore.severeIn(risks),
+                DifficultyScore.of(risks, ascension, stats.startSize) + playlistBonus(run),
                 run.rulesetRevision(), run.towerRevision(), run.towerDigest(), now);
     }
 
@@ -174,10 +192,11 @@ public final class MasteryService {
             List<AchievementDefinition> fresh = MasteryEvaluator.unlocked(definitions, now2.unlocked().keySet(), clear,
                     new MasteryEvaluator.Lifetime(cycles, now2.ascensionReached()));
             for (AchievementDefinition achievement : fresh) mastery.unlock(player, run.towerId(), achievement.id(), now);
+            fresh.forEach(achievement -> RunSummaries.unlocked(run.runId(), achievement.displayName()));
             announce(server, run, player, before.level(), fresh);
 
             // The Clears board is per individual: one entry per player, rising with each clear.
-            boards.offer(new Key(Board.CLEARS, run.towerId(), LeaderboardRules.Mode.ANY),
+            boards.offer(new Key(Board.CLEARS, run.towerId(), LeaderboardRules.Mode.ANY, playlistOf(run)),
                     new Entry(List.of(member(server, player)), cycles, null, clear.ascension(), clear.score(),
                             clear.rulesetRevision(), clear.towerRevision(), clear.towerDigest(), now));
         }
@@ -186,14 +205,25 @@ public final class MasteryService {
         List<Member> team = new ArrayList<>();
         for (UUID player : clear.players()) team.add(member(server, player));
         LeaderboardRules.Mode mode = LeaderboardRules.modeOf(clear.startedSolo());
-        boards.offer(new Key(Board.DIFFICULTY, run.towerId(), mode), entryOf(team, clear.score(), clear));
+        boards.offer(new Key(Board.DIFFICULTY, run.towerId(), mode, playlistOf(run)), entryOf(team, clear.score(), clear));
         if (clear.ascension() == 0 && clear.activeMillis() > 0) {
-            boards.offer(new Key(Board.SPEED, run.towerId(), mode), entryOf(team, clear.activeMillis(), clear));
+            boards.offer(new Key(Board.SPEED, run.towerId(), mode, playlistOf(run)), entryOf(team, clear.activeMillis(), clear));
         }
         boards.checkpoint(server);
         TowerLog.info("Run {} cleared a cycle of {} at Ascension {}: {} ms, flawless={}, score {}, {} severe",
                 run.runId(), run.towerId(), clear.ascension(), clear.activeMillis(), clear.flawless(), clear.score(),
                 clear.severeModifiers());
+    }
+
+    /** The playlist a run was played under, as a board key part; empty for Standard. */
+    static String playlistOf(PersistedRun run) {
+        return run.options().playlist().map(ResourceLocation::getPath).orElse("");
+    }
+
+    /** A playlist's difficulty bonus (P32), so its boards stay comparable. */
+    private static int playlistBonus(PersistedRun run) {
+        return run.options().playlist().flatMap(com.cobbletowers.definition.PlaylistRegistry::get)
+                .map(com.cobbletowers.definition.PlaylistDefinition::difficultyBonus).orElse(0);
     }
 
     private static Entry entryOf(List<Member> team, long value, CycleResult clear) {
@@ -218,16 +248,68 @@ public final class MasteryService {
         List<Member> team = new ArrayList<>();
         for (PersistedParticipant participant : run.participants()) team.add(member(server, participant.playerId()));
         TowerLeaderboardStore boards = TowerLeaderboardStore.get(server);
-        boards.offer(new Key(Board.ASCENSION, run.towerId(), LeaderboardRules.modeOf(stats.startSize == 1)),
+        boards.offer(new Key(Board.ASCENSION, run.towerId(), LeaderboardRules.modeOf(stats.startSize == 1), playlistOf(run)),
                 new Entry(team, ascension, run.runId(), ascension, 0, run.rulesetRevision(), run.towerRevision(),
                         run.towerDigest(), System.currentTimeMillis()));
         boards.checkpoint(server);
     }
 
-    private static void runEnded(MinecraftServer server, PersistedRun run) {
+    private static void runEnded(MinecraftServer server, PersistedRun run, RunState from, RunState to) {
         TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(run.towerId());
         if (tower != null) submitDepth(server, run, tower.ascensionOf(run.floorIndex()));
+        try {
+            sendReport(server, run, from, to);
+        } catch (RuntimeException ex) {
+            TowerLog.error("Building the run report for {} failed", run.runId(), ex);
+        }
         TowerRunStatsStore.get(server).remove(run.runId());
+    }
+
+    /** The card at the end of a run (P32d): built from the run, its stats, and what the trial judge and the unlocks left behind. */
+    private static void sendReport(MinecraftServer server, PersistedRun run, RunState from, RunState to) {
+        TowerRunStatsStore.Stats stats = TowerRunStatsStore.get(server).peek(run.runId());
+        RunSummaries.Gathered gathered = RunSummaries.take(run.runId());
+        TowerContent content = TowerDefinitionRegistry.content();
+        TowerDefinition tower = content.towers().get(run.towerId());
+        boolean onClearedFloor = from == RunState.INTERMISSION || from == RunState.FLOOR_RESOLVING || to == RunState.COMPLETED;
+        int cleared = Math.max(0, run.floorIndex() - (onClearedFloor ? 0 : 1));
+        if (cleared == 0 && (stats == null || stats.activeMillis == 0)) return;   // a run that never got going has nothing to report
+
+        List<String> modifiers = new ArrayList<>();
+        for (ModifierDefinition held : DraftService.held(content, run.modifiers())) modifiers.add(held.displayName());
+        int purchases = run.vendorPurchases().values().stream().mapToInt(Integer::intValue).sum();
+        List<RiskTier> risks = new ArrayList<>();
+        for (ModifierDefinition held : DraftService.held(content, run.modifiers())) risks.add(held.risk());
+        int difficulty = DifficultyScore.of(risks, tower == null ? 0 : tower.ascensionOf(run.floorIndex()),
+                stats == null ? run.participants().size() : stats.startSize);
+        difficulty += run.options().playlist().flatMap(com.cobbletowers.definition.PlaylistRegistry::get)
+                .map(com.cobbletowers.definition.PlaylistDefinition::difficultyBonus).orElse(0);
+        String mode = run.options().trial().map(trial -> trial.startsWith("daily") ? "Daily Trial" : "Weekly Trial")
+                .orElse(run.options().playlist().flatMap(com.cobbletowers.definition.PlaylistRegistry::get)
+                        .map(com.cobbletowers.definition.PlaylistDefinition::displayName).orElse(""));
+        String outcome = switch (to) {
+            case COMPLETED -> "completed";
+            case CASHED_OUT -> "cashed out";
+            case FAILED -> "wiped";
+            default -> "abandoned";
+        };
+        RunReport report = new RunReport(tower == null ? run.towerId().toString() : tower.displayName(), mode, outcome, cleared,
+                tower == null ? 0 : tower.ascensionOf(run.floorIndex()), stats == null ? 0 : stats.activeMillis,
+                stats == null ? 0 : stats.faints, stats == null ? 0 : stats.bestFlawlessStreak, modifiers, purchases,
+                gathered.trialScore().orElse(difficulty), gathered.trialScore().isPresent(), gathered.unlocked(),
+                gathered.streakLine());
+        List<String> names = new ArrayList<>();
+        for (PersistedParticipant participant : run.participants()) names.add(member(server, participant.playerId()).name());
+        String team = String.join(", ", names);
+        TowerLog.info("Run report for {}: {}", run.runId(), report.shareLine(team));
+        for (PersistedParticipant participant : run.participants()) {
+            RunSummaries.remember(participant.playerId(), report, team);
+            ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+            if (player == null) continue;
+            for (String line : report.lines()) player.sendSystemMessage(Component.literal(line).withStyle(ChatFormatting.GRAY));
+            player.sendSystemMessage(Component.literal("  /tower report share posts this run to chat.").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        RunSummaries.forgetStreakLine(run.runId());
     }
 
     // ---- telling people -------------------------------------------------------------------------------------------
@@ -273,7 +355,7 @@ public final class MasteryService {
 
     // ---- names ----------------------------------------------------------------------------------------------------
 
-    static Member member(MinecraftServer server, UUID id) {
+    public static Member member(MinecraftServer server, UUID id) {
         ServerPlayer online = server.getPlayerList().getPlayer(id);
         if (online != null) return new Member(id, online.getGameProfile().getName());
         String cached = server.getProfileCache() == null ? null

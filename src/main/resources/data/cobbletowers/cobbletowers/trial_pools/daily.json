@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "display_name": "Daily Trial",
+  "kind": "daily",
+  "floors": 5,
+  "streak_min_floors": 3,
+  "entries": [
+    {
+      "tower": "cobbletowers:tideforge",
+      "playlist": "cobbletowers:level_cap_50",
+      "modifiers": [
+        "cobbletowers:downpour"
+      ],
+      "enemy_level": 50,
+      "label": "Tide Pool Rush"
+    },
+    {
+      "tower": "cobbletowers:rootvale",
+      "playlist": "cobbletowers:monotype",
+      "modifiers": [
+        "cobbletowers:grassy_terrain"
+      ],
+      "enemy_level": 50,
+      "label": "Verdant Mono"
+    },
+    {
+      "tower": "cobbletowers:duskvale",
+      "playlist": "cobbletowers:underdog",
+      "enemy_level": 45,
+      "label": "Dusk Underdogs"
+    },
+    {
+      "tower": "cobbletowers:neutral",
+      "playlist": "cobbletowers:level_cap_50",
+      "enemy_level": 50,
+      "label": "Rookie Cup"
+    },
+    {
+      "tower": "cobbletowers:tideforge",
+      "playlist": "cobbletowers:monotype",
+      "modifiers": [
+        "cobbletowers:electric_terrain"
+      ],
+      "enemy_level": 55,
+      "label": "Shockwave Mono"
+    },
+    {
+      "tower": "cobbletowers:rootvale",
+      "playlist": "cobbletowers:level_cap_50",
+      "modifiers": [
+        "cobbletowers:sandstorm"
+      ],
+      "enemy_level": 50,
+      "label": "Dust Bowl"
+    },
+    {
+      "tower": "cobbletowers:duskvale",
+      "playlist": "cobbletowers:hardcore",
+      "enemy_level": 50,
+      "label": "Dark Hour"
+    },
+    {
+      "tower": "cobbletowers:neutral",
+      "playlist": "cobbletowers:underdog",
+      "modifiers": [
+        "cobbletowers:scorching_sun"
+      ],
+      "enemy_level": 40,
+      "label": "Sunlit Underdogs"
+    },
+    {
+      "tower": "cobbletowers:tideforge",
+      "playlist": "cobbletowers:level_cap_50",
+      "modifiers": [
+        "cobbletowers:no_recovery"
+      ],
+      "enemy_level": 50,
+      "label": "Attrition Tide"
+    },
+    {
+      "tower": "cobbletowers:rootvale",
+      "playlist": "cobbletowers:underdog",
+      "modifiers": [
+        "cobbletowers:crowded_floor"
+      ],
+      "enemy_level": 45,
+      "label": "Overgrown Crowd"
+    },
+    {
+      "tower": "cobbletowers:duskvale",
+      "playlist": "cobbletowers:monotype",
+      "modifiers": [
+        "cobbletowers:no_setup"
+      ],
+      "enemy_level": 55,
+      "label": "Grim Mono"
+    },
+    {
+      "tower": "cobbletowers:neutral",
+      "playlist": "cobbletowers:hardcore",
+      "enemy_level": 45,
+      "label": "Bare Bones"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "display_name": "Level Cap 50",
+  "description": "No Pokemon above level 50, and the tower's enemies stop at level 50 too.",
+  "party": {
+    "max_level": 50
+  },
+  "enemy_level_max": 50,
+  "difficulty_bonus": 5
+}

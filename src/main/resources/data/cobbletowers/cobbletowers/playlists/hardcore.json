@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "display_name": "Hardcore",
+  "description": "The vendor is closed and items are off in boss fights: the party you bring is all you have.",
+  "party": {},
+  "forced_modifiers": [
+    "cobbletowers:empty_pockets"
+  ],
+  "vendor_closed": true,
+  "difficulty_bonus": 15
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "display_name": "Spotless Floors",
+  "description": "Clear 2 floors without a single Pokemon fainting.",
+  "period": "daily",
+  "condition": {
+    "type": "floors_cleared",
+    "count": 2,
+    "flawless": true
+  },
+  "reward": 50
+}

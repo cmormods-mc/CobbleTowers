@@ -19,8 +19,23 @@ public final class PartyValidation {
 
     private PartyValidation() {}
 
-    /** One Pokemon as validation sees it: identity, level, and whether it can fight right now. */
-    public record PartyMember(UUID id, int level, boolean fainted) {}
+    /**
+     * One Pokemon as validation sees it: identity, level, and whether it can fight right now, plus what a playlist's
+     * clauses ask about (P32): species name, types, whether it can evolve further, and Cobblemon's labels (legendary...).
+     */
+    public record PartyMember(UUID id, int level, boolean fainted, String species, List<String> types,
+                              boolean fullyEvolved, Set<String> labels) {
+        public PartyMember {
+            species = species == null ? "" : species;
+            types = List.copyOf(types);
+            labels = Set.copyOf(labels);
+        }
+
+        /** A member nothing is known about beyond the basics, which is how most rules and tests see one. */
+        public PartyMember(UUID id, int level, boolean fainted) {
+            this(id, level, fainted, "", List.of(), false, Set.of());
+        }
+    }
 
     /**
      * The outcome for one player.

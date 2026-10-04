@@ -284,6 +284,10 @@ public final class RunsCommand {
             return 0;
         }
         PersistedRun run = found.get();
+        if (com.cobbletowers.definition.PlaylistRegistry.vendorClosed(run)) {
+            source.sendFailure(Component.literal("The vendor is closed in this mode."));
+            return 0;
+        }
         TowerNetworking.sendVendorCatalog(source.getServer(), player, run);
 
         long balance = TowerWalletStore.get(source.getServer()).balanceOf(player.getUUID());
@@ -373,6 +377,12 @@ public final class RunsCommand {
             source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT, "    %s floor %d %s",
                     entry.kind(), entry.floorIndex(), entry.what())), false);
         }
+        run.options().playlist().ifPresent(playlist -> source.sendSuccess(() -> Component.literal("  mode: "
+                + com.cobbletowers.definition.PlaylistRegistry.get(playlist)
+                        .map(com.cobbletowers.definition.PlaylistDefinition::displayName).orElse(playlist.toString())), false));
+        run.options().trial().ifPresent(trial -> source.sendSuccess(() -> Component.literal("  trial: " + trial + " ("
+                + (run.options().scored() ? "scored" : "practice") + ", " + run.options().floorLimit() + " floors"
+                + (run.options().enemyLevelLock() > 0 ? ", enemies level " + run.options().enemyLevelLock() : "") + ")"), false));
         var tower = TowerDefinitionRegistry.content().towers().get(run.towerId());
         if (tower != null && tower.ascension()) {
             source.sendSuccess(() -> Component.literal("  ascension " + tower.ascensionOf(run.floorIndex())

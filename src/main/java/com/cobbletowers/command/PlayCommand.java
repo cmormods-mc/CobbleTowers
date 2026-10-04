@@ -32,6 +32,7 @@ public final class PlayCommand {
         var playRoot = Commands.literal("play");
         // Mastery and leaderboards (P31) hang off the same node, so /tower mastery and /tower leaderboard work.
         MasteryCommand.playerCommands().forEach(playRoot::then);
+        TrialCommand.playerCommands().forEach(playRoot::then);
         var play = dispatcher.register(Commands.literal("cobbletowers")
                 .then(playRoot
                         .executes(PlayCommand::open)
@@ -42,6 +43,9 @@ public final class PlayCommand {
                         .then(Commands.literal("tower")
                                 .then(Commands.argument("tower", ResourceLocationArgument.id())
                                         .executes(PlayCommand::tower)))
+                        .then(Commands.literal("playlist")
+                                .then(Commands.argument("mode", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                        .executes(PlayCommand::playlist)))
                         .then(Commands.literal("ascension")
                                 .then(Commands.argument("level", IntegerArgumentType.integer(0, 1000))
                                         .executes(PlayCommand::ascension)))
@@ -97,6 +101,12 @@ public final class PlayCommand {
     private static int tower(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         return say(context, LobbyService.select(context.getSource().getServer(),
                 context.getSource().getPlayerOrException(), ResourceLocationArgument.getId(context, "tower")));
+    }
+
+    private static int playlist(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return say(context, LobbyService.setPlaylist(context.getSource().getServer(),
+                context.getSource().getPlayerOrException(),
+                com.mojang.brigadier.arguments.StringArgumentType.getString(context, "mode")));
     }
 
     private static int ascension(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

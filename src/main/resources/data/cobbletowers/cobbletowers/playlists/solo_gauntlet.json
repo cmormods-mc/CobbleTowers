@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "display_name": "Solo Gauntlet",
+  "description": "One player and at most three Pokemon.",
+  "party": {
+    "max_party": 3
+  },
+  "max_players": 1,
+  "difficulty_bonus": 10
+}

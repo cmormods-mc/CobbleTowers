@@ -158,8 +158,8 @@ public final class TowerEncounters {
             return Optional.empty();
         }
         EncounterPoolDefinition pool = content.pools().get(floor.get().encounterPoolId());
-        RulesetDefinition ruleset = content.rulesets().get(
-                floor.get().rulesetOverride().orElse(tower.rulesetId()));
+        RulesetDefinition ruleset = com.cobbletowers.definition.RulesetResolver.forRun(content, run,
+                floor.get().rulesetOverride());
         if (pool == null || ruleset == null) {
             TowerLog.error("Floor {} names content that is not loaded (pool {}, ruleset {})",
                     floor.get().id(), floor.get().encounterPoolId(), tower.rulesetId());
@@ -372,8 +372,8 @@ public final class TowerEncounters {
         TowerDefinition tower = content.towers().get(run.towerId());
         if (floor.isEmpty() || tower == null || floor.get().layout().isEmpty()) return false;
         EncounterPoolDefinition pool = content.pools().get(floor.get().encounterPoolId());
-        RulesetDefinition ruleset = content.rulesets().get(
-                floor.get().rulesetOverride().orElse(tower.rulesetId()));
+        RulesetDefinition ruleset = com.cobbletowers.definition.RulesetResolver.forRun(content, run,
+                floor.get().rulesetOverride());
         if (pool == null || ruleset == null) return false;
 
         Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), floor.get().layout().get());
@@ -549,8 +549,8 @@ public final class TowerEncounters {
         Optional<FloorDefinition> floor = content.floorAt(run.towerId(), run.floorIndex());
         TowerDefinition tower = content.towers().get(run.towerId());
         if (floor.isEmpty() || tower == null) return false;
-        RulesetDefinition ruleset = content.rulesets().get(
-                floor.get().rulesetOverride().orElse(tower.rulesetId()));
+        RulesetDefinition ruleset = com.cobbletowers.definition.RulesetResolver.forRun(content, run,
+                floor.get().rulesetOverride());
         ServerLevel level = TowerDimension.level(server);
         if (ruleset == null || level == null || run.cell().isEmpty() || floor.get().layout().isEmpty()) return false;
 
@@ -602,6 +602,9 @@ public final class TowerEncounters {
 
     /** Whether {@code floorIndex} is the last floor of the run's tower. */
     private static boolean isFinalFloor(UUID runId, int floorIndex) {
+        // A trial (P32) ends on its own floor limit, whatever the tower's length.
+        Optional<PersistedRun> trial = TowerRuns.get(runId).filter(run -> run.options().floorLimit() > 0);
+        if (trial.isPresent()) return floorIndex >= trial.get().options().floorLimit();
         return TowerRuns.get(runId)
                 .map(run -> TowerDefinitionRegistry.content().towers().get(run.towerId()))
                 // A tower that ascends (P30) has no last floor: a cycle's end is an intermission where the team

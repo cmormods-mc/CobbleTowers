@@ -48,7 +48,8 @@ public final class RunLifecycle {
             return new RunTransitionService.Refusal(RunTransitionService.Reason.UNKNOWN_RUN, "no run with id " + runId);
         }
         TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(found.get().towerId());
-        RulesetDefinition ruleset = tower == null ? null : TowerDefinitionRegistry.content().rulesets().get(tower.rulesetId());
+        RulesetDefinition ruleset = com.cobbletowers.definition.RulesetResolver.forRun(TowerDefinitionRegistry.content(),
+                found.get(), Optional.empty());
         if (ruleset == null) {
             return new RunTransitionService.Refusal(RunTransitionService.Reason.ILLEGAL_EVENT,
                     "run " + runId + " has no ruleset to validate against");
@@ -71,6 +72,11 @@ public final class RunLifecycle {
             }
             PartyValidation.Result result = PartyValidation.validate(party.get(), ruleset);
             result.problems().forEach(problem -> problems.add(participant.playerId() + " " + problem));
+            // A playlist's clauses (P32) apply to the Pokemon that would be registered.
+            run.options().playlist().flatMap(com.cobbletowers.definition.PlaylistRegistry::get)
+                    .ifPresent(playlist -> PlaylistRules.problems(party.get().stream()
+                                    .filter(member -> result.registered().contains(member.id())).toList(), playlist)
+                            .forEach(problem -> problems.add(participant.playerId() + " " + problem)));
             registered.add(new PersistedParticipant(participant.playerId(), participant.state(), result.registered()));
         }
         TowerRuns.save(server, run.withParticipants(registered, now), false);

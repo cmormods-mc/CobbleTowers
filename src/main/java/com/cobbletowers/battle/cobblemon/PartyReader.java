@@ -16,7 +16,13 @@ public final class PartyReader {
     public static List<PartyMember> members(ServerPlayer player) {
         List<PartyMember> members = new ArrayList<>();
         for (Pokemon pokemon : Cobblemon.INSTANCE.getStorage().getParty(player)) {
-            members.add(new PartyMember(pokemon.getUuid(), pokemon.getLevel(), pokemon.isFainted()));
+            com.cobblemon.mod.common.pokemon.Species species = pokemon.getSpecies();
+            List<String> types = new ArrayList<>();
+            for (com.cobblemon.mod.common.api.types.ElementalType type : species.getTypes()) types.add(type.getName());
+            // Labels are Cobblemon's own (legendary, mythical, ultra_beast, paradox...); fully evolved means nothing
+            // further to evolve into.
+            members.add(new PartyMember(pokemon.getUuid(), pokemon.getLevel(), pokemon.isFainted(), species.getName(),
+                    types, species.getEvolutions().isEmpty(), java.util.Set.copyOf(species.getLabels())));
         }
         return members;
     }

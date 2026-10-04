@@ -80,6 +80,8 @@ public final class VendorNpc {
     /** Puts a vendor at the run's exit anchor. Idempotent: a run never has two. Returns whether one stands there. */
     public static boolean spawn(MinecraftServer server, PersistedRun run) {
         if (run.cell().isEmpty()) return false;
+        // A mode that closes the vendor (Hardcore, P32) has nobody standing there.
+        if (com.cobbletowers.definition.PlaylistRegistry.vendorClosed(run)) return false;
         ServerLevel level = TowerDimension.level(server);
         Optional<FloorLayout> layout = TowerDefinitionRegistry.content().floorAt(run.towerId(), run.floorIndex())
                 .flatMap(floor -> floor.layout());

@@ -110,6 +110,7 @@ public final class IntermissionService {
     public static String vendor(MinecraftServer server, ServerPlayer player) {
         Optional<PersistedRun> run = intermissionRunOf(player);
         if (run.isEmpty()) return "The vendor is only open at an intermission.";
+        if (com.cobbletowers.definition.PlaylistRegistry.vendorClosed(run.get())) return "The vendor is closed in this mode.";
         TowerNetworking.sendVendorCatalog(server, player, run.get());
         return "";
     }
@@ -203,6 +204,13 @@ public final class IntermissionService {
                 continue;
             }
             round.cancelCountdown();
+            // A playlist's party clauses (P32) hold every floor, not only the first: a party that stopped complying waits.
+            List<String> problems = PlaylistGuard.problems(server, found.get());
+            if (!problems.isEmpty()) {
+                TowerLog.info("Run {} cannot open its next floor: {}", runId, String.join("; ", problems));
+                broadcast(server, found.get(), "Cannot open the next floor: " + String.join("; ", problems), false);
+                continue;
+            }
             RunLifecycle.Opened result = RunLifecycle.openNextFloor(server, runId, now);
             switch (result) {
                 case OPENED -> ROUNDS.remove(runId);

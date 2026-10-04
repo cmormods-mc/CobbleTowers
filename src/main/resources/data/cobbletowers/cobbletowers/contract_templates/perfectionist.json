@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "display_name": "Perfectionist",
+  "description": "Clear 10 floors this week without a Pokemon fainting on them.",
+  "period": "weekly",
+  "condition": {
+    "type": "floors_cleared",
+    "count": 10,
+    "flawless": true
+  },
+  "reward": 250
+}

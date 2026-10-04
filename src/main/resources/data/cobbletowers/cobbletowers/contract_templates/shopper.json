@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "display_name": "Shopper",
+  "description": "Buy a service from the vendor.",
+  "period": "daily",
+  "condition": {
+    "type": "purchases",
+    "count": 1
+  },
+  "reward": 30
+}

@@ -107,7 +107,7 @@ public final class RunTransitionService {
         PersistedRun next = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), floor,
                 transition.next(), run.participants(), checkpoint, committed, now, run.cell(), run.ledger(),
-                run.modifiers(), run.lastBankedFloor(), run.vendorPurchases());
+                run.modifiers(), run.lastBankedFloor(), run.vendorPurchases(), run.options());
         return new Move(next, run.state(), transition.checkpoint(), key);
     }
 
@@ -129,7 +129,7 @@ public final class RunTransitionService {
         PersistedRun next = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
                 run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), run.floorIndex(),
                 target, run.participants(), run.lastCheckpoint(), run.committedTransactions(), now, run.cell(),
-                run.ledger(), run.modifiers(), run.lastBankedFloor(), run.vendorPurchases());
+                run.ledger(), run.modifiers(), run.lastBankedFloor(), run.vendorPurchases(), run.options());
         // Durable, because a resume that a crash undoes leaves a run reported as recovered and
         // parked on disk -- the two states nobody can tell apart afterwards.
         return new Move(next, run.state(), true, "");
@@ -201,6 +201,8 @@ public final class RunTransitionService {
                 com.cobbletowers.ascension.AscensionService.onFloorConfirmed(server, runId, now);
             }
             // Mastery (P31): floor timing, cycle clears, run endings. Never allowed to disturb the run it is watching.
+            // A trial attempt is judged first: it reads the run stats that mastery drops when a run ends.
+            com.cobbletowers.trial.TrialService.onTransition(server, runId, move.from(), move.next().state(), now);
             com.cobbletowers.mastery.MasteryService.onTransition(server, runId, move.from(), move.next().state(), now);
             // TDS #60/section 11: what a transition costs end to end, including the revival,
             // reward-bank and draft side effects above -- not only the record write.

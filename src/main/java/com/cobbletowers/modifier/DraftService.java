@@ -230,6 +230,9 @@ public final class DraftService {
         TowerRuns.save(server, run.withModifiers(next, now), true);
         TowerLog.info("Run {} drafted {}{} at floor {}{}", runId, won, draft.lockIn() ? " (LOCKED IN)" : "",
                 draft.floorIndex(), result.byTieBreak() ? " on a seed tie-break" : "");
+        TowerDefinitionRegistry.content().modifier(won).ifPresent(modifier ->
+                com.cobbletowers.events.TowerEvents.emit(new com.cobbletowers.events.TowerEvent.Drafted(runId,
+                        run.participants().stream().map(PersistedParticipant::playerId).toList(), won, modifier.risk())));
         return resolved;
     }
 

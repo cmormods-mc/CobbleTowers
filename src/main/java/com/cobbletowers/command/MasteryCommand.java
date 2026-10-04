@@ -47,9 +47,13 @@ public final class MasteryCommand {
         for (Board board : Board.values()) {
             String name = board.name().toLowerCase(java.util.Locale.ROOT);
             boards.then(Commands.literal(name)
-                    .executes(context -> leaderboard(context, board, defaultTower()))
+                    .executes(context -> leaderboard(context, board, defaultTower(), ""))
                     .then(Commands.argument("tower", ResourceLocationArgument.id())
-                            .executes(context -> leaderboard(context, board, ResourceLocationArgument.getId(context, "tower")))));
+                            .executes(context -> leaderboard(context, board, ResourceLocationArgument.getId(context, "tower"), ""))
+                            .then(Commands.argument("playlist", StringArgumentType.word())
+                                    .executes(context -> leaderboard(context, board,
+                                            ResourceLocationArgument.getId(context, "tower"),
+                                            StringArgumentType.getString(context, "playlist"))))));
         }
         return List.of(mastery, boards);
     }
@@ -125,21 +129,23 @@ public final class MasteryCommand {
         return progress.level();
     }
 
-    private static int leaderboard(CommandContext<CommandSourceStack> context, Board board, ResourceLocation towerId)
-            throws CommandSyntaxException {
+    private static int leaderboard(CommandContext<CommandSourceStack> context, Board board, ResourceLocation towerId,
+                                   String playlist) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
-        if (screen(context, towerId.toString(), board.name().toLowerCase(java.util.Locale.ROOT))) return 1;
+        // The screen shows the Standard boards; a playlist's boards are read in chat.
+        if (playlist.isEmpty() && screen(context, towerId.toString(), board.name().toLowerCase(java.util.Locale.ROOT))) return 1;
         TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(towerId);
         if (tower == null) {
             source.sendFailure(Component.literal("No tower " + towerId + " is loaded."));
             return 0;
         }
         TowerLeaderboardStore store = TowerLeaderboardStore.get(source.getServer());
-        source.sendSuccess(() -> Component.literal(board.title() + " - " + tower.displayName()).withStyle(ChatFormatting.GOLD), false);
+        source.sendSuccess(() -> Component.literal(board.title() + " - " + tower.displayName()
+                + (playlist.isEmpty() ? "" : " (" + playlist + ")")).withStyle(ChatFormatting.GOLD), false);
         int shown = 0;
         List<Mode> modes = board.hasMode() ? List.of(Mode.SOLO, Mode.TEAM) : List.of(Mode.ANY);
         for (Mode mode : modes) {
-            List<Entry> entries = store.top(new Key(board, towerId, mode), 10);
+            List<Entry> entries = store.top(new Key(board, towerId, mode, playlist), 10);
             if (board.hasMode()) {
                 source.sendSuccess(() -> Component.literal("  " + (mode == Mode.SOLO ? "Solo" : "Team")).withStyle(ChatFormatting.AQUA), false);
             }

@@ -49,6 +49,7 @@ public final class CobbleTowers implements ModInitializer {
                 com.cobbletowers.command.ArmorCommand.register(dispatcher);
                 PlayCommand.register(dispatcher);
                 com.cobbletowers.command.MasteryCommand.registerAdmin(dispatcher);
+                com.cobbletowers.command.TrialCommand.registerAdmin(dispatcher);
                 CellsCommand.register(dispatcher);
                 DiagnosticsCommand.register(dispatcher);
                 SpikeCommand.register(dispatcher);
@@ -102,6 +103,9 @@ public final class CobbleTowers implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> com.cobbletowers.intermission.IntermissionService.clear());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new TowerDefinitionRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.AchievementRegistry());
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.PlaylistRegistry());
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.TrialPoolRegistry());
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.ContractTemplateRegistry());
         // Armor sets (P24): the items must exist before any datapack loads; what they do is data.
         com.cobbletowers.armor.ArmorSetItems.register();
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.armor.ArmorSetRegistry());
@@ -120,6 +124,9 @@ public final class CobbleTowers implements ModInitializer {
         com.cobbletowers.instance.TowerDropGuard.install();
         com.cobbletowers.vendor.VendorNpc.install();
         com.cobbletowers.mastery.MasteryService.install();
+        com.cobbletowers.trial.TrialService.install();
+        com.cobbletowers.contract.ContractService.install();
+        com.cobbletowers.trial.LoginSummary.install();
         com.cobbletowers.runtime.TowerCommandGuard.install();
         RecoverySweep.install();
         // Hands a player whatever the tower owes them the moment they are somewhere to receive it.

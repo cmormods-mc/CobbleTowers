@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "display_name": "Floor Runner",
+  "description": "Clear 3 floors.",
+  "period": "daily",
+  "condition": {
+    "type": "floors_cleared",
+    "count": 3
+  },
+  "reward": 40
+}

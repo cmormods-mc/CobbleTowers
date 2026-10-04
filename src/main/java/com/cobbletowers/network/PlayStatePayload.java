@@ -57,18 +57,43 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
         }
     }
 
-    public record Lobby(int role, String selected, String hostName, List<Member> members, int countdown, Depth depth) {
+    /** The playlists (P32) on offer and the one chosen ({@code ""} is Standard). */
+    public record Modes(List<String> ids, List<String> names, String chosen) {
+        static final StreamCodec<RegistryFriendlyByteBuf, Modes> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()), Modes::ids,
+                ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()), Modes::names,
+                ByteBufCodecs.STRING_UTF8, Modes::chosen,
+                Modes::new);
+
+        public static Modes none() {
+            return new Modes(List.of(), List.of(), "");
+        }
+    }
+
+    /** What the host can choose before starting: how deep (P30) and which mode (P32). Nested to stay under the codec's field limit. */
+    public record Options(Depth depth, Modes modes) {
+        static final StreamCodec<RegistryFriendlyByteBuf, Options> STREAM_CODEC = StreamCodec.composite(
+                Depth.STREAM_CODEC, Options::depth,
+                Modes.STREAM_CODEC, Options::modes,
+                Options::new);
+
+        public static Options none() {
+            return new Options(Depth.none(), Modes.none());
+        }
+    }
+
+    public record Lobby(int role, String selected, String hostName, List<Member> members, int countdown, Options options) {
         static final StreamCodec<RegistryFriendlyByteBuf, Lobby> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.VAR_INT, Lobby::role,
                 ByteBufCodecs.STRING_UTF8, Lobby::selected,
                 ByteBufCodecs.STRING_UTF8, Lobby::hostName,
                 Member.STREAM_CODEC.apply(ByteBufCodecs.list()), Lobby::members,
                 ByteBufCodecs.VAR_INT, Lobby::countdown,
-                Depth.STREAM_CODEC, Lobby::depth,
+                Options.STREAM_CODEC, Lobby::options,
                 Lobby::new);
 
         public static Lobby none() {
-            return new Lobby(0, "", "", List.of(), -1, Depth.none());
+            return new Lobby(0, "", "", List.of(), -1, Options.none());
         }
     }
 

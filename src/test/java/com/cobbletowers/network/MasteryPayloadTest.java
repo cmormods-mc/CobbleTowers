@@ -52,9 +52,11 @@ class MasteryPayloadTest {
         PlayStatePayload sent = new PlayStatePayload(
                 List.of(new PlayStatePayload.Tower(TOWER, "Test Tower")),
                 new PlayStatePayload.Lobby(1, TOWER.toString(), "Host", List.of(new PlayStatePayload.Member("Friend", true)), -1,
-                        new PlayStatePayload.Depth(2, 5, true)),
+                        new PlayStatePayload.Options(new PlayStatePayload.Depth(2, 5, true),
+                                new PlayStatePayload.Modes(List.of("monotype"), List.of("Monotype"), "monotype"))),
                 List.of(50, 60), "hello", true);
         assertEquals(sent, roundTrip(PlayStatePayload.STREAM_CODEC, sent));
-        assertEquals(sent.lobby().depth(), new PlayStatePayload.Depth(2, 5, true));
+        assertEquals(new PlayStatePayload.Depth(2, 5, true), sent.lobby().options().depth());
+        assertEquals("monotype", sent.lobby().options().modes().chosen());
     }
 }
