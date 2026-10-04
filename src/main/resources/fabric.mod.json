@@ -17,6 +17,7 @@
     "main": ["com.cobbletowers.CobbleTowers"],
     "client": ["com.cobbletowers.client.CobbleTowersClient"]
   },
+  "mixins": ["mixins/cobbletowers.mixins.json"],
   "depends": {
     "fabricloader": ">=0.17.2",
     "fabric-api": ">=0.116.6+1.21.1",

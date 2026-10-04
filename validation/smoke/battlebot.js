@@ -18,8 +18,9 @@
 // everything.
 //
 // Usage: node battlebot.js <username> [port] [move-preference,comma,separated]
-// mineflayer comes from the rig's node_modules via NODE_PATH, like joinbot.js. It takes no commands: the
-// harness's FIGHT / MOVE lines are written to a file nobody reads, which does no harm.
+// mineflayer comes from the rig's node_modules via NODE_PATH, like joinbot.js. It takes one command: a line
+// `SAY <text>` appended to cmd_<username>.txt in the working directory is sent as chat, so a test can type a
+// /command as a real player. The harness's FIGHT / MOVE lines are ignored, which does no harm.
 const mineflayer = require('mineflayer');
 
 const username = process.argv[2];
@@ -161,6 +162,17 @@ function choose() {
       return;
     }
   } else if (request && request.active.length > 0) {
+    // BOT_TRY_SWITCH=1: on its second turn of a battle the bot tries to swap a healthy Pokemon out by choice. Where the
+    // rules allow it that is harmless; under a no-switching rule the server must refuse it (see forced_switch_test.py).
+    turnsInBattle += 1;
+    if (process.env.BOT_TRY_SWITCH && turnsInBattle === 2) {
+      const bench = request.pokemon.find((p) => !p.fainted && !p.active && p.uuid);
+      if (bench) {
+        send([Buffer.concat([Buffer.from([0x00]), Buffer.from(bench.uuid.replace(/-/g, ''), 'hex')])]);
+        console.log(`${tag} TRY_SWITCH ${bench.ident}`);
+        return;
+      }
+    }
     const move = pickMove(request.active[0].moves);
     if (move) {
       // MOVE(1), the move id, the target (null unless the move must be aimed), and a null gimmick.
@@ -177,14 +189,17 @@ function choose() {
 }
 
 let lastMove = null;
+let turnsInBattle = 0;
 
 bot._client.on('custom_payload', (p) => {
   const channel = p.channel || '';
   if (!channel.startsWith('cobblemon')) return;
   const data = p.data || Buffer.alloc(0);
+  if (process.env.BOT_TRACE && channel.startsWith('cobblemon:battle')) console.log(`${tag} PKT ${channel}`);
 
   if (channel === 'cobblemon:battle_initialize' && data.length >= 16) {
     battleId = data.subarray(0, 16);
+    turnsInBattle = 0;
     rejected = new Set();
     request = null;
     console.log(`${tag} BATTLE ${battleId.toString('hex')}`);
@@ -208,6 +223,28 @@ bot.on('messagestr', (text) => {
   if (lastMove) rejected.add(lastMove);
   lastChoice = 0;
   choose();
+});
+
+// SAY lines from the harness: typed as the player (a leading slash makes it a command). Everything the server says
+// back that mentions a refused command is logged on its own line, so a test can read the answer.
+const fs = require('fs');
+const commandFile = `cmd_${username}.txt`;
+let commandOffset = 0;
+setInterval(() => {
+  let text;
+  try { text = fs.readFileSync(commandFile, 'utf8'); } catch (e) { return; }
+  if (text.length <= commandOffset) return;
+  const fresh = text.slice(commandOffset);
+  commandOffset = text.length;
+  for (const line of fresh.split(String.fromCharCode(10))) {
+    if (line.startsWith('SAY ')) { const said = line.slice(4).trim(); console.log(`${tag} SAID ${said}`); bot.chat(said); }
+  }
+}, 500);
+bot.on('messagestr', (text) => {
+  if (text.includes('turned off inside the tower')) console.log(`${tag} BLOCKED ${text}`);
+  if (text.includes('Switching is not allowed')) console.log(`${tag} SWITCH_REFUSED ${text}`);
+  // A refusal is followed at once by a fresh request and "choose now"; the duplicate guard in choose() must not eat it.
+  if (text.includes('is not allowed in this battle') || text.includes('Switching is not allowed')) lastChoice = 0;
 });
 
 bot.on('spawn', () => { console.log(`${tag} SPAWN`); console.log(`${tag} AUTOFIGHT on`); });

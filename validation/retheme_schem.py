@@ -57,7 +57,9 @@ def _tideforge() -> dict[str, str]:
     colours(m, {"red": "blue", "orange": "cyan", "yellow": "light_blue", "lime": "light_blue", "green": "cyan",
                 "magenta": "blue", "purple": "blue", "pink": "white", "brown": "cyan"})
     m["crimson_slab"] = "prismarine_brick_slab"
-    m["brain_coral_block"] = "bubble_coral_block"
+    m["brain_coral_block"] = "tube_coral_block"
+    m["lilac"] = "large_fern"
+    m["brown_mushroom_block"] = "prismarine_bricks"
     m["iron_block"] = "prismarine_bricks"
     m["iron_trapdoor"] = "warped_trapdoor"
     family(m, "polished_andesite", "prismarine_brick", forms=("_slab", "_stairs"))
@@ -83,9 +85,11 @@ def _rootvale() -> dict[str, str]:
     m: dict[str, str] = {}
     # Water blues become leaf greens, the red becomes bark brown, and the medallion rainbow becomes greens and flowers.
     colours(m, {"blue": "green", "cyan": "green", "light_blue": "lime", "red": "brown", "orange": "brown",
-                "yellow": "lime", "purple": "green", "gray": "brown", "black": "brown"})
+                "yellow": "lime", "purple": "green", "gray": "brown", "black": "brown", "magenta": "green",
+                "pink": "lime"})
     m["sea_lantern"] = "verdant_froglight"
     m["warped_wart_block"] = "moss_block"
+    m["brain_coral_block"] = "moss_block"
     for form in ("planks", "trapdoor", "door", "pressure_plate"):
         m[f"warped_{form}"] = f"jungle_{form}"
     m["stripped_warped_hyphae"] = "stripped_dark_oak_wood"
@@ -140,6 +144,8 @@ def _duskvale() -> dict[str, str]:
     m["calcite"] = "smooth_basalt"
     m["sea_lantern"] = "shroomlight"
     m["end_rod"] = "end_rod"
+    m["brain_coral_block"] = "netherrack"
+    m["brown_mushroom_block"] = "red_mushroom_block"
     m["warped_wart_block"] = "nether_wart_block"
     m["warped_planks"] = "crimson_planks"
     m["warped_trapdoor"] = "crimson_trapdoor"
@@ -177,6 +183,34 @@ def _duskvale() -> dict[str, str]:
     for plant in ("short_grass", "large_fern", "lilac", "beetroots"):
         m[plant] = "air"
     return m
+
+
+# The only colours a themed tower may contain (neutral is the base as drawn, so it has no limit). A themed tower is
+# checked against this after recolouring: the base has a rainbow of floor medallions, and a colour nobody mapped
+# (pink on Rootvale's floors 7 and 8 was the first) would otherwise ship.
+ALLOWED_COLOURS = {
+    "tideforge": {"white", "light_gray", "gray", "black", "blue", "light_blue", "cyan"},
+    "rootvale": {"white", "light_gray", "brown", "green", "lime"},
+    "duskvale": {"black", "gray", "red", "orange", "purple"},
+}
+COLOUR_WORDS = ["white", "light_gray", "gray", "black", "brown", "red", "orange", "yellow", "lime", "green", "cyan",
+                "light_blue", "blue", "purple", "magenta", "pink"]
+
+
+def stray_colours(theme: str, states) -> dict[str, int]:
+    """Coloured blocks in a themed tower whose colour the theme does not allow, with how many there are."""
+    allowed = ALLOWED_COLOURS.get(theme)
+    found: dict[str, int] = {}
+    if allowed is None:
+        return found
+    for state in states:
+        name = split_state(state)[0].removeprefix("minecraft:")
+        for colour in sorted(COLOUR_WORDS, key=len, reverse=True):
+            if name.startswith(colour + "_"):
+                if colour not in allowed:
+                    found[name] = found.get(name, 0) + 1
+                break
+    return found
 
 
 THEMES["tideforge"] = _tideforge()
@@ -246,6 +280,12 @@ def main() -> int:
                 result = cache[state] = retheme(state, mapping)
             if result != "minecraft:air":
                 themed.append((position, result))
+        strays = stray_colours(theme, (state for _, state in themed))
+        if strays:
+            print(f"retheme: FAIL -- {theme} still has colours outside its scheme: "
+                  + ", ".join(f"{n} x{c}" for n, c in sorted(strays.items(), key=lambda kv: -kv[1])[:12]))
+            failures += 1
+            continue
         target = OUT_DIR / f"battle_tower_{theme}.nbt"
         if args.check:
             if histogram_of_structure(target) != histogram_of_schematic(themed):

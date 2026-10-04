@@ -9,6 +9,10 @@ opponents; the moment the boss appears one is killed. Then:
   * the run records the dropped player as disconnected and still holds the other;
   * the disconnect was handled on the server thread, and nothing from CobbleTowers or the Showdown runtime threw.
 
+With --try-switch the bots swap a Pokemon by choice on their second turn of each battle, so the player who stays switches
+AFTER the other has gone. Cobblemon 1.8.1 announces a switch to every player in the battle and throws a NullPointerException ("Exception while
+ticking a battle") when one of them is offline; CobbleRaids now skips that announcement while anyone is offline.
+
     python validation/smoke/boss_disconnect_test.py --server-dir <rig> --java <jdk21 java> [--jar <build>]
 """
 
@@ -43,6 +47,8 @@ def main() -> None:
     parser.add_argument("--server-dir", required=True, type=Path)
     parser.add_argument("--java", type=Path, default=None)
     parser.add_argument("--jar", type=Path, default=None)
+    parser.add_argument("--try-switch", action="store_true",
+                        help="the bots try one switch by choice per battle, so the player who stays switches after the other has gone")
     args = parser.parse_args()
 
     server_dir = args.server_dir.resolve()
@@ -59,6 +65,8 @@ def main() -> None:
         print(f"Booting server ({server.log})")
         server.start()
         server.wait_until_ready()
+        if args.try_switch:
+            os.environ["BOT_TRY_SWITCH"] = "1"
         for name in (STAY, LEAVE):
             bots[name] = start_battle_bot(rig, name, FIRST_MOVE)
 
@@ -108,6 +116,7 @@ def main() -> None:
                                   "DISCONNECTED/" in shown, shown.strip()[:300]))
 
             bad = [line for line in lines if re.search(r"ConcurrentModification|Multi threaded|NullPointer|IllegalState", line)
+                   or "Exception while ticking a battle" in line
                    or ("com.cobbletowers" in line and re.search(r"ERROR", line))]
             results.append(Result("nothing threw (no thread violation, no CobbleTowers error)", not bad, "; ".join(bad)[:300]))
     except Exception as exc:  # noqa: BLE001

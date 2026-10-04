@@ -156,6 +156,12 @@ public final class LobbyService {
     public static String leave(MinecraftServer server, ServerPlayer player) {
         Optional<TowerLobby> found = lobbyOf(player.getUUID());
         if (found.isEmpty()) {
+            // In a live run, leaving is leaving the run (the same as `runs leave`); the exit sweep then takes them
+            // home. Only after that does the "the run is over, take me home" path apply.
+            if (inRun(player.getUUID())
+                    && com.cobbletowers.runtime.TowerPresence.leave(server, player, System.currentTimeMillis())) {
+                return "You left the run. You will be taken home in a moment.";
+            }
             String home = com.cobbletowers.runtime.RunExitService.leaveNow(server, player);
             return home != null ? home : noTeam(player);
         }

@@ -39,6 +39,39 @@ changes, so pools, milestones and indexes are untouched.
 * `tools/render_battle_tower.py` draws the four themes side by side. Its colours are guesses from block names (unknown
   materials show grey), so it shows shape and contrast, not what the game looks like.
 
+## Each tower keeps to its own colours
+
+The base has a rainbow of floor medallions (one colour per hall). A themed tower must not show them, so
+`retheme_schem.py` carries a list of the colours each theme may contain and **fails** if any other coloured block is left
+after recolouring (`stray_colours`). It first caught pink and magenta on Rootvale's floors 7 and 8. Neutral is the base as
+drawn and keeps its rainbow.
+
+## Nothing drops in the tower
+
+`instance/TowerDropGuard` discards, as it loads, any experience orb and any item with no thrower in the tower dimension.
+That is every defeated opponent's loot, whatever produced it (Cobblemon, CobbleRaids, another mod); rewards are the run's,
+banked and delivered by the reward service. A player's thrown item has a thrower and is untouched, and an unowned item
+next to a dead or dying player is kept (their inventory drops that way). Live: `validation/smoke/drop_guard_test.py`.
+
+## Commands that undo a tower
+
+`/pokeheal`, a home or warp command, a PC or ender chest, a kit, `/give` and the like are refused for a **player in the
+tower dimension** (`runtime/CommandRules` is the pure deny list, `TowerCommandGuard` the who-and-where, `mixin/CommandsMixin`
+the hook: Fabric has no event before a command runs, so this is the mod's first mixin). It is a deny list, not an allow
+list, because the server's command set is whatever its mods add. Matching is on the first word, so `cobblemon:pokeheal` is
+caught too. Not refused: the console, RCON, command blocks (the live tests use them), and an operator in creative or
+spectator mode (the same exemption the exit sweep gives). `/tower` and `/cobbletowers` can never be blocked, even by
+listing them. Operators add commands in `config/cobbletowers/blocked_commands.txt` (one per line, `#` comments); the
+built-in list cannot be shortened. `/tower leave` in a live run leaves the run (the exit sweep then takes the player home).
+Live: `validation/smoke/command_guard_test.py` (the bot types the commands as a real player); `battlebot.js` gained a
+`SAY <text>` line for that.
+
+## The cell reset
+
+`CellPreparer.reset` used to sweep 64 x 64 x 17 blocks. It now sweeps every held chunk to the top of the world, skipping
+air-only sections, and runs before each paste too (a structure does not place its air, so anything already in the cell
+shows through it). `validation/smoke/cell_reset_test.py` fails on the old sweep.
+
 ## Things that were deliberately not done
 
 * The reference image shows waterfalls, a lake, roots, banners, bridges and a moon. None of that is in the schematic, so it is
