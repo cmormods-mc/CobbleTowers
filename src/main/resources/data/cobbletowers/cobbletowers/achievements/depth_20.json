@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "display_name": "Apex",
+  "description": "Reach Ascension 20.",
+  "condition": {
+    "type": "ascension_reached",
+    "level": 20
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "display_name": "Lone Warlord",
+  "description": "Clear a cycle on your own at Ascension 6 or deeper.",
+  "condition": {
+    "type": "clear",
+    "solo": true,
+    "min_ascension": 6
+  }
+}

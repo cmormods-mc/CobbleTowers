@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "display_name": "Nightmare Mode",
+  "description": "Clear a cycle with a difficulty score of at least 100.",
+  "condition": {
+    "type": "clear",
+    "min_score": 100
+  }
+}

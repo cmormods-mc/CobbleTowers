@@ -49,6 +49,8 @@ public final class TowerNetworking {
         PayloadTypeRegistry.playS2C().register(IntermissionStatePayload.TYPE, IntermissionStatePayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(IntermissionActionPayload.TYPE, IntermissionActionPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(ArmorSetsPayload.TYPE, ArmorSetsPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(MasteryScreenPayload.TYPE, MasteryScreenPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(MasteryRequestPayload.TYPE, MasteryRequestPayload.STREAM_CODEC);
     }
 
     /** The server-side half. */
@@ -60,6 +62,11 @@ public final class TowerNetworking {
         ServerPlayNetworking.registerGlobalReceiver(IntermissionActionPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
             context.server().execute(() -> handleIntermissionAction(context.server(), player, payload));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(MasteryRequestPayload.TYPE, (payload, context) -> {
+            ServerPlayer player = context.player();
+            context.server().execute(() -> MasteryScreens.send(player,
+                    MasteryScreens.build(context.server(), player, payload.tower(), payload.tab(), false)));
         });
         ServerPlayNetworking.registerGlobalReceiver(PlayActionPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();

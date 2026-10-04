@@ -1,0 +1,28 @@
+package com.cobbletowers.network;
+
+import com.cobbletowers.CobbleTowers;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+
+/**
+ * The mastery screen asking for another view (P31): a tower id and a tab ({@code "mastery"} or a board name). Nothing here is
+ * trusted: the server resolves both against what is loaded and answers with a fresh {@link MasteryScreenPayload}.
+ */
+public record MasteryRequestPayload(String tower, String tab) implements CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<MasteryRequestPayload> TYPE = new CustomPacketPayload.Type<>(
+            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "mastery_request"));
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, MasteryRequestPayload> STREAM_CODEC = StreamCodec.composite(
+            ByteBufCodecs.STRING_UTF8, MasteryRequestPayload::tower,
+            ByteBufCodecs.STRING_UTF8, MasteryRequestPayload::tab,
+            MasteryRequestPayload::new);
+
+    @Override
+    public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+}

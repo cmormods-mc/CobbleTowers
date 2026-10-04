@@ -48,13 +48,16 @@ public final class RewardDelivery {
         boolean creditedWallet = false;
         for (PendingTowerReward reward : queue) {
             if (reward.item().equals(CobbleDollars.ITEM_ID)) {
-                TowerWalletStore.get(server).credit(player.getUUID(), reward.amount());
+                // A player's mastery of the tower the reward was earned in (P31) adds to their CobbleDollars.
+                int bonus = com.cobbletowers.mastery.MasteryService.perksForRun(server, player.getUUID(), reward.runId())
+                        .cobbleDollarBonusPercent();
+                TowerWalletStore.get(server).credit(player.getUUID(), reward.amount() + (long) reward.amount() * bonus / 100);
                 delivered.add(reward);
                 creditedWallet = true;
             } else if (reward.item().equals(RaidPointsCurrency.ITEM_ID)) {
                 // CobbleRaids' own currency, credited through its public API (P21).
                 CobbleRaidsPoints.award(server, player.getUUID(),
-                        com.cobbletowers.armor.ArmorBonusEffects.raidPoints(player, reward.amount()));
+                        com.cobbletowers.armor.ArmorBonusEffects.raidPoints(player, reward.amount(), reward.runId()));
                 delivered.add(reward);
             } else if (give(player, reward.item(), reward.amount())) {
                 delivered.add(reward);

@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "display_name": "Regular",
+  "description": "Clear 3 full cycles of this tower.",
+  "condition": {
+    "type": "cycles_cleared",
+    "count": 3
+  }
+}

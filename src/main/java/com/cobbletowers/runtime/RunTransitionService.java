@@ -200,6 +200,8 @@ public final class RunTransitionService {
             if (event == RunEvent.NEXT_FLOOR_CONFIRMED) {
                 com.cobbletowers.ascension.AscensionService.onFloorConfirmed(server, runId, now);
             }
+            // Mastery (P31): floor timing, cycle clears, run endings. Never allowed to disturb the run it is watching.
+            com.cobbletowers.mastery.MasteryService.onTransition(server, runId, move.from(), move.next().state(), now);
             // TDS #60/section 11: what a transition costs end to end, including the revival,
             // reward-bank and draft side effects above -- not only the record write.
             TowerMetrics.recordTransition(server, runId, (System.nanoTime() - started) / 1_000_000);

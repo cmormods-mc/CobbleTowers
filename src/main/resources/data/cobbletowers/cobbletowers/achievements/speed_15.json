@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "display_name": "Swift",
+  "description": "Clear a cycle in under 15 minutes of fighting time.",
+  "condition": {
+    "type": "clear",
+    "max_seconds": 900
+  }
+}

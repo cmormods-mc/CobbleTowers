@@ -56,6 +56,7 @@ public final class AscensionService {
                 forced.map(modifier -> ", forced " + modifier.id()).orElse(", with nothing left to force"));
 
         PersistedRun current = TowerRuns.get(runId).orElse(run);
+        com.cobbletowers.mastery.MasteryService.onAscensionEntered(server, current, ascension);
         for (PersistedParticipant participant : current.participants()) {
             ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
             if (player == null) continue;

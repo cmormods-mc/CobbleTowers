@@ -48,6 +48,7 @@ public final class CobbleTowers implements ModInitializer {
                 RunsCommand.register(dispatcher);
                 com.cobbletowers.command.ArmorCommand.register(dispatcher);
                 PlayCommand.register(dispatcher);
+                com.cobbletowers.command.MasteryCommand.registerAdmin(dispatcher);
                 CellsCommand.register(dispatcher);
                 DiagnosticsCommand.register(dispatcher);
                 SpikeCommand.register(dispatcher);
@@ -100,6 +101,7 @@ public final class CobbleTowers implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> com.cobbletowers.lobby.LobbyService.clear());
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> com.cobbletowers.intermission.IntermissionService.clear());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new TowerDefinitionRegistry());
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.AchievementRegistry());
         // Armor sets (P24): the items must exist before any datapack loads; what they do is data.
         com.cobbletowers.armor.ArmorSetItems.register();
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.armor.ArmorSetRegistry());
@@ -117,6 +119,7 @@ public final class CobbleTowers implements ModInitializer {
         com.cobbletowers.runtime.RunExitService.install();
         com.cobbletowers.instance.TowerDropGuard.install();
         com.cobbletowers.vendor.VendorNpc.install();
+        com.cobbletowers.mastery.MasteryService.install();
         com.cobbletowers.runtime.TowerCommandGuard.install();
         RecoverySweep.install();
         // Hands a player whatever the tower owes them the moment they are somewhere to receive it.

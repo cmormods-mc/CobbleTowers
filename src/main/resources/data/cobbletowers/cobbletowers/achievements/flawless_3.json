@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "display_name": "Untouched",
+  "description": "Clear a cycle at Ascension 3 or deeper without a faint.",
+  "condition": {
+    "type": "clear",
+    "flawless": true,
+    "min_ascension": 3
+  }
+}

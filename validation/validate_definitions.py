@@ -56,7 +56,7 @@ def supports(name: str, properties: dict) -> bool:
         return properties.get("half") == "top"
     return not any(weak in name for weak in NON_SUPPORTING)
 KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones", "boss_pools", "modifiers",
-         "reward_tables", "vendor_services", "scouting_profiles", "regional_themes")
+         "reward_tables", "vendor_services", "scouting_profiles", "regional_themes", "achievements")
 MAX_PARTY = 6
 MIN_LEVEL, MAX_LEVEL = 1, 100
 
@@ -334,6 +334,35 @@ def check_regional_themes(content: dict, problems: list[str]) -> None:
             problems.append(f"{theme_id} has a negative jersey_weight_growth_percent_per_floor")
 
 
+def check_achievements(content: dict, problems: list[str]) -> None:
+    """Mastery achievements (P31): a condition of a known shape with sensible numbers, and no two with the same name."""
+    names = {}
+    for achievement_id, achievement in content["achievements"].items():
+        for field in ("schema_version", "display_name", "condition"):
+            if field not in achievement:
+                problems.append(f"{achievement_id} is missing required field '{field}'")
+        name = achievement.get("display_name")
+        if name in names:
+            problems.append(f"{achievement_id} and {names[name]} share the display name '{name}'")
+        names[name] = achievement_id
+        condition = achievement.get("condition", {})
+        kind = condition.get("type")
+        if kind == "cycles_cleared":
+            if condition.get("count", 0) < 1:
+                problems.append(f"{achievement_id} needs a count of at least 1")
+        elif kind == "ascension_reached":
+            if condition.get("level", 0) < 1:
+                problems.append(f"{achievement_id} needs a level of at least 1")
+        elif kind == "clear":
+            for key in ("min_ascension", "max_seconds", "min_severe", "min_score"):
+                if condition.get(key, 0) < 0:
+                    problems.append(f"{achievement_id} has a negative {key}")
+        else:
+            problems.append(f"{achievement_id} has unknown condition type '{kind}'")
+    if len(content["achievements"]) > 30:
+        problems.append(f"{len(content['achievements'])} achievements are loaded; mastery levels stop at 30")
+
+
 def check_scouting_profiles(content: dict, problems: list[str]) -> None:
     """Structural checks only, the same posture as {@code check_reward_tables}."""
     for profile_id, profile in content["scouting_profiles"].items():
@@ -417,6 +446,7 @@ def main() -> None:
     check_reward_tables(content, problems)
     check_vendor_services(content, problems)
     check_scouting_profiles(content, problems)
+    check_achievements(content, problems)
     check_regional_themes(content, problems)
 
     for pool_id, pool in content["boss_pools"].items():

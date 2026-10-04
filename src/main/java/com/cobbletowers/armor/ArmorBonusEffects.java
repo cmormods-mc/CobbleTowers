@@ -87,12 +87,23 @@ public final class ArmorBonusEffects {
         // A run's CUSTOM modifiers (P29) apply on top of any armor discount.
         int percent = com.cobbletowers.runtime.TowerRuns.forPlayer(player.getUUID())
                 .map(run -> com.cobbletowers.modifier.DraftService.customs(run).vendorPricePercent()).orElse(100);
+        // And the player's own mastery of the tower they are in (P31).
+        int mastery = com.cobbletowers.mastery.MasteryService.perksInRun(player.server, player.getUUID()).vendorDiscountPercent();
+        percent = percent * (100 - mastery) / 100;
         return percent == 100 ? price : Math.max(price > 0 ? 1 : 0, (int) Math.round(price * percent / 100.0));
     }
 
     /** Raid Points to award {@code player} for a base grant of {@code base}. */
     public static int raidPoints(ServerPlayer player, int base) {
         return scale(base, WornSets.current(player).raidPointsPercent());
+    }
+
+    /** As above, for a grant earned in {@code runId}: also the player's mastery of that run's tower (P31). */
+    public static int raidPoints(ServerPlayer player, int base, java.util.UUID runId) {
+        int plain = raidPoints(player, base);
+        int bonus = com.cobbletowers.mastery.MasteryService.perksForRun(player.server, player.getUUID(), runId)
+                .raidPointsBonusPercent();
+        return bonus == 0 ? plain : plain + plain * bonus / 100;
     }
 
     /** The wearer's battle operations, ready to merge into {@code TowerBattleFx.armFloorBattle}. */

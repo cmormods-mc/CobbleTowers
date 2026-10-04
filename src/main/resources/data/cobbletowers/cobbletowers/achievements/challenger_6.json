@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "display_name": "Fearless",
+  "description": "Clear a cycle holding 6 severe modifiers.",
+  "condition": {
+    "type": "clear",
+    "min_severe": 6
+  }
+}

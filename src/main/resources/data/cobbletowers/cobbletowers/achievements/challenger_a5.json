@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "display_name": "Gauntlet Runner",
+  "description": "Clear a cycle at Ascension 5 or deeper holding 3 severe modifiers.",
+  "condition": {
+    "type": "clear",
+    "min_ascension": 5,
+    "min_severe": 3
+  }
+}

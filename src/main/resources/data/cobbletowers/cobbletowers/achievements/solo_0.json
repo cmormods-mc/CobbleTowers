@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "display_name": "Lone Wolf",
+  "description": "Clear a cycle on your own.",
+  "condition": {
+    "type": "clear",
+    "solo": true
+  }
+}
