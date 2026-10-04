@@ -42,7 +42,19 @@ ANCHORS = ("entry", "presentation", "spectator", "exit")
 # Present in the structure but nothing to stand on. Not exhaustive -- it covers what the arenas
 # actually contain, and anything else present counts as solid, which errs towards refusing an anchor
 # rather than approving one.
-NON_SUPPORTING = ("banner", "torch", "carpet", "button", "pressure_plate", "sign", "rail")
+NON_SUPPORTING = ("banner", "torch", "carpet", "button", "pressure_plate", "sign", "rail", "pane", "_wall", "fence", "trapdoor",
+                  "door", "end_rod", "chain", "leaves", "lantern", "head")
+
+
+def supports(name: str, properties: dict) -> bool:
+    """Whether a player could stand on top of this block (the runtime asks isFaceSturdy(UP))."""
+    if name == "minecraft:sea_lantern":
+        return True
+    if name.endswith("_slab"):
+        return properties.get("type") in ("top", "double")
+    if name.endswith("_stairs"):
+        return properties.get("half") == "top"
+    return not any(weak in name for weak in NON_SUPPORTING)
 KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones", "boss_pools", "modifiers",
          "reward_tables", "vendor_services", "scouting_profiles", "regional_themes")
 MAX_PARTY = 6
@@ -70,13 +82,14 @@ def read_structure(name: str):
     data = gzip.decompress(raw) if raw[:2] == b"\x1f\x8b" else raw
     _, root = Reader(data).root()
     palette = [entry["Name"] for entry in root["palette"]]
+    palette_props = [entry.get("Properties", {}) for entry in root["palette"]]
     occupied, supporting = set(), set()
     for block in root["blocks"]:
         position = tuple(block["pos"])
         if palette[block["state"]] == "minecraft:light":
             continue   # invisible and without collision: neither something to stand on nor something in the way
         occupied.add(position)
-        if not any(weak in palette[block["state"]] for weak in NON_SUPPORTING):
+        if supports(palette[block["state"]], palette_props[block["state"]]):
             supporting.add(position)
     return tuple(root["size"]), occupied, supporting
 

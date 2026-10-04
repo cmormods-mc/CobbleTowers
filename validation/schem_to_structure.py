@@ -186,9 +186,14 @@ def read_schematic(path: Path) -> dict:
 
 def blocks_from(schematic: dict) -> tuple[tuple[int, int, int], list[tuple[tuple[int, int, int], str]]]:
     width, height, length = schematic["Width"], schematic["Height"], schematic["Length"]
-    palette = schematic["Palette"]
+    # Sponge v3 nests the blocks: Blocks.Palette / Blocks.Data. v2 keeps Palette / BlockData at the top.
+    if "Blocks" in schematic:
+        palette = schematic["Blocks"]["Palette"]
+        block_data = schematic["Blocks"]["Data"]
+    else:
+        palette = schematic["Palette"]
+        block_data = schematic["BlockData"]
     by_id = {index: name for name, index in palette.items()}
-    block_data = schematic["BlockData"]
 
     placed = []
     for i, state_id in enumerate(varints(bytes(block_data))):

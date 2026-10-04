@@ -3,28 +3,30 @@
   "encounter_pool": "cobbletowers:neutral_common",
   "milestone": "boss",
   "layout": {
-    "structure": "cobbletowers:boss_arena",
+    "structure": "cobbletowers:battle_tower_neutral",
     "entry": {
-      "x": 24,
-      "y": 1,
-      "z": 6
+      "x": 45,
+      "y": 76,
+      "z": 33,
+      "yaw": 0
     },
     "presentation": {
-      "x": 24,
-      "y": 2,
-      "z": 24
+      "x": 45,
+      "y": 76,
+      "z": 51,
+      "yaw": 180
     },
     "spectator": {
-      "x": 6,
-      "y": 1,
-      "z": 24,
-      "yaw": 90
+      "x": 36,
+      "y": 76,
+      "z": 42,
+      "yaw": 270
     },
     "exit": {
-      "x": 24,
-      "y": 1,
+      "x": 54,
+      "y": 76,
       "z": 42,
-      "yaw": 180
+      "yaw": 90
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "floor": 5,
   "kind": "boss",
-  "raid_definition": "cobbleraids:lucario",
+  "raid_definition": "cobbleraids:cobalion",
   "banks_rewards": true
 }

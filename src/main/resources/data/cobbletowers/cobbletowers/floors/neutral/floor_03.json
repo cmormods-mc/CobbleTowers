@@ -2,28 +2,30 @@
   "index": 3,
   "encounter_pool": "cobbletowers:neutral_common",
   "layout": {
-    "structure": "cobbletowers:arena_floor",
+    "structure": "cobbletowers:battle_tower_neutral",
     "entry": {
-      "x": 25,
-      "y": 2,
-      "z": 6
+      "x": 45,
+      "y": 53,
+      "z": 33,
+      "yaw": 0
     },
     "presentation": {
-      "x": 25,
-      "y": 2,
-      "z": 25
+      "x": 45,
+      "y": 53,
+      "z": 51,
+      "yaw": 180
     },
     "spectator": {
-      "x": 6,
-      "y": 2,
-      "z": 25,
-      "yaw": 90
+      "x": 36,
+      "y": 53,
+      "z": 42,
+      "yaw": 270
     },
     "exit": {
-      "x": 25,
-      "y": 2,
-      "z": 44,
-      "yaw": 180
+      "x": 54,
+      "y": 53,
+      "z": 42,
+      "yaw": 90
     }
   },
   "boss_pool": "cobbletowers:neutral/early"

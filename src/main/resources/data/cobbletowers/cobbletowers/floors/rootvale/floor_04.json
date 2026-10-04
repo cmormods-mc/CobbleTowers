@@ -2,11 +2,31 @@
   "index": 4,
   "encounter_pool": "cobbletowers:rootvale_common",
   "layout": {
-    "structure": "cobbletowers:arena_floor",
-    "entry": { "x": 25, "y": 2, "z": 6 },
-    "presentation": { "x": 25, "y": 2, "z": 25 },
-    "spectator": { "x": 6, "y": 2, "z": 25, "yaw": 90 },
-    "exit": { "x": 25, "y": 2, "z": 44, "yaw": 180 }
+    "structure": "cobbletowers:battle_tower_rootvale",
+    "entry": {
+      "x": 45,
+      "y": 64,
+      "z": 33,
+      "yaw": 0
+    },
+    "presentation": {
+      "x": 45,
+      "y": 64,
+      "z": 51,
+      "yaw": 180
+    },
+    "spectator": {
+      "x": 36,
+      "y": 64,
+      "z": 42,
+      "yaw": 270
+    },
+    "exit": {
+      "x": 54,
+      "y": 64,
+      "z": 42,
+      "yaw": 90
+    }
   },
   "boss_pool": "cobbletowers:rootvale/early"
 }
