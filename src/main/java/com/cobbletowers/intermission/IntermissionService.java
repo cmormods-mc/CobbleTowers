@@ -22,7 +22,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -115,6 +118,32 @@ public final class IntermissionService {
                 + (round.counting() ? ", counting down" : "");
     }
 
+    /** A plain-words status for a player at an intermission, or null when they are not at one. */
+    public static String statusOf(ServerPlayer player) {
+        Optional<PersistedRun> found = intermissionRunOf(player);
+        if (found.isEmpty()) return null;
+        PersistedRun run = found.get();
+        String vote = run.modifiers().hasOpenDraft()
+                ? "Modifier vote still open: /tower vote <1-3>. " : "";
+        return "Floor " + run.floorIndex() + " cleared. " + vote + describe(run)
+                + ". Reopen the menu any time with /tower (or the Tower Menu key).";
+    }
+
+    /** Clickable shortcuts, so a closed menu is one click from open again. */
+    private static Component shortcuts(PersistedRun run) {
+        MutableComponent line = Component.literal("Tower: ").withStyle(ChatFormatting.GOLD);
+        line.append(button("[Open menu]", "/tower menu"));
+        int cards = run.modifiers().draft().filter(d -> !d.resolved()).map(d -> d.cards().size()).orElse(0);
+        for (int i = 1; i <= cards; i++) line.append(" ").append(button("[Vote " + i + "]", "/tower vote " + i));
+        line.append(" ").append(button("[Ready]", "/tower ready"));
+        return line;
+    }
+
+    private static Component button(String label, String command) {
+        return Component.literal(label).withStyle(style -> style.withColor(ChatFormatting.AQUA).withUnderlined(true)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command)));
+    }
+
     /** True when {@code player} is in a run that is at an intermission. */
     public static boolean isAtIntermission(ServerPlayer player) {
         return intermissionRunOf(player).isPresent();
@@ -193,6 +222,7 @@ public final class IntermissionService {
             ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
             if (player == null) continue;
             if (!message.isEmpty()) player.sendSystemMessage(Component.literal(message));
+            if (open) player.sendSystemMessage(shortcuts(run));
             send(server, run, player, message, open);
         }
     }

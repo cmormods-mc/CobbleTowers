@@ -97,7 +97,12 @@ public final class RunExitService {
             if (!inTower(player)) continue;
             boolean exempt = player.hasPermissions(2) && (player.isCreative() || player.isSpectator());
             if (ExitRules.decide(true, exempt, standingOf(player.getUUID()), now) == Verdict.LEAVE) {
-                evacuate(server, player);
+                try {
+                    evacuate(server, player);
+                } catch (RuntimeException ex) {
+                    // One player who cannot be moved must not strand everyone after them in the list.
+                    TowerLog.error("Could not send " + player.getUUID() + " out of the tower", ex);
+                }
             }
         }
         for (PersistedRun run : TowerRuns.all()) {
@@ -106,6 +111,21 @@ public final class RunExitService {
                 RunTransitionService.releaseCell(server, run, now);
             }
         }
+    }
+
+    /**
+     * {@code /tower leave} for a player stuck in the tower after their run ended: sends them home now instead of
+     * waiting for the sweep. Refuses while they still have a live place in a run.
+     *
+     * @return the sentence to show, or null when this does not apply (not in the tower)
+     */
+    public static String leaveNow(MinecraftServer server, ServerPlayer player) {
+        if (!inTower(player)) return null;
+        if (standingOf(player.getUUID()).kind() == Standing.Kind.ACTIVE) {
+            return "Your run is still going. Use the menu (/tower) to cash out, or finish the floor.";
+        }
+        evacuate(server, player);
+        return "Sent home.";
     }
 
     /**

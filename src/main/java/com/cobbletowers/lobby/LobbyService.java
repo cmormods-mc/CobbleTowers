@@ -106,7 +106,7 @@ public final class LobbyService {
 
     public static String invite(MinecraftServer server, ServerPlayer host, ServerPlayer target) {
         TowerLobby lobby = BY_HOST.get(host.getUUID());
-        if (lobby == null) return "Pick a tower first.";
+        if (lobby == null) return inRun(host.getUUID()) ? inRunMessage() : "Pick a tower first.";
         if (lobby.counting()) return "The run is already starting.";
         if (target.getUUID().equals(host.getUUID())) return "You are already on your own team.";
         if (inRun(target.getUUID())) return name(target) + " is already in a tower run.";
@@ -117,7 +117,7 @@ public final class LobbyService {
         if (result != TowerLobby.Result.OK) return name(target) + " is already invited.";
 
         target.sendSystemMessage(Component.literal(name(host) + " invited you to " + towerName(lobby.tower())
-                + ". Use /cobbletowers play accept " + name(host) + " (expires in 3 minutes)."));
+                + ". Use /tower accept " + name(host) + " (expires in 3 minutes)."));
         broadcast(server, lobby, "");
         return "Invited " + name(target) + ".";
     }
@@ -140,10 +140,25 @@ public final class LobbyService {
         return "Declined.";
     }
 
+    /**
+     * What to say to a player with no team. A team is only the waiting room: it is gone the moment the run
+     * starts, so a player already in a run must be told that, not that they have no team.
+     */
+    public static String noTeam(ServerPlayer player) {
+        return inRun(player.getUUID()) ? inRunMessage() : "You are not in a team.";
+    }
+
+    private static String inRunMessage() {
+        return "You are in a tower run already (the team waiting room closes once it starts). Use /tower to see where you are.";
+    }
+
     /** A host leaving ends the team; anyone else just steps out of it. */
     public static String leave(MinecraftServer server, ServerPlayer player) {
         Optional<TowerLobby> found = lobbyOf(player.getUUID());
-        if (found.isEmpty()) return "You are not in a team.";
+        if (found.isEmpty()) {
+            String home = com.cobbletowers.runtime.RunExitService.leaveNow(server, player);
+            return home != null ? home : noTeam(player);
+        }
         TowerLobby lobby = found.get();
         if (lobby.host().equals(player.getUUID())) {
             dissolve(server, lobby, name(player) + " ended the team.");
@@ -158,11 +173,11 @@ public final class LobbyService {
     /** The host confirms; the countdown runs and {@link #tick} launches the run when it ends. */
     public static String start(MinecraftServer server, ServerPlayer host) {
         TowerLobby lobby = BY_HOST.get(host.getUUID());
-        if (lobby == null) return "Pick a tower first.";
+        if (lobby == null) return inRun(host.getUUID()) ? inRunMessage() : "Pick a tower first.";
         if (lobby.counting()) return "The run is already starting.";
         lobby.beginCountdown(System.currentTimeMillis(), COUNTDOWN_MILLIS);
         broadcast(server, lobby, "Starting " + towerName(lobby.tower()) + " in "
-                + COUNTDOWN_MILLIS / 1000 + " seconds. Anyone may /cobbletowers play leave to drop out.");
+                + COUNTDOWN_MILLIS / 1000 + " seconds. Anyone may /tower leave to drop out.");
         return "Starting.";
     }
 
@@ -334,7 +349,7 @@ public final class LobbyService {
     /** Adds the Pokemon to the player's registration, or takes it off if it is already there. */
     public static String choose(MinecraftServer server, ServerPlayer player, UUID pokemon) {
         Optional<TowerLobby> found = lobbyOf(player.getUUID());
-        if (found.isEmpty()) return "Join or start a team first.";
+        if (found.isEmpty()) return inRun(player.getUUID()) ? inRunMessage() : "Join or start a team first.";
         TowerLobby lobby = found.get();
         if (lobby.counting()) return "The run is already starting.";
         if (!PartyStorage.snapshot(player).entries().containsKey(pokemon)) return "That Pokemon is not yours.";
@@ -357,7 +372,7 @@ public final class LobbyService {
 
     public static String clearChoice(MinecraftServer server, ServerPlayer player) {
         Optional<TowerLobby> found = lobbyOf(player.getUUID());
-        if (found.isEmpty()) return "You are not in a team.";
+        if (found.isEmpty()) return noTeam(player);
         if (found.get().counting()) return "The run is already starting.";
         found.get().setChosen(player.getUUID(), List.of());
         broadcast(server, found.get(), "");

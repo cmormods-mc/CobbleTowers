@@ -34,8 +34,12 @@ public final class CobbleTowersClient implements ClientModInitializer {
     private static final KeyMapping CYCLE_PREVIOUS = new KeyMapping("key.cobbletowers.cycle_previous",
             InputConstants.Type.KEYSYM, InputConstants.KEY_COMMA, KeyMapping.CATEGORY_MISC);
 
+    private static final KeyMapping OPEN_MENU = new KeyMapping("key.cobbletowers.open_menu",
+            InputConstants.Type.KEYSYM, InputConstants.KEY_J, KeyMapping.CATEGORY_MISC);
+
     @Override
     public void onInitializeClient() {
+        KeyBindingHelper.registerKeyBinding(OPEN_MENU);
         KeyBindingHelper.registerKeyBinding(CYCLE_NEXT);
         KeyBindingHelper.registerKeyBinding(CYCLE_PREVIOUS);
 
@@ -99,6 +103,9 @@ public final class CobbleTowersClient implements ClientModInitializer {
         // shape for a held-key-safe binding: consumeClick() only fires once per press, however long
         // the frame gap, and never double-fires a press the event system already delivered.
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while (OPEN_MENU.consumeClick()) {
+                if (client.player != null) client.player.connection.sendCommand("tower menu");
+            }
             while (CYCLE_NEXT.consumeClick()) sendCycle(true);
             while (CYCLE_PREVIOUS.consumeClick()) sendCycle(false);
         });

@@ -29,9 +29,13 @@ public final class PlayCommand {
     private PlayCommand() {}
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("cobbletowers")
+        var play = dispatcher.register(Commands.literal("cobbletowers")
                 .then(Commands.literal("play")
                         .executes(PlayCommand::open)
+                        .then(Commands.literal("menu").executes(PlayCommand::open))
+                        .then(Commands.literal("vote")
+                                .then(Commands.argument("card", IntegerArgumentType.integer(1, 9))
+                                        .executes(PlayCommand::pick)))
                         .then(Commands.literal("tower")
                                 .then(Commands.argument("tower", ResourceLocationArgument.id())
                                         .executes(PlayCommand::tower)))
@@ -67,6 +71,10 @@ public final class PlayCommand {
                         .then(Commands.literal("lobbies")
                                 .requires(source -> source.hasPermission(2))
                                 .executes(PlayCommand::lobbies))));
+        // The short form players actually type: /tower, /tower vote 2, /tower ready ...
+        dispatcher.register(Commands.literal("tower")
+                .executes(PlayCommand::open)
+                .redirect(play.getChild("play")));
     }
 
     private static int open(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -151,10 +159,12 @@ public final class PlayCommand {
 
     private static int status(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        String run = IntermissionService.statusOf(player);
+        if (run != null) return say(context, run);
         Optional<TowerLobby> lobby = LobbyService.lobbyOf(player.getUUID());
         String text = lobby.map(found -> "Team for " + found.tower() + ": " + found.team().size() + " ready, "
                 + found.pending().size() + " pending" + (found.counting() ? ", starting" : ""))
-                .orElse("You are not in a team.");
+                .orElseGet(() -> LobbyService.noTeam(player));
         return say(context, text);
     }
 

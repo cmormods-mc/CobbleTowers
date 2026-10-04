@@ -578,6 +578,10 @@ public final class TowerEncounters {
         if (origin.isEmpty()) return false;
         BlockPos where = floor.get().layout().get().presentation().in(origin.get());
 
+        // The boss fight sends out CLONES of each party (CobbleRaids), so a lead left standing from the
+        // opponent fight would be there twice. Put the real ones away first.
+        for (ServerPlayer player : standing) recallParty(player);
+
         Optional<UUID> started = TowerBossAdapter.start(
                 server, level, standing, boss.get(), where, round.runId(), round.floorIndex(),
                 DraftService.effects(run));
@@ -727,12 +731,15 @@ public final class TowerEncounters {
         TowerRuns.get(runId).ifPresent(run -> {
             for (PersistedParticipant participant : run.participants()) {
                 ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
-                if (player == null) continue;
-                for (Pokemon pokemon : Cobblemon.INSTANCE.getStorage().getParty(player)) {
-                    if (pokemon.getEntity() != null) pokemon.recall();
-                }
+                if (player != null) recallParty(player);
             }
         });
+    }
+
+    private static void recallParty(ServerPlayer player) {
+        for (Pokemon pokemon : Cobblemon.INSTANCE.getStorage().getParty(player)) {
+            if (pokemon.getEntity() != null) pokemon.recall();
+        }
     }
 
     public static int onServerStopped(MinecraftServer server) {
