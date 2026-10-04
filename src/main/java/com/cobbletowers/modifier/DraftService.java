@@ -3,6 +3,7 @@ package com.cobbletowers.modifier;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.definition.ModifierDefinition;
 import com.cobbletowers.definition.TowerContent;
+import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.encounter.EncounterSeed;
 import com.cobbletowers.persistence.PersistedDraft;
@@ -91,7 +92,13 @@ public final class DraftService {
 
     /** A run's effects, read from whatever content is loaded now. */
     public static ModifierEffects effects(PersistedRun run) {
-        return effects(TowerDefinitionRegistry.content(), run.modifiers());
+        return effects(TowerDefinitionRegistry.content(), run.modifiers()).withAscension(ascensionOf(run));
+    }
+
+    /** Which Ascension a run's current floor is in (0 for the base cycle, and for any tower that does not ascend). */
+    public static int ascensionOf(PersistedRun run) {
+        TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(run.towerId());
+        return tower == null ? 0 : tower.ascensionOf(run.floorIndex());
     }
 
     /**

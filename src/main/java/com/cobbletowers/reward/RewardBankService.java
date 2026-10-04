@@ -65,7 +65,10 @@ public final class RewardBankService {
         if (run.state() == RunState.INTERMISSION) {
             boolean banks = content.milestoneAt(run.towerId(), run.floorIndex())
                     .map(MilestoneDefinition::banksRewards)
-                    .orElse(false);
+                    .orElse(false)
+                    // The end of an Ascension cycle always banks (P30): it is where the team may cash out.
+                    || tower.ascension() && com.cobbletowers.ascension.AscensionPolicy.isCycleEnd(
+                            run.floorIndex(), tower.floorCount());
             if (!banks) return Optional.empty();
         }
         return content.rewardTable(tower.rewardTableId());
@@ -150,7 +153,8 @@ public final class RewardBankService {
         List<LedgerEntry> priced = unbanked(run);
         ModifierEffects effects = DraftService.effects(run);
         List<RewardValuation.Grant> grants = RewardValuation.value(run.seed(), priced, table.get(), effects,
-                DraftService.customs(run), id -> content.milestoneKindOf(id));
+                DraftService.customs(run), content.towers().get(run.towerId()).ascension() ? content.towers().get(run.towerId()).floorCount() : 0,
+                id -> content.milestoneKindOf(id));
         List<UUID> participants = currentParticipants(run);
 
         TowerRuns.save(server, run.banked(run.floorIndex(), key, now), true);

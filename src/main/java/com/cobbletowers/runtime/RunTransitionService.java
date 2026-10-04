@@ -196,6 +196,10 @@ public final class RunTransitionService {
             if (move.next().state().isTerminal()) {
                 releaseInstance(server, TowerRuns.get(runId).orElse(move.next()), now);
             }
+            // Crossing into a new Ascension (P30) happens as the first floor of the cycle is confirmed.
+            if (event == RunEvent.NEXT_FLOOR_CONFIRMED) {
+                com.cobbletowers.ascension.AscensionService.onFloorConfirmed(server, runId, now);
+            }
             // TDS #60/section 11: what a transition costs end to end, including the revival,
             // reward-bank and draft side effects above -- not only the record write.
             TowerMetrics.recordTransition(server, runId, (System.nanoTime() - started) / 1_000_000);

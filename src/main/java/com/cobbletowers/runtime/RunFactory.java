@@ -8,6 +8,9 @@ import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.RunModifierState;
+import com.cobbletowers.ascension.AscensionPolicy;
+import com.cobbletowers.definition.ModifierDefinition;
+import com.cobbletowers.modifier.ForcedModifiers;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -50,8 +53,26 @@ public final class RunFactory {
     public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
                                                 List<UUID> players, Map<UUID, List<UUID>> parties,
                                                 long seed, long now) {
+        return create(content, towerId, players, parties, 0, seed, now);
+    }
+
+    /**
+     * As above, starting directly at Ascension {@code ascension} (P30): the run begins on that Ascension's first floor with
+     * the modifiers Ascensions 1 through {@code ascension} would have forced already in force. Ignored (0) for a tower
+     * that does not ascend. Who may start where is the lobby's decision, not this factory's.
+     */
+    public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
+                                                List<UUID> players, Map<UUID, List<UUID>> parties,
+                                                int ascension, long seed, long now) {
         TowerDefinition tower = content.towers().get(towerId);
         if (tower == null) return Optional.empty();
+        int startAscension = tower.ascension() ? Math.max(0, ascension) : 0;
+        int startFloor = AscensionPolicy.firstFloorOf(startAscension, tower.floorCount());
+        RunModifierState startModifiers = RunModifierState.EMPTY;
+        for (ModifierDefinition forced : ForcedModifiers.drawAll(content.draftablePool(towerId, FIRST_FLOOR), List.of(),
+                seed, startAscension)) {
+            startModifiers = startModifiers.accumulating(forced.id());
+        }
 
         RulesetDefinition ruleset = content.rulesets().get(tower.rulesetId());
         String digest = content.summary(towerId).map(summary -> summary.contentDigest()).orElse("");
@@ -68,13 +89,14 @@ public final class RunFactory {
                 tower.revision(), digest, ruleset == null ? 0 : ruleset.revision(),
                 // No structures exist yet; the field is versioned independently so P4 can fill it
                 // without touching the rest of the schema.
-                0, seed, FIRST_FLOOR, RunState.CREATED, participants, Optional.empty(), List.of(), now,
+                0, seed, startFloor, RunState.CREATED, participants, Optional.empty(), List.of(), now,
                 // No cell until the run reaches ALLOCATING_INSTANCE and one is leased to it.
                 OptionalInt.empty(),
                 // Nothing earned yet; the pool fills as floors are cleared and is banked at cash-out.
                 List.of(),
-                // Nothing drafted yet; the first draft opens at the first intermission.
-                RunModifierState.EMPTY,
+                // Nothing drafted yet (the first draft opens at the first intermission); a direct start at an
+                // Ascension begins with the modifiers its earlier Ascensions forced.
+                startModifiers,
                 // Nothing banked yet.
                 0,
                 // Nothing bought yet; the vendor did not exist before this run's floor is reached.

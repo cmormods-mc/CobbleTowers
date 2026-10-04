@@ -75,7 +75,7 @@ public final class IntermissionService {
                     player.displayClientMessage(Component.literal("Field Hospital: your party is fully healed."), true);
                 }
             }
-            broadcast(server, run, "", true);
+            broadcast(server, run, cycleEndMessage(run), true);
         });
     }
 
@@ -226,6 +226,18 @@ public final class IntermissionService {
             ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
             if (player != null) player.sendSystemMessage(Component.literal(message));
         }
+    }
+
+    /**
+     * At the end of an Ascension cycle (P30) the intermission is the decision point: say so, once, on arrival. Empty at
+     * every other intermission, and for a tower that does not ascend.
+     */
+    static String cycleEndMessage(PersistedRun run) {
+        var tower = com.cobbletowers.definition.TowerDefinitionRegistry.content().towers().get(run.towerId());
+        if (tower == null || !tower.ascension()
+                || !com.cobbletowers.ascension.AscensionPolicy.isCycleEnd(run.floorIndex(), tower.floorCount())) return "";
+        int next = tower.ascensionOf(run.floorIndex()) + 1;
+        return "Cycle complete! Cash out now, or ready up to ascend to Ascension " + next + ": harder enemies, better rewards.";
     }
 
     private static void broadcast(MinecraftServer server, PersistedRun run, String message, boolean open) {

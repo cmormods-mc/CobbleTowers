@@ -44,6 +44,8 @@ public final class TowerLobby {
     private ResourceLocation tower;
     private final Map<UUID, Member> members = new LinkedHashMap<>();
     private long countdownEndsAt = -1;
+    /** The Ascension the team will start at (P30); 0 is the ordinary start. */
+    private int ascension;
     /** Pokemon each player chose to register (P18). Absent or empty means "my current party". */
     private final Map<UUID, List<UUID>> chosen = new LinkedHashMap<>();
 
@@ -60,8 +62,19 @@ public final class TowerLobby {
         return tower;
     }
 
+    public int ascension() {
+        return ascension;
+    }
+
+    public void setAscension(int next) {
+        this.ascension = Math.max(0, next);
+        cancelCountdown();
+    }
+
     public void selectTower(ResourceLocation next) {
         this.tower = next;
+        // Records are per tower, so the Ascension chosen for the old one means nothing for the new one.
+        this.ascension = 0;
         // A different tower is a different offer: anyone who already accepted agreed to the old one.
         members.replaceAll((id, member) -> new Member(Response.INVITED, member.invitedAt()));
         cancelCountdown();

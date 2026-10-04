@@ -88,6 +88,18 @@ public record ModifierEffects(
                 banned, switching, items, weather, terrain, scoutingBonus);
     }
 
+    /**
+     * These effects with Ascension {@code ascension}'s growth on top (P30): extra opponents, a bigger boss pool and a
+     * better reward factor, each from {@link com.cobbletowers.ascension.AscensionPolicy}. The base cycle changes nothing.
+     */
+    public ModifierEffects withAscension(int ascension) {
+        if (ascension <= 0) return this;
+        return new ModifierEffects(levelOffset, extraOpponents + com.cobbletowers.ascension.AscensionPolicy.extraOpponents(ascension),
+                bossLevelOffset, bossHealthPercent * com.cobbletowers.ascension.AscensionPolicy.bossHealthPercent(ascension) / 100,
+                rewardPercent * com.cobbletowers.ascension.AscensionPolicy.rewardPercent(ascension) / 100,
+                bannedMoves, switchingAllowed, itemsAllowed, weather, terrain, scoutingBonus);
+    }
+
     /** Whether anything here changes how the boss battle itself is fought. */
     public boolean changesBattleRules() {
         return !bannedMoves.isEmpty() || !switchingAllowed || !itemsAllowed

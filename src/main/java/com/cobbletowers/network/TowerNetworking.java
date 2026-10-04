@@ -98,6 +98,7 @@ public final class TowerNetworking {
                 }
                 case TOGGLE_POKEMON -> LobbyService.choose(server, player, java.util.UUID.fromString(payload.argument()));
                 case CLEAR_CHOICE -> LobbyService.clearChoice(server, player);
+                case SET_ASCENSION -> LobbyService.setAscension(server, player, Integer.parseInt(payload.argument()));
             };
         } catch (RuntimeException ex) {
             // A malformed id or similar from a modified client: refused, never trusted, never fatal.

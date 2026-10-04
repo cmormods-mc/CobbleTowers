@@ -71,6 +71,19 @@ public final class PlayScreen extends Screen {
             inviteName = null;
         }
 
+        // Ascension (P30): the host cycles through the depths the whole team has reached; 0 is the ordinary start.
+        PlayStatePayload.Depth depth = lobby.depth();
+        if (lobby.role() == 1 && depth.offered()) {
+            int next = depth.chosen() >= depth.max() ? 0 : depth.chosen() + 1;
+            Button ascend = Button.builder(Component.literal("Start at: " + (depth.chosen() == 0
+                            ? "Floor 1" : "Ascension " + depth.chosen()) + (depth.max() > 0 ? "" : " (none reached)")),
+                    button -> send(PlayActionPayload.Action.SET_ASCENSION, Integer.toString(next)))
+                    .pos(left, y).size(200, 20).build();
+            ascend.active = depth.max() > 0 && lobby.countdown() < 0;
+            addRenderableWidget(ascend);
+            y += 24;
+        }
+
         if (lobby.role() == 2) {
             addRenderableWidget(Button.builder(Component.literal("Accept"),
                             b -> send(PlayActionPayload.Action.ACCEPT, lobby.hostName()))

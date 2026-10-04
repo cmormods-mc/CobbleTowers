@@ -604,7 +604,9 @@ public final class TowerEncounters {
     private static boolean isFinalFloor(UUID runId, int floorIndex) {
         return TowerRuns.get(runId)
                 .map(run -> TowerDefinitionRegistry.content().towers().get(run.towerId()))
-                .map(tower -> floorIndex >= tower.floorCount())
+                // A tower that ascends (P30) has no last floor: a cycle's end is an intermission where the team
+                // chooses to cash out or go on, not the end of the run.
+                .map(tower -> !tower.ascension() && floorIndex >= tower.floorCount())
                 .orElse(false);
     }
 

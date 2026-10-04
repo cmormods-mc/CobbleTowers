@@ -102,9 +102,22 @@ public final class ArmorBonusEffects {
 
     /** The armor's operations plus the run's CUSTOM modifiers' (P29), for a battle in {@code runId}. */
     public static JsonArray battleEffects(ServerPlayer player, java.util.UUID runId) {
+        return battleEffects(player, runId, true);
+    }
+
+    /**
+     * As above, and the run's Ascension (P30) on top: the player's matching boon always, the enemy's growth only when
+     * {@code enemyScaling} is set. A boss battle merges every player's operations, so it asks for the enemy's from one
+     * player only; otherwise the boss would be raised once per teammate.
+     */
+    public static JsonArray battleEffects(ServerPlayer player, java.util.UUID runId, boolean enemyScaling) {
         JsonArray ops = battleEffects(player);
-        com.cobbletowers.runtime.TowerRuns.get(runId)
-                .ifPresent(run -> com.cobbletowers.modifier.DraftService.customs(run).battleOps().forEach(ops::add));
+        com.cobbletowers.runtime.TowerRuns.get(runId).ifPresent(run -> {
+            com.cobbletowers.modifier.DraftService.customs(run).battleOps().forEach(ops::add);
+            int ascension = com.cobbletowers.modifier.DraftService.ascensionOf(run);
+            com.cobbletowers.ascension.AscensionFx.boon(ascension).forEach(ops::add);
+            if (enemyScaling) com.cobbletowers.ascension.AscensionFx.enemy(ascension).forEach(ops::add);
+        });
         return ops;
     }
 }

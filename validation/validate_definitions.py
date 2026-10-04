@@ -370,6 +370,8 @@ def main() -> None:
             problems.append(f"{tower_id} names ruleset {tower.get('ruleset')}, which does not exist")
         if tower.get("reward_table") not in content["reward_tables"]:
             problems.append(f"{tower_id} names reward table {tower.get('reward_table')}, which does not exist")
+        if "ascension" in tower and not isinstance(tower["ascension"], bool):
+            problems.append(f"{tower_id} has ascension {tower['ascension']!r}; it must be true or false")
         regional_theme = tower.get("regional_theme")
         if regional_theme is not None and regional_theme not in content["regional_themes"]:
             problems.append(f"{tower_id} names regional theme {regional_theme}, which does not exist")

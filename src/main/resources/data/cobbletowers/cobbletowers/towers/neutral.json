@@ -19,5 +19,6 @@
   "milestones": [
     "cobbletowers:neutral/boss_05",
     "cobbletowers:neutral/champion_10"
-  ]
+  ],
+  "ascension": true
 }

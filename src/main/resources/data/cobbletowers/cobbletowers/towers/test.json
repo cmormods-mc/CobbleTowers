@@ -10,5 +10,6 @@
     "cobbletowers:test/floor_03",
     "cobbletowers:test/floor_04"
   ],
-  "milestones": []
+  "milestones": [],
+  "ascension": true
 }

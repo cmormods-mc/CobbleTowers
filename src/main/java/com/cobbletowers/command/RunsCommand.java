@@ -373,6 +373,11 @@ public final class RunsCommand {
             source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT, "    %s floor %d %s",
                     entry.kind(), entry.floorIndex(), entry.what())), false);
         }
+        var tower = TowerDefinitionRegistry.content().towers().get(run.towerId());
+        if (tower != null && tower.ascension()) {
+            source.sendSuccess(() -> Component.literal("  ascension " + tower.ascensionOf(run.floorIndex())
+                    + " (tower floor " + tower.contentFloor(run.floorIndex()) + " of " + tower.floorCount() + ")"), false);
+        }
         // TDS #60: state, modifiers, seed and last transition, all keyed by run.
         ModifierEffects effects = DraftService.effects(run);
         source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,

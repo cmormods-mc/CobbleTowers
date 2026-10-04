@@ -19,6 +19,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param floorIds     every floor, in play order
  * @param milestoneIds milestone definitions this tower uses; their floor indices must exist
  * @param regionalTheme reserved for P10; parsed and carried, never resolved here
+ * @param ascension    whether the tower continues past its last floor into harder cycles (P30) instead of ending there
  * @param scoutingProfile which reveal-threshold profile (P12) gates opponent info for this tower;
  *                        empty means everything reveals naturally (TDS #49's baseline)
  */
@@ -32,7 +33,17 @@ public record TowerDefinition(
         List<ResourceLocation> floorIds,
         List<ResourceLocation> milestoneIds,
         Optional<ResourceLocation> regionalTheme,
-        Optional<ResourceLocation> scoutingProfile) {
+        Optional<ResourceLocation> scoutingProfile,
+        boolean ascension) {
+
+    /** A tower that ends at its last floor, which is what every tower was before P30. */
+    public TowerDefinition(ResourceLocation id, String displayName, int schemaVersion, int revision,
+                           ResourceLocation rulesetId, ResourceLocation rewardTableId, List<ResourceLocation> floorIds,
+                           List<ResourceLocation> milestoneIds, Optional<ResourceLocation> regionalTheme,
+                           Optional<ResourceLocation> scoutingProfile) {
+        this(id, displayName, schemaVersion, revision, rulesetId, rewardTableId, floorIds, milestoneIds, regionalTheme,
+                scoutingProfile, false);
+    }
 
     /** The only shape this build understands. A newer file is skipped with a message, not guessed at. */
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
@@ -66,6 +77,19 @@ public record TowerDefinition(
         return floorIds.size();
     }
 
+    /**
+     * The floor of the tower a run floor is, for looking content up. Run floors past the last one are later cycles of an
+     * ascending tower; for any other tower there is nothing past the last floor, so the number is returned as it is.
+     */
+    public int contentFloor(int runFloor) {
+        return ascension ? com.cobbletowers.ascension.AscensionPolicy.towerFloorOf(runFloor, floorCount()) : runFloor;
+    }
+
+    /** Which cycle a run floor is in (0 is the base cycle); always 0 for a tower that does not ascend. */
+    public int ascensionOf(int runFloor) {
+        return ascension ? com.cobbletowers.ascension.AscensionPolicy.ascensionOf(runFloor, floorCount()) : 0;
+    }
+
     public static TowerDefinition fromJson(ResourceLocation id, JsonObject root) {
         return new TowerDefinition(
                 id,
@@ -77,6 +101,7 @@ public record TowerDefinition(
                 TowerJson.requireIds(root, "floors"),
                 TowerJson.ids(root, "milestones"),
                 TowerJson.optionalId(root, "regional_theme"),
-                TowerJson.optionalId(root, "scouting_profile"));
+                TowerJson.optionalId(root, "scouting_profile"),
+                TowerJson.bool(root, "ascension", false));
     }
 }

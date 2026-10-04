@@ -40,17 +40,35 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
      * @param selected  the lobby's tower id, or empty when there is no lobby
      * @param countdown whole seconds until the run starts, or -1
      */
-    public record Lobby(int role, String selected, String hostName, List<Member> members, int countdown) {
+    /**
+     * The Ascension (P30) the lobby will start at, and the deepest the whole team may choose.
+     *
+     * @param offered whether the selected tower ascends at all; when false the picker is not shown
+     */
+    public record Depth(int chosen, int max, boolean offered) {
+        static final StreamCodec<RegistryFriendlyByteBuf, Depth> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, Depth::chosen,
+                ByteBufCodecs.VAR_INT, Depth::max,
+                ByteBufCodecs.BOOL, Depth::offered,
+                Depth::new);
+
+        public static Depth none() {
+            return new Depth(0, 0, false);
+        }
+    }
+
+    public record Lobby(int role, String selected, String hostName, List<Member> members, int countdown, Depth depth) {
         static final StreamCodec<RegistryFriendlyByteBuf, Lobby> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.VAR_INT, Lobby::role,
                 ByteBufCodecs.STRING_UTF8, Lobby::selected,
                 ByteBufCodecs.STRING_UTF8, Lobby::hostName,
                 Member.STREAM_CODEC.apply(ByteBufCodecs.list()), Lobby::members,
                 ByteBufCodecs.VAR_INT, Lobby::countdown,
+                Depth.STREAM_CODEC, Lobby::depth,
                 Lobby::new);
 
         public static Lobby none() {
-            return new Lobby(0, "", "", List.of(), -1);
+            return new Lobby(0, "", "", List.of(), -1, Depth.none());
         }
     }
 

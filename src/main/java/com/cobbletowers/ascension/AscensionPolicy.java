@@ -1,0 +1,91 @@
+package com.cobbletowers.ascension;
+
+/**
+ * Everything Ascension (P30) decides, in one pure place -- the way {@code TowerLevelPolicy} is the one place level maths
+ * lives (TDS #45). Nothing here knows a server, a registry or a Pokemon.
+ *
+ * <p>A run's {@code floorIndex} keeps counting up past the tower's last floor. The <b>Ascension</b> is how many full
+ * cycles are behind it, and the <b>tower floor</b> is where in the cycle it is, which is what every content lookup (the
+ * floor's building, its milestone, its pools) uses. So floor 11 of a ten-floor tower is Ascension 1, tower floor 1.
+ *
+ * <p>Growth is first-guess constants, named so tuning is one edit. Reward growth is bounded (TDS #9); the rest is
+ * deliberately not, because it is what keeps an endless mode hard.
+ */
+public final class AscensionPolicy {
+
+    /** Added to every boss's health, in percent, per Ascension. */
+    public static final int BOSS_HEALTH_PERCENT_PER_ASCENSION = 12;
+    /** One extra opponent per this many Ascensions... */
+    public static final int ASCENSIONS_PER_EXTRA_OPPONENT = 3;
+    /** ...up to this many. */
+    public static final int MAX_EXTRA_OPPONENTS = 3;
+    /** The reward multiplier approaches 100 + this percent and never reaches it. */
+    public static final int REWARD_BONUS_CEILING_PERCENT = 150;
+    /** Each Ascension closes this much less of the remaining gap to the ceiling, in percent (diminishing returns). */
+    public static final int REWARD_RETAINED_GAP_PERCENT = 85;
+    /** EVs added to every stat of every enemy, per Ascension (applied in-battle; see tower-fx.js). */
+    public static final int ENEMY_EVS_PER_ASCENSION = 20;
+    /** One {@code evs} operation never carries more than this (the operation's own limit). */
+    public static final int MAX_EVS_PER_OPERATION = 2000;
+    /** The matching player boon, as a percentage of the enemy's. */
+    public static final int BOON_PERCENT_OF_ENEMY = 50;
+    /** Past this the arithmetic stops changing anything; it also keeps every loop and product small. */
+    private static final int MAX_ASCENSION = 1000;
+
+    private AscensionPolicy() {}
+
+    /** Full cycles completed before this floor; 0 is the base cycle. {@code floorIndex} is 1-based. */
+    public static int ascensionOf(int floorIndex, int floorCount) {
+        if (floorCount < 1 || floorIndex < 1) return 0;
+        return Math.min(MAX_ASCENSION, (floorIndex - 1) / floorCount);
+    }
+
+    /** Where in its cycle a floor is, 1-based; the number content is looked up by. */
+    public static int towerFloorOf(int floorIndex, int floorCount) {
+        if (floorCount < 1 || floorIndex < 1) return floorIndex;
+        return (floorIndex - 1) % floorCount + 1;
+    }
+
+    /** Whether clearing this floor ends a cycle. */
+    public static boolean isCycleEnd(int floorIndex, int floorCount) {
+        return floorCount >= 1 && floorIndex >= 1 && floorIndex % floorCount == 0;
+    }
+
+    /** The run floor an Ascension begins on. */
+    public static int firstFloorOf(int ascension, int floorCount) {
+        return Math.max(0, ascension) * Math.max(1, floorCount) + 1;
+    }
+
+    /** The boss-health factor, in percent of the base (100 = unchanged). */
+    public static int bossHealthPercent(int ascension) {
+        return 100 + BOSS_HEALTH_PERCENT_PER_ASCENSION * clamp(ascension);
+    }
+
+    public static int extraOpponents(int ascension) {
+        return Math.min(MAX_EXTRA_OPPONENTS, clamp(ascension) / ASCENSIONS_PER_EXTRA_OPPONENT);
+    }
+
+    /**
+     * The reward factor, in percent: 100 at the base cycle, rising with shrinking steps towards
+     * {@code 100 + REWARD_BONUS_CEILING_PERCENT}. Integer arithmetic only, so every server computes the same number.
+     */
+    public static int rewardPercent(int ascension) {
+        long gap = 10_000;   // what is left of the distance to the ceiling, in hundredths of a percent
+        for (int i = 0; i < clamp(ascension) && gap > 0; i++) gap = gap * REWARD_RETAINED_GAP_PERCENT / 100;
+        return 100 + (int) (REWARD_BONUS_CEILING_PERCENT * (10_000 - gap) / 10_000);
+    }
+
+    /** EVs the enemy gets in each stat, as one operation's worth. */
+    public static int enemyEvs(int ascension) {
+        return Math.min(MAX_EVS_PER_OPERATION, ENEMY_EVS_PER_ASCENSION * clamp(ascension));
+    }
+
+    /** The matching player boon: a fixed share of the enemy's. */
+    public static int boonEvs(int ascension) {
+        return enemyEvs(ascension) * BOON_PERCENT_OF_ENEMY / 100;
+    }
+
+    private static int clamp(int ascension) {
+        return Math.max(0, Math.min(MAX_ASCENSION, ascension));
+    }
+}

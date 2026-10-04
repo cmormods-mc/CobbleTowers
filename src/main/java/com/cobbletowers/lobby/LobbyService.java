@@ -177,6 +177,36 @@ public final class LobbyService {
     }
 
     /** The host confirms; the countdown runs and {@link #tick} launches the run when it ends. */
+    /**
+     * The deepest Ascension the whole team may start at (P30): the lowest record on the team, since nobody should be thrown
+     * into depth they have not earned.
+     */
+    public static int maxAscension(MinecraftServer server, TowerLobby lobby) {
+        TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(lobby.tower());
+        if (tower == null || !tower.ascension()) return 0;
+        com.cobbletowers.persistence.TowerAscensionStore records = com.cobbletowers.persistence.TowerAscensionStore.get(server);
+        int deepest = Integer.MAX_VALUE;
+        for (UUID id : lobby.team()) deepest = Math.min(deepest, records.recordOf(id, lobby.tower()));
+        return deepest == Integer.MAX_VALUE ? 0 : deepest;
+    }
+
+    /** The host chooses the Ascension the team starts at, up to what every member has reached. */
+    public static String setAscension(MinecraftServer server, ServerPlayer player, int level) {
+        TowerLobby lobby = BY_HOST.get(player.getUUID());
+        if (lobby == null) return lobbyOf(player.getUUID()).isPresent() ? "Only the host can choose the Ascension."
+                : "Pick a tower first.";
+        if (lobby.counting()) return "The run is already starting.";
+        TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(lobby.tower());
+        if (tower == null || !tower.ascension()) return towerName(lobby.tower()) + " does not ascend.";
+        int max = maxAscension(server, lobby);
+        if (level > max) {
+            return "Your team can start at Ascension " + max + " at most (a start needs everyone to have reached it).";
+        }
+        lobby.setAscension(level);
+        broadcast(server, lobby, "");
+        return level == 0 ? "Starting from the first floor." : "Starting at Ascension " + level + ".";
+    }
+
     public static String start(MinecraftServer server, ServerPlayer host) {
         TowerLobby lobby = BY_HOST.get(host.getUUID());
         if (lobby == null) return inRun(host.getUUID()) ? inRunMessage() : "Pick a tower first.";
@@ -268,13 +298,24 @@ public final class LobbyService {
             players.add(id);
             parties.put(id, checked.registered());
         }
+        // Re-checked at the start: someone who accepted after the host chose may not have reached it.
+        int startAt = lobby.ascension();
+        if (startAt > 0) {
+            com.cobbletowers.persistence.TowerAscensionStore records = com.cobbletowers.persistence.TowerAscensionStore.get(server);
+            for (UUID id : players) {
+                if (records.recordOf(id, lobby.tower()) < startAt) {
+                    ServerPlayer shallow = server.getPlayerList().getPlayer(id);
+                    problems.add((shallow == null ? "A teammate" : name(shallow)) + " has not reached Ascension " + startAt);
+                }
+            }
+        }
         if (!problems.isEmpty()) {
             broadcast(server, lobby, "Cannot start: " + String.join("; ", problems));
             return;
         }
 
         long seed = server.overworld().getRandom().nextLong();
-        Optional<PersistedRun> created = RunFactory.create(content, lobby.tower(), players, parties, seed, now);
+        Optional<PersistedRun> created = RunFactory.create(content, lobby.tower(), players, parties, startAt, seed, now);
         if (created.isEmpty()) {
             broadcast(server, lobby, "That tower is no longer available.");
             return;
@@ -468,6 +509,7 @@ public final class LobbyService {
         String hostName = "";
         List<PlayStatePayload.Member> members = new ArrayList<>();
         int countdown = -1;
+        PlayStatePayload.Depth depth = PlayStatePayload.Depth.none();
         if (lobby != null) {
             long now = System.currentTimeMillis();
             selected = lobby.tower().toString();
@@ -482,9 +524,11 @@ public final class LobbyService {
                 members.add(new PlayStatePayload.Member(label, lobby.responseOf(id).orElse(null) == TowerLobby.Response.ACCEPTED));
             }
             countdown = lobby.secondsLeft(now);
+            TowerDefinition chosen = content.towers().get(lobby.tower());
+            depth = new PlayStatePayload.Depth(lobby.ascension(), maxAscension(server, lobby), chosen != null && chosen.ascension());
         }
         TowerNetworking.sendPlayState(player, new PlayStatePayload(towers,
-                new PlayStatePayload.Lobby(role, selected, hostName, members, countdown), levels, message, open));
+                new PlayStatePayload.Lobby(role, selected, hostName, members, countdown, depth), levels, message, open));
     }
 
     // ---- helpers -------------------------------------------------------------------------------

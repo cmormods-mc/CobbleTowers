@@ -238,9 +238,11 @@ public record TowerContent(
     public Optional<FloorDefinition> floorAt(ResourceLocation towerId, int index) {
         TowerDefinition tower = towers.get(towerId);
         if (tower == null) return Optional.empty();
+        // A floor past the last is a later cycle of an ascending tower (P30): the same floor as ever, harder.
+        int contentIndex = tower.contentFloor(index);
         for (ResourceLocation floorId : tower.floorIds()) {
             FloorDefinition floor = floors.get(floorId);
-            if (floor != null && floor.index() == index) return Optional.of(floor);
+            if (floor != null && floor.index() == contentIndex) return Optional.of(floor);
         }
         return Optional.empty();
     }
@@ -312,7 +314,7 @@ public record TowerContent(
         if (tower == null) return Optional.empty();
         for (ResourceLocation milestoneId : tower.milestoneIds()) {
             MilestoneDefinition milestone = milestones.get(milestoneId);
-            if (milestone != null && milestone.floorIndex() == floorIndex) return Optional.of(milestone);
+            if (milestone != null && milestone.floorIndex() == tower.contentFloor(floorIndex)) return Optional.of(milestone);
         }
         return Optional.empty();
     }

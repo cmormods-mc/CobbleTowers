@@ -39,6 +39,9 @@ public final class PlayCommand {
                         .then(Commands.literal("tower")
                                 .then(Commands.argument("tower", ResourceLocationArgument.id())
                                         .executes(PlayCommand::tower)))
+                        .then(Commands.literal("ascension")
+                                .then(Commands.argument("level", IntegerArgumentType.integer(0, 1000))
+                                        .executes(PlayCommand::ascension)))
                         .then(Commands.literal("invite")
                                 .then(Commands.argument("player", EntityArgument.player())
                                         .executes(PlayCommand::invite)))
@@ -91,6 +94,11 @@ public final class PlayCommand {
     private static int tower(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         return say(context, LobbyService.select(context.getSource().getServer(),
                 context.getSource().getPlayerOrException(), ResourceLocationArgument.getId(context, "tower")));
+    }
+
+    private static int ascension(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        return say(context, LobbyService.setAscension(context.getSource().getServer(),
+                context.getSource().getPlayerOrException(), IntegerArgumentType.getInteger(context, "level")));
     }
 
     private static int invite(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

@@ -21,5 +21,6 @@
   "milestones": [
     "cobbletowers:tideforge/boss_05",
     "cobbletowers:tideforge/champion_10"
-  ]
+  ],
+  "ascension": true
 }

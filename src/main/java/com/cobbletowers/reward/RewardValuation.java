@@ -70,12 +70,24 @@ public final class RewardValuation {
     public static List<Grant> value(long runSeed, List<LedgerEntry> priced, RewardTableDefinition table,
                                     ModifierEffects effects, com.cobbletowers.modifier.CustomEffects customs,
                                     java.util.function.Function<ResourceLocation, Optional<MilestoneKind>> milestoneKinds) {
+        return value(runSeed, priced, table, effects, customs, 0, milestoneKinds);
+    }
+
+    /**
+     * As above, for a tower that cycles (P30): {@code cycleLength} is its floor count, and a floor's growth is counted
+     * within its own cycle, so a floor-31 reward does not grow the table three times over. What rises with depth is the
+     * Ascension reward factor in {@code effects}, which is bounded. Zero means the tower does not cycle.
+     */
+    public static List<Grant> value(long runSeed, List<LedgerEntry> priced, RewardTableDefinition table,
+                                    ModifierEffects effects, com.cobbletowers.modifier.CustomEffects customs,
+                                    int cycleLength,
+                                    java.util.function.Function<ResourceLocation, Optional<MilestoneKind>> milestoneKinds) {
         List<Grant> grants = new ArrayList<>();
         int n = 0;
         for (LedgerEntry entry : priced) {
             n++;
             if (entry.kind() == LedgerEntry.Kind.MILESTONE_CLEARED) {
-                addMilestone(grants, runSeed, entry, n, table, effects, customs, milestoneKinds);
+                addMilestone(grants, runSeed, entry, n, table, effects, customs, cycleLength, milestoneKinds);
                 continue;
             }
             Optional<RewardKind> kind = toRewardKind(entry.kind());
@@ -85,7 +97,7 @@ public final class RewardValuation {
 
             RewardTableDefinition.Entry rolled = RewardDraw.pickItem(runSeed, entry.floorIndex(), n, pool);
             int amount = RewardDraw.rollAmount(runSeed, entry.floorIndex(), n, rolled.minAmount(), rolled.maxAmount());
-            int grown = amount + amount * table.growthPercentPerFloor() * entry.floorIndex() / 100;
+            int grown = amount + amount * table.growthPercentPerFloor() * growthFloor(entry.floorIndex(), cycleLength) / 100;
             int worth = effects.applyReward(grown) * customs.rewardPercent(runSeed, entry.floorIndex(), n) / 100;
             if (worth > 0) grants.add(new Grant(rolled.item(), worth));
         }
@@ -95,7 +107,7 @@ public final class RewardValuation {
     /** The guaranteed items, each to everybody in full, then the bonus rolls valued like any other grant. */
     private static void addMilestone(List<Grant> grants, long runSeed, LedgerEntry entry, int n,
                                      RewardTableDefinition table, ModifierEffects effects,
-                                     com.cobbletowers.modifier.CustomEffects customs,
+                                     com.cobbletowers.modifier.CustomEffects customs, int cycleLength,
                                      java.util.function.Function<ResourceLocation, Optional<MilestoneKind>> milestoneKinds) {
         Optional<RewardTableDefinition.MilestoneReward> reward =
                 milestoneKinds.apply(entry.what()).flatMap(table::milestoneReward);
@@ -110,10 +122,15 @@ public final class RewardValuation {
             RewardTableDefinition.Entry rolled = RewardDraw.pickItem(runSeed, entry.floorIndex(), ordinal,
                     reward.get().bonusPool());
             int amount = RewardDraw.rollAmount(runSeed, entry.floorIndex(), ordinal, rolled.minAmount(), rolled.maxAmount());
-            int grown = amount + amount * table.growthPercentPerFloor() * entry.floorIndex() / 100;
+            int grown = amount + amount * table.growthPercentPerFloor() * growthFloor(entry.floorIndex(), cycleLength) / 100;
             int worth = effects.applyReward(grown) * customs.rewardPercent(runSeed, entry.floorIndex(), ordinal) / 100;
             if (worth > 0) grants.add(new Grant(rolled.item(), worth));
         }
+    }
+
+    /** The floor a reward's growth is counted from: its place in its own cycle, or the floor itself when nothing cycles. */
+    private static int growthFloor(int floorIndex, int cycleLength) {
+        return cycleLength > 0 ? com.cobbletowers.ascension.AscensionPolicy.towerFloorOf(floorIndex, cycleLength) : floorIndex;
     }
 
     private static Optional<RewardKind> toRewardKind(LedgerEntry.Kind kind) {
