@@ -53,6 +53,13 @@ public final class TowerTrialStore extends SavedData {
         return known == null ? Optional.empty() : Optional.ofNullable(known.attempts.get(instanceId));
     }
 
+    /** Every attempt of every player, for the operator's tuning report. */
+    public List<Attempt> allAttempts() {
+        List<Attempt> all = new java.util.ArrayList<>();
+        for (Player player : players.values()) all.addAll(player.attempts.values());
+        return all;
+    }
+
     /** Records that a scored run has begun. Returns false if the player already had an attempt (nothing changes). */
     public boolean recordLaunch(UUID player, String instanceId, UUID runId) {
         Player entry = players.computeIfAbsent(player, id -> new Player());

@@ -71,6 +71,7 @@ public final class MasteryCommand {
                                 .then(Commands.argument("player", EntityArgument.player())
                                         .then(Commands.argument("tower", ResourceLocationArgument.id())
                                                 .executes(MasteryCommand::reset))))
+                        .then(Commands.literal("report").executes(MasteryCommand::report))
                         .then(Commands.literal("clearboards").executes(MasteryCommand::clearBoards))));
     }
 
@@ -188,6 +189,33 @@ public final class MasteryCommand {
         store.reset(player.getUUID(), tower);
         store.checkpoint(source.getServer());
         source.sendSuccess(() -> Component.literal("Reset " + player.getGameProfile().getName() + "'s mastery of " + tower), true);
+        return 1;
+    }
+
+    /** The tuning report: what the collected numbers say about the thresholds we guessed (see {@code TuningReport}). */
+    private static int report(CommandContext<CommandSourceStack> context) {
+        net.minecraft.server.MinecraftServer server = context.getSource().getServer();
+        List<com.cobbletowers.mastery.TuningReport.Standing> standings = new java.util.ArrayList<>();
+        TowerMasteryStore.get(server).all().forEach((player, byTower) -> byTower.forEach((tower, progress) ->
+                standings.add(new com.cobbletowers.mastery.TuningReport.Standing(player, tower, progress.cyclesCleared(),
+                        progress.ascensionReached(), progress.unlocked().keySet()))));
+        List<com.cobbletowers.mastery.TuningReport.Achievement> achievements = new java.util.ArrayList<>();
+        for (com.cobbletowers.definition.AchievementDefinition achievement : com.cobbletowers.definition.AchievementRegistry.all()) {
+            achievements.add(new com.cobbletowers.mastery.TuningReport.Achievement(achievement.id(), achievement.displayName()));
+        }
+        List<com.cobbletowers.mastery.TuningReport.TrialAttempt> attempts = new java.util.ArrayList<>();
+        for (com.cobbletowers.persistence.TowerTrialStore.Attempt attempt : com.cobbletowers.persistence.TowerTrialStore.get(server).allAttempts()) {
+            attempts.add(new com.cobbletowers.mastery.TuningReport.TrialAttempt(attempt.instanceId(), attempt.finished(), attempt.score(),
+                    attempt.floorsCleared()));
+        }
+        List<com.cobbletowers.mastery.TuningReport.Board> boards = new java.util.ArrayList<>();
+        com.cobbletowers.persistence.TowerLeaderboardStore.get(server).all().forEach((key, entries) -> boards.add(
+                new com.cobbletowers.mastery.TuningReport.Board(key.board().title() + " / " + key.tower().getPath() + " / " + key.mode()
+                        + (key.playlist().isEmpty() ? "" : " / " + key.playlist()), key.board().lowerIsBetter(),
+                        entries.stream().map(com.cobbletowers.mastery.LeaderboardRules.Entry::value).toList())));
+        for (String line : com.cobbletowers.mastery.TuningReport.build(standings, achievements, attempts, boards)) {
+            context.getSource().sendSuccess(() -> Component.literal(line), false);
+        }
         return 1;
     }
 

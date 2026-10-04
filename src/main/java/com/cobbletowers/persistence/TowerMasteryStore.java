@@ -59,6 +59,17 @@ public final class TowerMasteryStore extends SavedData {
         return entry == null ? Progress.EMPTY : new Progress(entry.cycles, entry.depth, entry.unlocked);
     }
 
+    /** Every player's standing in every tower, for the operator's tuning report. */
+    public Map<UUID, Map<ResourceLocation, Progress>> all() {
+        Map<UUID, Map<ResourceLocation, Progress>> copy = new LinkedHashMap<>();
+        entries.forEach((player, byTower) -> {
+            Map<ResourceLocation, Progress> mine = new LinkedHashMap<>();
+            byTower.forEach((tower, entry) -> mine.put(tower, new Progress(entry.cycles, entry.depth, entry.unlocked)));
+            copy.put(player, mine);
+        });
+        return copy;
+    }
+
     /** One more cycle cleared; returns the new total. */
     public int addCycle(UUID player, ResourceLocation tower) {
         Entry entry = entryFor(player, tower);

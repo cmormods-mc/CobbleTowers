@@ -51,6 +51,11 @@ public final class TowerLeaderboardStore extends SavedData {
         return after.indexOf(entry) + 1;
     }
 
+    /** Every board and its entries, best first, for the operator's tuning report. */
+    public Map<Key, List<Entry>> all() {
+        return new LinkedHashMap<>(boards);
+    }
+
     /** The best {@code limit} entries of a board, best first. */
     public List<Entry> top(Key key, int limit) {
         List<Entry> all = boards.getOrDefault(key, List.of());
