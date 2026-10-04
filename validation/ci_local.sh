@@ -58,8 +58,11 @@ step "Check the committed arenas still match their schematics"
 # leaving the jar shipping the previous building.
 for schematic in validation/schematics/*.schem; do
   name="$(basename "$schematic" .schem)"
+  # The Battle Tower is one schematic recoloured into four structures; retheme_schem.py checks those below.
+  [ "$name" = "battle_tower" ] && continue
   "$py" validation/schem_to_structure.py --check "$schematic"     "src/main/resources/data/cobbletowers/structure/${name}.nbt"
 done
+"$py" validation/retheme_schem.py --check
 # BlockArchitect-style builds ship as .mcfunction (setblock lists), with an optional <name>.options.json for lighting.
 for build in validation/schematics/*.mcfunction; do
   name="$(basename "$build" .mcfunction)"

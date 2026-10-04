@@ -23,7 +23,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from schem_to_structure import blocks_from, read_schematic, split_state, write_structure  # noqa: E402
+from schem_to_structure import (blocks_from, histogram_of_schematic, histogram_of_structure, read_schematic,  # noqa: E402
+                                split_state, write_structure)
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "validation/schematics/battle_tower.schem"
@@ -219,6 +220,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--minecraft-jar", type=Path, help="a Minecraft 1.21.1 client jar, to check every target name")
     parser.add_argument("--only", help="one theme instead of all")
+    parser.add_argument("--check", action="store_true",
+                        help="verify the committed structures against the schematic and tables instead of writing them")
     args = parser.parse_args()
 
     schematic = read_schematic(SOURCE)
@@ -244,6 +247,13 @@ def main() -> int:
             if result != "minecraft:air":
                 themed.append((position, result))
         target = OUT_DIR / f"battle_tower_{theme}.nbt"
+        if args.check:
+            if histogram_of_structure(target) != histogram_of_schematic(themed):
+                print(f"retheme: FAIL -- {target.name} no longer matches the schematic and the {theme} table; re-run retheme_schem.py")
+                failures += 1
+            else:
+                print(f"retheme: {theme} matches ({len(themed)} blocks)")
+            continue
         write_structure(target, size, themed, schematic.get("DataVersion", 3955))
         histogram = Counter(split_state(state)[0] for _, state in themed)
         print(f"{theme}: {len(themed)} blocks, {len(histogram)} block types -> {target.relative_to(ROOT)} "
