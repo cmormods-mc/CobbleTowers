@@ -182,9 +182,9 @@ def main() -> None:
             while time.time() < deadline and not raised:
                 raised = re.findall(r"\[CobbleTowers\] EVs raised: (.*)", server.read_log())
                 time.sleep(2)
-            results.append(Result("floor 5's battle raised the enemy by 20 EVs and the player by 10",
-                                  bool(raised) and "p2:" in raised[-1] and "+20 " in raised[-1] and "p1:" in raised[-1]
-                                  and "+10 " in raised[-1], str(raised[-1:])))
+            results.append(Result("floor 5's battle raised the enemy by 50 EVs and the player by 25",
+                                  bool(raised) and "p2:" in raised[-1] and "+50 " in raised[-1] and "p1:" in raised[-1]
+                                  and "+25 " in raised[-1], str(raised[-1:])))
             print("  floor 5 battle:", raised[-1:] if raised else raised)
 
             bad = [l for l in server.read_log().splitlines() if "ERROR" in l and "cobbletowers" in l.lower()]

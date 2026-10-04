@@ -48,9 +48,9 @@ towers. The intermission screen only needs different wording at a cycle boundary
 | Boss health | `+12% * A` (linear, uncapped) | existing `boss_health_percent` path (`ModifierEffects`) |
 | Extra opponents | `+1 per 3 Ascensions`, capped at +3 | existing `extra_opponents` path |
 | Forced modifier | one per Ascension, drawn by seed from what the run is eligible for, not refusable | appended to `run.modifiers().accumulated()` on entering Ascension A |
-| Over-cap EVs (enemy) | `+20 EVs per stat per Ascension` (`+5` stat points at level 100) | new tower-fx op, see 4 |
-| Boon (players) | the same op on the player side at **half** the enemy amount | merged into battle ops beside armor and `CustomEffects` |
-| Reward | `100 + 150 * (1 - 0.85^A)` percent: x1.22 at A1, x1.83 at A5, never past x2.5 | one more factor in `RewardValuation` |
+| Over-cap EVs (enemy) | `+50 EVs per stat per Ascension` (`+12` stat points at level 100), at most 4000 per stat | new tower-fx op, see 4 (tuned, see "Tuning") |
+| Boon (players) | the same op on the player side at **half** the enemy amount (`+25` per Ascension) | merged into battle ops beside armor and `CustomEffects` |
+| Reward | `100 + 150 * (1 - 0.90^A)` percent: x1.15 at A1, x1.61 at A5, x2.27 at A18, never past x2.5 | one more factor in `RewardValuation` |
 
 Level keeps using `TowerLevelPolicy` unchanged: the ruleset's max enemy level is the ceiling, and EVs are what keep scaling
 past it. Guaranteed milestone items repeat each cycle (linear in effort, bounded per unit of play); revisit if inflation shows.
@@ -146,3 +146,35 @@ tier only (`ForcedModifiers.forcible`): no reward, scouting or custom modifier, 
 * **Not done:** the expanded Ascension-tagged regional pools (TDS #76), mastery/leaderboards (#89/#90), preparation pressure
   (#21), a screen that shows the Ascension on the HUD, and any tuning of the constants. The play-screen button and the cycle-end
   wording are not seen in a real client.
+
+## Tuning (2026-10-04)
+
+`validation/showdown/ascension_sim.js` plays real Showdown battles with the real `tower-fx.js`: the player's six against
+`1 + extra` enemies in a row (one battle models one floor, health carrying over like the waves do). The enemy is built like a
+wild Cobblemon (last four level-up moves, no EVs, IV 15) and picks moves at random; the player is a greedy damage picker that
+never sets up or switches voluntarily, at three training tiers (casual 0 EVs, mid 85 each, trained 252/252/4), level 100 (the
+worst case: enemy levels cap at 100, so EVs are the only scaling left). It is a **relative** yardstick, not a prediction.
+Not modelled: bosses, forced modifiers, items, healing between floors.
+
+Floor win rate by Ascension (Tideforge pool, 100 floors per cell; HP left in brackets is for wins):
+
+| Constants | A5 | A10 | A15 | A20 | A25 | A30 | A40 |
+|---|---|---|---|---|---|---|---|
+| +20 EVs, boon 50% (first guess), trained | 100 | 100 | 100 | 100 | 98 | 94 | 86 |
+| +50 EVs, boon 25%, trained | 100 | 86 | 69 | 31 | 13 | 4 | 3 |
+| +80 EVs, boon 25%, trained | 100 | 49 | 14 | 8 | 1 | 1 | 3 |
+| **+50 EVs, boon 50% (chosen)**, casual | 100 | 88 | 76 | 64 | 46 | 30 | 23 |
+| **chosen**, mid | 100 | 94 | 92 | 87 | 62 | 38 | 21 |
+| **chosen**, trained | 100 | 97 | 90 | 86 | 66 | 37 | 9 |
+
+The first guess was far too gentle: a trained team still won 86% of floors at Ascension 40 (400 floors in). The chosen
+constants put the wall (floors going from comfortable to a coin flip) around Ascension 20-25, earlier for an untrained party,
+and keep climbing past it. The boon matters as much as the enemy's growth: halving it (25%) moved the wall from about 25 to
+about 13. Reward retention moved from 0.85 to 0.90 so the factor is still rising across the range a strong team plays
+(x2.27 at A18) instead of flat by A12. The EV total now reaches a stat's 4000 limit at Ascension 80 (sent as operations of at
+most 2000) instead of stalling at Ascension 40.
+
+Things to know: the Neutral pool (Machoke, Haunter, Lairon...) is far weaker than Tideforge's, so Neutral is still beatable
+at 70-90% per floor at Ascension 40; a stronger Neutral pool, not a steeper curve, is the fix if that matters. A floor
+win rate of 90% still means a ten-floor cycle succeeds about a third of the time, so "wall" is meant loosely. Boss growth
+(+12% pool per Ascension, plus the same EVs) is untested beyond reasoning and likely the first wall in practice.

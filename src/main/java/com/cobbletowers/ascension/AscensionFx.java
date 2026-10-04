@@ -17,17 +17,22 @@ public final class AscensionFx {
     /** The operations a player's own side gets: the boon, nothing at the base cycle. */
     public static JsonArray boon(int ascension) {
         JsonArray ops = new JsonArray();
-        int amount = AscensionPolicy.boonEvs(ascension);
-        if (amount > 0) ops.add(evs("self", amount));
+        addChunks(ops, "self", AscensionPolicy.boonEvs(ascension));
         return ops;
     }
 
     /** The operation the enemy side gets, nothing at the base cycle. */
     public static JsonArray enemy(int ascension) {
         JsonArray ops = new JsonArray();
-        int amount = AscensionPolicy.enemyEvs(ascension);
-        if (amount > 0) ops.add(evs("foe", amount));
+        addChunks(ops, "foe", AscensionPolicy.enemyEvs(ascension));
         return ops;
+    }
+
+    /** One operation carries at most {@link AscensionPolicy#MAX_EVS_PER_OPERATION}; a deeper Ascension sends several. */
+    private static void addChunks(JsonArray ops, String side, int total) {
+        for (int left = total; left > 0; left -= AscensionPolicy.MAX_EVS_PER_OPERATION) {
+            ops.add(evs(side, Math.min(left, AscensionPolicy.MAX_EVS_PER_OPERATION)));
+        }
     }
 
     private static JsonObject evs(String side, int amount) {

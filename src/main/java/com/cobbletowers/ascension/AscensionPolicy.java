@@ -22,11 +22,13 @@ public final class AscensionPolicy {
     /** The reward multiplier approaches 100 + this percent and never reaches it. */
     public static final int REWARD_BONUS_CEILING_PERCENT = 150;
     /** Each Ascension closes this much less of the remaining gap to the ceiling, in percent (diminishing returns). */
-    public static final int REWARD_RETAINED_GAP_PERCENT = 85;
+    public static final int REWARD_RETAINED_GAP_PERCENT = 90;
     /** EVs added to every stat of every enemy, per Ascension (applied in-battle; see tower-fx.js). */
-    public static final int ENEMY_EVS_PER_ASCENSION = 20;
-    /** One {@code evs} operation never carries more than this (the operation's own limit). */
+    public static final int ENEMY_EVS_PER_ASCENSION = 50;
+    /** One {@code evs} operation never carries more than this (the operation's own limit); more is sent as several. */
     public static final int MAX_EVS_PER_OPERATION = 2000;
+    /** The most EVs a stat can hold in a battle, however they arrive (the extension's own limit). */
+    public static final int MAX_EVS_TOTAL = 4000;
     /** The matching player boon, as a percentage of the enemy's. */
     public static final int BOON_PERCENT_OF_ENEMY = 50;
     /** Past this the arithmetic stops changing anything; it also keeps every loop and product small. */
@@ -75,9 +77,9 @@ public final class AscensionPolicy {
         return 100 + (int) (REWARD_BONUS_CEILING_PERCENT * (10_000 - gap) / 10_000);
     }
 
-    /** EVs the enemy gets in each stat, as one operation's worth. */
+    /** EVs the enemy gets in each stat in total, at most what a stat can hold. */
     public static int enemyEvs(int ascension) {
-        return Math.min(MAX_EVS_PER_OPERATION, ENEMY_EVS_PER_ASCENSION * clamp(ascension));
+        return Math.min(MAX_EVS_TOTAL, ENEMY_EVS_PER_ASCENSION * clamp(ascension));
     }
 
     /** The matching player boon: a fixed share of the enemy's. */

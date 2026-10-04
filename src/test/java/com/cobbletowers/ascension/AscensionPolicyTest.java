@@ -66,16 +66,16 @@ class AscensionPolicyTest {
         assertEquals(1, AscensionPolicy.extraOpponents(3));
         assertEquals(3, AscensionPolicy.extraOpponents(9));
         assertEquals(3, AscensionPolicy.extraOpponents(500), "capped");
-        assertEquals(20, AscensionPolicy.enemyEvs(1));
-        assertEquals(400, AscensionPolicy.enemyEvs(20));
-        assertEquals(2000, AscensionPolicy.enemyEvs(10_000), "one operation never exceeds its limit");
+        assertEquals(50, AscensionPolicy.enemyEvs(1));
+        assertEquals(1000, AscensionPolicy.enemyEvs(20));
+        assertEquals(4000, AscensionPolicy.enemyEvs(10_000), "never more than a stat can hold");
     }
 
     @Test
     @DisplayName("the player boon is half the enemy's")
     void boon() {
-        assertEquals(10, AscensionPolicy.boonEvs(1));
-        assertEquals(200, AscensionPolicy.boonEvs(20));
+        assertEquals(25, AscensionPolicy.boonEvs(1));
+        assertEquals(500, AscensionPolicy.boonEvs(20));
     }
 
     @Test
@@ -92,8 +92,9 @@ class AscensionPolicyTest {
             previous = now;
             previousStep = step;
         }
-        assertEquals(122, AscensionPolicy.rewardPercent(1));
-        assertEquals(183, AscensionPolicy.rewardPercent(5));
+        assertEquals(115, AscensionPolicy.rewardPercent(1));
+        assertEquals(161, AscensionPolicy.rewardPercent(5));
+        assertTrue(AscensionPolicy.rewardPercent(18) > 220, "still climbing through the range a strong team plays");
         assertTrue(AscensionPolicy.rewardPercent(1000) <= 250);
         assertTrue(AscensionPolicy.rewardPercent(Integer.MAX_VALUE) <= 250);
     }
