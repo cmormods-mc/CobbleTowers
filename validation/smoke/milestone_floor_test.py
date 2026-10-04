@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Proves P17's cell rebuild: a run that reaches floor 5 is standing in a `boss_arena`, not floor 4's arena.
+"""Proves a run can play from floor 1 through the floor 5 milestone by the real player path.
 
-Before P17 a run's floor was pasted into its cell once, at allocation, so the F5 milestone (a different
-structure from the ordinary floors) would have been fought in the wrong room. Nothing ever played past
-floor 1, so nobody saw it.
+History: P17 added a cell rebuild when the next floor is a different structure, because the F5 milestone used to be a
+`boss_arena`. Since the Battle Tower (P27) every floor of a tower shares one building, so floor 5 needs no rebuild and this
+test now proves exactly that: the cell is kept, not rebuilt, and floor 5 still opens. The rebuild path itself
+(`RunLifecycle.rebuildIfStructureChanged`) has no shipped content that exercises it any more; a tower whose floors name
+different structures would bring it back into play.
 
 Getting to floor 5 by fighting would take far too long for a smoke test, so the floors are cleared by
 operator command (`runs advance ... encounter_resolved_cleared`, `rewards_banked`) while everything else
 -- the intermission, the draft, ready, the countdown, the next-floor open and the rebuild itself -- is the
 real player path, driven as the bot. The observable is the line `CellPreparer` logs when it pastes a
-structure: `prepared with cobbletowers:boss_arena` appears only if the cell was rebuilt (the warm pool
-only builds floor 1's structure, so it cannot be the source).
+structure: `prepared with cobbletowers:boss_arena` would appear only if the cell were rebuilt as one.
 
     python validation/smoke/milestone_floor_test.py --server-dir <rig> --java <jdk21 java> [--jar <build>]
 """
@@ -116,8 +117,8 @@ def main() -> None:
 
             log = server.read_log()
             rebuilt = log.count("prepared with cobbletowers:boss_arena") - before
-            results.append(Result("the run's cell was rebuilt as a boss arena for the floor 5 milestone",
-                                  rebuilt >= 1, f"{rebuilt} boss_arena preparation(s) in the log"))
+            results.append(Result("floor 5 shares floor 4's building, so the cell is kept and not rebuilt",
+                                  rebuilt == 0, f"{rebuilt} boss_arena preparation(s) in the log"))
             results.append(Result("the floor 5 boss floor then actually began a battle or boss encounter",
                                   "Floor 5 of run" in log, "no 'Floor 5 of run' line"))
             results.append(Result("no CobbleTowers exception during any of it",
