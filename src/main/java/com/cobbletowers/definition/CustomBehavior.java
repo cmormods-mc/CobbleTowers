@@ -23,7 +23,16 @@ public enum CustomBehavior {
     FORTUNES_WHEEL("fortunes_wheel"),
 
     /** Vendor prices are halved for the rest of the run. */
-    BLACK_MARKET("black_market");
+    BLACK_MARKET("black_market"),
+
+    /** The party starts every battle with +1 Speed (a relic, P34). */
+    SWIFT_START("swift_start"),
+
+    /** The party starts every battle with +1 Defense and +1 Sp. Def (a relic, P34). */
+    IRON_HIDE("iron_hide"),
+
+    /** The party starts every battle with +1 Attack and +1 Sp. Atk (a relic, P34). */
+    WAR_BANNER("war_banner");
 
     private final String id;
 

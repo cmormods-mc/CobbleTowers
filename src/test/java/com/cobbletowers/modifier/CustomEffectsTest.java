@@ -76,4 +76,14 @@ class CustomEffectsTest {
         }
         assertTrue(jackpots > 1000 && jackpots < 1400, "jackpots " + jackpots);
     }
+
+    @Test
+    @DisplayName("the relic behaviors each start the party's battles with one-stage boosts, and stack with each other")
+    void relicBoosts() {
+        assertEquals(1, held(CustomBehavior.SWIFT_START).battleOps().size());
+        assertEquals(2, held(CustomBehavior.IRON_HIDE).battleOps().size());
+        assertEquals(2, held(CustomBehavior.WAR_BANNER).battleOps().size());
+        assertEquals(5, held(CustomBehavior.SWIFT_START, CustomBehavior.IRON_HIDE, CustomBehavior.WAR_BANNER)
+                .battleOps().size());
+    }
 }

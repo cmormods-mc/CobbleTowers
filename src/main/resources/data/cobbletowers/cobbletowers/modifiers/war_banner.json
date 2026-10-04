@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "War Banner",
+  "risk": "moderate",
+  "weight": 50,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "offense"
+  ],
+  "effect": {
+    "custom": "war_banner"
+  }
+}

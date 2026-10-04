@@ -25,18 +25,30 @@ import net.minecraft.resources.ResourceLocation;
  * @param lockedIn    the subset made permanent by a Lock-In Draft (TDS #57); each also appears in
  *                    {@code accumulated}, because locking a modifier in does not stop it being held
  * @param draft       the draft on the table, open or just resolved
+ * @param relics      the relics found so far (P34), in the order found; they sum into the run's effects like
+ *                    modifiers but are not challenges, so they never count toward a Lock-In
  */
 public record RunModifierState(
         List<ResourceLocation> accumulated,
         List<ResourceLocation> lockedIn,
-        Optional<PersistedDraft> draft) {
+        Optional<PersistedDraft> draft,
+        List<ResourceLocation> relics) {
+
+    /** Relics a run can hold at once; a milestone offers none past this. */
+    public static final int MAX_RELICS = 6;
 
     /** A run that has drafted nothing. What every run created before P8 is read back as. */
-    public static final RunModifierState EMPTY = new RunModifierState(List.of(), List.of(), Optional.empty());
+    public static final RunModifierState EMPTY = new RunModifierState(List.of(), List.of(), Optional.empty(), List.of());
+
+    public RunModifierState(List<ResourceLocation> accumulated, List<ResourceLocation> lockedIn,
+                            Optional<PersistedDraft> draft) {
+        this(accumulated, lockedIn, draft, List.of());
+    }
 
     public RunModifierState {
         accumulated = List.copyOf(accumulated);
         lockedIn = List.copyOf(lockedIn);
+        relics = List.copyOf(relics);
         Objects.requireNonNull(draft, "draft");
         for (ResourceLocation locked : lockedIn) {
             if (!accumulated.contains(locked)) {
@@ -56,19 +68,19 @@ public record RunModifierState(
     }
 
     public RunModifierState withDraft(PersistedDraft opened) {
-        return new RunModifierState(accumulated, lockedIn, Optional.of(opened));
+        return new RunModifierState(accumulated, lockedIn, Optional.of(opened), relics);
     }
 
     /** The same state with the draft cleared away, e.g. when a run moves on to the next floor. */
     public RunModifierState withoutDraft() {
-        return new RunModifierState(accumulated, lockedIn, Optional.empty());
+        return new RunModifierState(accumulated, lockedIn, Optional.empty(), relics);
     }
 
     /** The same state having taken {@code modifier}. */
     public RunModifierState accumulating(ResourceLocation modifier) {
         List<ResourceLocation> next = new ArrayList<>(accumulated);
         next.add(modifier);
-        return new RunModifierState(next, lockedIn, draft);
+        return new RunModifierState(next, lockedIn, draft, relics);
     }
 
     /**
@@ -82,7 +94,19 @@ public record RunModifierState(
         if (lockedIn.contains(modifier)) return this;
         List<ResourceLocation> next = new ArrayList<>(lockedIn);
         next.add(modifier);
-        return new RunModifierState(accumulated, next, draft);
+        return new RunModifierState(accumulated, next, draft, relics);
+    }
+
+    /** The same state having found {@code relic}. */
+    public RunModifierState withRelic(ResourceLocation relic) {
+        List<ResourceLocation> next = new ArrayList<>(relics);
+        next.add(relic);
+        return new RunModifierState(accumulated, lockedIn, draft, next);
+    }
+
+    /** Whether there is room for another relic. */
+    public boolean hasRelicRoom() {
+        return relics.size() < MAX_RELICS;
     }
 
     public CompoundTag toTag() {
@@ -90,6 +114,7 @@ public record RunModifierState(
         tag.put("accumulated", idList(accumulated));
         tag.put("locked_in", idList(lockedIn));
         draft.ifPresent(open -> tag.put("draft", open.toTag()));
+        tag.put("relics", idList(relics));
         return tag;
     }
 
@@ -99,7 +124,8 @@ public record RunModifierState(
                 readIds(tag, "locked_in"),
                 tag.contains("draft", Tag.TAG_COMPOUND)
                         ? Optional.of(PersistedDraft.fromTag(tag.getCompound("draft")))
-                        : Optional.empty());
+                        : Optional.empty(),
+                readIds(tag, "relics"));
     }
 
     private static ListTag idList(List<ResourceLocation> ids) {

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "enemy",
+  "display_name": "Titan's Bane",
+  "risk": "minor",
+  "weight": 50,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "boss"
+  ],
+  "effect": {
+    "boss_health_percent": 80
+  }
+}

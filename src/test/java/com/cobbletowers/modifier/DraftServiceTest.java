@@ -134,4 +134,72 @@ class DraftServiceTest {
                 DraftService.effects(TestRuns.content(), RunModifierState.EMPTY));
         assertEquals(Optional.empty(), RunModifierState.EMPTY.draft());
     }
+
+    // ------------------------------------------------------------------ relics (P34)
+
+    private static ModifierDefinition relic(String path, String effect) {
+        return TestRuns.modifier(path, "reward", effect, "\"relic\":true", "\"tags\":[\"economy\"]");
+    }
+
+    private static PersistedRun runAt(int floor, RunModifierState state) {
+        PersistedRun run = TestRuns.fresh(RUN);
+        PersistedRun moved = new PersistedRun(run.runId(), run.schemaVersion(), run.towerId(), run.towerRevision(),
+                run.towerDigest(), run.rulesetRevision(), run.structureRevision(), run.seed(), floor,
+                run.state(), run.participants(), run.lastCheckpoint(), run.committedTransactions(),
+                run.updatedAt(), run.cell(), run.ledger(), state, run.lastBankedFloor(), run.vendorPurchases());
+        return moved;
+    }
+
+    @Test
+    @DisplayName("a relic is never offered as an ordinary draft card")
+    void relicsAreNotDrafted() {
+        ModifierDefinition lucky = relic("lucky", "\"reward_percent\":125");
+        TowerContent content = TestRuns.contentWith(Map.of(lucky.id(), lucky));
+        assertTrue(content.draftablePool(TestRuns.TOWER, 1).isEmpty());
+        assertEquals(List.of(lucky), content.relicPool());
+    }
+
+    @Test
+    @DisplayName("relics are offered only after a milestone floor")
+    void relicsOnMilestonesOnly() {
+        ModifierDefinition lucky = relic("lucky", "\"reward_percent\":125");
+        TowerContent content = TestRuns.contentWith(Map.of(lucky.id(), lucky));
+        assertTrue(DraftService.relicCardsFor(content, runAt(1, RunModifierState.EMPTY), 1).isEmpty());
+        assertEquals(List.of(lucky.id()),
+                DraftService.relicCardsFor(content, runAt(2, RunModifierState.EMPTY), 2));
+    }
+
+    @Test
+    @DisplayName("a relic already held is not offered again, and a full pack is offered nothing")
+    void relicsDoNotRepeatAndAreCapped() {
+        ModifierDefinition lucky = relic("lucky", "\"reward_percent\":125");
+        ModifierDefinition coin = relic("coin", "\"reward_percent\":150");
+        TowerContent content = TestRuns.contentWith(Map.of(lucky.id(), lucky, coin.id(), coin));
+        RunModifierState holdingLucky = RunModifierState.EMPTY.withRelic(lucky.id());
+        assertEquals(List.of(coin.id()), DraftService.relicCardsFor(content, runAt(2, holdingLucky), 2));
+
+        RunModifierState full = RunModifierState.EMPTY;
+        for (int i = 0; i < RunModifierState.MAX_RELICS; i++) full = full.withRelic(TestRuns.id("r" + i));
+        assertTrue(DraftService.relicCardsFor(content, runAt(2, full), 2).isEmpty());
+    }
+
+    @Test
+    @DisplayName("a held relic sums into the run's effects but does not count as a challenge")
+    void relicsSumIntoEffects() {
+        ModifierDefinition lucky = relic("lucky", "\"reward_percent\":125");
+        TowerContent content = TestRuns.contentWith(Map.of(lucky.id(), lucky));
+        RunModifierState state = RunModifierState.EMPTY.withRelic(lucky.id());
+        assertEquals(125, DraftService.effects(content, state).rewardPercent());
+        assertEquals(0, state.challengeCount(), "relics never bring a Lock-In closer");
+    }
+
+    @Test
+    @DisplayName("relics survive a save and load, and a run saved before relics reads as holding none")
+    void relicsRoundTrip() {
+        RunModifierState state = RunModifierState.EMPTY.withRelic(TestRuns.id("lucky"));
+        assertEquals(state, RunModifierState.fromTag(state.toTag()));
+        net.minecraft.nbt.CompoundTag old = state.toTag();
+        old.remove("relics");
+        assertEquals(List.of(), RunModifierState.fromTag(old).relics());
+    }
 }

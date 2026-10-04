@@ -67,6 +67,32 @@ public final class DraftService {
         return List.copyOf(held);
     }
 
+    /** The relics a run is carrying (P34), resolved against loaded content, in the order found. */
+    public static List<ModifierDefinition> relicsHeld(TowerContent content, RunModifierState state) {
+        List<ModifierDefinition> held = new ArrayList<>(state.relics().size());
+        for (ResourceLocation id : state.relics()) content.modifier(id).ifPresent(held::add);
+        return List.copyOf(held);
+    }
+
+    /** The seed a relic draft at this floor is drawn from, and its tie is broken with. */
+    public static long relicSeed(PersistedRun run, int floorIndex) {
+        return EncounterSeed.of(run.seed(), floorIndex, DraftDraw.RELIC_ORDINAL_BASE);
+    }
+
+    /**
+     * The relics a run would be offered after clearing this floor: only on a milestone floor, only while there is
+     * room, and only what the run may legally hold with what it already has.
+     */
+    public static List<ResourceLocation> relicCardsFor(TowerContent content, PersistedRun run, int floorIndex) {
+        RunModifierState state = run.modifiers();
+        if (!state.hasRelicRoom() || content.milestoneAt(run.towerId(), floorIndex).isEmpty()) return List.of();
+        List<ModifierDefinition> pool = ModifierResolver.eligibleFrom(content.relicPool(),
+                relicsHeld(content, state));
+        List<ResourceLocation> cards = new ArrayList<>();
+        for (ModifierDefinition card : DraftDraw.drawRelics(pool, run.seed(), floorIndex)) cards.add(card.id());
+        return List.copyOf(cards);
+    }
+
     /**
      * What a run's modifiers add up to, with locked-in ones counted twice.
      *
@@ -82,12 +108,16 @@ public final class DraftService {
         for (ResourceLocation locked : state.lockedIn()) {
             content.modifier(locked).ifPresent(counted::add);
         }
+        counted.addAll(relicsHeld(content, state));
         return ModifierEffects.of(counted);
     }
 
     /** What a run's CUSTOM modifiers (P29) reduce to; locked-in copies do not matter, a behavior is held or it is not. */
     public static CustomEffects customs(PersistedRun run) {
-        return CustomEffects.of(held(TowerDefinitionRegistry.content(), run.modifiers()));
+        TowerContent content = TowerDefinitionRegistry.content();
+        List<ModifierDefinition> all = new ArrayList<>(held(content, run.modifiers()));
+        all.addAll(relicsHeld(content, run.modifiers()));
+        return CustomEffects.of(all);
     }
 
     /** A run's effects, read from whatever content is loaded now. */
@@ -170,6 +200,14 @@ public final class DraftService {
         TowerContent content = TowerDefinitionRegistry.content();
         List<ResourceLocation> cards = cardsFor(content, run, run.floorIndex());
         if (cards.isEmpty()) {
+            // Nothing to draft, but a milestone may still have a relic to give.
+            List<ResourceLocation> relics = relicCardsFor(content, run, run.floorIndex());
+            if (!relics.isEmpty()) {
+                PersistedDraft relicDraft = PersistedDraft.openingRelics(run.floorIndex(), relics);
+                TowerRuns.save(server, run.withModifiers(run.modifiers().withDraft(relicDraft), now), true);
+                TowerLog.info("Run {} opened a RELIC draft at floor {}: {}", runId, run.floorIndex(), relics);
+                return Optional.of(relicDraft);
+            }
             TowerLog.info("Run {} has no modifier to draft at floor {}", runId, run.floorIndex());
             return Optional.empty();
         }
@@ -218,16 +256,34 @@ public final class DraftService {
                 .orElseThrow(() -> new IllegalStateException("run " + runId + " has no draft to settle"));
         if (draft.resolved()) return draft;
 
-        DraftVote.Result result = DraftVote.resolve(
-                draft.votes(), draft.cards().size(), draftSeed(run, draft.floorIndex()));
+        DraftVote.Result result = DraftVote.resolve(draft.votes(), draft.cards().size(),
+                draft.relic() ? relicSeed(run, draft.floorIndex()) : draftSeed(run, draft.floorIndex()));
         PersistedDraft resolved = draft.resolvedAs(result.cardIndex(), result.byTieBreak());
         ResourceLocation won = resolved.cards().get(result.cardIndex());
 
-        RunModifierState next = draft.lockIn()
-                ? run.modifiers().lockingIn(won).withDraft(resolved)
-                : run.modifiers().accumulating(won).withDraft(resolved);
+        RunModifierState next = draft.relic()
+                ? run.modifiers().withRelic(won).withDraft(resolved)
+                : draft.lockIn()
+                        ? run.modifiers().lockingIn(won).withDraft(resolved)
+                        : run.modifiers().accumulating(won).withDraft(resolved);
 
-        TowerRuns.save(server, run.withModifiers(next, now), true);
+        if (draft.relic()) {
+            TowerRuns.save(server, run.withModifiers(next, now), true);
+            TowerLog.info("Run {} found relic {} at floor {}{}", runId, won, draft.floorIndex(),
+                    result.byTieBreak() ? " on a seed tie-break" : "");
+            return resolved;
+        }
+
+        // A milestone boss also pays a relic: once the challenge is settled, put the relics on the table.
+        // The run cannot leave the intermission while a draft is open, so the relic choice cannot be skipped.
+        TowerContent content = TowerDefinitionRegistry.content();
+        PersistedRun after = run.withModifiers(next, now);
+        List<ResourceLocation> relics = relicCardsFor(content, after, draft.floorIndex());
+        if (!relics.isEmpty()) {
+            after = after.withModifiers(next.withDraft(PersistedDraft.openingRelics(draft.floorIndex(), relics)), now);
+            TowerLog.info("Run {} opened a RELIC draft at floor {}: {}", runId, draft.floorIndex(), relics);
+        }
+        TowerRuns.save(server, after, true);
         TowerLog.info("Run {} drafted {}{} at floor {}{}", runId, won, draft.lockIn() ? " (LOCKED IN)" : "",
                 draft.floorIndex(), result.byTieBreak() ? " on a seed tie-break" : "");
         TowerDefinitionRegistry.content().modifier(won).ifPresent(modifier ->

@@ -155,7 +155,8 @@ def check_modifiers(content: dict, problems: list[str]) -> None:
         "scouting": ("scouting_bonus",),
         "custom": ("custom",),
     }
-    known_customs = ("glass_cannon", "field_hospital", "fortunes_wheel", "black_market")
+    known_customs = ("glass_cannon", "field_hospital", "fortunes_wheel", "black_market",
+                     "swift_start", "iron_hide", "war_banner")
     for modifier_id, modifier in content["modifiers"].items():
         for field in ("schema_version", "type", "display_name"):
             if field not in modifier:

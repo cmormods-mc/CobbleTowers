@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Trader's Pouch",
+  "risk": "minor",
+  "weight": 40,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "economy"
+  ],
+  "effect": {
+    "custom": "black_market"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "scouting",
+  "display_name": "Hunter's Compass",
+  "risk": "minor",
+  "weight": 60,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "scouting"
+  ],
+  "effect": {
+    "scouting_bonus": 3
+  }
+}

@@ -33,7 +33,8 @@ public record PersistedDraft(
         List<ResourceLocation> cards,
         Map<UUID, Integer> votes,
         OptionalInt chosen,
-        boolean decidedByTieBreak) {
+        boolean decidedByTieBreak,
+        boolean relic) {
 
     public PersistedDraft {
         cards = List.copyOf(cards);
@@ -49,7 +50,12 @@ public record PersistedDraft(
 
     /** A fresh draft: cards on the table, nobody has voted. */
     public static PersistedDraft opening(int floorIndex, boolean lockIn, List<ResourceLocation> cards) {
-        return new PersistedDraft(floorIndex, lockIn, cards, Map.of(), OptionalInt.empty(), false);
+        return new PersistedDraft(floorIndex, lockIn, cards, Map.of(), OptionalInt.empty(), false, false);
+    }
+
+    /** A fresh RELIC draft (P34): the cards are relics, and the winner is held rather than drafted. */
+    public static PersistedDraft openingRelics(int floorIndex, List<ResourceLocation> cards) {
+        return new PersistedDraft(floorIndex, false, cards, Map.of(), OptionalInt.empty(), false, true);
     }
 
     public boolean resolved() {
@@ -69,12 +75,12 @@ public record PersistedDraft(
         }
         Map<UUID, Integer> updated = new LinkedHashMap<>(votes);
         updated.put(playerId, cardIndex);
-        return new PersistedDraft(floorIndex, lockIn, cards, updated, chosen, decidedByTieBreak);
+        return new PersistedDraft(floorIndex, lockIn, cards, updated, chosen, decidedByTieBreak, relic);
     }
 
     /** The same draft, settled. The cards stay, so what was turned down can still be read. */
     public PersistedDraft resolvedAs(int cardIndex, boolean byTieBreak) {
-        return new PersistedDraft(floorIndex, lockIn, cards, votes, OptionalInt.of(cardIndex), byTieBreak);
+        return new PersistedDraft(floorIndex, lockIn, cards, votes, OptionalInt.of(cardIndex), byTieBreak, relic);
     }
 
     /** The winning card's modifier id, once there is one. */
@@ -103,6 +109,7 @@ public record PersistedDraft(
         tag.put("votes", cast);
         chosen.ifPresent(index -> tag.putInt("chosen", index));
         tag.putBoolean("tie_break", decidedByTieBreak);
+        if (relic) tag.putBoolean("relic", true);
         return tag;
     }
 
@@ -127,6 +134,7 @@ public record PersistedDraft(
                 cards,
                 votes,
                 tag.contains("chosen", Tag.TAG_INT) ? OptionalInt.of(tag.getInt("chosen")) : OptionalInt.empty(),
-                tag.getBoolean("tie_break"));
+                tag.getBoolean("tie_break"),
+                tag.getBoolean("relic"));
     }
 }

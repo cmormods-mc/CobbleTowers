@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "reward",
+  "display_name": "Gambler's Coin",
+  "risk": "moderate",
+  "weight": 45,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "economy",
+    "risk"
+  ],
+  "effect": {
+    "reward_percent": 150,
+    "extra_opponents": 1
+  }
+}

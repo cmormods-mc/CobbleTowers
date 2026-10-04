@@ -72,6 +72,15 @@ public record CustomEffects(Set<CustomBehavior> behaviors) {
             ops.add(op("boost", "stat", "spa", "stages", 2));
             ops.add(op("hp", "percent", 60));
         }
+        if (has(CustomBehavior.SWIFT_START)) ops.add(op("boost", "stat", "spe", "stages", 1));
+        if (has(CustomBehavior.IRON_HIDE)) {
+            ops.add(op("boost", "stat", "def", "stages", 1));
+            ops.add(op("boost", "stat", "spd", "stages", 1));
+        }
+        if (has(CustomBehavior.WAR_BANNER)) {
+            ops.add(op("boost", "stat", "atk", "stages", 1));
+            ops.add(op("boost", "stat", "spa", "stages", 1));
+        }
         return ops;
     }
 

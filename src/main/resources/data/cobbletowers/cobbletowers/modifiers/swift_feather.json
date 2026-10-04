@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Swift Feather",
+  "risk": "minor",
+  "weight": 60,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "tempo"
+  ],
+  "effect": {
+    "custom": "swift_start"
+  }
+}

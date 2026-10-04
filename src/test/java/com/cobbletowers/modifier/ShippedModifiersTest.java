@@ -38,9 +38,20 @@ class ShippedModifiersTest {
     }
 
     @Test
-    @DisplayName("twenty-nine modifiers ship (25 ordinary, 4 custom), and every one parses and does something its type applies")
+    @DisplayName("forty-one modifiers ship (25 ordinary, 4 custom, 12 relics), and every one parses and does something its type applies")
     void twentyFiveShip() throws IOException {
-        assertEquals(29, load().size());
+        assertEquals(41, load().size());
+        assertEquals(12, load().values().stream().filter(ModifierDefinition::relic).count());
+    }
+
+    @Test
+    @DisplayName("every relic is a single-copy boon with at least one tag")
+    void relicsAreSingleCopyAndTagged() throws IOException {
+        for (ModifierDefinition modifier : load().values()) {
+            if (!modifier.relic()) continue;
+            assertEquals(1, modifier.stackLimit(), modifier.id() + " must not stack");
+            assertTrue(!modifier.tags().isEmpty(), modifier.id() + " needs a tag");
+        }
     }
 
     @Test

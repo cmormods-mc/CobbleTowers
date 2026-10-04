@@ -326,6 +326,16 @@ public record TowerContent(
      * content without every floor file being edited to list it. Naming them is how a floor narrows
      * the pool, not how it opts in.
      */
+    /** Every loaded relic, in a stable order (a draw walks this list subtracting weights). */
+    public List<ModifierDefinition> relicPool() {
+        List<ModifierDefinition> pool = new ArrayList<>();
+        for (ModifierDefinition modifier : modifiers.values()) {
+            if (modifier.relic()) pool.add(modifier);
+        }
+        pool.sort(Comparator.comparing(modifier -> modifier.id().toString()));
+        return List.copyOf(pool);
+    }
+
     public List<ModifierDefinition> draftablePool(ResourceLocation towerId, int floorIndex) {
         List<ResourceLocation> named = floorAt(towerId, floorIndex)
                 .map(FloorDefinition::modifierIds)
@@ -339,6 +349,8 @@ public record TowerContent(
                 if (modifier != null) pool.add(modifier);
             }
         }
+        // A relic (P34) is found after a milestone boss, never drafted as an ordinary challenge.
+        pool.removeIf(ModifierDefinition::relic);
         // Sorted, because a draw walks this list subtracting weights and a map's iteration order is
         // not a contract. Two servers with the same seed and the same content must offer the same
         // three cards; an unordered pool would make that true only by luck.

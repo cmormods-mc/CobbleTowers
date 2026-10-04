@@ -33,7 +33,9 @@ public record ModifierDefinition(
         List<ResourceLocation> excludes,
         List<ResourceLocation> requires,
         int stackLimit,
-        Effect effect) implements ModifierView {
+        Effect effect,
+        boolean relic,
+        List<String> tags) implements ModifierView {
 
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
 
@@ -170,6 +172,7 @@ public record ModifierDefinition(
         Objects.requireNonNull(group, "group");
         excludes = List.copyOf(excludes);
         requires = List.copyOf(requires);
+        tags = List.copyOf(tags);
         if (schemaVersion != SUPPORTED_SCHEMA_VERSION) {
             throw new IllegalArgumentException("schema_version " + schemaVersion + " is not supported; expected "
                     + SUPPORTED_SCHEMA_VERSION);
@@ -250,7 +253,9 @@ public record ModifierDefinition(
                 TowerJson.ids(root, "excludes"),
                 TowerJson.ids(root, "requires"),
                 TowerJson.integer(root, "stack_limit", 1),
-                Effect.fromJson(TowerJson.object(root, "effect")));
+                Effect.fromJson(TowerJson.object(root, "effect")),
+                TowerJson.bool(root, "relic", false),
+                TowerJson.strings(root, "tags"));
     }
 
     private static <E extends Enum<E>> E parseEnum(Class<E> type, String raw, String key) {

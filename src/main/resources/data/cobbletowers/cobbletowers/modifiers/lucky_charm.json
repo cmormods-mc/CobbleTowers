@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "reward",
+  "display_name": "Lucky Charm",
+  "risk": "minor",
+  "weight": 70,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "economy"
+  ],
+  "effect": {
+    "reward_percent": 125
+  }
+}

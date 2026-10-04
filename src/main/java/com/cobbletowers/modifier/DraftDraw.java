@@ -23,6 +23,9 @@ public final class DraftDraw {
     /** Far outside both the opponents' range and the boss's single ordinal. */
     static final int DRAFT_ORDINAL_BASE = 2_000_029;
 
+    /** The relic draw's own ordinal space (P34), for the same reason. */
+    static final int RELIC_ORDINAL_BASE = 4_000_037;
+
     /** Three cards, as TDS #2 specifies. Fewer only when the pool cannot supply three. */
     public static final int CARDS = 3;
 
@@ -38,10 +41,20 @@ public final class DraftDraw {
      * @param pool every modifier this floor may offer, already filtered to what is eligible
      */
     public static List<ModifierDefinition> draw(List<ModifierDefinition> pool, long runSeed, int floorIndex) {
+        return draw(pool, runSeed, floorIndex, DRAFT_ORDINAL_BASE);
+    }
+
+    /** The relics offered after a milestone boss: the same draw from its own ordinal space. */
+    public static List<ModifierDefinition> drawRelics(List<ModifierDefinition> pool, long runSeed, int floorIndex) {
+        return draw(pool, runSeed, floorIndex, RELIC_ORDINAL_BASE);
+    }
+
+    private static List<ModifierDefinition> draw(List<ModifierDefinition> pool, long runSeed, int floorIndex,
+                                                 int ordinalBase) {
         List<ModifierDefinition> remaining = new ArrayList<>(pool);
         List<ModifierDefinition> cards = new ArrayList<>(CARDS);
         for (int card = 0; card < CARDS && !remaining.isEmpty(); card++) {
-            long seed = EncounterSeed.of(runSeed, floorIndex, DRAFT_ORDINAL_BASE + card);
+            long seed = EncounterSeed.of(runSeed, floorIndex, ordinalBase + card);
             cards.add(remaining.remove(pick(remaining, seed)));
         }
         return List.copyOf(cards);
