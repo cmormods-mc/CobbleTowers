@@ -104,6 +104,13 @@ public record RunModifierState(
         return new RunModifierState(accumulated, lockedIn, draft, next);
     }
 
+    /** The same state having lost {@code relic} (a lost gamble, P34b). */
+    public RunModifierState withoutRelic(ResourceLocation relic) {
+        List<ResourceLocation> next = new ArrayList<>(relics);
+        next.remove(relic);
+        return new RunModifierState(accumulated, lockedIn, draft, next);
+    }
+
     /** Whether there is room for another relic. */
     public boolean hasRelicRoom() {
         return relics.size() < MAX_RELICS;

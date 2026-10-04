@@ -165,6 +165,9 @@ def main() -> None:
             # --- the vendor leaves with the intermission -----------------------------------------
             play(rcon, A, "pick 1")
             play(rcon, B, "pick 1")
+            # a second round: an event room may open behind the draft (P34b); an unneeded pick is refused
+            play(rcon, A, "pick 1")
+            play(rcon, B, "pick 1")
             play(rcon, A, "ready")
             play(rcon, B, "ready")
             opened = wait_state(rcon, "ENCOUNTER_ACTIVE", seconds=60, floor=2)

@@ -150,8 +150,9 @@ def main() -> None:
                 if not wait_state(rcon, "INTERMISSION", floor):
                     raise RuntimeError(f"floor {floor} never reached its intermission")
                 # Both vote first: a ready click is refused while the draft is still open.
-                for name in (A, B):
-                    rcon.command(f"execute as {name} run cobbletowers play pick 1")
+                for _ in range(2):   # a second round: an event room may open behind the draft (P34b); an unneeded pick is refused
+                    for name in (A, B):
+                        rcon.command(f"execute as {name} run cobbletowers play pick 1")
                 for name in (A, B):
                     rcon.command(f"execute as {name} run cobbletowers play ready")
                 if not wait_state(rcon, "ENCOUNTER_ACTIVE", floor + 1):

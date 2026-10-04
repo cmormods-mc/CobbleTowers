@@ -52,6 +52,8 @@ def clear_floors(rcon: Rcon, run: str, floors: int = 4) -> None:
                 break
             time.sleep(1)
         rt.play(rcon, "pick 1")
+        # a second round: an event room may open behind the draft (P34b); an unneeded pick is refused
+        rt.play(rcon, "pick 1")
         rt.play(rcon, "ready")
         for _ in range(90):
             if re.search(re.escape(run) + r"\s+\S+\s+ENCOUNTER_ACTIVE", rcon.command("cobbletowers runs list")):

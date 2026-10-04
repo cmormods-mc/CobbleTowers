@@ -146,6 +146,9 @@ def main() -> None:
 
             play(rcon, A, "pick 1")
             play(rcon, B, "pick 1")
+            # a second round: an event room may open behind the draft (P34b); an unneeded pick is refused
+            play(rcon, A, "pick 1")
+            play(rcon, B, "pick 1")
             settled = show(rcon)
             draft_lines = [l for l in settled.splitlines() if "draft at floor" in l]
             results.append(Result("both votes settle the draft", bool(draft_lines) and "OPEN" not in draft_lines[0],

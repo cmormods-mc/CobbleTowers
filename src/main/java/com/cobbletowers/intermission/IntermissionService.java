@@ -283,8 +283,10 @@ public final class IntermissionService {
             ModifierDefinition modifier = TowerDefinitionRegistry.content().modifiers().get(draft.cards().get(i));
             int index = i;
             int votes = (int) draft.votes().values().stream().filter(vote -> vote == index).count();
-            cards.add(new IntermissionStatePayload.Card(draft.cards().get(i),
-                    modifier == null ? draft.cards().get(i).toString() : modifier.displayName(), votes));
+            String name = modifier != null ? modifier.displayName()
+                    : IntermissionEvents.Option.fromCard(draft.cards().get(i)).map(IntermissionEvents.Option::label)
+                            .orElse(draft.cards().get(i).toString());
+            cards.add(new IntermissionStatePayload.Card(draft.cards().get(i), name, votes));
         }
         return new IntermissionStatePayload.Draft(draft.resolved() ? 2 : 1, cards,
                 draft.chosen().orElse(-1), draft.votes().getOrDefault(viewer, -1));

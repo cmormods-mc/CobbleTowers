@@ -72,8 +72,9 @@ def run_cycle(rcon: Rcon, run: str, players: list[str]) -> None:
         else:
             raise RuntimeError(f"floor {floor} never reached its intermission")
         if floor < 4:
-            for name in players:
-                play(rcon, name, "pick 1")
+            for _ in range(2):   # a second round: an event room may open behind the draft (P34b); an unneeded pick is refused
+                for name in players:
+                    play(rcon, name, "pick 1")
             for name in players:
                 play(rcon, name, "ready")
             for _ in range(60):
@@ -171,6 +172,8 @@ def main() -> None:
 
             # ---- ascend: depth board and depth achievement ---------------------------------------------------
             for name in [A]:
+                play(rcon, name, "pick 1")
+                # a second round: an event room may open behind the draft (P34b); an unneeded pick is refused
                 play(rcon, name, "pick 1")
             play(rcon, A, "ready")
             opened = False

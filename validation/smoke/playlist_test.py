@@ -152,6 +152,8 @@ def main() -> None:
                     time.sleep(1)
                 rcon.command(f"pokegiveother {B} charizard level=10")
                 play(rcon, B, "pick 1")
+                # a second round: an event room may open behind the draft (P34b); an unneeded pick is refused
+                play(rcon, B, "pick 1")
                 play(rcon, B, "ready")
                 time.sleep(14)
                 held = next((st for rid, st in runs(rcon) if rid == mono), "")
@@ -186,6 +188,8 @@ def main() -> None:
 
             # finish the cycle: floors 2-4
             for floor in range(1, 4):
+                play(rcon, A, "pick 1")
+                # a second round: an event room may open behind the draft (P34b); an unneeded pick is refused
                 play(rcon, A, "pick 1")
                 play(rcon, A, "ready")
                 for _ in range(60):

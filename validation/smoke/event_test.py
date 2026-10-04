@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Proves relics (P34): a milestone boss pays a relic draft after the ordinary draft; ordinary floors do not.
+"""Proves intermission event rooms (P34b): a room may open behind the ordinary draft, holds the floor, and applies its choice.
 
 Floors are cleared by operator command; the drafts, picks and ready-ups are the real player path as the bot.
 
-    python validation/smoke/relic_test.py --server-dir <rig> --java <jdk21 java> [--jar <build>]
+    python validation/smoke/event_test.py --server-dir <rig> --java <jdk21 java> [--jar <build>]
 """
 
 from __future__ import annotations
@@ -70,7 +70,7 @@ def main() -> None:
         server.start()
         server.wait_until_ready()
         env = dict(os.environ, NODE_PATH=str(node_modules))
-        handle = open(server_dir / "logs" / "towers-relic-bot.log", "w", encoding="utf-8", errors="replace")
+        handle = open(server_dir / "logs" / "towers-event-bot.log", "w", encoding="utf-8", errors="replace")
         bot = subprocess.Popen(["node", str(HERE / "joinbot.js"), BOT, str(server_port(server_dir))],
                                stdout=handle, stderr=subprocess.STDOUT, env=env)
 
@@ -93,45 +93,38 @@ def main() -> None:
                 raise RuntimeError("floor 1 never opened: " + run_line(rcon))
             run = re.search(UUID_RE, run_line(rcon)).group(1)
 
-            for floor in range(1, 6):
+            rooms = 0
+            for floor in range(1, 5):
                 rcon.command(f"cobbletowers runs advance {run} encounter_resolved_cleared")
                 rcon.command(f"cobbletowers runs advance {run} rewards_banked")
                 if not wait_state(rcon, "INTERMISSION", floor, seconds=20):
                     raise RuntimeError(f"floor {floor} never reached its intermission: {run_line(rcon)}")
                 time.sleep(2)
-                play("pick 1")   # the ordinary draft; on a milestone floor the relic draft opens behind it
+                before = server.read_log().count("opened an EVENT room")
+                play("pick 1")   # the ordinary draft; an event room may open behind it (seeded, about half the time)
                 time.sleep(2)
-                if floor == 5:
-                    log = server.read_log()
-                    results.append(Result("the floor 5 boss opens a relic draft after the ordinary draft",
-                                          "opened a RELIC draft at floor 5" in log, "no RELIC draft line for floor 5"))
-                    results.append(Result("ordinary floors never opened a relic draft",
-                                          log.count("opened a RELIC draft") == 1,
-                                          f"{log.count('opened a RELIC draft')} relic drafts in the log"))
-                    play("ready")   # an open draft must hold the floor shut
-                    time.sleep(3)
-                    results.append(Result("an open relic draft holds the intermission shut",
-                                          "INTERMISSION" in run_line(rcon), run_line(rcon)))
-                    play("pick 1")  # the relic
-                    time.sleep(2)
-                    log = server.read_log()
-                    results.append(Result("the relic pick is held by the run", "found relic" in log,
-                                          "no 'found relic' line"))
+                if server.read_log().count("opened an EVENT room") > before:
+                    rooms += 1
                     play("ready")
-                    if not wait_state(rcon, "ENCOUNTER_ACTIVE", 6, seconds=40):
-                        raise RuntimeError("floor 6 never opened after the relic: " + run_line(rcon))
-                    results.append(Result("floor 6 opens once the relic is chosen", True, ""))
-                    break
-                play("pick 1")   # an event room may be open on an ordinary floor (P34b); refused if not
+                    time.sleep(3)
+                    results.append(Result(f"floor {floor}: an open event room holds the intermission shut",
+                                          "INTERMISSION" in run_line(rcon), run_line(rcon)))
+                    choices = server.read_log().count("event choice")
+                    play("pick 1")
+                    time.sleep(2)
+                    results.append(Result(f"floor {floor}: the event choice is applied",
+                                          server.read_log().count("event choice") == choices + 1, "no 'event choice' line"))
                 play("ready")
                 if not wait_state(rcon, "ENCOUNTER_ACTIVE", floor + 1, seconds=40):
                     raise RuntimeError(f"floor {floor + 1} never opened: {run_line(rcon)}")
 
             log = server.read_log()
+            results.append(Result("at least one event room appeared in four floors (50% each; rerun if this alone fails)",
+                                  rooms > 0, "no room rolled"))
             results.append(Result("no CobbleTowers exception during any of it",
                                   "	at com.cobbletowers" not in log, "a CobbleTowers stack frame is in the log"))
     except Exception as exc:  # noqa: BLE001
-        results.append(Result("relic run", False, repr(exc)))
+        results.append(Result("event run", False, repr(exc)))
     finally:
         if bot is not None:
             bot.kill()

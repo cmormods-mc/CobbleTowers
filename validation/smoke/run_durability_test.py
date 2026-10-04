@@ -77,7 +77,7 @@ class Server:
             raise RuntimeError(f"no fabric-server-launch.jar in {self.directory}")
         handle = open(self.log, "w", encoding="utf-8", errors="replace")
         self.process = subprocess.Popen(
-            [str(self.java), "-Xms2G", "-Xmx4G", "-jar", launcher.name, "nogui"],
+            [str(self.java), "-Xms2G", "-Xmx4G", *os.environ.get("SMOKE_JAVA_OPTS", "").split(), "-jar", launcher.name, "nogui"],
             cwd=self.directory, stdout=handle, stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
 
     def wait_until_ready(self) -> None:

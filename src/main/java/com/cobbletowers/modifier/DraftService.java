@@ -257,9 +257,14 @@ public final class DraftService {
         if (draft.resolved()) return draft;
 
         DraftVote.Result result = DraftVote.resolve(draft.votes(), draft.cards().size(),
-                draft.relic() ? relicSeed(run, draft.floorIndex()) : draftSeed(run, draft.floorIndex()));
+                draft.event() ? com.cobbletowers.intermission.IntermissionEvents.seedOf(run, draft.floorIndex())
+                        : draft.relic() ? relicSeed(run, draft.floorIndex()) : draftSeed(run, draft.floorIndex()));
         PersistedDraft resolved = draft.resolvedAs(result.cardIndex(), result.byTieBreak());
         ResourceLocation won = resolved.cards().get(result.cardIndex());
+
+        if (draft.event()) {
+            return settleEvent(server, run, runId, resolved, won, result.byTieBreak(), now);
+        }
 
         RunModifierState next = draft.relic()
                 ? run.modifiers().withRelic(won).withDraft(resolved)
@@ -282,6 +287,15 @@ public final class DraftService {
         if (!relics.isEmpty()) {
             after = after.withModifiers(next.withDraft(PersistedDraft.openingRelics(draft.floorIndex(), relics)), now);
             TowerLog.info("Run {} opened a RELIC draft at floor {}: {}", runId, draft.floorIndex(), relics);
+        } else {
+            // No relic to give: a non-milestone floor may have an event room instead.
+            Optional<com.cobbletowers.intermission.IntermissionEvents.Room> room =
+                    com.cobbletowers.intermission.IntermissionEvents.roomFor(content, after, draft.floorIndex());
+            if (room.isPresent()) {
+                after = after.withModifiers(next.withDraft(PersistedDraft.openingEvent(draft.floorIndex(),
+                        com.cobbletowers.intermission.IntermissionEvents.cardsOf(room.get()))), now);
+                TowerLog.info("Run {} opened an EVENT room ({}) at floor {}", runId, room.get(), draft.floorIndex());
+            }
         }
         TowerRuns.save(server, after, true);
         TowerLog.info("Run {} drafted {}{} at floor {}{}", runId, won, draft.lockIn() ? " (LOCKED IN)" : "",
@@ -289,6 +303,29 @@ public final class DraftService {
         TowerDefinitionRegistry.content().modifier(won).ifPresent(modifier ->
                 com.cobbletowers.events.TowerEvents.emit(new com.cobbletowers.events.TowerEvent.Drafted(runId,
                         run.participants().stream().map(PersistedParticipant::playerId).toList(), won, modifier.risk())));
+        return resolved;
+    }
+
+    /** Applies the option an event room's vote chose (P34b). */
+    private static PersistedDraft settleEvent(MinecraftServer server, PersistedRun run, UUID runId,
+                                              PersistedDraft resolved, ResourceLocation won, boolean tie, long now) {
+        var outcome = com.cobbletowers.intermission.IntermissionEvents.Option.fromCard(won).map(option ->
+                com.cobbletowers.intermission.IntermissionEvents.resolve(TowerDefinitionRegistry.content(), run,
+                        resolved.floorIndex(), option));
+        RunModifierState base = outcome.map(com.cobbletowers.intermission.IntermissionEvents.Outcome::state)
+                .orElse(run.modifiers());
+        TowerRuns.save(server, run.withModifiers(base.withDraft(resolved), now), true);
+        TowerLog.info("Run {} event choice {} at floor {}{}: {}", runId, won, resolved.floorIndex(),
+                tie ? " on a seed tie-break" : "", outcome.map(com.cobbletowers.intermission.IntermissionEvents.Outcome::message).orElse("unknown option"));
+        outcome.ifPresent(o -> {
+            for (PersistedParticipant participant : run.participants()) {
+                net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+                if (player == null) continue;
+                if (o.healParty()) com.cobbletowers.economy.VendorServices.apply(
+                        com.cobbletowers.definition.VendorEffect.FULL_HEAL, player);
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(o.message()));
+            }
+        });
         return resolved;
     }
 

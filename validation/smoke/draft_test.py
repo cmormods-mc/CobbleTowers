@@ -89,6 +89,8 @@ def vote(rcon: Rcon, name: str, card: int) -> str:
 
 
 def main() -> None:
+    # This test asserts on one settled modifier draft; an intermission event room (P34b) would chain behind it.
+    os.environ.setdefault("SMOKE_JAVA_OPTS", "-Dcobbletowers.events=off")
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--server-dir", required=True, type=Path)

@@ -117,6 +117,9 @@ def main() -> None:
                 if floor < 4:
                     play(rcon, A, "pick 1")
                     play(rcon, B, "pick 1")
+                    # a second round: an event room may open behind the draft (P34b); an unneeded pick is refused
+                    play(rcon, A, "pick 1")
+                    play(rcon, B, "pick 1")
                     play(rcon, A, "ready")
                     play(rcon, B, "ready")
                     if not wait_state(rcon, "ENCOUNTER_ACTIVE", seconds=60, floor=floor + 1):
@@ -136,6 +139,9 @@ def main() -> None:
             drafted_before = int(re.search(r"modifiers: (\d+) drafted", shown).group(1))
 
             # --- ascend --------------------------------------------------------------------------------
+            play(rcon, A, "pick 1")
+            play(rcon, B, "pick 1")
+            # a second round: an event room may open behind the draft (P34b); an unneeded pick is refused
             play(rcon, A, "pick 1")
             play(rcon, B, "pick 1")
             play(rcon, A, "ready")

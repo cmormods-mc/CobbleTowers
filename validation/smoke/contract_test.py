@@ -153,6 +153,8 @@ def main() -> None:
                     results.append(Result("Floor Runner is complete at three floors", "[3/3]" in runner and "DONE" in runner, runner))
                 if floor < 5:
                     play(rcon, A, "pick 1")
+                    # a second round: an event room may open behind the draft (P34b); an unneeded pick is refused
+                    play(rcon, A, "pick 1")
                     play(rcon, A, "ready")
                     if not wait_state(rcon, run, "ENCOUNTER_ACTIVE", 60):
                         raise RuntimeError(f"floor {floor + 1} never opened")

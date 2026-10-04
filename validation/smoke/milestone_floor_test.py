@@ -110,6 +110,8 @@ def main() -> None:
                 if not wait_state(rcon, "INTERMISSION", floor, seconds=20):
                     raise RuntimeError(f"floor {floor} never reached its intermission: {run_line(rcon)}")
                 play("pick 1")   # a draft may or may not be open; an unneeded pick is refused harmlessly
+                # a second round: an event room may open behind the draft (P34b); an unneeded pick is refused
+                play("pick 1")
                 play("ready")
                 if not wait_state(rcon, "ENCOUNTER_ACTIVE", floor + 1, seconds=40):
                     raise RuntimeError(f"floor {floor + 1} never opened: {run_line(rcon)}")
