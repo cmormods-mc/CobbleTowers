@@ -211,6 +211,7 @@ public final class MasteryService {
         }
         boards.checkpoint(server);
         com.cobbletowers.echo.EchoService.refresh(server, run);
+        com.cobbletowers.club.ClubService.onCycleCleared(server, run.towerId(), clear.players(), clear.score());
         TowerLog.info("Run {} cleared a cycle of {} at Ascension {}: {} ms, flawless={}, score {}, {} severe",
                 run.runId(), run.towerId(), clear.ascension(), clear.activeMillis(), clear.flawless(), clear.score(),
                 clear.severeModifiers());
