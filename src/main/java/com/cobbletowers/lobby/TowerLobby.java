@@ -53,6 +53,17 @@ public final class TowerLobby {
     /** Pokemon each player chose to register (P18). Absent or empty means "my current party". */
     private final Map<UUID, List<UUID>> chosen = new LinkedHashMap<>();
 
+    /** The seed from a run code (P35), empty for a fresh random one. A different tower is a different offer, so it clears it. */
+    private java.util.Optional<Long> seed = java.util.Optional.empty();
+
+    public java.util.Optional<Long> seed() {
+        return seed;
+    }
+
+    public void setSeed(java.util.Optional<Long> next) {
+        this.seed = next;
+    }
+
     public TowerLobby(UUID host, ResourceLocation tower) {
         this.host = host;
         this.tower = tower;
@@ -99,6 +110,7 @@ public final class TowerLobby {
         this.ascension = 0;
         this.playlist = java.util.Optional.empty();
         this.trial = java.util.Optional.empty();
+        this.seed = java.util.Optional.empty();
         // A different tower is a different offer: anyone who already accepted agreed to the old one.
         members.replaceAll((id, member) -> new Member(Response.INVITED, member.invitedAt()));
         cancelCountdown();

@@ -229,6 +229,47 @@ public final class LobbyService {
                         : ". Someone on the team has already used this trial's attempt, so this run is practice and will not post. Use /tower start.");
     }
 
+    /** The code of the last run each player started, for {@code /tower play code}. In memory only. */
+    private static final Map<UUID, String> LAST_CODES = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** What {@code /tower play code} says with no argument: the code of the run you last started. */
+    public static String lastCode(ServerPlayer player) {
+        String code = LAST_CODES.get(player.getUUID());
+        return code == null ? "You have not started a run since the server last restarted." : "Your last run code: " + code;
+    }
+
+    /**
+     * The host sets the lobby to a run code (P35): its tower, mode, starting Ascension and seed. Refused when the code is
+     * not valid, names something not loaded, or asks for an Ascension the team has not reached.
+     */
+    public static String useCode(MinecraftServer server, ServerPlayer player, String raw) {
+        java.util.Optional<com.cobbletowers.runcode.RunCode.Decoded> decoded = com.cobbletowers.runcode.RunCode.decode(raw);
+        if (decoded.isEmpty()) return "That is not a valid run code. Check it was copied whole (it looks like CT1-...).";
+        com.cobbletowers.runcode.RunCode.Decoded code = decoded.get();
+        if (!TowerDefinitionRegistry.content().towers().containsKey(code.tower())) {
+            return "That code is for " + code.tower() + ", which this server does not have.";
+        }
+        if (code.playlist().isPresent() && PlaylistRegistry.get(code.playlist().get()).isEmpty()) {
+            return "That code uses the mode " + code.playlist().get() + ", which this server does not have.";
+        }
+        String selected = select(server, player, code.tower());
+        TowerLobby lobby = BY_HOST.get(player.getUUID());
+        if (lobby == null || !lobby.tower().equals(code.tower())) return selected;
+        if (lobby.counting()) return "The run is already starting.";
+        lobby.setTrial(java.util.Optional.empty());
+        String mode = setPlaylist(server, player, code.playlist().map(id -> id.toString()).orElse("standard"));
+        if (code.playlist().isPresent() && lobby.playlist().isEmpty()) return mode;
+        if (code.ascension() > 0) {
+            String ascended = setAscension(server, player, code.ascension());
+            if (lobby.ascension() != code.ascension()) return ascended;
+        }
+        lobby.setSeed(java.util.Optional.of(code.seed()));
+        broadcast(server, lobby, "");
+        return "Run code accepted: " + towerName(code.tower()) + ", " + playlistName(lobby.playlist())
+                + (code.ascension() > 0 ? ", Ascension " + code.ascension() : "")
+                + ". You will get the same opponents, bosses and draft cards as the player who shared it. Use /tower start.";
+    }
+
     /** The host picks the playlist (P32): its house rules apply to the whole team. {@code "standard"} clears it. */
     public static String setPlaylist(MinecraftServer server, ServerPlayer player, String raw) {
         TowerLobby lobby = BY_HOST.get(player.getUUID());
@@ -422,7 +463,7 @@ public final class LobbyService {
             return;
         }
 
-        long seed = server.overworld().getRandom().nextLong();
+        long seed = lobby.seed().orElseGet(() -> server.overworld().getRandom().nextLong());
         RunOptions options = RunOptions.of(lobby.playlist());
         List<ResourceLocation> trialModifiers = List.of();
         if (lobby.trial().isPresent()) {
@@ -442,6 +483,13 @@ public final class LobbyService {
         }
         UUID runId = created.get().runId();
         TowerRuns.save(server, created.get(), true);
+        if (lobby.trial().isEmpty()) {
+            // Printed for every ordinary run (P35): a friend who enters it plays the same run.
+            String code = com.cobbletowers.runcode.RunCode.encode(lobby.tower(), lobby.playlist(), startAt, seed);
+            for (UUID id : players) LAST_CODES.put(id, code);
+            broadcast(server, lobby, "Run code: " + code + " (share it; /tower play code <code> starts the same run)");
+            TowerLog.info("Run {} started with code {}", runId, code);
+        }
 
         // Move registered Pokemon into the party. Journaled and flushed first, per player, so a failure or
         // a crash anywhere from here on can be undone; a failure here undoes the ones already done.

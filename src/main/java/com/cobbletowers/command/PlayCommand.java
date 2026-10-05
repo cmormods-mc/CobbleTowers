@@ -46,6 +46,13 @@ public final class PlayCommand {
                         .then(Commands.literal("playlist")
                                 .then(Commands.argument("mode", com.mojang.brigadier.arguments.StringArgumentType.word())
                                         .executes(PlayCommand::playlist)))
+                        .then(Commands.literal("code")
+                                .executes(context -> say(context, com.cobbletowers.lobby.LobbyService.lastCode(
+                                        context.getSource().getPlayerOrException())))
+                                .then(Commands.argument("code", com.mojang.brigadier.arguments.StringArgumentType.word())
+                                        .executes(context -> say(context, com.cobbletowers.lobby.LobbyService.useCode(
+                                                context.getSource().getServer(), context.getSource().getPlayerOrException(),
+                                                com.mojang.brigadier.arguments.StringArgumentType.getString(context, "code"))))))
                         .then(Commands.literal("draft")
                                 .executes(PlayCommand::draft)
                                 .then(Commands.literal("restart").executes(PlayCommand::draftRestart))
