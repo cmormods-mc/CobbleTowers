@@ -35,6 +35,12 @@ public final class RunExitService {
     private static final int SWEEP_EVERY_TICKS = 20;
     private static int ticks;
 
+    /**
+     * Operators in creative or spectator who were in the tower when their own run ended: they go home like anyone else, instead of being
+     * exempt as explorers. In memory on purpose; a restart loses the mark, and the cell release still sends every participant home.
+     */
+    private static final java.util.Set<UUID> LEAVING = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
     private RunExitService() {}
 
     public static void install() {
@@ -46,6 +52,11 @@ public final class RunExitService {
                 TowerLog.error("The tower exit sweep failed", ex);
             }
         });
+    }
+
+    /** An operator in creative or spectator mode, who may be in the tower to look around. */
+    private static boolean operatorExploring(ServerPlayer player) {
+        return player.hasPermissions(2) && (player.isCreative() || player.isSpectator());
     }
 
     private static boolean inTower(ServerPlayer player) {
@@ -77,8 +88,21 @@ public final class RunExitService {
         for (PersistedParticipant participant : run.participants()) {
             ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
             if (player != null && inTower(player)) {
+                if (operatorExploring(player)) LEAVING.add(player.getUUID());
                 player.sendSystemMessage(Component.literal("The run is over. You will be returned in "
                         + ExitRules.BEAT_MILLIS / 1000 + " seconds."));
+            }
+        }
+    }
+
+    private static void evacuateParticipants(MinecraftServer server, PersistedRun run) {
+        for (PersistedParticipant participant : run.participants()) {
+            ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+            if (player == null || !inTower(player)) continue;
+            try {
+                evacuate(server, player);
+            } catch (RuntimeException ex) {
+                TowerLog.error("Could not send " + participant.playerId() + " out of a cell that is being released", ex);
             }
         }
     }
@@ -94,8 +118,11 @@ public final class RunExitService {
     static void sweep(MinecraftServer server, long now) {
         // Players first, so a cell is never reset under someone the same pass was about to move.
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (!inTower(player)) continue;
-            boolean exempt = player.hasPermissions(2) && (player.isCreative() || player.isSpectator());
+            if (!inTower(player)) {
+                LEAVING.remove(player.getUUID());
+                continue;
+            }
+            boolean exempt = ExitRules.exempt(operatorExploring(player), LEAVING.contains(player.getUUID()));
             if (ExitRules.decide(true, exempt, standingOf(player.getUUID()), now) == Verdict.LEAVE) {
                 try {
                     evacuate(server, player);
@@ -108,6 +135,9 @@ public final class RunExitService {
         for (PersistedRun run : TowerRuns.all()) {
             if (!run.isRetired() || run.cell().isEmpty()) continue;
             if (ExitRules.releaseDue(anyoneInside(server, run), run.updatedAt(), now)) {
+                // A cell is never reset under the people who were in the run: anyone still inside (an operator the loop above
+                // chose to leave alone, say) goes home first, or they would be left standing in an empty dimension.
+                evacuateParticipants(server, run);
                 RunTransitionService.releaseCell(server, run, now);
             }
         }
@@ -180,6 +210,7 @@ public final class RunExitService {
         }
         store.remove(player.getUUID());
         store.checkpoint(server);
+        LEAVING.remove(player.getUUID());
         player.sendSystemMessage(Component.literal("You have left the tower."));
     }
 }

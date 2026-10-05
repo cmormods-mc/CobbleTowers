@@ -132,3 +132,25 @@ its DEFAULT mode crashing CobbleRaids' patched Showdown on a forced switch, and 
 accept, supplies the target when the move needs one, and answers a forced switch itself. Result: 12/12
 opponents beaten, slowest 14 seconds, no refused choice, no quarantined cell. `SMOKE_BOT=raid` brings the old
 bot back.
+
+
+---
+
+## Fix, 2026-10-05: operators in creative who cash out
+
+Found by the owner on a real server: cashing out as an operator in creative mode left them in an empty dimension instead of back where they
+started. The sweep exempts an operator in creative or spectator mode (they may be looking around the tower on purpose), and that exemption applied
+even when the operator's **own run had just ended**; after the beat the finished run's cell was reset around them, they fell out of the world and respawned
+at world spawn.
+
+* `ExitRules.exempt(operatorInCreativeOrSpectator, leavingAfterOwnRun)`: an operator is exempt only while exploring. `RunExitService.announce`, which runs
+  the moment a run ends with someone still inside, marks an operator who was inside; that mark (in memory) lifts the exemption, so they wait out the beat
+  and go home like anyone else. An operator who walks in later, with no run, is still left alone.
+* Belt and braces: before a finished run's cell is released, every participant still inside is sent home, whatever the exemption said, so a cell
+  is never reset under the people who were in the run (this also covers a restart that lost the mark).
+* **Cell cleanup**: `CellCleanup.sweepDebris` now also removes falling blocks. The Battle Tower building has about ten thousand concrete powder and sand
+  blocks, and some fall for a while after a paste; a run that ended seconds after entering had its cell verified with a couple of hundred still in the air
+  and lost the cell. They are the building's physics, not a stray.
+* Tests: `ExitRulesTest` (exemption and the beat); live `exit_operator_test.py` 9/9 (an operator in creative cashes out and lands where they started with no
+  cell lost; one who walks into the tower with no run is left alone). Run against the original code the same test fails the way the owner saw: the
+  operator ends up at world spawn and the cell is quarantined. `exit_test.py` 12/12.

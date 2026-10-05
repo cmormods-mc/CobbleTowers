@@ -49,7 +49,7 @@ public final class ExitRules {
 
     /**
      * @param inTower whether the player is in the tower dimension right now
-     * @param exempt  an operator in creative or spectator mode, who may be looking around on purpose
+     * @param exempt  an operator in creative or spectator mode, who may be looking around on purpose (see {@link #exempt})
      */
     public static Verdict decide(boolean inTower, boolean exempt, Standing standing, long now) {
         if (!inTower || exempt) return Verdict.STAY;
@@ -58,6 +58,16 @@ public final class ExitRules {
             case ENDED -> now - standing.endedAt() >= BEAT_MILLIS ? Verdict.LEAVE : Verdict.WAIT;
             case NONE -> Verdict.LEAVE;
         };
+    }
+
+    /**
+     * Whether a player in the tower is exempt from being sent home: an operator in creative or spectator mode who is exploring on
+     * purpose. Not one who was in the tower when their <b>own run ended</b> ({@code leavingAfterOwnRun}): that is the end of a run,
+     * not a visit, and leaving them would strand them in a cell that is about to be reset. Found on a real server, where an operator in
+     * creative who cashed out was left in an empty dimension.
+     */
+    public static boolean exempt(boolean operatorInCreativeOrSpectator, boolean leavingAfterOwnRun) {
+        return operatorInCreativeOrSpectator && !leavingAfterOwnRun;
     }
 
     /**

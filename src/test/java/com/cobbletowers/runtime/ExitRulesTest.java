@@ -49,6 +49,25 @@ class ExitRulesTest {
     }
 
     @Test
+    @DisplayName("an operator exploring the tower is exempt, but one who was inside when their own run ended is not")
+    void operatorExemptionEndsWithTheirOwnRun() {
+        assertTrue(ExitRules.exempt(true, false), "an operator in creative or spectator who walked in is exploring");
+        assertFalse(ExitRules.exempt(true, true), "the end of their own run is not a visit: they leave like anyone else");
+        assertFalse(ExitRules.exempt(false, false), "an ordinary player is never exempt");
+        assertFalse(ExitRules.exempt(false, true));
+    }
+
+    @Test
+    @DisplayName("once no longer exempt, an operator waits out the beat and then leaves, exactly as a player does")
+    void leavingOperatorFollowsTheBeat() {
+        boolean exempt = ExitRules.exempt(true, true);
+        assertEquals(Verdict.WAIT, ExitRules.decide(true, exempt, Standing.ended(END), END));
+        assertEquals(Verdict.LEAVE, ExitRules.decide(true, exempt, Standing.ended(END), END + ExitRules.BEAT_MILLIS));
+        assertEquals(Verdict.STAY, ExitRules.decide(true, ExitRules.exempt(true, false), Standing.ended(END), END + 10 * 60_000L),
+                "while an operator exploring long after any run stays");
+    }
+
+    @Test
     @DisplayName("a restart long after the end finds the beat already over, so the player leaves straight away")
     void longAfterTheEnd() {
         assertEquals(Verdict.LEAVE, ExitRules.decide(true, false, Standing.ended(0), 10 * 60_000L));
