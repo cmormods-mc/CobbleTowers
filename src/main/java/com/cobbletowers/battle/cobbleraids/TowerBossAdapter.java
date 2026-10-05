@@ -169,6 +169,7 @@ public final class TowerBossAdapter {
         UUID encounterId = ENCOUNTER_BY_RUN.remove(runId);
         if (encounterId == null) return false;
         BY_ENCOUNTER.remove(encounterId);
+        com.cobbletowers.economy.AscensionLibScouting.end(encounterId.toString());
         try {
             // CobbleRaids removes the boss itself on abort, which is what keeps the cell clean enough
             // for P3's sweep to release it rather than quarantine it.
@@ -220,6 +221,7 @@ public final class TowerBossAdapter {
         public void onEnded(EncounterResult result) {
             Binding binding = BY_ENCOUNTER.remove(result.encounterId());
             if (binding == null) return;
+            com.cobbletowers.economy.AscensionLibScouting.end(result.encounterId().toString());
             ENCOUNTER_BY_RUN.remove(binding.runId(), result.encounterId());
             try {
                 listener.onBossEnded(server, binding, result);

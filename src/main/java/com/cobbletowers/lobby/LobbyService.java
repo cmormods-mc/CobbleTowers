@@ -457,6 +457,18 @@ public final class LobbyService {
                 }
             }
         }
+        // The entry item (decided 2026-10-05): one tower key per player, checked here and taken only once the run
+        // has really started (below), so a launch that fails costs nothing.
+        boolean keyRun = com.cobbletowers.economy.TowerKeyPolicy.costsKey(
+                com.cobbletowers.economy.TowerKeys.required(), lobby.trial().isPresent(), rentalRun);
+        if (keyRun) {
+            for (UUID id : players) {
+                ServerPlayer keyholder = server.getPlayerList().getPlayer(id);
+                if (keyholder == null || com.cobbletowers.economy.TowerKeys.count(keyholder) < 1) {
+                    problems.add((keyholder == null ? "A teammate" : name(keyholder)) + " needs a Tower Key");
+                }
+            }
+        }
         if (!problems.isEmpty()) {
             TowerLog.info("The lobby of {} could not start {}: {}", lobby.host(), lobby.tower(), String.join("; ", problems));
             broadcast(server, lobby, "Cannot start: " + String.join("; ", problems));
@@ -538,6 +550,17 @@ public final class LobbyService {
             return;
         }
         // The attempt is spent only now that the run has really started: a launch that failed above costs nothing.
+        if (keyRun) {
+            for (UUID id : players) {
+                ServerPlayer keyholder = server.getPlayerList().getPlayer(id);
+                // The run is open and cannot be undone here, so a key that vanished in the gap is logged, not enforced.
+                if (keyholder != null && com.cobbletowers.economy.TowerKeys.take(keyholder)) {
+                    keyholder.sendSystemMessage(Component.literal("Used 1 Tower Key."));
+                } else {
+                    TowerLog.warn("Run {} started but player {} had no Tower Key left to take", runId, id);
+                }
+            }
+        }
         TowerRuns.get(runId).ifPresent(started -> {
             com.cobbletowers.trial.TrialService.recordLaunch(server, started);
             if (started.options().isTrial()) {

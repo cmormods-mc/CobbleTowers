@@ -121,6 +121,7 @@ public final class CobbleTowers implements ModInitializer {
         // Armor sets (P24): the items must exist before any datapack loads; what they do is data.
         com.cobbletowers.armor.ArmorSetItems.register();
         com.cobbletowers.season.SeasonTrimItems.register();
+        com.cobbletowers.economy.TowerKeys.install();
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.armor.ArmorSetRegistry());
         com.cobbletowers.armor.WornSets.install();
         com.cobbletowers.armor.ArmorBonusEffects.install();
@@ -128,6 +129,8 @@ public final class CobbleTowers implements ModInitializer {
         // Subscribed once, for the life of the JVM: Cobblemon's battle events are global, and the
         // adapter filters them by battle id rather than re-subscribing per floor.
         TowerEncounters.install();
+        // Retries AscensionLib payouts the wallet has not confirmed (at server start, then every 30 seconds).
+        com.cobbletowers.economy.AscensionLibRewards.install();
         // Disconnects, rejoining, and the watchdog that ends a floor nobody is playing any more.
         TowerPresence.install();
         com.cobbletowers.lobby.LobbyService.install();

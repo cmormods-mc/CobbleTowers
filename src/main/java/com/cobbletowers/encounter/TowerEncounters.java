@@ -23,6 +23,9 @@ import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.diagnostics.TowerMetrics;
+import com.cobbletowers.economy.AscensionLibRewards;
+import com.cobbletowers.economy.AscensionLibScouting;
+import com.cobbletowers.economy.ScoutingTiers;
 import com.cobbletowers.instance.CellPreparer;
 import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.modifier.ModifierEffects;
@@ -123,6 +126,12 @@ public final class TowerEncounters {
     }
 
     private static final Map<UUID, Round> ROUNDS = new LinkedHashMap<>();
+
+    /**
+     * The AscensionLib scouting encounter of each player's current opponent, keyed {@code run/player}. One per player:
+     * a floor's opponents are separate battles, so each is its own encounter, ended when that battle is.
+     */
+    private static final Map<String, String> OPPONENT_SCOUTING = new LinkedHashMap<>();
 
     private TowerEncounters() {}
 
@@ -245,6 +254,7 @@ public final class TowerEncounters {
                     level, player, snapshot.get(), where, runId, run.floorIndex());
             byPlayer.put(player.getUUID(), battle.isPresent() ? Status.FIGHTING : Status.OUT);
             if (battle.isPresent()) {
+                declareOpponent(runId, player.getUUID(), run.floorIndex(), snapshot.get());
                 // TDS #60/section 11: the floor's first opponent per player is drawn here, not in
                 // sendNextOpponent -- the same span, measured the same way, just a different call site
                 // for the same fact (every player's own first battle of the floor).
@@ -288,6 +298,7 @@ public final class TowerEncounters {
             com.cobbletowers.echo.EchoDuels.onResolved(server, binding, playerWon);
             return;
         }
+        endOpponentScouting(binding.runId(), binding.playerId());
         Round round = ROUNDS.get(binding.runId());
         if (round == null) return;
 
@@ -432,6 +443,7 @@ public final class TowerEncounters {
         TowerMetrics.recordEncounterConstruction(server, round.runId(), (System.nanoTime() - started) / 1_000_000);
         theme.ifPresent(resolved -> announceJersey(player, resolved, snapshot.get()));
         sendScoutingReveal(player, content, tower, floor.get(), run, effects, snapshot.get());
+        declareOpponent(round.runId(), playerId, run.floorIndex(), snapshot.get());
         TowerLog.info("Run {} floor {}: {} faces another opponent ({} left after this)",
                 round.runId(), run.floorIndex(), playerId, wave.remaining() - 1);
         return true;
@@ -504,6 +516,7 @@ public final class TowerEncounters {
      */
     public static boolean dropPlayer(MinecraftServer server, UUID runId, UUID playerId, String why, long now) {
         CobblemonBattleAdapter.endPlayer(server, runId, playerId);
+        endOpponentScouting(runId, playerId);
         Round round = ROUNDS.get(runId);
         if (round == null || !round.byPlayer().containsKey(playerId)) return false;
         if (round.byPlayer().get(playerId) != Status.FIGHTING) return false;
@@ -619,6 +632,7 @@ public final class TowerEncounters {
                 server, level, standing, boss.get(), where, round.runId(), round.floorIndex(),
                 DraftService.effects(run));
         if (started.isEmpty()) return false;
+        declareBoss(server, run, content, round.floorIndex(), boss.get(), standing, started.get());
 
         ROUNDS.put(round.runId(),
                 new Round(round.runId(), round.floorIndex(), Phase.BOSS, round.byPlayer(), round.waves(),
@@ -671,6 +685,7 @@ public final class TowerEncounters {
                 // looking for. It moved here when the boss became the end of a floor, and stopped
                 // being logged at all for a run -- which the live test noticed before anyone else.
                 TowerLog.info("Floor {} of run {} cleared", binding.floorIndex(), binding.runId());
+                payAscensionLib(server, binding, result, now);
                 // Everyone watching is now owed the intermission, which is where they come back.
                 ParticipantService.markRevivePending(server, binding.runId(), now);
                 // And the party's Pokemon go back in their balls: the floor is over, and a lead left
@@ -703,6 +718,36 @@ public final class TowerEncounters {
     }
 
     /**
+     * Pays a cleared floor in AscensionLib's wallet, outside the run's unclaimed pool: a Scouter roll for every floor,
+     * and the milestone bands (dust, facets, cores, Unique Fragments) on a milestone floor, covering the floors since
+     * the previous one. Paid to every member of the run, knocked out or offline included: the boss is a team fight, and
+     * a player who left the run is the only one excluded. Trials are skipped, because they are repeatable practice and
+     * would bypass whatever gates entry to the tower. The payout is durable and retried by {@link AscensionLibRewards}.
+     */
+    private static void payAscensionLib(MinecraftServer server, TowerBossAdapter.Binding binding,
+                                        EncounterResult result, long now) {
+        Optional<PersistedRun> found = TowerRuns.get(binding.runId());
+        if (found.isEmpty() || found.get().options().floorLimit() > 0) return;
+        PersistedRun run = found.get();
+        TowerContent content = TowerDefinitionRegistry.content();
+        String outcome = result.outcome().name();
+        List<UUID> members = run.participants().stream()
+                .filter(participant -> participant.state().isInRun())
+                .map(PersistedParticipant::playerId)
+                .toList();
+        if (members.isEmpty()) return;
+
+        boolean keenEye = DraftService.effects(run).scoutingBonus() > 0;
+        AscensionLibRewards.settleScouterDrops(server, result.encounterId(), outcome, keenEye, members, now);
+
+        if (content.milestoneAt(run.towerId(), binding.floorIndex()).isEmpty()) return;
+        int from = AscensionLibRewards.segmentStart(
+                floor -> content.milestoneAt(run.towerId(), floor).isPresent(), binding.floorIndex());
+        AscensionLibRewards.settleMilestone(server, result.encounterId(), outcome, from, binding.floorIndex(),
+                members, now);
+    }
+
+    /**
      * The run is lost, so the unclaimed pool goes with it.
      *
      * <p>Marked rather than deleted, so what was earned can still be read afterwards -- and so
@@ -714,6 +759,45 @@ public final class TowerEncounters {
         TowerRuns.get(runId).ifPresent(run -> earn(server, runId,
                 LedgerEntry.forfeited(floorIndex, run.towerId(), now)));
         RunTransitionService.apply(server, runId, RunEvent.ENCOUNTER_RESOLVED_WIPED, now);
+    }
+
+
+    /**
+     * Lets AscensionLib's players scout this opponent with a Scouter. A reveal is personal: only the player facing the
+     * opponent can spend a Scouter on it. The id is unique per opponent (run, floor, ordinal) and never reused.
+     */
+    private static void declareOpponent(UUID runId, UUID playerId, int floorIndex, EncounterSnapshot snapshot) {
+        String id = runId + "-f" + floorIndex + "-o" + snapshot.ordinal();
+        String previous = OPPONENT_SCOUTING.put(runId + "/" + playerId, id);
+        if (previous != null && !previous.equals(id)) AscensionLibScouting.end(previous);
+        AscensionLibScouting.declare(id, List.of(playerId), 0, ScoutingTiers.tierFor(floorIndex, false), false,
+                snapshot.species().toString(), snapshot.level());
+    }
+
+    private static void endOpponentScouting(UUID runId, UUID playerId) {
+        String id = OPPONENT_SCOUTING.remove(runId + "/" + playerId);
+        if (id != null) AscensionLibScouting.end(id);
+    }
+
+    private static void endOpponentScouting(UUID runId) {
+        String prefix = runId + "/";
+        for (String key : List.copyOf(OPPONENT_SCOUTING.keySet())) {
+            if (key.startsWith(prefix)) AscensionLibScouting.end(OPPONENT_SCOUTING.remove(key));
+        }
+    }
+
+    /**
+     * Lets the party scout the floor's boss. The encounter is CobbleRaids' own (its id is the boss encounter's), the
+     * reveal is shared with every player still standing, and a milestone boss uses the {@code boss} tier. A boss whose
+     * definition does not say what species it is cannot be scouted.
+     */
+    private static void declareBoss(MinecraftServer server, PersistedRun run, TowerContent content, int floorIndex,
+                                    BossDraw.Boss boss, List<ServerPlayer> standing, UUID encounterId) {
+        Optional<String> species = com.cobbletowers.battle.cobbleraids.RaidSpecies.of(server, boss.definition());
+        if (species.isEmpty()) return;
+        boolean milestone = content.milestoneAt(run.towerId(), floorIndex).isPresent();
+        AscensionLibScouting.declare(encounterId.toString(), standing.stream().map(ServerPlayer::getUUID).toList(), 0,
+                ScoutingTiers.tierFor(floorIndex, milestone), true, species.get(), boss.level());
     }
 
     /** Appends to the unclaimed pool. No worth is decided here; that is P9's. */
@@ -733,6 +817,7 @@ public final class TowerEncounters {
     /** Ends a run's floor without resolving it: abandoning, parking, shutting down. */
     public static void abandon(MinecraftServer server, UUID runId) {
         ROUNDS.remove(runId);
+        endOpponentScouting(runId);
         CobblemonBattleAdapter.endRun(server, runId);
         // The boss too, or it stands in the cell until the sweep quarantines it.
         TowerBossAdapter.abort(runId);
@@ -783,6 +868,7 @@ public final class TowerEncounters {
     public static int onServerStopped(MinecraftServer server) {
         int held = ROUNDS.size();
         ROUNDS.clear();
+        OPPONENT_SCOUTING.clear();
         CobblemonBattleAdapter.onServerStopped(server);
         TowerBossAdapter.onServerStopped();
         return held;
