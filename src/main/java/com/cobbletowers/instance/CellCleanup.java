@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
@@ -109,8 +110,12 @@ public final class CellCleanup {
     }
 
     /**
-     * Removes the debris a fought-over cell expects to hold -- dropped items and experience orbs -- and says how
-     * many there were. Narrower than {@link #sweepEntities} on purpose.
+     * Removes the debris a fought-over cell expects to hold -- dropped items, experience orbs and falling blocks -- and says
+     * how many there were. Narrower than {@link #sweepEntities} on purpose.
+     *
+     * <p>Falling blocks are the building's own physics, not a stray: the Battle Tower is made of thousands of concrete powder and sand
+     * blocks, some of which fall for a while after the building is pasted or reset. A run that ended within seconds of entering (a
+     * player dropping at once) had its cell verified with a couple of hundred of them still in the air and lost the cell for it.
      *
      * <p>A Pokemon that faints drops what Cobblemon's own drop rules give it, and nothing in a tower picks those
      * items up (rewards come from the reward table, not from the floor). Left lying there they are "entities still
@@ -124,7 +129,7 @@ public final class CellCleanup {
         if (level == null) return 0;
 
         List<Entity> debris = level.getEntities((Entity) null, CellGrid.sweepBoundsOf(cell),
-                entity -> entity instanceof ItemEntity || entity instanceof ExperienceOrb);
+                entity -> entity instanceof ItemEntity || entity instanceof ExperienceOrb || entity instanceof FallingBlockEntity);
         for (Entity entity : debris) entity.discard();
         return debris.size();
     }
