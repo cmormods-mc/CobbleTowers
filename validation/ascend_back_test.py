@@ -46,7 +46,7 @@ try:
     game = Path('L:/claude-cobbleraids-work/clientrig-ascend'); game.mkdir(exist_ok=True)
     (game / 'config' / 'ascensionlib-client.properties').unlink(missing_ok=True)   # the settings persist between runs
     client_launch.prepare(game, RIG, tower, SCALE, [asc] + card_jars)
-    env = dict(os.environ, COBBLETOWERS_REMOTE=str(OUT))
+    env = dict(os.environ, COBBLETOWERS_REMOTE=str(OUT), ASCENSIONLIB_HOLD_BACK='1')
     remote = Remote(OUT)
     client = subprocess.Popen(client_launch.command(JAVA, game, ['--quickPlayMultiplayer', f'127.0.0.1:{port}'], RIG), cwd=game, env=env,
                               stdout=open(game / 'client_output.log', 'w', encoding='utf-8', errors='replace'), stderr=subprocess.STDOUT)
@@ -61,26 +61,10 @@ try:
     rc(f'pokegiveother {PLAYER} arcanine level=50 shiny=true')
     rc(f'pokegiveother {PLAYER} magikarp level=5')
     time.sleep(3)
-    print('> acquire', [rc(f'execute as {PLAYER} run ascend admin acquire {n} {r}')[:80] for n, r in ((1, 'common'), (2, 'rare'), (3, 'legendary'), (4, 'mythical'))])
-    # All four reveals arrive at once: they must show one after another and never replace each other.
-    for i in range(4):
-        remote.send('wait 600'); remote.shot(f'c{i}a_back')
-        remote.send('wait 1900'); remote.shot(f'c{i}b_front')
-        remote.send('wait 600'); remote.shot(f'c{i}c_halo')
-        remote.send('press Continue'); remote.send('wait 900')
-    # The card back, caught as soon as it opens (before it turns over by itself).
-    print('> reveal', rc(f'execute as {PLAYER} run ascend admin reveal 2')[:80])
-    remote.send('wait 640'); remote.shot('f0_back'); remote.send('wait 1500'); remote.send('press Continue'); remote.send('wait 800')
-    # Reduced motion, then compact mode.
-    remote.send('cmd ascendui motion reduced'); remote.send('wait 600')
-    print('> reveal', rc(f'execute as {PLAYER} run ascend admin reveal 3')[:80])
-    remote.send('wait 900'); remote.shot('d0_reduced_motion')
-    remote.send('press Inspect'); remote.send('wait 2200'); remote.shot('d1_inspect_from_reveal')
-    remote.send('press ×'); remote.send('wait 800'); remote.shot('d2_back_on_reveal')
-    remote.send('press Continue'); remote.send('wait 600')
-    remote.send('cmd ascendui reveal compact'); remote.send('wait 600')
-    print('> reveal', rc(f'execute as {PLAYER} run ascend admin reveal 2')[:80])
-    remote.send('wait 1500'); remote.shot('e0_compact_toast')
+    print('> acquire', rc(f'execute as {PLAYER} run ascend admin acquire 3 legendary')[:60])
+    remote.send('wait 1500'); remote.shot('back_legendary')          # held face-down by ASCENSIONLIB_HOLD_BACK
+    remote.send('center'); remote.send('wait 140'); remote.shot('back_turning')
+    remote.send('wait 600'); remote.shot('back_revealed')
     remote.send('quit', wait=False)
 finally:
     if client:
