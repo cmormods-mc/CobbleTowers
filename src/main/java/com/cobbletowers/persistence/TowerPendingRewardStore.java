@@ -54,6 +54,20 @@ public final class TowerPendingRewardStore extends SavedData {
         setDirty();
     }
 
+    /**
+     * Queues a reward unless the same grant is already waiting (the same run or grant id, item and components), so a grant that is replayed after a
+     * crash is not paid twice. Rewards that have been handed over are no longer here, which is why callers queue before they record.
+     */
+    public void addIfAbsent(UUID playerId, PendingTowerReward reward) {
+        List<PendingTowerReward> queue = pending.computeIfAbsent(playerId, ignored -> new ArrayList<>());
+        for (PendingTowerReward waiting : queue) {
+            if (waiting.runId().equals(reward.runId()) && waiting.item().equals(reward.item())
+                    && waiting.components().equals(reward.components())) return;
+        }
+        queue.add(reward);
+        setDirty();
+    }
+
     /** Removes and returns everything queued for one player. */
     public List<PendingTowerReward> drain(UUID playerId) {
         List<PendingTowerReward> queue = pending.remove(playerId);

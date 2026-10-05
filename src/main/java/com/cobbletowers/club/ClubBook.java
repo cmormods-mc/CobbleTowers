@@ -180,8 +180,8 @@ public final class ClubBook {
         Optional<Club> found = clubOf(player);
         if (found.isEmpty()) return Result.NOT_IN_CLUB;
         Club club = found.get();
+        // The claim record stays: leaving and rejoining (or joining another club) must not pay the week twice.
         club.members.remove(player);
-        club.claimed.remove(player);
         if (club.members.isEmpty()) {
             clubs.remove(key(club.name));
         } else if (club.owner.equals(player)) {
@@ -204,7 +204,6 @@ public final class ClubBook {
         if (!found.get().owner.equals(owner)) return Result.NOT_OWNER;
         if (!found.get().members.containsKey(target) || owner.equals(target)) return Result.NOT_A_MEMBER;
         found.get().members.remove(target);
-        found.get().claimed.remove(target);
         return Result.OK;
     }
 
@@ -310,6 +309,10 @@ public final class ClubBook {
         Club club = found.get();
         club.roll(currentWeek);
         if (club.weekClears < WEEKLY_GOAL) return Result.GOAL_NOT_MET;
+        // One claim a week per player, wherever they were a member when they made it.
+        for (Club other : clubs.values()) {
+            if (other.weekKey.equals(currentWeek) && other.claimed.contains(player)) return Result.ALREADY_CLAIMED;
+        }
         return club.claimed.add(player) ? Result.OK : Result.ALREADY_CLAIMED;
     }
 

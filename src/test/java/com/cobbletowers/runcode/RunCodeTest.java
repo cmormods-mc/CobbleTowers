@@ -36,6 +36,18 @@ class RunCodeTest {
     }
 
     @Test
+    @DisplayName("an id with a hyphen in it survives the trip, though the hyphen is the code's own separator")
+    void hyphenatedIds() {
+        ResourceLocation tower = ResourceLocation.fromNamespaceAndPath("some-addon", "ice-spire");
+        ResourceLocation mode = id("fast-mode");
+        String code = RunCode.encode(tower, Optional.of(mode), 3, 99L);
+        RunCode.Decoded decoded = RunCode.decode(code).orElseThrow();
+        assertEquals(tower, decoded.tower());
+        assertEquals(Optional.of(mode), decoded.playlist());
+        assertEquals(99L, decoded.seed());
+    }
+
+    @Test
     @DisplayName("another namespace is kept, and a default one is left out of the text")
     void namespaces() {
         ResourceLocation other = ResourceLocation.fromNamespaceAndPath("someaddon", "spire");

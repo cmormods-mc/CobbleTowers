@@ -96,11 +96,14 @@ public final class SeasonProgressService {
         if (track.isPresent()) {
             int reached = track.get().stepsFor(next.total());
             if (reached > next.steps()) {
-                // The step count is saved with the tally before anything is handed over, so a crash in between cannot grant twice.
+                // Queue first (flushed, and deduplicated by grant, so a replay adds nothing twice), then record the steps, then tell and deliver.
+                // A crash after queueing and before the step count is saved replays the grant harmlessly; the other order lost a prize.
+                List<Runnable> afterwards = new ArrayList<>();
+                for (int step = next.steps() + 1; step <= reached; step++) afterwards.add(grantStep(server, player, season, track.get(), step));
                 saved = next.withSteps(reached);
                 store.put(player, season, saved);
                 store.checkpoint(server);
-                for (int step = next.steps() + 1; step <= reached; step++) grantStep(server, player, season, track.get(), step);
+                afterwards.forEach(Runnable::run);
                 return;
             }
         }
@@ -108,7 +111,8 @@ public final class SeasonProgressService {
         store.checkpoint(server);
     }
 
-    private static void grantStep(MinecraftServer server, UUID player, int season, SeasonTrackDefinition track, int number) {
+    /** Queues a step's rewards and cosmetics and returns what is left to do once the step is recorded: the message and the delivery. */
+    private static Runnable grantStep(MinecraftServer server, UUID player, int season, SeasonTrackDefinition track, int number) {
         SeasonTrackDefinition.Step step = track.steps().get(number - 1);
         TowerPendingRewardStore pending = TowerPendingRewardStore.get(server);
         long now = System.currentTimeMillis();
@@ -123,7 +127,7 @@ public final class SeasonProgressService {
             }
             String components = Cosmetics.expand(grant.components(), tokens);
             String label = Cosmetics.expand(grant.label(), tokens);
-            pending.add(player, new PendingTowerReward(grantId, 1, item, grant.amount(), now, components, label));
+            pending.addIfAbsent(player, new PendingTowerReward(grantId, 1, item, grant.amount(), now, components, label));
             given.add(label.isEmpty() ? describe(item, grant.amount()) : label);
         }
         Set<String> cosmetics = new HashSet<>();
@@ -134,12 +138,14 @@ public final class SeasonProgressService {
         TowerLog.info("{} reached season {} track step {}: {}{}", player, season, number, given,
                 cosmetics.isEmpty() ? "" : " and cosmetics " + cosmetics);
 
-        ServerPlayer online = server.getPlayerList().getPlayer(player);
-        if (online == null) return;
-        String reward = given.isEmpty() && cosmetics.isEmpty() ? "" : ": " + describeStep(step, season);
-        online.sendSystemMessage(Component.literal("Season " + season + " track, step " + number + "/" + track.stepCount() + " reached"
-                + reward));
-        if (!given.isEmpty()) RewardDelivery.deliver(server, online);
+        return () -> {
+            ServerPlayer online = server.getPlayerList().getPlayer(player);
+            if (online == null) return;
+            String reward = given.isEmpty() && cosmetics.isEmpty() ? "" : ": " + describeStep(step, season);
+            online.sendSystemMessage(Component.literal("Season " + season + " track, step " + number + "/" + track.stepCount() + " reached"
+                    + reward));
+            if (!given.isEmpty()) RewardDelivery.deliver(server, online);
+        };
     }
 
     /** The tokens a track grant may use: {@code {season}}, {@code {season_name}} and {@code {color}} (the spotlight region's dye). */
@@ -176,8 +182,10 @@ public final class SeasonProgressService {
     public static String describeStep(SeasonTrackDefinition.Step step, int season) {
         List<String> parts = new ArrayList<>();
         for (SeasonTrackDefinition.Grant grant : step.grants()) {
-            ResourceLocation item = ResourceLocation.tryParse(grant.item().replace("{season}", String.valueOf(season)));
-            parts.add(item == null ? grant.item() : describe(item, grant.amount()));
+            java.util.Map<String, String> tokens = tokensOf(season);
+            ResourceLocation item = ResourceLocation.tryParse(Cosmetics.expand(grant.item(), tokens));
+            String label = Cosmetics.expand(grant.label(), tokens);
+            parts.add(!label.isEmpty() ? label : item == null ? grant.item() : describe(item, grant.amount()));
         }
         for (String cosmetic : step.cosmetics()) parts.add(cosmetic.replace('_', ' '));
         return String.join(", ", parts);

@@ -48,6 +48,10 @@ public final class Watching {
                 targetInLiveRun, target.level().dimension().equals(TowerDimension.LEVEL),
                 TowerRuns.forPlayer(watcher.getUUID()).isPresent(), WATCHES.containsKey(watcher.getUUID())));
         if (refusal.isPresent()) return refusal.get();
+        // Spectator mode and a teleport in the middle of a Cobblemon battle would leave the battle half-attended.
+        if (com.cobblemon.mod.common.battles.BattleRegistry.getBattleByParticipatingPlayer(watcher) != null) {
+            return "Finish your battle first.";
+        }
 
         // Remember where they came from before the teleport, and keep the first mode if they switch to someone else.
         RunExitService.remember(server, watcher);
@@ -78,6 +82,14 @@ public final class Watching {
             ServerPlayer watcher = server.getPlayerList().getPlayer(watcherId);
             if (watcher == null) {
                 WATCHES.remove(watcherId);
+                continue;
+            }
+            if (TowerRuns.forPlayer(watcherId).isPresent()) {
+                // They joined a run of their own while watching (a lobby start moved them in): the watch is over, but this is not the end of
+                // anything that should send them home.
+                WATCHES.remove(watcherId);
+                watcher.setCamera(watcher);
+                watcher.setGameMode(watch.previousMode());
                 continue;
             }
             ServerPlayer target = server.getPlayerList().getPlayer(watch.targetId());

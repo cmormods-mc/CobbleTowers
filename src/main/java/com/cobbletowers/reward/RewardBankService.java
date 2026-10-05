@@ -122,6 +122,15 @@ public final class RewardBankService {
     // -------------------------------------------------------------- writing
 
     /**
+     * The seed loot is rolled from: the run's seed mixed with the run's own id. A run code shares a seed on purpose, so that a friend meets the same
+     * opponents, bosses and draft cards, but loot must not come with it, or a player could hunt for a seed with a jackpot table and replay it.
+     */
+    static long lootSeed(PersistedRun run) {
+        UUID id = run.runId();
+        return run.seed() ^ id.getMostSignificantBits() ^ Long.rotateLeft(id.getLeastSignificantBits(), 17);
+    }
+
+    /**
      * Banks whatever this run has earned since it last banked, if this arrival is a real payout point
      * and it has not already happened.
      *
@@ -152,7 +161,7 @@ public final class RewardBankService {
 
         List<LedgerEntry> priced = unbanked(run);
         ModifierEffects effects = DraftService.effects(run);
-        List<RewardValuation.Grant> grants = RewardValuation.value(run.seed(), priced, table.get(), effects,
+        List<RewardValuation.Grant> grants = RewardValuation.value(lootSeed(run), priced, table.get(), effects,
                 DraftService.customs(run), content.towers().get(run.towerId()).ascension() ? content.towers().get(run.towerId()).floorCount() : 0,
                 id -> content.milestoneKindOf(id), com.cobbletowers.season.SeasonSpotlight.weights(run.towerId()));
         List<UUID> participants = currentParticipants(run);

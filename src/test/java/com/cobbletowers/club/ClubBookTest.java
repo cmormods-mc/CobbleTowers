@@ -128,6 +128,30 @@ class ClubBookTest {
     }
 
     @Test
+    @DisplayName("leaving, being kicked and rejoining, or joining another club never pays the same week twice")
+    void claimCannotBeRepeated() {
+        ClubBook book = withClub();
+        book.join(B, "Bo", "Tidal_Crew");
+        for (int i = 0; i < ClubBook.WEEKLY_GOAL; i++) book.recordClear(A, 10, "2026-W41");
+        assertEquals(Result.OK, book.claim(B, "2026-W41"));
+
+        assertEquals(Result.OK, book.leave(B));
+        assertEquals(Result.OK, book.join(B, "Bo", "Tidal_Crew"));
+        assertEquals(Result.ALREADY_CLAIMED, book.claim(B, "2026-W41"), "leave and rejoin does not reset the claim");
+
+        assertEquals(Result.OK, book.kick(A, B));
+        assertEquals(Result.OK, book.join(B, "Bo", "Tidal_Crew"));
+        assertEquals(Result.ALREADY_CLAIMED, book.claim(B, "2026-W41"), "nor does a kick and rejoin");
+
+        // A second club that has met its goal does not pay them again either.
+        assertEquals(Result.OK, book.leave(B));
+        assertEquals(Result.OK, book.create(B, "Bo", "Other_Crew", "oc", 0L));
+        for (int i = 0; i < ClubBook.WEEKLY_GOAL; i++) book.recordClear(B, 10, "2026-W41");
+        assertEquals(Result.ALREADY_CLAIMED, book.claim(B, "2026-W41"), "one claim a week per player, in any club");
+        assertEquals(Result.GOAL_NOT_MET, book.claim(B, "2026-W42"), "a new week starts from nothing");
+    }
+
+    @Test
     @DisplayName("the store keeps clubs, members, banners, the week's progress, claims and bests across a save and load")
     void storeRoundTrip() {
         TowerClubStore store = new TowerClubStore();

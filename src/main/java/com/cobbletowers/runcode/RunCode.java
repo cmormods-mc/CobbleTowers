@@ -56,10 +56,13 @@ public final class RunCode {
     }
 
     private static String part(ResourceLocation id) {
-        return id.getNamespace().equals(DEFAULT_NAMESPACE) ? id.getPath() : id.getNamespace() + "." + id.getPath();
+        // A hyphen is legal in an id but is this code's separator, so it is written as a tilde (which no id may contain).
+        String text = id.getNamespace().equals(DEFAULT_NAMESPACE) ? id.getPath() : id.getNamespace() + "." + id.getPath();
+        return text.replace('-', '~');
     }
 
-    private static ResourceLocation id(String part) {
+    private static ResourceLocation id(String raw) {
+        String part = raw.replace('~', '-');
         int dot = part.indexOf('.');
         return dot < 0 ? ResourceLocation.tryParse(DEFAULT_NAMESPACE + ":" + part)
                 : ResourceLocation.tryParse(part.substring(0, dot) + ":" + part.substring(dot + 1));
