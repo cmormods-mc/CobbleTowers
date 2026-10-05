@@ -40,7 +40,11 @@ from run_durability_test import (  # noqa: E402
 from schem_to_structure import Reader  # noqa: E402
 
 TOWER = "cobbletowers:neutral"
-ARENA = ROOT / "src" / "main" / "resources" / "data" / "cobbletowers" / "structure" / "arena_floor.nbt"
+# The building the neutral tower's floors really use (the Battle Tower, P27), and where floor 1 puts the entry: both read from the committed
+# content so this test cannot drift from it again (it once sampled the old arena and a hard-coded anchor).
+ARENA = ROOT / "src" / "main" / "resources" / "data" / "cobbletowers" / "structure" / "battle_tower_neutral.nbt"
+FLOOR_ONE = ROOT / "src" / "main" / "resources" / "data" / "cobbletowers" / "cobbletowers" / "floors" / "neutral" / "floor_01.json"
+ENTRY = __import__("json").loads(FLOOR_ONE.read_text(encoding="utf-8"))["layout"]["entry"]
 
 
 def arena_samples(count: int = 6):
@@ -152,11 +156,10 @@ def main() -> None:
                                   "No force loaded chunks" in forced, forced.strip()[:200]))
 
             # The entry anchor is somewhere a player can be.
-            entry_below = (origin[0] + 25, origin[1] + 1, origin[2] + 6)
-            solid = probe.holds(f"execute in cobbletowers:tower unless block "
-                                f"{entry_below[0]} {entry_below[1]} {entry_below[2]} minecraft:air")
-            clear = probe.holds(f"execute in cobbletowers:tower if block "
-                                f"{entry_below[0]} {entry_below[1] + 2} {entry_below[2]} minecraft:air")
+            feet = (origin[0] + ENTRY["x"], origin[1] + ENTRY["y"], origin[2] + ENTRY["z"])
+            solid = probe.holds(f"execute in cobbletowers:tower unless block {feet[0]} {feet[1] - 1} {feet[2]} minecraft:air")
+            clear = probe.holds(f"execute in cobbletowers:tower if block {feet[0]} {feet[1]} {feet[2]} minecraft:air") and probe.holds(
+                f"execute in cobbletowers:tower if block {feet[0]} {feet[1] + 1} {feet[2]} minecraft:air")
             results.append(Result("the entry anchor has ground underfoot and room above", solid and clear,
                                   f"ground={solid} headroom={clear}"))
 

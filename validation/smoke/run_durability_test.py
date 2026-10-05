@@ -273,6 +273,12 @@ def main() -> None:
         print("Restarting")
         server.start()
         server.wait_until_ready()
+        # Recovery runs a moment after the "ready" marker, so wait for its summary line rather than reading the log the instant the
+        # server says it is up (a race this test only began to lose once boot did a little more work).
+        for _ in range(60):
+            if "awaiting recovery" in server.read_log():
+                break
+            time.sleep(0.5)
         restart_log = server.read_log()
         with Rcon("127.0.0.1", RCON_PORT, read_password(server_dir)) as rcon:
             listing = rcon.command("cobbletowers runs list")

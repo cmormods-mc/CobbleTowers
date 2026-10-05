@@ -31,7 +31,8 @@ from run_durability_test import (  # noqa: E402
     Result, Server, clear_tower, install_jar, reset_tower_world, read_password, run_id_from, server_port,
 )
 
-BOT = "TowerPartyBot"
+# A fresh name each run: a player keeps their Pokemon in the shared rig world, and this test starts by proving a player with none is refused.
+BOT = f"TPb{int(__import__('time').time()) % 100000}"
 LEAD = "glaceon"
 FILLERS = 5
 TOWER = "cobbletowers:neutral"

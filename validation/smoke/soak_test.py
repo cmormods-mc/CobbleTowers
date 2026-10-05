@@ -74,6 +74,11 @@ def main() -> None:
     parser.add_argument("--jar", type=Path, default=None)
     parser.add_argument("--minutes", type=float, default=3.0,
                         help="how long to run the cycle for (default: 3, a first reading, not a real soak)")
+    parser.add_argument("--pause", type=float, default=2.0,
+                        help="seconds to rest between cycles (default 2). A cell is the Battle Tower now, about 325,000 blocks across 49 "
+                             "chunks, allocated and cleared synchronously on the server thread: back-to-back cycles (hundreds a minute, "
+                             "which the old small arena allowed) back the chunk saves up until the watchdog stops the server. "
+                             "That is a throughput limit, not a leak, and this test is for leaks.")
     parser.add_argument("--node-modules", type=Path, default=None)
     args = parser.parse_args()
 
@@ -108,6 +113,7 @@ def main() -> None:
             while time.time() < deadline:
                 one_cycle(rcon)
                 cycles += 1
+                time.sleep(args.pause)
                 counts = overview_counts(rcon.command("cobbletowers diagnostics"))
                 max_seen = [max(a, b) for a, b in zip(max_seen, counts)]
                 if cycles % 20 == 0:
@@ -119,8 +125,12 @@ def main() -> None:
                                   cycles >= 20, f"only {cycles} cycle(s)"))
 
             final = overview_counts(rcon.command("cobbletowers diagnostics"))
-            results.append(Result("tower chunks returned to baseline after the last release",
-                                  final[2] == baseline[2], f"baseline {baseline[2]}, final {final[2]}"))
+            # The warm pool keeps TARGET_PER_STRUCTURE (2) cells built and loaded on purpose, so "back to baseline" means back to the baseline
+            # plus the pool's own holdings (2 x 49 chunks), a figure that must not grow with the number of cycles.
+            pool_chunks = 2 * 49
+            results.append(Result("tower chunks returned to baseline plus the warm pool's own cells after the last release",
+                                  baseline[2] <= final[2] <= baseline[2] + pool_chunks,
+                                  f"baseline {baseline[2]}, final {final[2]}, warm pool holds up to {pool_chunks}"))
             # Active runs is not asserted back to baseline: each cycle's run reaches ABANDONED, a
             # terminal state, and TowerRuns' own retention keeps terminal runs indexed for their
             # history (the same reasoning that keeps a completed run's ledger readable afterward) --
