@@ -22,6 +22,8 @@ public final class AscensionLibScouting {
     private static boolean resolved;
     private static Method declare;
     private static Method end;
+    private static Method arm;
+    private static Method disarm;
     private static boolean saidUnknown;
 
     private AscensionLibScouting() {}
@@ -54,6 +56,38 @@ public final class AscensionLibScouting {
         }
     }
 
+    /**
+     * Arms these players' next battle to fight with an encounter's declared enemies (their ascension effects then act), or
+     * with no enemy effects at all when {@code encounterId} is null. Always pair with {@link #disarm}; see {@link #armed}.
+     */
+    public static void arm(Collection<UUID> players, String encounterId) {
+        if (!resolve() || arm == null) return;
+        try {
+            arm.invoke(null, players, encounterId);
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ex) {
+            TowerLog.error("Arming the battle of {} for ascension effects failed", players, ex);
+        }
+    }
+
+    public static void disarm(Collection<UUID> players) {
+        if (!resolve() || disarm == null) return;
+        try {
+            disarm.invoke(null, players);
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ex) {
+            TowerLog.error("Disarming the battle of {} failed", players, ex);
+        }
+    }
+
+    /** Runs {@code start} with these players armed for {@code encounterId} (null: explicitly native), always disarming. */
+    public static <T> T armed(Collection<UUID> players, String encounterId, java.util.function.Supplier<T> start) {
+        arm(players, encounterId);
+        try {
+            return start.get();
+        } finally {
+            disarm(players);
+        }
+    }
+
     private static boolean resolve() {
         if (!resolved) {
             resolved = true;
@@ -63,9 +97,13 @@ public final class AscensionLibScouting {
                 declare = encounters.getMethod("declareEnemy", String.class, Collection.class, int.class, String.class,
                         boolean.class, String.class, String.class, int.class);
                 end = encounters.getMethod("end", String.class);
+                arm = encounters.getMethod("armBattle", Collection.class, String.class);
+                disarm = encounters.getMethod("disarmBattle", Collection.class);
             } catch (ReflectiveOperationException | LinkageError ex) {
                 declare = null;
                 end = null;
+                arm = null;
+                disarm = null;
                 TowerLog.error("AscensionLib is installed but " + CLASS + " does not match what CobbleTowers expects, "
                         + "so Scouters cannot be used", ex);
             }

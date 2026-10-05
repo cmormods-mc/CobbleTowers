@@ -42,3 +42,10 @@ Tiers (`ScoutingTiers`): floors 1-4 `trial_rank_1`, 5-9 `trial_rank_2`, 10 and u
 a milestone boss (F5, F10 of each cycle) `boss`. No boss carries a Unique yet. Players open the screen with the AscensionLib
 keybind (default J) or `/ascend scout`. What is shown is generated from the encounter and is **not applied in battle**: combat
 effects do not exist yet.
+
+## Ascension effects in battle
+
+Every opponent and boss is declared to AscensionLib and the next battle armed with it **before** the battle starts
+(`AscensionLibScouting.armed`; the boss through the `beforeStart` hook of `TowerBossAdapter.start`, because its encounter id only
+exists inside `start`), so the enemy that was scouted is the one whose rarity and modifiers act in that battle. An Echo duel is
+armed as explicitly native. Without AscensionLib nothing changes. The effects themselves run in AscensionLib's Showdown module.

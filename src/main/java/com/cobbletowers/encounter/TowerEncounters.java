@@ -250,11 +250,14 @@ public final class TowerEncounters {
 
             // Spread out, so four opponents do not stand inside one another.
             BlockPos where = floor.get().layout().get().presentation().in(origin).offset(ordinal * 4, 0, 0);
-            Optional<UUID> battle = CobblemonBattleAdapter.start(
-                    level, player, snapshot.get(), where, runId, run.floorIndex());
+            // Declared and armed BEFORE the battle starts: the enemy's ascension effects ride its >start, so the enemy
+            // a Scouter reveals has to exist by then.
+            String scoutId = declareOpponent(runId, player.getUUID(), run.floorIndex(), snapshot.get());
+            Optional<UUID> battle = AscensionLibScouting.armed(List.of(player.getUUID()), scoutId,
+                    () -> CobblemonBattleAdapter.start(level, player, snapshot.get(), where, runId, run.floorIndex()));
+            if (battle.isEmpty()) endOpponentScouting(runId, player.getUUID());
             byPlayer.put(player.getUUID(), battle.isPresent() ? Status.FIGHTING : Status.OUT);
             if (battle.isPresent()) {
-                declareOpponent(runId, player.getUUID(), run.floorIndex(), snapshot.get());
                 // TDS #60/section 11: the floor's first opponent per player is drawn here, not in
                 // sendNextOpponent -- the same span, measured the same way, just a different call site
                 // for the same fact (every player's own first battle of the floor).
@@ -389,7 +392,9 @@ public final class TowerEncounters {
         if (drawn.isEmpty()) return false;
         EncounterSnapshot opponent = drawn.get().withEcho(pick.properties(), pick.echo().name());
         BlockPos where = floor.get().layout().get().presentation().in(origin.get()).offset(ordinal * 4, 0, 0);
-        return CobblemonBattleAdapter.startExhibition(level, player, opponent, where, run.runId(), run.floorIndex()).isPresent();
+        // An exhibition is explicitly native: no enemy effects, not even a wild rating.
+        return AscensionLibScouting.armed(List.of(player.getUUID()), null,
+                () -> CobblemonBattleAdapter.startExhibition(level, player, opponent, where, run.runId(), run.floorIndex())).isPresent();
     }
 
     /**
@@ -435,15 +440,18 @@ public final class TowerEncounters {
 
         BlockPos where = floor.get().layout().get().presentation().in(origin.get())
                 .offset(wave.nextOrdinal() * 4, 0, 0);
-        Optional<UUID> battle = CobblemonBattleAdapter.start(
-                level, player, snapshot.get(), where, round.runId(), run.floorIndex());
-        if (battle.isEmpty()) return false;
+        String scoutId = declareOpponent(round.runId(), playerId, run.floorIndex(), snapshot.get());
+        Optional<UUID> battle = AscensionLibScouting.armed(List.of(playerId), scoutId,
+                () -> CobblemonBattleAdapter.start(level, player, snapshot.get(), where, round.runId(), run.floorIndex()));
+        if (battle.isEmpty()) {
+            endOpponentScouting(round.runId(), playerId);
+            return false;
+        }
         // TDS #60/section 11: the same span the log line below already narrates, now measured --
         // from the draw through the battle actually starting.
         TowerMetrics.recordEncounterConstruction(server, round.runId(), (System.nanoTime() - started) / 1_000_000);
         theme.ifPresent(resolved -> announceJersey(player, resolved, snapshot.get()));
         sendScoutingReveal(player, content, tower, floor.get(), run, effects, snapshot.get());
-        declareOpponent(round.runId(), playerId, run.floorIndex(), snapshot.get());
         TowerLog.info("Run {} floor {}: {} faces another opponent ({} left after this)",
                 round.runId(), run.floorIndex(), playerId, wave.remaining() - 1);
         return true;
@@ -630,9 +638,10 @@ public final class TowerEncounters {
 
         Optional<UUID> started = TowerBossAdapter.start(
                 server, level, standing, boss.get(), where, round.runId(), round.floorIndex(),
-                DraftService.effects(run));
+                DraftService.effects(run),
+                // Declared inside the adapter, once the encounter id exists and before the boss battle starts.
+                encounterId -> declareBoss(server, run, content, round.floorIndex(), boss.get(), standing, encounterId));
         if (started.isEmpty()) return false;
-        declareBoss(server, run, content, round.floorIndex(), boss.get(), standing, started.get());
 
         ROUNDS.put(round.runId(),
                 new Round(round.runId(), round.floorIndex(), Phase.BOSS, round.byPlayer(), round.waves(),
@@ -763,15 +772,17 @@ public final class TowerEncounters {
 
 
     /**
-     * Lets AscensionLib's players scout this opponent with a Scouter. A reveal is personal: only the player facing the
-     * opponent can spend a Scouter on it. The id is unique per opponent (run, floor, ordinal) and never reused.
+     * Lets AscensionLib's players scout this opponent with a Scouter, and fixes the enemy its ascension effects will use. A
+     * reveal is personal: only the player facing the opponent can spend a Scouter on it. The id is unique per opponent (run,
+     * floor, ordinal) and never reused. Returns that id, for arming the battle with it.
      */
-    private static void declareOpponent(UUID runId, UUID playerId, int floorIndex, EncounterSnapshot snapshot) {
+    private static String declareOpponent(UUID runId, UUID playerId, int floorIndex, EncounterSnapshot snapshot) {
         String id = runId + "-f" + floorIndex + "-o" + snapshot.ordinal();
         String previous = OPPONENT_SCOUTING.put(runId + "/" + playerId, id);
         if (previous != null && !previous.equals(id)) AscensionLibScouting.end(previous);
         AscensionLibScouting.declare(id, List.of(playerId), 0, ScoutingTiers.tierFor(floorIndex, false), false,
                 snapshot.species().toString(), snapshot.level());
+        return id;
     }
 
     private static void endOpponentScouting(UUID runId, UUID playerId) {

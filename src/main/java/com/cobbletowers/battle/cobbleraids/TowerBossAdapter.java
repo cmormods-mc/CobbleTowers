@@ -100,6 +100,17 @@ public final class TowerBossAdapter {
     public static Optional<UUID> start(MinecraftServer server, ServerLevel level, List<ServerPlayer> players,
                                        BossDraw.Boss boss, BlockPos where, UUID runId, int floorIndex,
                                        ModifierEffects effects) {
+        return start(server, level, players, boss, where, runId, floorIndex, effects, id -> {});
+    }
+
+    /**
+     * The same start, calling {@code beforeStart} with the boss encounter's id before the battle exists, so the caller can
+     * declare the boss to AscensionLib (for Scouters, and for the ascension effects that ride the boss battle's
+     * {@code >start}). The players are armed for that encounter only around the start itself.
+     */
+    public static Optional<UUID> start(MinecraftServer server, ServerLevel level, List<ServerPlayer> players,
+                                       BossDraw.Boss boss, BlockPos where, UUID runId, int floorIndex,
+                                       ModifierEffects effects, java.util.function.Consumer<UUID> beforeStart) {
         if (players.isEmpty()) return Optional.empty();
         if (players.size() > EncounterRequest.MAX_PLAYERS) {
             TowerLog.error("Floor {} of run {} has {} players; CobbleRaids takes at most {}",
@@ -108,6 +119,11 @@ public final class TowerBossAdapter {
         }
 
         UUID encounterId = UUID.randomUUID();
+        try {
+            beforeStart.accept(encounterId);
+        } catch (RuntimeException ex) {
+            TowerLog.error("Declaring the boss of floor {} of run {} threw; it fights without scouting", floorIndex, runId, ex);
+        }
         EncounterRules rules = rulesFor(effects);
         // Said from this side as well as CobbleRaids', so a rule that goes missing can be pinned to
         // the boundary it went missing at rather than argued about from one end (TDS #60).
@@ -124,17 +140,21 @@ public final class TowerBossAdapter {
         // Armed only around the start: the effects ride this boss battle's >start and no other's.
         com.cobbletowers.showdown.TowerBattleFx.armBossBattle(playerIds, id -> players.stream().filter(p -> p.getUUID().equals(id)).findFirst()
                     .map(p -> com.cobbletowers.armor.ArmorBonusEffects.battleEffects(p, runId, p.getUUID().equals(playerIds.get(0)))).orElseGet(com.google.gson.JsonArray::new));
+        com.cobbletowers.economy.AscensionLibScouting.arm(playerIds, encounterId.toString());
         try {
             result = CobbleRaidsEncounters.start(request, new FloorListener(server));
         } catch (RuntimeException ex) {
             TowerLog.error("Starting the boss for floor {} of run {} threw", floorIndex, runId, ex);
+            com.cobbletowers.economy.AscensionLibScouting.end(encounterId.toString());
             return Optional.empty();
         } finally {
             com.cobbletowers.showdown.TowerBattleFx.disarmAll(playerIds);
+            com.cobbletowers.economy.AscensionLibScouting.disarm(playerIds);
         }
         if (result instanceof StartResult.Refused refused) {
             TowerLog.error("CobbleRaids refused the boss for floor {} of run {}: {}",
                     floorIndex, runId, refused.reason());
+            com.cobbletowers.economy.AscensionLibScouting.end(encounterId.toString());
             return Optional.empty();
         }
 
