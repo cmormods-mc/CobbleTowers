@@ -7,7 +7,7 @@ sys.path.insert(0, str(ROOT / 'validation'))
 sys.path.insert(0, str(ROOT / 'validation' / 'smoke'))
 import client_launch
 from rcon import Rcon
-from run_durability_test import Server, read_password, server_port
+from run_durability_test import Server, read_password, server_port, reset_tower_world, clear_tower
 from client_e2e import Remote, PLAYER
 
 RIG = Path('L:/claude-cobbleraids-work/testserver-ascend')
@@ -23,6 +23,7 @@ def rc(cmd):
     with Rcon('127.0.0.1', 25575, password) as r:
         return r.command(cmd)
 
+reset_tower_world(RIG)
 server = Server(RIG, JAVA); client = None
 try:
     print('boot server'); server.start(); server.wait_until_ready()
@@ -48,10 +49,26 @@ try:
     time.sleep(3)
     for c in ['ascend admin grant '+PLAYER+' scouter 5']+[f'execute as {PLAYER} run ascend admin initialize {n}' for n in (1, 2, 3)]:
         print('>', c, '=>', rc(c)[:200])
-    for n, label in ((0, 'growlithe'), (1, 'gengar'), (2, 'arcanine'), (3, 'magikarp_noprofile')):
-        remote.send(f'summary {n}'); remote.send('wait 2200'); remote.shot(f's{n}a_summary_{label}')
-        remote.send('widget InspectButton'); remote.send('wait 2500'); remote.shot(f's{n}b_inspect_{label}')
-        remote.send('close'); remote.send('wait 600')
+    rc(f'tp {PLAYER} 0 100 0') if False else None
+    with Rcon('127.0.0.1', 25575, password) as r: clear_tower(r)
+    time.sleep(2)
+    remote.send('cmd tower tower cobbletowers:test'); remote.send('wait 1500')
+    remote.send('cmd tower start'); 
+    for _ in range(60):
+        out = rc('cobbletowers runs list')
+        if 'ENCOUNTER_ACTIVE' in out: break
+        time.sleep(1)
+    print('runs:', rc('cobbletowers runs list')[:300])
+    time.sleep(30)
+    remote.shot('b01_battle_start')
+    # Own tile (left): inspect through the real click path, then back to the same battle screen.
+    remote.send('click 50 63'); remote.send('wait 2500'); remote.shot('b02_own_tile_inspect')
+    remote.send('press ×'); remote.send('wait 1000'); remote.shot('b03_back_in_battle')
+    # Opponent tile (right).
+    remote.send('click 380 63'); remote.send('wait 2500'); remote.shot('b04_opponent_inspect')
+    remote.send('press Use Scouter'); remote.send('wait 2500'); remote.shot('b05_after_scouter')
+    remote.send('press ×'); remote.send('wait 800')
+    remote.send('cmd tower abandon'); remote.send('wait 1500')
     remote.send('quit', wait=False)
 finally:
     if client:
