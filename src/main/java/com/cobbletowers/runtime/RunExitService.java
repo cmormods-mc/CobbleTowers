@@ -99,6 +99,8 @@ public final class RunExitService {
         for (PersistedParticipant participant : run.participants()) {
             ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
             if (player == null || !inTower(player)) continue;
+            // Someone already in a new run of their own is not being stranded by this cell: leave them where they are.
+            if (!ExitRules.mayEvacuateAtRelease(standingOf(participant.playerId()))) continue;
             try {
                 evacuate(server, player);
             } catch (RuntimeException ex) {

@@ -154,3 +154,10 @@ at world spawn.
 * Tests: `ExitRulesTest` (exemption and the beat); live `exit_operator_test.py` 9/9 (an operator in creative cashes out and lands where they started with no
   cell lost; one who walks into the tower with no run is left alone). Run against the original code the same test fails the way the owner saw: the
   operator ends up at world spawn and the cell is quarantined. `exit_test.py` 12/12.
+
+**A mistake in the first version of this fix, caught by `bot_stress_test.py`:** the safety net that sends participants home before a finished
+run's cell is reset did not check whether the participant was already in a **new** run. A player who finishes a run and starts the next within
+the beat is in the tower for the new run, and the old cell's release teleported them out mid-battle: the battle stalled (2 or 3 rounds of 12
+never finished, 0 of 4 runs clean). Found by bisecting the session's commits against the stress test. Fixed with `ExitRules.mayEvacuateAtRelease`
+(a participant with a live place in another run is left alone), unit-tested; the stress test then passed 3/3 twice. Lesson: a cleanup that moves
+a *player* must ask whether the player still belongs where they are, not only whether the cell is finished.

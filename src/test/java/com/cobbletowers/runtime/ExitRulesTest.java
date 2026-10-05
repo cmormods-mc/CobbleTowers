@@ -68,6 +68,14 @@ class ExitRulesTest {
     }
 
     @Test
+    @DisplayName("before a cell is reset its participants are sent home, except one who has a live place in another run")
+    void releaseNeverMovesAPlayerInANewRun() {
+        assertFalse(ExitRules.mayEvacuateAtRelease(Standing.active()), "a player already in their next run stays where they are");
+        assertTrue(ExitRules.mayEvacuateAtRelease(Standing.ended(END)));
+        assertTrue(ExitRules.mayEvacuateAtRelease(Standing.none()));
+    }
+
+    @Test
     @DisplayName("a restart long after the end finds the beat already over, so the player leaves straight away")
     void longAfterTheEnd() {
         assertEquals(Verdict.LEAVE, ExitRules.decide(true, false, Standing.ended(0), 10 * 60_000L));

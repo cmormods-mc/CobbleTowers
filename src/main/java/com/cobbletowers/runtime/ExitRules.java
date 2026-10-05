@@ -71,6 +71,15 @@ public final class ExitRules {
     }
 
     /**
+     * Whether a participant still standing in a finished run's cell may be sent home just before it is reset. Not one who has a live place in
+     * <b>another</b> run: a player who finishes a run and starts the next within the beat is in the tower for the new run, and moving them out
+     * mid-battle (which this safety net did, the first time it was written) strands them and stalls the fight.
+     */
+    public static boolean mayEvacuateAtRelease(Standing standing) {
+        return standing.kind() != Standing.Kind.ACTIVE;
+    }
+
+    /**
      * Whether a finished run's cell may be reset now. Never while someone is standing in it, except that
      * once the beat has passed the players have been sent home in the same sweep, so waiting longer would
      * only hold a cell for nothing.
