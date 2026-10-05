@@ -84,7 +84,8 @@ public final class SeasonService {
         TowerLeaderboardStore boards = TowerLeaderboardStore.get(server);
         SeasonDefinition definition = Seasons.definition(number);
         LocalDate endedOn = SeasonSchedule.lastDayOf(Seasons.config().anchor(), number);
-        HallSeason plan = SeasonFinalizer.plan(definition, endedOn, boards.all());
+        HallSeason plan = SeasonFinalizer.plan(definition, endedOn, boards.all(),
+                com.cobbletowers.club.ClubService.hallClubs(server, number));
 
         if (dry) {
             List<String> lines = new ArrayList<>();
@@ -96,6 +97,11 @@ public final class SeasonService {
                 Entry top = board.entries().get(0);
                 lines.add("  " + boardTitle(board) + ": " + board.entries().size() + " entries, leader "
                         + MasteryView.row(board.key().board(), 1, top));
+            }
+            if (!plan.clubs().isEmpty()) {
+                lines.add("  Club board: " + plan.clubs().size() + " club(s), champion " + plan.clubs().get(0).name() + " ("
+                        + plan.clubs().get(0).score() + "); the top " + Math.min(3, plan.clubs().size())
+                        + " would unlock the gold, silver and bronze banners");
             }
             return lines;
         }
@@ -110,6 +116,10 @@ public final class SeasonService {
             testOnlyCrashAfter(1);
         }
         if (done < 2) {
+            // The podium is read from what the Hall froze in step 1, so a resume awards the same clubs whatever changed since.
+            List<String> podium = TowerHallStore.get(server).get(number).map(season -> season.clubs().stream()
+                    .map(HallSeason.Club::name).toList()).orElse(List.of());
+            com.cobbletowers.club.ClubService.awardSeason(server, number, podium);
             boards.prune(key -> SeasonFinalizer.staleSeasonKey(key, number));
             boards.checkpoint(server);
             store.stepDone(number, 2);
@@ -185,6 +195,14 @@ public final class SeasonService {
             lines.add("  " + boardTitle(board));
             for (int i = 0; i < Math.min(3, board.entries().size()); i++) {
                 lines.add("    " + MasteryView.row(board.key().board(), i + 1, board.entries().get(i)));
+            }
+        }
+        if (!season.clubs().isEmpty()) {
+            lines.add("  Club board");
+            for (int i = 0; i < Math.min(3, season.clubs().size()); i++) {
+                HallSeason.Club club = season.clubs().get(i);
+                lines.add("    #" + (i + 1) + " [" + club.tag() + "] " + club.name() + "  " + club.score() + "  ("
+                        + String.join(", ", club.members()) + ")");
             }
         }
         return lines;

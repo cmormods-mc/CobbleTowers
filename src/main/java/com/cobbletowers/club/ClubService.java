@@ -58,7 +58,7 @@ public final class ClubService {
         TowerClubStore store = TowerClubStore.get(server);
         ClubBook book = store.book();
         for (UUID player : players) {
-            boolean goalMet = book.recordClear(player, score, weekKey());
+            boolean goalMet = book.recordClear(player, score, weekKey(), com.cobbletowers.season.Seasons.activeNumber().orElse(0));
             if (goalMet) {
                 book.clubOf(player).ifPresent(club -> {
                     tell(server, club, "Your club " + club.name() + " met its weekly goal! Every member can /tower club claim "
@@ -82,8 +82,12 @@ public final class ClubService {
         }
         Club club = found.get();
         List<String> lines = new ArrayList<>();
-        lines.add("[" + club.tag() + "] " + club.name() + " (" + club.banner() + " banner) -- score " + book.score(club)
-                + ", " + club.members().size() + "/" + ClubBook.MAX_MEMBERS + " members");
+        java.util.Optional<Integer> season = com.cobbletowers.season.Seasons.viewNumber();
+        lines.add("[" + club.tag() + "] " + club.name() + " (" + club.banner() + " banner) -- "
+                + (season.isPresent() ? "season " + season.get() + " score " + book.seasonScore(club, season.get()) + ", all-time " : "score ")
+                + book.score(club) + ", " + club.members().size() + "/" + ClubBook.MAX_MEMBERS + " members");
+        if (!club.honors().isEmpty()) lines.add("Honours: " + String.join("; ", club.honors())
+                + (club.unlockedBanners().isEmpty() ? "" : " (banners unlocked: " + String.join(", ", new java.util.TreeSet<>(club.unlockedBanners())) + ")"));
         lines.add("Weekly goal: " + Math.min(book.weekClears(club, weekKey()), ClubBook.WEEKLY_GOAL) + "/" + ClubBook.WEEKLY_GOAL
                 + " regional cycle clears (" + weekKey() + "); "
                 + (book.weekClears(club, weekKey()) >= ClubBook.WEEKLY_GOAL
@@ -100,16 +104,61 @@ public final class ClubService {
     }
 
     public static List<String> top(MinecraftServer server) {
+        return top(server, false);
+    }
+
+    /** The club board: the season's by default while a season is on view, or the all-time one on request. */
+    public static List<String> top(MinecraftServer server, boolean allTime) {
         ClubBook book = TowerClubStore.get(server).book();
+        java.util.Optional<Integer> season = allTime ? java.util.Optional.empty() : com.cobbletowers.season.Seasons.viewNumber();
         List<String> lines = new ArrayList<>();
-        lines.add("Club board (sum of members' best regional clears):");
+        lines.add(season.isPresent()
+                ? "Club board, season " + season.get() + " (the sum of each member's best regional clear this season; /tower club top alltime for the lifetime board):"
+                : "Club board, all-time (the sum of each member's best regional clear):");
         int rank = 1;
-        for (Club club : book.top(10)) {
-            lines.add(rank++ + ". [" + club.tag() + "] " + club.name() + " -- " + book.score(club) + " ("
-                    + club.members().size() + " members)");
+        List<Club> ranked = season.isPresent() ? book.topForSeason(season.get(), 10) : book.top(10);
+        for (Club club : ranked) {
+            int score = season.isPresent() ? book.seasonScore(club, season.get()) : book.score(club);
+            lines.add(rank++ + ". [" + club.tag() + "] " + club.name() + " -- " + score + " (" + club.members().size() + " members)"
+                    + (club.honors().isEmpty() ? "" : " *"));
         }
-        if (rank == 1) lines.add("No clubs yet.");
+        if (rank == 1) lines.add("No club has scored yet.");
         return lines;
+    }
+
+    /** The season's club board as the Hall freezes it: the top ten, best first. */
+    public static List<com.cobbletowers.season.HallSeason.Club> hallClubs(MinecraftServer server, int season) {
+        ClubBook book = TowerClubStore.get(server).book();
+        List<com.cobbletowers.season.HallSeason.Club> frozen = new ArrayList<>();
+        for (Club club : book.topForSeason(season, 10)) {
+            frozen.add(new com.cobbletowers.season.HallSeason.Club(club.name(), club.tag(), club.banner(), book.seasonScore(club, season),
+                    new ArrayList<>(club.members().values())));
+        }
+        return frozen;
+    }
+
+    /**
+     * The end of a season for clubs (P36c): the top three clubs, as the Hall froze them, unlock the prestige banner for their place
+     * (gold, silver, bronze) and a line of honour, and every member keeps a permanent mark. Idempotent, so a finalisation that crashed and
+     * resumed changes nothing the second time. Then the per-player season bests older than this season are forgotten.
+     */
+    public static void awardSeason(MinecraftServer server, int season, List<String> podium) {
+        TowerClubStore store = TowerClubStore.get(server);
+        com.cobbletowers.persistence.TowerSeasonProgressStore marks = com.cobbletowers.persistence.TowerSeasonProgressStore.get(server);
+        String[] places = {"champion", "second place", "third place"};
+        for (int rank = 0; rank < Math.min(podium.size(), ClubBook.PODIUM); rank++) {
+            int place = rank;
+            store.book().find(podium.get(rank)).ifPresent(club -> {
+                String banner = ClubBook.PRESTIGE_BANNERS.get(place);
+                store.book().honor(club, banner, "Season " + season + ": " + places[place]);
+                for (UUID member : club.memberIds()) marks.addCosmetics(member, java.util.Set.of("s" + season + ":club_" + banner));
+                TowerLog.info("Club {} finished season {} in {} place and unlocks the {} banner", club.name(), season, places[place], banner);
+            });
+        }
+        store.book().pruneSeasonBests(season);
+        store.changed();
+        store.checkpoint(server);
+        marks.checkpoint(server);
     }
 
     public static String create(MinecraftServer server, ServerPlayer player, String name, String tag) {
@@ -202,7 +251,9 @@ public final class ClubService {
             store.checkpoint(server);
             return "Banner set to " + color + ".";
         }
-        return describe(result) + (result == Result.BAD_BANNER ? " Try: " + String.join(", ", ClubBook.BANNERS) + "." : "");
+        java.util.Set<String> earned = store.book().clubOf(owner.getUUID()).map(Club::unlockedBanners).orElse(java.util.Set.of());
+        return describe(result) + (result == Result.BAD_BANNER ? " Try: " + String.join(", ", ClubBook.BANNERS)
+                + (earned.isEmpty() ? "" : ", " + String.join(", ", new java.util.TreeSet<>(earned))) + "." : "");
     }
 
     public static String claim(MinecraftServer server, ServerPlayer player) {

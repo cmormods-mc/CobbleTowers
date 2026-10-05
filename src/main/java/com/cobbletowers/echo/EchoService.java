@@ -43,7 +43,10 @@ public final class EchoService {
         boolean trial = run.options().trial().isPresent();
         if (!EchoPolicy.applies(regional(run.towerId()), trial)) return;
         TowerEchoStore echoes = TowerEchoStore.get(server);
-        Set<UUID> top = EchoPolicy.topRuns(TowerLeaderboardStore.get(server).all(), run.towerId());
+        // The season on view (P36c): the running one, or the one just ended in an off-season; 0 with seasons off or not yet begun.
+        int season = com.cobbletowers.season.Seasons.viewNumber().orElse(0);
+        Set<UUID> top = EchoPolicy.topRuns(TowerLeaderboardStore.get(server).all(), run.towerId(),
+                season > 0 ? com.cobbletowers.season.SeasonSchedule.idOf(season) : "");
         if (top.contains(run.runId())) {
             for (PersistedParticipant participant : run.participants()) {
                 ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
@@ -51,7 +54,7 @@ public final class EchoService {
                 List<String> team = teamOf(player);
                 if (team.isEmpty()) continue;
                 echoes.add(new Echo(UUID.randomUUID(), player.getUUID(), player.getGameProfile().getName(), run.towerId(),
-                        run.runId(), team, System.currentTimeMillis(), 0));
+                        run.runId(), team, System.currentTimeMillis(), 0, 0, season));
                 player.sendSystemMessage(Component.literal("Your team made the top " + EchoPolicy.TOP_N + " of "
                         + run.towerId().getPath() + ": it is now an Echo other challengers may meet. "
                         + "Opt out any time with /tower echo off."));
@@ -59,7 +62,7 @@ public final class EchoService {
                         team.size(), run.runId());
             }
         }
-        int dropped = echoes.retainRuns(run.towerId(), top);
+        int dropped = echoes.prune(run.towerId(), season, top);
         if (dropped > 0) TowerLog.info("{} Echo(es) of {} left the pool (no longer in the top {})", dropped,
                 run.towerId(), EchoPolicy.TOP_N);
         echoes.checkpoint(server);
@@ -80,7 +83,9 @@ public final class EchoService {
         if (!EchoPolicy.applies(regional(run.towerId()), run.options().trial().isPresent())) return Optional.empty();
         Set<UUID> present = new HashSet<>();
         for (PersistedParticipant participant : run.participants()) present.add(participant.playerId());
-        return EchoPolicy.pick(TowerEchoStore.get(server).forTower(run.towerId()), present, run.seed(), floorIndex, ordinal);
+        int season = com.cobbletowers.season.Seasons.viewNumber().orElse(0);
+        return EchoPolicy.pick(EchoPolicy.pool(TowerEchoStore.get(server).forTower(run.towerId()), season), present, run.seed(),
+                floorIndex, ordinal);
     }
 
     /** Whether an Echo Duel room can be offered now: a regional run outside a trial, with someone else's Echo to meet. */

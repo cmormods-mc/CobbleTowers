@@ -33,6 +33,11 @@ public final class ClubBook {
     /** CobbleDollars each member may claim once per week after the goal is met. */
     public static final int WEEKLY_REWARD = 300;
 
+    /** Banner colours only a club that has finished a season in the top three can set (P36c): first, second and third. */
+    public static final List<String> PRESTIGE_BANNERS = List.of("gold", "silver", "bronze");
+    /** How many clubs a season's podium has. */
+    public static final int PODIUM = 3;
+
     /** The sixteen dye names a banner may be. */
     public static final List<String> BANNERS = List.of("white", "orange", "magenta", "light_blue", "yellow", "lime", "pink",
             "gray", "light_gray", "cyan", "purple", "blue", "brown", "green", "red", "black");
@@ -53,6 +58,8 @@ public final class ClubBook {
         private String weekKey = "";
         private int weekClears;
         private final Set<UUID> claimed = new HashSet<>();
+        private final Set<String> unlockedBanners = new HashSet<>();
+        private final List<String> honors = new ArrayList<>();
 
         public Club(String name, String tag, UUID owner, String ownerName, long createdAt) {
             this.name = name;
@@ -82,6 +89,20 @@ public final class ClubBook {
 
         public Set<UUID> claimed() { return Set.copyOf(claimed); }
 
+        /** The prestige banner colours this club has earned. */
+        public Set<String> unlockedBanners() { return Set.copyOf(unlockedBanners); }
+
+        /** What the club has been honoured for, oldest first, such as {@code Season 1: champion}. */
+        public List<String> honors() { return List.copyOf(honors); }
+
+        /** Restores the stored honours; used by the store when loading. */
+        public void restoreHonors(Set<String> unlocked, List<String> earned) {
+            unlockedBanners.clear();
+            unlockedBanners.addAll(unlocked);
+            honors.clear();
+            honors.addAll(earned);
+        }
+
         /** Restores stored state; used by the store when loading. */
         public void restore(String banner, String weekKey, int weekClears, Set<UUID> claimed, Map<UUID, String> members) {
             this.banner = banner;
@@ -104,6 +125,8 @@ public final class ClubBook {
 
     private final Map<String, Club> clubs = new LinkedHashMap<>();
     private final Map<UUID, Integer> best = new LinkedHashMap<>();
+    /** Each player's best regional clear within a season (P36c), kept for the seasons not yet finalised. */
+    private final Map<Integer, Map<UUID, Integer>> seasonBests = new LinkedHashMap<>();
 
     // ---- naming ------------------------------------------------------------------------------------
 
@@ -190,7 +213,8 @@ public final class ClubBook {
         if (found.isEmpty()) return Result.NOT_IN_CLUB;
         if (!found.get().owner.equals(owner)) return Result.NOT_OWNER;
         String color = banner == null ? "" : banner.toLowerCase(Locale.ROOT);
-        if (!BANNERS.contains(color)) return Result.BAD_BANNER;
+        boolean prestige = PRESTIGE_BANNERS.contains(color) && found.get().unlockedBanners.contains(color);
+        if (!BANNERS.contains(color) && !prestige) return Result.BAD_BANNER;
         found.get().banner = color;
         return Result.OK;
     }
@@ -207,6 +231,17 @@ public final class ClubBook {
      * Returns whether this clear met the goal (true only on the clear that reaches it).
      */
     public boolean recordClear(UUID player, int score, String currentWeek) {
+        return recordClear(player, score, currentWeek, 0);
+    }
+
+    /**
+     * As above, in a season ({@code 0} for none): the clear also raises the player's best for that season, which the season's club board
+     * is made of. A clear outside any season (the off-season, or seasons off) counts for the all-time score and the week only.
+     */
+    public boolean recordClear(UUID player, int score, String currentWeek, int season) {
+        if (season > 0 && score > seasonBestOf(season, player)) {
+            seasonBests.computeIfAbsent(season, key -> new LinkedHashMap<>()).put(player, score);
+        }
         if (score > bestOf(player)) best.put(player, score);
         Optional<Club> found = clubOf(player);
         if (found.isEmpty()) return false;
@@ -222,6 +257,37 @@ public final class ClubBook {
         int total = 0;
         for (UUID member : club.members.keySet()) total += bestOf(member);
         return total;
+    }
+
+    /** The player's best regional clear within {@code season} (0 for none). */
+    public int seasonBestOf(int season, UUID player) {
+        return seasonBests.getOrDefault(season, Map.of()).getOrDefault(player, 0);
+    }
+
+    /** A club's score for one season: the sum of its current members' bests in that season. */
+    public int seasonScore(Club club, int season) {
+        int total = 0;
+        for (UUID member : club.members.keySet()) total += seasonBestOf(season, member);
+        return total;
+    }
+
+    /** The season's clubs best first (highest season score, then name), only those that scored, at most {@code limit}. */
+    public List<Club> topForSeason(int season, int limit) {
+        List<Club> ranked = new ArrayList<>();
+        for (Club club : clubs.values()) if (seasonScore(club, season) > 0) ranked.add(club);
+        ranked.sort(Comparator.comparingInt((Club club) -> -seasonScore(club, season)).thenComparing(club -> key(club.name)));
+        return ranked.subList(0, Math.min(limit, ranked.size()));
+    }
+
+    /** Forgets the per-player bests of seasons older than {@code keepFrom}; the just-finalised season stays until the next one is. */
+    public void pruneSeasonBests(int keepFrom) {
+        seasonBests.keySet().removeIf(season -> season < keepFrom);
+    }
+
+    /** Gives a club a prestige banner colour and a line of honour (both idempotent, so a replayed finalisation changes nothing). */
+    public void honor(Club club, String prestigeBanner, String honor) {
+        if (prestigeBanner != null && PRESTIGE_BANNERS.contains(prestigeBanner)) club.unlockedBanners.add(prestigeBanner);
+        if (honor != null && !club.honors.contains(honor)) club.honors.add(honor);
     }
 
     /** The clubs best first (highest score, then name), at most {@code limit}. */
@@ -270,8 +336,19 @@ public final class ClubBook {
         return Map.copyOf(best);
     }
 
+    public Map<Integer, Map<UUID, Integer>> seasonBests() {
+        Map<Integer, Map<UUID, Integer>> copy = new LinkedHashMap<>();
+        seasonBests.forEach((season, bests) -> copy.put(season, Map.copyOf(bests)));
+        return copy;
+    }
+
+    public void restoreSeasonBest(int season, UUID player, int score) {
+        seasonBests.computeIfAbsent(season, key -> new LinkedHashMap<>()).put(player, score);
+    }
+
     public void clear() {
         clubs.clear();
         best.clear();
+        seasonBests.clear();
     }
 }

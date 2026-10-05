@@ -69,6 +69,12 @@ public final class TowerClubStore extends SavedData {
                 claimed.add(c);
             }
             entry.put("claimed", claimed);
+            ListTag unlocked = new ListTag();
+            for (String banner : new java.util.TreeSet<>(club.unlockedBanners())) unlocked.add(net.minecraft.nbt.StringTag.valueOf(banner));
+            entry.put("unlocked_banners", unlocked);
+            ListTag honors = new ListTag();
+            for (String honor : club.honors()) honors.add(net.minecraft.nbt.StringTag.valueOf(honor));
+            entry.put("honors", honors);
             clubs.add(entry);
         }
         tag.put("clubs", clubs);
@@ -80,6 +86,17 @@ public final class TowerClubStore extends SavedData {
             bests.add(b);
         }
         tag.put("bests", bests);
+        ListTag seasonBests = new ListTag();
+        for (Map.Entry<Integer, Map<UUID, Integer>> season : book.seasonBests().entrySet()) {
+            for (Map.Entry<UUID, Integer> best : season.getValue().entrySet()) {
+                CompoundTag b = new CompoundTag();
+                b.putInt("season", season.getKey());
+                b.putUUID("player", best.getKey());
+                b.putInt("score", best.getValue());
+                seasonBests.add(b);
+            }
+        }
+        tag.put("season_bests", seasonBests);
         return tag;
     }
 
@@ -102,11 +119,23 @@ public final class TowerClubStore extends SavedData {
             ClubBook.Club club = new ClubBook.Club(entry.getString("name"), entry.getString("tag"), owner, ownerName,
                     entry.getLong("created"));
             club.restore(entry.getString("banner"), entry.getString("week"), entry.getInt("week_clears"), claimed, members);
+            Set<String> unlocked = new HashSet<>();
+            ListTag unlockedTag = entry.getList("unlocked_banners", Tag.TAG_STRING);
+            for (int j = 0; j < unlockedTag.size(); j++) unlocked.add(unlockedTag.getString(j));
+            java.util.List<String> honors = new java.util.ArrayList<>();
+            ListTag honorTag = entry.getList("honors", Tag.TAG_STRING);
+            for (int j = 0; j < honorTag.size(); j++) honors.add(honorTag.getString(j));
+            club.restoreHonors(unlocked, honors);
             store.book.restoreClub(club);
         }
         ListTag bests = tag.getList("bests", Tag.TAG_COMPOUND);
         for (int i = 0; i < bests.size(); i++) {
             store.book.restoreBest(bests.getCompound(i).getUUID("player"), bests.getCompound(i).getInt("score"));
+        }
+        ListTag seasonBests = tag.getList("season_bests", Tag.TAG_COMPOUND);
+        for (int i = 0; i < seasonBests.size(); i++) {
+            CompoundTag b = seasonBests.getCompound(i);
+            store.book.restoreSeasonBest(b.getInt("season"), b.getUUID("player"), b.getInt("score"));
         }
         return store;
     }

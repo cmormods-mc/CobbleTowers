@@ -104,7 +104,7 @@ class EchoPolicyTest {
         store.add(echo(4, b, TIDE, new UUID(9, 4), "w level=5"));
         assertEquals(3, store.count());
 
-        assertEquals(1, store.retainRuns(TIDE, Set.of(new UUID(9, 4))), "a's tideforge run left the top ten");
+        assertEquals(1, store.prune(TIDE, 0, Set.of(new UUID(9, 4))), "a's tideforge run left the top ten");
         assertEquals(2, store.count());
         assertEquals(1, store.ownedBy(a).size(), "its rootvale Echo is untouched by a tideforge prune");
 

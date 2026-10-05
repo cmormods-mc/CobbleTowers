@@ -95,6 +95,19 @@ public final class TowerHallStore extends SavedData {
                 boards.add(b);
             }
             item.put("boards", boards);
+            ListTag clubs = new ListTag();
+            for (HallSeason.Club club : season.clubs()) {
+                CompoundTag c = new CompoundTag();
+                c.putString("name", club.name());
+                c.putString("tag", club.tag());
+                c.putString("banner", club.banner());
+                c.putInt("score", club.score());
+                ListTag names = new ListTag();
+                for (String member : club.members()) names.add(net.minecraft.nbt.StringTag.valueOf(member));
+                c.put("members", names);
+                clubs.add(c);
+            }
+            item.put("clubs", clubs);
             list.add(item);
         }
         tag.put("seasons", list);
@@ -119,9 +132,18 @@ public final class TowerHallStore extends SavedData {
                     boards.add(new HallSeason.Board(new Key(Board.valueOf(b.getString("board")), tower,
                             Mode.valueOf(b.getString("mode")), b.getString("playlist")), entries));
                 }
+                List<HallSeason.Club> clubs = new ArrayList<>();
+                ListTag storedClubs = item.getList("clubs", Tag.TAG_COMPOUND);
+                for (int j = 0; j < storedClubs.size(); j++) {
+                    CompoundTag c = storedClubs.getCompound(j);
+                    List<String> members = new ArrayList<>();
+                    ListTag names = c.getList("members", Tag.TAG_STRING);
+                    for (int k = 0; k < names.size(); k++) members.add(names.getString(k));
+                    clubs.add(new HallSeason.Club(c.getString("name"), c.getString("tag"), c.getString("banner"), c.getInt("score"), members));
+                }
                 HallSeason season = new HallSeason(item.getInt("number"), item.getString("name"),
                         item.contains("spotlight") ? Optional.of(item.getString("spotlight")) : Optional.empty(),
-                        LocalDate.parse(item.getString("ended_on")), boards);
+                        LocalDate.parse(item.getString("ended_on")), boards, clubs);
                 store.seasons.put(season.number(), season);
             } catch (RuntimeException ex) {
                 // A season this build cannot read is skipped, never fatal; the Hall must not stop a server.

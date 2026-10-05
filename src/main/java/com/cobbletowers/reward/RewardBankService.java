@@ -154,7 +154,7 @@ public final class RewardBankService {
         ModifierEffects effects = DraftService.effects(run);
         List<RewardValuation.Grant> grants = RewardValuation.value(run.seed(), priced, table.get(), effects,
                 DraftService.customs(run), content.towers().get(run.towerId()).ascension() ? content.towers().get(run.towerId()).floorCount() : 0,
-                id -> content.milestoneKindOf(id));
+                id -> content.milestoneKindOf(id), com.cobbletowers.season.SeasonSpotlight.weights(run.towerId()));
         List<UUID> participants = currentParticipants(run);
 
         TowerRuns.save(server, run.banked(run.floorIndex(), key, now), true);

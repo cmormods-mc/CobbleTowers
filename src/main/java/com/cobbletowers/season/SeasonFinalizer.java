@@ -26,6 +26,12 @@ public final class SeasonFinalizer {
      * that has entries, in a stable order (board, tower, mode, playlist), solo and team apart as the boards are.
      */
     public static HallSeason plan(SeasonDefinition definition, LocalDate endedOn, Map<Key, List<Entry>> boards) {
+        return plan(definition, endedOn, boards, List.of());
+    }
+
+    /** As above, with the season's club board (already ranked, best first) frozen alongside the boards. */
+    public static HallSeason plan(SeasonDefinition definition, LocalDate endedOn, Map<Key, List<Entry>> boards,
+                                  List<HallSeason.Club> clubs) {
         String id = SeasonSchedule.idOf(definition.number());
         List<HallSeason.Board> frozen = new ArrayList<>();
         boards.entrySet().stream()
@@ -36,7 +42,8 @@ public final class SeasonFinalizer {
                         .thenComparing(board -> board.getKey().playlist()))
                 .forEach(board -> frozen.add(new HallSeason.Board(board.getKey().inSeason(""),
                         board.getValue().subList(0, Math.min(HALL_DEPTH, board.getValue().size())))));
-        return new HallSeason(definition.number(), definition.name(), definition.spotlight().map(Object::toString), endedOn, frozen);
+        return new HallSeason(definition.number(), definition.name(), definition.spotlight().map(Object::toString), endedOn, frozen,
+                clubs.subList(0, Math.min(HALL_DEPTH, clubs.size())));
     }
 
     /** The seasonal keys older than {@code keepFrom} (the newest finished season stays live and viewable). */

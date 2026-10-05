@@ -18,22 +18,28 @@ import net.minecraft.resources.ResourceLocation;
  * @param team     up to six property strings
  * @param faced    how many challengers have met one of its Pokemon in a duel
  * @param beat     how many of those it beat
+ * @param season   the season it was earned in (P36c), 0 for one earned with seasons off or before they began
  */
-public record Echo(UUID id, UUID owner, String name, ResourceLocation tower, UUID runId, List<String> team, long at, int faced, int beat) {
+public record Echo(UUID id, UUID owner, String name, ResourceLocation tower, UUID runId, List<String> team, long at, int faced, int beat,
+                   int season) {
 
     public Echo {
         team = List.copyOf(team);
     }
 
     public Echo(UUID id, UUID owner, String name, ResourceLocation tower, UUID runId, List<String> team, long at, int faced) {
-        this(id, owner, name, tower, runId, team, at, faced, 0);
+        this(id, owner, name, tower, runId, team, at, faced, 0, 0);
+    }
+
+    public Echo(UUID id, UUID owner, String name, ResourceLocation tower, UUID runId, List<String> team, long at, int faced, int beat) {
+        this(id, owner, name, tower, runId, team, at, faced, beat, 0);
     }
 
     public Echo withFaced(int next) {
-        return new Echo(id, owner, name, tower, runId, team, at, next, beat);
+        return new Echo(id, owner, name, tower, runId, team, at, next, beat, season);
     }
 
     public Echo withBeat(int next) {
-        return new Echo(id, owner, name, tower, runId, team, at, faced, next);
+        return new Echo(id, owner, name, tower, runId, team, at, faced, next, season);
     }
 }

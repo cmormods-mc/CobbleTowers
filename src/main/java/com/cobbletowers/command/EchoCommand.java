@@ -91,7 +91,7 @@ public final class EchoCommand {
         say(context, store.count() + " Echo(es) recorded.");
         for (var tower : com.cobbletowers.definition.TowerDefinitionRegistry.content().towers().keySet()) {
             for (Echo echo : store.forTower(tower)) {
-                say(context, tower.getPath() + " | " + echo.name() + " | " + echo.team().size() + " Pokemon | faced "
+                say(context, tower.getPath() + " | season " + echo.season() + " | " + echo.name() + " | " + echo.team().size() + " Pokemon | faced "
                         + echo.faced() + " | run " + echo.runId());
             }
         }
@@ -104,7 +104,8 @@ public final class EchoCommand {
         var tower = ResourceLocationArgument.getId(context, "tower");
         String pokemon = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "pokemon");
         TowerEchoStore.get(context.getSource().getServer()).add(new Echo(UUID.randomUUID(), UUID.randomUUID(), name, tower,
-                UUID.randomUUID(), List.of(pokemon), System.currentTimeMillis(), 0));
+                UUID.randomUUID(), List.of(pokemon), System.currentTimeMillis(), 0, 0,
+                com.cobbletowers.season.Seasons.viewNumber().orElse(0)));
         return say(context, "Recorded an Echo of " + name + " on " + tower + ": " + EchoPolicy.speciesOf(pokemon) + ".");
     }
 
@@ -115,7 +116,7 @@ public final class EchoCommand {
         if (team.isEmpty()) return say(context, player.getGameProfile().getName() + " has no Pokemon to record.");
         TowerEchoStore store = TowerEchoStore.get(context.getSource().getServer());
         store.add(new Echo(UUID.randomUUID(), player.getUUID(), player.getGameProfile().getName(), tower, UUID.randomUUID(),
-                team, System.currentTimeMillis(), 0));
+                team, System.currentTimeMillis(), 0, 0, com.cobbletowers.season.Seasons.viewNumber().orElse(0)));
         return say(context, "Recorded an Echo of " + player.getGameProfile().getName() + " on " + tower + ": " + team.size()
                 + " Pokemon. (A recorded Echo with no top-ten run leaves at the next refresh of that tower's boards.)");
     }

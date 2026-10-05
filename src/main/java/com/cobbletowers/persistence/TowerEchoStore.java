@@ -54,10 +54,14 @@ public final class TowerEchoStore extends SavedData {
         return echoes.size();
     }
 
-    /** Drops the tower's Echoes whose run is no longer in the top ten; returns how many left. */
-    public int retainRuns(ResourceLocation tower, Set<UUID> runs) {
+    /**
+     * Drops the tower's Echoes that no longer belong (P36c): one of the current season (or of the all-time boards, when {@code current} is
+     * 0) whose run has left the top ten of {@code currentTopRuns}, and any older than the previous season. The previous season's Echoes
+     * are kept whatever happens to its boards: they are the Hall teams that serve until the new season has its own. Returns how many left.
+     */
+    public int prune(ResourceLocation tower, int current, Set<UUID> currentTopRuns) {
         int before = echoes.size();
-        echoes.values().removeIf(echo -> echo.tower().equals(tower) && !runs.contains(echo.runId()));
+        echoes.values().removeIf(echo -> echo.tower().equals(tower) && !com.cobbletowers.echo.EchoPolicy.keeps(echo, current, currentTopRuns));
         if (echoes.size() != before) setDirty();
         return before - echoes.size();
     }
@@ -123,6 +127,7 @@ public final class TowerEchoStore extends SavedData {
             entry.putLong("at", echo.at());
             entry.putInt("faced", echo.faced());
             entry.putInt("beat", echo.beat());
+            entry.putInt("season", echo.season());
             ListTag team = new ListTag();
             for (String member : echo.team()) team.add(StringTag.valueOf(member));
             entry.put("team", team);
@@ -151,7 +156,7 @@ public final class TowerEchoStore extends SavedData {
             for (int j = 0; j < members.size(); j++) team.add(members.getString(j));
             store.echoes.put(entry.getUUID("id"), new Echo(entry.getUUID("id"), entry.getUUID("owner"),
                     entry.getString("name"), tower, entry.getUUID("run"), team, entry.getLong("at"), entry.getInt("faced"),
-                    entry.getInt("beat")));
+                    entry.getInt("beat"), entry.getInt("season")));
         }
         ListTag out = tag.getList("opted_out", Tag.TAG_COMPOUND);
         for (int i = 0; i < out.size(); i++) store.optedOut.add(out.getCompound(i).getUUID("player"));

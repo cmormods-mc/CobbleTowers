@@ -25,7 +25,9 @@ public final class ClubCommand {
         return List.of(Commands.literal("club")
                 .executes(context -> lines(context, ClubService.info(context.getSource().getServer(),
                         context.getSource().getPlayerOrException())))
-                .then(Commands.literal("top").executes(context -> lines(context, ClubService.top(context.getSource().getServer()))))
+                .then(Commands.literal("top").executes(context -> lines(context, ClubService.top(context.getSource().getServer())))
+                        .then(Commands.literal("alltime").executes(context -> lines(context,
+                                ClubService.top(context.getSource().getServer(), true)))))
                 .then(Commands.literal("create")
                         .then(Commands.argument("name", StringArgumentType.word())
                                 .executes(context -> one(context, ClubService.create(context.getSource().getServer(),

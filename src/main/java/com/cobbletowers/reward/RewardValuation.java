@@ -82,12 +82,24 @@ public final class RewardValuation {
                                     ModifierEffects effects, com.cobbletowers.modifier.CustomEffects customs,
                                     int cycleLength,
                                     java.util.function.Function<ResourceLocation, Optional<MilestoneKind>> milestoneKinds) {
+        return value(runSeed, priced, table, effects, customs, cycleLength, milestoneKinds, entry -> 100);
+    }
+
+    /**
+     * As above, with each rolled entry's weight scaled by {@code weightPercent} (P36c). Only the choice of item moves; amounts, growth,
+     * the guaranteed milestone items and every other rule are unchanged.
+     */
+    public static List<Grant> value(long runSeed, List<LedgerEntry> priced, RewardTableDefinition table,
+                                    ModifierEffects effects, com.cobbletowers.modifier.CustomEffects customs,
+                                    int cycleLength,
+                                    java.util.function.Function<ResourceLocation, Optional<MilestoneKind>> milestoneKinds,
+                                    java.util.function.ToIntFunction<RewardTableDefinition.Entry> weightPercent) {
         List<Grant> grants = new ArrayList<>();
         int n = 0;
         for (LedgerEntry entry : priced) {
             n++;
             if (entry.kind() == LedgerEntry.Kind.MILESTONE_CLEARED) {
-                addMilestone(grants, runSeed, entry, n, table, effects, customs, cycleLength, milestoneKinds);
+                addMilestone(grants, runSeed, entry, n, table, effects, customs, cycleLength, milestoneKinds, weightPercent);
                 continue;
             }
             Optional<RewardKind> kind = toRewardKind(entry.kind());
@@ -95,7 +107,7 @@ public final class RewardValuation {
             List<RewardTableDefinition.Entry> pool = table.entriesFor(kind.get());
             if (pool.isEmpty()) continue;
 
-            RewardTableDefinition.Entry rolled = RewardDraw.pickItem(runSeed, entry.floorIndex(), n, pool);
+            RewardTableDefinition.Entry rolled = RewardDraw.pickItem(runSeed, entry.floorIndex(), n, pool, weightPercent);
             int amount = RewardDraw.rollAmount(runSeed, entry.floorIndex(), n, rolled.minAmount(), rolled.maxAmount());
             int grown = amount + amount * table.growthPercentPerFloor() * growthFloor(entry.floorIndex(), cycleLength) / 100;
             int worth = effects.applyReward(grown) * customs.rewardPercent(runSeed, entry.floorIndex(), n) / 100;
@@ -108,7 +120,8 @@ public final class RewardValuation {
     private static void addMilestone(List<Grant> grants, long runSeed, LedgerEntry entry, int n,
                                      RewardTableDefinition table, ModifierEffects effects,
                                      com.cobbletowers.modifier.CustomEffects customs, int cycleLength,
-                                     java.util.function.Function<ResourceLocation, Optional<MilestoneKind>> milestoneKinds) {
+                                     java.util.function.Function<ResourceLocation, Optional<MilestoneKind>> milestoneKinds,
+                                     java.util.function.ToIntFunction<RewardTableDefinition.Entry> weightPercent) {
         Optional<RewardTableDefinition.MilestoneReward> reward =
                 milestoneKinds.apply(entry.what()).flatMap(table::milestoneReward);
         if (reward.isEmpty()) return;
@@ -120,7 +133,7 @@ public final class RewardValuation {
         for (int roll = 0; roll < reward.get().bonusRolls(); roll++) {
             int ordinal = BONUS_ORDINAL_BASE + n * 16 + roll;
             RewardTableDefinition.Entry rolled = RewardDraw.pickItem(runSeed, entry.floorIndex(), ordinal,
-                    reward.get().bonusPool());
+                    reward.get().bonusPool(), weightPercent);
             int amount = RewardDraw.rollAmount(runSeed, entry.floorIndex(), ordinal, rolled.minAmount(), rolled.maxAmount());
             int grown = amount + amount * table.growthPercentPerFloor() * growthFloor(entry.floorIndex(), cycleLength) / 100;
             int worth = effects.applyReward(grown) * customs.rewardPercent(runSeed, entry.floorIndex(), ordinal) / 100;
