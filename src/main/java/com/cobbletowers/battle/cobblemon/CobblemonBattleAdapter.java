@@ -55,7 +55,13 @@ public final class CobblemonBattleAdapter {
 
     /** What a running battle belongs to. Ids only -- an entity reference here would pin its level. */
     public record Binding(UUID runId, UUID playerId, int floorIndex, ResourceLocation species, UUID opponentEntity,
-                          long startedAt) {}
+                          long startedAt, boolean exhibition) {
+        /** A floor's battle: the usual case. */
+        public Binding(UUID runId, UUID playerId, int floorIndex, ResourceLocation species, UUID opponentEntity,
+                       long startedAt) {
+            this(runId, playerId, floorIndex, species, opponentEntity, startedAt, false);
+        }
+    }
 
     private static final Map<UUID, Binding> BY_BATTLE = new LinkedHashMap<>();
     private static final Map<UUID, List<UUID>> BATTLES_BY_RUN = new HashMap<>();
@@ -101,17 +107,33 @@ public final class CobblemonBattleAdapter {
      */
     public static Optional<UUID> start(ServerLevel level, ServerPlayer player, EncounterSnapshot snapshot,
                                        BlockPos where, UUID runId, int floorIndex) {
+        return start(level, player, snapshot, where, runId, floorIndex, false);
+    }
+
+    /**
+     * An exhibition (P35, the Echo Duel): the player's party is cloned and healed first, so nothing about the battle touches
+     * the real party, and no floor effects are armed. It is bound like a floor's battle, marked so the encounter ignores it.
+     */
+    public static Optional<UUID> startExhibition(ServerLevel level, ServerPlayer player, EncounterSnapshot snapshot,
+                                                 BlockPos where, UUID runId, int floorIndex) {
+        return start(level, player, snapshot, where, runId, floorIndex, true);
+    }
+
+    private static Optional<UUID> start(ServerLevel level, ServerPlayer player, EncounterSnapshot snapshot,
+                                        BlockPos where, UUID runId, int floorIndex, boolean exhibition) {
         PokemonEntity opponent = spawn(level, snapshot, where);
         if (opponent == null) return Optional.empty();
 
         // Armed only around the start itself: the effects ride this battle's >start and no other's.
-        com.cobbletowers.showdown.TowerBattleFx.armFloorBattle(player.getUUID(),
-                com.cobbletowers.armor.ArmorBonusEffects.battleEffects(player, runId));
+        if (!exhibition) {
+            com.cobbletowers.showdown.TowerBattleFx.armFloorBattle(player.getUUID(),
+                    com.cobbletowers.armor.ArmorBonusEffects.battleEffects(player, runId));
+        }
         BattleStartResult result;
         try {
-            result = startPve(player, opponent);
+            result = startPve(player, opponent, exhibition);
         } finally {
-            com.cobbletowers.showdown.TowerBattleFx.disarm(player.getUUID());
+            if (!exhibition) com.cobbletowers.showdown.TowerBattleFx.disarm(player.getUUID());
         }
 
 
@@ -124,16 +146,19 @@ public final class CobblemonBattleAdapter {
 
         UUID battleId = success.getBattle().getBattleId();
         Binding binding = new Binding(runId, player.getUUID(), floorIndex, snapshot.species(), opponent.getUUID(),
-                System.currentTimeMillis());
+                System.currentTimeMillis(), exhibition);
         BY_BATTLE.put(battleId, binding);
         LAST_ACTIVITY.put(battleId, binding.startedAt());
         BATTLES_BY_RUN.computeIfAbsent(runId, key -> new ArrayList<>()).add(battleId);
-        TowerLog.info("Floor {} battle {} started: {} vs {} at level {}", floorIndex, battleId,
-                player.getGameProfile().getName(), snapshot.species(), snapshot.level());
+        // An Echo's Pokemon is named by what is actually built, not by the pool species the slot was drawn from.
+        String opponentName = snapshot.echoProperties().map(com.cobbletowers.echo.EchoPolicy::speciesOf)
+                .orElse(snapshot.species().toString());
+        TowerLog.info("Floor {} battle {} started{}: {} vs {} at level {}", floorIndex, battleId,
+                exhibition ? " (Echo duel)" : "", player.getGameProfile().getName(), opponentName, snapshot.level());
         return Optional.of(battleId);
     }
 
-    private static BattleStartResult startPve(ServerPlayer player, PokemonEntity opponent) {
+    private static BattleStartResult startPve(ServerPlayer player, PokemonEntity opponent, boolean exhibition) {
         return BattleBuilder.INSTANCE.pve(
                 player,
                 opponent,
@@ -142,9 +167,10 @@ public final class CobblemonBattleAdapter {
                 null,
                 BattleFormat.Companion.getGEN_9_SINGLES(),
                 // Do not clone the party, and do not heal it first: a tower floor is fought with what
-                // the party has left, which is the whole of TDS #16.
-                false,
-                false,
+                // the party has left, which is the whole of TDS #16. An exhibition is the opposite on purpose: a
+                // healed clone, so the real party is never touched.
+                exhibition,
+                exhibition,
                 Float.MAX_VALUE,
                 // The player's real party, not null: the full-arity method is Kotlin non-null, and
                 // only the generated pve$default overload fills this in. Passing null threw
@@ -160,6 +186,16 @@ public final class CobblemonBattleAdapter {
      */
     public static boolean inLiveBattle(net.minecraft.world.entity.Entity entity) {
         return entity instanceof PokemonEntity pokemon && pokemon.isBattling();
+    }
+
+    /** Whether the player is in a live Cobblemon battle right now. */
+    public static boolean inBattle(ServerPlayer player) {
+        try {
+            PokemonBattle battle = BattleRegistry.getBattleByParticipatingPlayer(player);
+            return battle != null && !battle.getEnded();
+        } catch (RuntimeException ex) {
+            return false;
+        }
     }
 
     /** Why a battle did not start, in words: the result's own toString is only an object id. */

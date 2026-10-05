@@ -93,6 +93,9 @@ public final class IntermissionService {
         Optional<PersistedRun> run = intermissionRunOf(player);
         if (run.isEmpty()) return "You are not at an intermission.";
         if (value && run.get().modifiers().hasOpenDraft()) return "Vote on the modifier before you ready up.";
+        if (value && com.cobbletowers.echo.EchoDuels.active(server, run.get().runId())) {
+            return "Finish the Echo Duel before you ready up.";
+        }
         IntermissionRound round = ROUNDS.computeIfAbsent(run.get().runId(), id -> new IntermissionRound());
         round.setReady(player.getUUID(), value);
         return afterChange(server, run.get().runId(), value ? "You are ready." : "You are not ready.");
@@ -102,6 +105,7 @@ public final class IntermissionService {
     public static String cashOut(MinecraftServer server, ServerPlayer player, boolean value) {
         Optional<PersistedRun> run = intermissionRunOf(player);
         if (run.isEmpty()) return "You can only cash out at an intermission.";
+        if (com.cobbletowers.echo.EchoDuels.active(server, run.get().runId())) return "Finish the Echo Duel first.";
         IntermissionRound round = ROUNDS.computeIfAbsent(run.get().runId(), id -> new IntermissionRound());
         round.voteCashOut(player.getUUID(), value);
         return afterChange(server, run.get().runId(), value ? "You voted to cash out." : "You voted to keep going.");
@@ -204,6 +208,7 @@ public final class IntermissionService {
                 continue;
             }
             round.cancelCountdown();
+            if (com.cobbletowers.echo.EchoDuels.active(server, runId)) continue;   // an Echo Duel holds the floor
             // A playlist's party clauses (P32) hold every floor, not only the first: a party that stopped complying waits.
             List<String> problems = PlaylistGuard.problems(server, found.get());
             if (!problems.isEmpty()) {

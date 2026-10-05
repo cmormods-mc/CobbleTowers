@@ -33,6 +33,7 @@ public final class PlayCommand {
         // Mastery and leaderboards (P31) hang off the same node, so /tower mastery and /tower leaderboard work.
         MasteryCommand.playerCommands().forEach(playRoot::then);
         TrialCommand.playerCommands().forEach(playRoot::then);
+        EchoCommand.playerCommands().forEach(playRoot::then);
         var play = dispatcher.register(Commands.literal("cobbletowers")
                 .then(playRoot
                         .executes(PlayCommand::open)

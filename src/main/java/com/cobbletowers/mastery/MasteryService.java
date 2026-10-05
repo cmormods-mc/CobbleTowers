@@ -210,6 +210,7 @@ public final class MasteryService {
             boards.offer(new Key(Board.SPEED, run.towerId(), mode, playlistOf(run)), entryOf(team, clear.activeMillis(), clear));
         }
         boards.checkpoint(server);
+        com.cobbletowers.echo.EchoService.refresh(server, run);
         TowerLog.info("Run {} cleared a cycle of {} at Ascension {}: {} ms, flawless={}, score {}, {} severe",
                 run.runId(), run.towerId(), clear.ascension(), clear.activeMillis(), clear.flawless(), clear.score(),
                 clear.severeModifiers());
@@ -252,6 +253,7 @@ public final class MasteryService {
                 new Entry(team, ascension, run.runId(), ascension, 0, run.rulesetRevision(), run.towerRevision(),
                         run.towerDigest(), System.currentTimeMillis()));
         boards.checkpoint(server);
+        com.cobbletowers.echo.EchoService.refresh(server, run);
     }
 
     private static void runEnded(MinecraftServer server, PersistedRun run, RunState from, RunState to) {

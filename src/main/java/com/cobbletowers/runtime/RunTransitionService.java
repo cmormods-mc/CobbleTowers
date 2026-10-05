@@ -162,6 +162,7 @@ public final class RunTransitionService {
             // The physical vendor stands only for an intermission (P28), so it goes the moment the run leaves one.
             if (move.from() == RunState.INTERMISSION) {
                 com.cobbletowers.vendor.VendorNpc.despawn(server, run);
+                com.cobbletowers.echo.EchoDuels.cancel(server, runId);
             }
             // Everybody who is out comes back here, and only here. Tied to arriving at the state
             // rather than to the event that got there, so every road into an intermission revives

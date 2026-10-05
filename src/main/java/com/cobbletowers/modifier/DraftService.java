@@ -273,9 +273,19 @@ public final class DraftService {
                         : run.modifiers().accumulating(won).withDraft(resolved);
 
         if (draft.relic()) {
-            TowerRuns.save(server, run.withModifiers(next, now), true);
+            PersistedRun afterRelic = run.withModifiers(next, now);
             TowerLog.info("Run {} found relic {} at floor {}{}", runId, won, draft.floorIndex(),
                     result.byTieBreak() ? " on a seed tie-break" : "");
+            // A regional milestone may also offer an Echo Duel, once the relic is chosen.
+            Optional<com.cobbletowers.intermission.IntermissionEvents.Room> duel =
+                    com.cobbletowers.intermission.IntermissionEvents.roomFor(TowerDefinitionRegistry.content(), afterRelic,
+                            draft.floorIndex(), com.cobbletowers.echo.EchoService.duelAvailable(server, afterRelic, draft.floorIndex()));
+            if (duel.isPresent()) {
+                afterRelic = afterRelic.withModifiers(next.withDraft(PersistedDraft.openingEvent(draft.floorIndex(),
+                        com.cobbletowers.intermission.IntermissionEvents.cardsOf(duel.get()))), now);
+                TowerLog.info("Run {} opened an EVENT room ({}) at floor {}", runId, duel.get(), draft.floorIndex());
+            }
+            TowerRuns.save(server, afterRelic, true);
             return resolved;
         }
 
@@ -290,7 +300,8 @@ public final class DraftService {
         } else {
             // No relic to give: a non-milestone floor may have an event room instead.
             Optional<com.cobbletowers.intermission.IntermissionEvents.Room> room =
-                    com.cobbletowers.intermission.IntermissionEvents.roomFor(content, after, draft.floorIndex());
+                    com.cobbletowers.intermission.IntermissionEvents.roomFor(content, after, draft.floorIndex(),
+                            com.cobbletowers.echo.EchoService.duelAvailable(server, after, draft.floorIndex()));
             if (room.isPresent()) {
                 after = after.withModifiers(next.withDraft(PersistedDraft.openingEvent(draft.floorIndex(),
                         com.cobbletowers.intermission.IntermissionEvents.cardsOf(room.get()))), now);
@@ -317,6 +328,11 @@ public final class DraftService {
         TowerRuns.save(server, run.withModifiers(base.withDraft(resolved), now), true);
         TowerLog.info("Run {} event choice {} at floor {}{}: {}", runId, won, resolved.floorIndex(),
                 tie ? " on a seed tie-break" : "", outcome.map(com.cobbletowers.intermission.IntermissionEvents.Outcome::message).orElse("unknown option"));
+        if (outcome.isPresent() && outcome.get().duel()) {
+            com.cobbletowers.echo.EchoService.beginDuel(server, run.withModifiers(base.withDraft(resolved), now),
+                    resolved.floorIndex());
+            return resolved;
+        }
         outcome.ifPresent(o -> {
             for (PersistedParticipant participant : run.participants()) {
                 net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());

@@ -283,6 +283,11 @@ public final class TowerEncounters {
 
     /** The adapter calls this when one player's battle ends. */
     private static void onResolved(MinecraftServer server, CobblemonBattleAdapter.Binding binding, boolean playerWon) {
+        // An Echo Duel (P35) is a bonus exhibition at an intermission: it is not the floor's, and no round is waiting on it.
+        if (binding.exhibition()) {
+            com.cobbletowers.echo.EchoDuels.onResolved(server, binding, playerWon);
+            return;
+        }
         Round round = ROUNDS.get(binding.runId());
         if (round == null) return;
 
@@ -346,6 +351,34 @@ public final class TowerEncounters {
                     round.floorIndex(), round.runId());
             RunTransitionService.apply(server, round.runId(), RunEvent.TECHNICAL_FAILURE, now);
         }
+    }
+
+    /**
+     * Starts an Echo Duel for one player (P35): one Pokemon of an Echo, at the level this floor's rules would give an opponent,
+     * fought as an exhibition on a cloned, healed party.
+     *
+     * @return whether the battle started
+     */
+    public static boolean startEchoDuel(MinecraftServer server, PersistedRun run, ServerPlayer player, int ordinal,
+                                        com.cobbletowers.echo.EchoPolicy.Pick pick) {
+        ServerLevel level = TowerDimension.level(server);
+        if (level == null || run.cell().isEmpty()) return false;
+        TowerContent content = TowerDefinitionRegistry.content();
+        Optional<FloorDefinition> floor = content.floorAt(run.towerId(), run.floorIndex());
+        if (floor.isEmpty() || floor.get().layout().isEmpty()) return false;
+        EncounterPoolDefinition pool = content.pools().get(floor.get().encounterPoolId());
+        RulesetDefinition ruleset = com.cobbletowers.definition.RulesetResolver.forRun(content, run,
+                floor.get().rulesetOverride());
+        if (pool == null || ruleset == null) return false;
+        Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), floor.get().layout().get());
+        if (origin.isEmpty()) return false;
+        Optional<RegionalThemeDefinition> theme = pool.regionalPool().flatMap(content::regionalTheme);
+        Optional<EncounterSnapshot> drawn = EncounterDraw.draw(pool, run.seed(), run.floorIndex(), ordinal,
+                levelsOf(run, List.of(player)), ruleset, DraftService.effects(run).levelOffset(), theme);
+        if (drawn.isEmpty()) return false;
+        EncounterSnapshot opponent = drawn.get().withEcho(pick.properties(), pick.echo().name());
+        BlockPos where = floor.get().layout().get().presentation().in(origin.get()).offset(ordinal * 4, 0, 0);
+        return CobblemonBattleAdapter.startExhibition(level, player, opponent, where, run.runId(), run.floorIndex()).isPresent();
     }
 
     /**

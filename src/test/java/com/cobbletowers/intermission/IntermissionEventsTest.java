@@ -57,12 +57,28 @@ class IntermissionEventsTest {
     }
 
     @Test
-    @DisplayName("a milestone floor never has a room; it pays a relic instead")
-    void noRoomOnMilestones() {
+    @DisplayName("a milestone floor has no ordinary room (it pays a relic); the Echo Duel is its only room, and only with an Echo to meet")
+    void milestoneRooms() {
         TowerContent content = content();
         for (long seed = 0; seed < 200; seed++) {
-            assertTrue(IntermissionEvents.roomFor(content, run(seed, 2, RunModifierState.EMPTY), 2).isEmpty());
+            PersistedRun milestone = run(seed, 2, RunModifierState.EMPTY);
+            assertTrue(IntermissionEvents.roomFor(content, milestone, 2, false).isEmpty());
+            assertEquals(Room.ECHO_DUEL, IntermissionEvents.roomFor(content, milestone, 2, true).orElseThrow());
+            assertTrue(IntermissionEvents.roomFor(content, run(seed, 1, RunModifierState.EMPTY), 1, true)
+                    .filter(room -> room == Room.ECHO_DUEL).isEmpty(), "an ordinary floor never offers the duel");
         }
+    }
+
+    @Test
+    @DisplayName("fighting the Echo starts a duel and changes nothing about the run; declining does neither")
+    void duelOptions() {
+        PersistedRun run = run(3, 2, RunModifierState.EMPTY);
+        var fight = IntermissionEvents.resolve(content(), run, 2, Option.ECHO_FIGHT);
+        assertTrue(fight.duel());
+        assertEquals(run.modifiers(), fight.state());
+        var decline = IntermissionEvents.resolve(content(), run, 2, Option.ECHO_DECLINE);
+        assertFalse(decline.duel());
+        assertEquals(2, IntermissionEvents.cardsOf(Room.ECHO_DUEL).size());
     }
 
     @Test
@@ -72,8 +88,8 @@ class IntermissionEventsTest {
         int rooms = 0;
         for (long seed = 0; seed < 400; seed++) {
             PersistedRun run = run(seed, 1, RunModifierState.EMPTY);
-            var first = IntermissionEvents.roomFor(content, run, 1);
-            assertEquals(first, IntermissionEvents.roomFor(content, run, 1));
+            var first = IntermissionEvents.roomFor(content, run, 1, false);
+            assertEquals(first, IntermissionEvents.roomFor(content, run, 1, false));
             if (first.isPresent()) rooms++;
         }
         assertTrue(rooms > 140 && rooms < 260, "expected about 200 of 400, got " + rooms);

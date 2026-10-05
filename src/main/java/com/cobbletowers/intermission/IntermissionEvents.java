@@ -31,7 +31,11 @@ public final class IntermissionEvents {
 
     private IntermissionEvents() {}
 
-    public enum Room { SHRINE, GAMBLER, REST }
+    public enum Room {
+        SHRINE, GAMBLER, REST,
+        /** Offered only at a regional milestone, and only when there is an Echo to meet (P35). */
+        ECHO_DUEL
+    }
 
     public enum Option {
         SHRINE_CURSE(Room.SHRINE, "shrine_curse", "Shrine: take the curse (a relic now, a challenge for good)"),
@@ -39,7 +43,9 @@ public final class IntermissionEvents {
         GAMBLER_STAKE(Room.GAMBLER, "gambler_stake", "Gambler: stake a relic (even odds: win another, or lose it)"),
         GAMBLER_PASS(Room.GAMBLER, "gambler_pass", "Gambler: keep your relics"),
         REST_HEAL(Room.REST, "rest_heal", "Rest: fully heal the party"),
-        REST_PRESS_ON(Room.REST, "rest_press_on", "Press on: no rest");
+        REST_PRESS_ON(Room.REST, "rest_press_on", "Press on: no rest"),
+        ECHO_FIGHT(Room.ECHO_DUEL, "echo_fight", "Echo Duel: face a champion's team (a safe exhibition, 100 CobbleDollars if you win)"),
+        ECHO_DECLINE(Room.ECHO_DUEL, "echo_decline", "Echo Duel: decline");
 
         private final Room room;
         private final String id;
@@ -70,7 +76,11 @@ public final class IntermissionEvents {
     }
 
     /** What an option did: the new state, whether the party is healed, and a sentence for the team. */
-    public record Outcome(RunModifierState state, boolean healParty, String message) {}
+    public record Outcome(RunModifierState state, boolean healParty, String message, boolean duel) {
+        public Outcome(RunModifierState state, boolean healParty, String message) {
+            this(state, healParty, message, false);
+        }
+    }
 
     /** An operator can switch rooms off with {@code -Dcobbletowers.events=off} (also used by tests of the draft alone). */
     public static boolean enabled() {
@@ -83,14 +93,19 @@ public final class IntermissionEvents {
 
     // ---- choosing a room -------------------------------------------------------------------------
 
-    /** The room this intermission has, if any: not on a milestone floor (those pay a relic), and half the time. */
-    public static Optional<Room> roomFor(TowerContent content, PersistedRun run, int floorIndex) {
+    /**
+     * The room this intermission has, if any. A milestone floor never has an ordinary room (it pays a relic) but may have
+     * the Echo Duel, when {@code echoAvailable}; any other floor has a room about half the time.
+     */
+    public static Optional<Room> roomFor(TowerContent content, PersistedRun run, int floorIndex, boolean echoAvailable) {
         if (!enabled()) return Optional.empty();
-        if (content.milestoneAt(run.towerId(), floorIndex).isPresent()) return Optional.empty();
+        if (content.milestoneAt(run.towerId(), floorIndex).isPresent()) {
+            return echoAvailable ? Optional.of(Room.ECHO_DUEL) : Optional.empty();
+        }
         if (Math.floorMod(seedOf(run, floorIndex), 100) >= ROOM_CHANCE_PERCENT) return Optional.empty();
         List<Room> eligible = new ArrayList<>();
         for (Room room : Room.values()) {
-            if (eligible(content, run, floorIndex, room)) eligible.add(room);
+            if (room != Room.ECHO_DUEL && eligible(content, run, floorIndex, room)) eligible.add(room);
         }
         if (eligible.isEmpty()) return Optional.empty();
         long pick = EncounterSeed.of(run.seed(), floorIndex, EVENT_ORDINAL_BASE + 1);
@@ -104,6 +119,7 @@ public final class IntermissionEvents {
                     && !curseChoices(content, run, floorIndex).isEmpty();
             case GAMBLER -> !state.relics().isEmpty();
             case REST -> true;
+            case ECHO_DUEL -> false;
         };
     }
 
@@ -141,6 +157,9 @@ public final class IntermissionEvents {
                     return new Outcome(state.withRelic(won.id()), false, "The gambler pays out: " + won.displayName() + ".");
                 }
                 return new Outcome(state.withoutRelic(staked), false, "The gambler takes your stake.");
+            }
+            case ECHO_FIGHT -> {
+                return new Outcome(state, false, "The Echo Duel begins.", true);
             }
             case REST_HEAL -> {
                 return new Outcome(state, true, "The party rests and is fully healed.");
