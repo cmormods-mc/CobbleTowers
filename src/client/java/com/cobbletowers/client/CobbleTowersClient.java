@@ -29,6 +29,7 @@ import net.minecraft.client.gui.screens.Screen;
  */
 public final class CobbleTowersClient implements ClientModInitializer {
 
+    static final KeyMapping PRESENTATION=new KeyMapping("key.cobbletowers.presentation",InputConstants.Type.KEYSYM,org.lwjgl.glfw.GLFW.GLFW_KEY_F8,KeyMapping.CATEGORY_MISC);
     private static final KeyMapping CYCLE_NEXT = new KeyMapping("key.cobbletowers.cycle_next",
             InputConstants.Type.KEYSYM, InputConstants.KEY_PERIOD, KeyMapping.CATEGORY_MISC);
     private static final KeyMapping CYCLE_PREVIOUS = new KeyMapping("key.cobbletowers.cycle_previous",
@@ -39,7 +40,10 @@ public final class CobbleTowersClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        TowerUiSettings.load();
+        TowerShader.register();
         KeyBindingHelper.registerKeyBinding(OPEN_MENU);
+        KeyBindingHelper.registerKeyBinding(PRESENTATION);
         KeyBindingHelper.registerKeyBinding(CYCLE_NEXT);
         KeyBindingHelper.registerKeyBinding(CYCLE_PREVIOUS);
 
@@ -68,14 +72,29 @@ public final class CobbleTowersClient implements ClientModInitializer {
                     }
                 }));
 
+        ClientPlayNetworking.registerGlobalReceiver(com.cobbletowers.network.TowerFeatureState.TYPE, (payload, context) ->
+                context.client().execute(() -> {
+                    if (context.client().screen instanceof TowerFeatureScreen feature) feature.accept(payload);
+                }));
+
+        ClientPlayNetworking.registerGlobalReceiver(com.cobbletowers.network.TowerHallStatePayload.TYPE, (payload, context) ->
+                context.client().execute(() -> {
+                    if (context.client().screen instanceof TowerHallScreen hall) hall.update(payload);
+                    else context.client().setScreen(new TowerHallScreen(payload));
+                }));
+
         ClientPlayNetworking.registerGlobalReceiver(PlayStatePayload.TYPE, (payload, context) ->
                 context.client().execute(() -> {
                     Screen current = Minecraft.getInstance().screen;
-                    if (current instanceof PlayScreen open) {
+                    if (current instanceof TowerHallScreen hall && !payload.open()) {
+                        hall.updateLobby(payload);
+                    } else if (current instanceof TowerFeatureScreen feature && !payload.open()) {
+                        feature.hall().updateLobby(payload);
+                    } else if (current instanceof PlayScreen open) {
                         // A change to the lobby: redrawn in place, as the vendor screen is.
                         open.update(payload);
                     } else if (payload.open()) {
-                        Minecraft.getInstance().setScreen(new PlayScreen(payload));
+                        Minecraft.getInstance().setScreen(new PlayScreen(payload, current instanceof TowerHallScreen hall ? hall : current instanceof TowerFeatureScreen feature ? feature.hall() : null));
                     }
                 }));
 

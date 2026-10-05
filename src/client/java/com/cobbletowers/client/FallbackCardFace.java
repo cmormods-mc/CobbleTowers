@@ -24,11 +24,11 @@ public final class FallbackCardFace implements CardFace {
                          boolean selected, long ms) {
         int frame = PackReveal.colorAt(card.rarity(), ms);
         int rank = PackReveal.rank(card.rarity());
-        graphics.fill(x, y, x + width, y + height, 0xFF14161C);
-        graphics.fillGradient(x + 2, y + 2, x + width - 2, y + height - 2, withAlpha(frame, 0x55), 0xFF14161C);
-        graphics.renderOutline(x, y, width, height, frame);
-        graphics.renderOutline(x + 1, y + 1, width - 2, height - 2, withAlpha(frame, 0xAA));
-        if (selected) graphics.renderOutline(x - 2, y - 2, width + 4, height + 4, 0xFFFFFFFF);
+        TowerShader.panel(graphics,x,y,width,height,frame,selected?1f:.2f);
+
+
+
+
 
         int left = x + 6;
         int inner = width - 12;
@@ -63,7 +63,7 @@ public final class FallbackCardFace implements CardFace {
         }
         if (rank >= 4) {
             // A faint shimmer along the bottom edge for the top rarities, so a legendary reads as one at a glance.
-            int pulse = (int) (0x40 + 0x30 * Math.sin(ms / 250.0));
+            int pulse = (int) (0x40 + 0x30 * Math.sin(TowerUiSettings.motion?ms / 250.0:0));
             graphics.fill(x + 3, y + height - 5, x + width - 3, y + height - 3, withAlpha(frame, pulse));
         }
     }

@@ -18,14 +18,18 @@ import net.minecraft.network.chat.Component;
  * {@link PlayActionPayload} and the server answers with a fresh {@link PlayStatePayload}, so what is on
  * screen is always the server's view of the lobby rather than a guess at it.
  */
-public final class PlayScreen extends Screen {
+public final class PlayScreen extends TowerScreen {
 
     private PlayStatePayload state;
     private EditBox inviteName;
+    private final TowerHallScreen hall;
 
-    public PlayScreen(PlayStatePayload state) {
-        super(Component.literal("Battle Tower"));
+    public PlayScreen(PlayStatePayload state) { this(state, null); }
+
+    public PlayScreen(PlayStatePayload state, TowerHallScreen hall) {
+        super(Component.literal("Battle Tower"), TowerUi.Theme.LOBBY);
         this.state = state;
+        this.hall = hall;
     }
 
     /** A fresh state arrived while this screen is open. */
@@ -44,6 +48,7 @@ public final class PlayScreen extends Screen {
 
     /** Where the right-hand column controls end, so the team list can sit just under them. */
     private int controlsBottom;
+    private int statusWidth(){return Math.max(104,(int)(width*.30));}
 
     /**
      * Two columns, so everything fits a short window (a 1080p screen at the automatic GUI scale is only 270 tall): the towers on the
@@ -51,21 +56,20 @@ public final class PlayScreen extends Screen {
      */
     private void buildWidgets() {
         PlayStatePayload.Lobby lobby = state.lobby();
-        int column = Math.min(200, (width - 24) / 2);
+        int column = Math.max(96, (width - statusWidth() - 32) / 2);
         int half = (column - 4) / 2;
-        int leftX = width / 2 - column - 4;
-        int rightX = width / 2 + 4;
+        int leftX = 12;
+        int rightX = 18 + column;
 
         // The towers: 22 apart when there is room, packed closer when there are many.
         boolean canChoose = lobby.role() == 0 || lobby.role() == 1;
         int towers = Math.max(1, state.towers().size());
-        int step = Math.max(14, Math.min(22, (height - 52) / towers));
+        int step = Math.max(18, Math.min(40, (height - 66) / towers));
         int y = 40;
         for (PlayStatePayload.Tower tower : state.towers()) {
             boolean selected = tower.id().toString().equals(lobby.selected());
-            Button button = Button.builder(Component.literal((selected ? "> " : "") + tower.displayName()),
-                            b -> send(PlayActionPayload.Action.SELECT_TOWER, tower.id().toString()))
-                    .pos(leftX, y).size(column, step - 2).build();
+            String art=tower.id().getPath().contains("rootvale")?"machamp":tower.id().getPath().contains("duskvale")?"scizor":"blastoise";
+            Button button=new TrainerCardButton(leftX,y,column,step-4,tower.displayName(),selected?"Selected destination":"Open expedition",art,theme.accent,()->send(PlayActionPayload.Action.SELECT_TOWER,tower.id().toString()));
             button.active = canChoose && lobby.countdown() < 0;
             addRenderableWidget(button);
             y += step;
@@ -75,9 +79,9 @@ public final class PlayScreen extends Screen {
         if (lobby.role() == 1 && lobby.countdown() < 0) {
             inviteName = new EditBox(font, rightX, ry, column - 70, 20, Component.literal("Player name"));
             inviteName.setMaxLength(16);
-            inviteName.setHint(Component.literal("Player name"));
+            inviteName.setHint(Component.literal("Name"));
             addRenderableWidget(inviteName);
-            addRenderableWidget(Button.builder(Component.literal("Invite"), b -> invite())
+            addRenderableWidget(TowerButton.builder(Component.literal("Invite"), b -> invite())
                     .pos(rightX + column - 66, ry).size(66, 20).build());
             ry += 22;
         } else {
@@ -88,7 +92,7 @@ public final class PlayScreen extends Screen {
         PlayStatePayload.Depth depth = lobby.options().depth();
         if (lobby.role() == 1 && depth.offered()) {
             int next = depth.chosen() >= depth.max() ? 0 : depth.chosen() + 1;
-            Button ascend = Button.builder(Component.literal("Start at: " + (depth.chosen() == 0
+            Button ascend = TowerButton.builder(Component.literal("Start at: " + (depth.chosen() == 0
                             ? "Floor 1" : "Ascension " + depth.chosen()) + (depth.max() > 0 ? "" : " (none reached)")),
                     button -> send(PlayActionPayload.Action.SET_ASCENSION, Integer.toString(next)))
                     .pos(rightX, ry).size(column, 20).build();
@@ -104,7 +108,7 @@ public final class PlayScreen extends Screen {
             int nextIndex = chosenIndex + 1 >= modes.ids().size() ? -1 : chosenIndex + 1;
             String nextId = nextIndex < 0 ? "standard" : modes.ids().get(nextIndex);
             String label = chosenIndex < 0 ? "Standard" : modes.names().get(chosenIndex);
-            Button mode = Button.builder(Component.literal("Mode: " + label),
+            Button mode = TowerButton.builder(Component.literal("Mode: " + label),
                     button -> send(PlayActionPayload.Action.SET_PLAYLIST, nextId))
                     .pos(rightX, ry).size(column, 20).build();
             mode.active = lobby.countdown() < 0;
@@ -114,7 +118,7 @@ public final class PlayScreen extends Screen {
 
         // The Rental Draft (P33): every member opens their own packs; the host cannot start until all are done.
         if (modes.rental() && (lobby.role() == 1 || lobby.role() == 3) && lobby.countdown() < 0) {
-            addRenderableWidget(Button.builder(Component.literal("Draft your team"),
+            addRenderableWidget(TowerButton.builder(Component.literal("Draft your team"),
                             button -> {
                                 if (ClientPlayNetworking.canSend(com.cobbletowers.network.RentalDraftActionPayload.TYPE)) {
                                     ClientPlayNetworking.send(new com.cobbletowers.network.RentalDraftActionPayload(
@@ -126,34 +130,34 @@ public final class PlayScreen extends Screen {
         }
 
         if (lobby.role() == 2) {
-            addRenderableWidget(Button.builder(Component.literal("Accept"),
+            addRenderableWidget(TowerButton.builder(Component.literal("Accept"),
                             b -> send(PlayActionPayload.Action.ACCEPT, lobby.hostName()))
                     .pos(rightX, ry).size(half, 20).build());
-            addRenderableWidget(Button.builder(Component.literal("Decline"),
+            addRenderableWidget(TowerButton.builder(Component.literal("Decline"),
                             b -> send(PlayActionPayload.Action.DECLINE, lobby.hostName()))
                     .pos(rightX + half + 4, ry).size(half, 20).build());
             ry += 22;
         }
         if (lobby.role() == 1) {
-            Button start = Button.builder(Component.literal(lobby.countdown() >= 0
+            Button start = TowerButton.builder(Component.literal(lobby.countdown() >= 0
                             ? "Starting in " + lobby.countdown() + "..." : "Start"),
-                    b -> send(PlayActionPayload.Action.START, "")).pos(rightX, ry).size(half, 20).build();
+                    b -> send(PlayActionPayload.Action.START, "")).pos(width-statusWidth()+6, height-48).size(statusWidth()-20, 22).build();
             start.active = !lobby.selected().isEmpty() && lobby.countdown() < 0;
             addRenderableWidget(start);
-            addRenderableWidget(Button.builder(Component.literal("End team"), b -> send(PlayActionPayload.Action.LEAVE, ""))
+            addRenderableWidget(TowerButton.builder(Component.literal("End team"), b -> send(PlayActionPayload.Action.LEAVE, ""))
                     .pos(rightX + half + 4, ry).size(half, 20).build());
             ry += 22;
         } else if (lobby.role() != 0) {
-            addRenderableWidget(Button.builder(Component.literal("Leave"), b -> send(PlayActionPayload.Action.LEAVE, ""))
+            addRenderableWidget(TowerButton.builder(Component.literal("Leave"), b -> send(PlayActionPayload.Action.LEAVE, ""))
                     .pos(rightX, ry).size(column, 20).build());
             ry += 22;
         } else {
-            addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
+            addRenderableWidget(TowerButton.builder(Component.literal("Close"), b -> onClose())
                     .pos(rightX, ry).size(column, 20).build());
             ry += 22;
         }
         if (lobby.role() == 1 || lobby.role() == 3) {
-            addRenderableWidget(Button.builder(Component.literal("Choose party"),
+            addRenderableWidget(TowerButton.builder(Component.literal("Choose party"),
                             b -> send(PlayActionPayload.Action.OPEN_CHOOSER, ""))
                     .pos(rightX, ry).size(column, 20).build());
             ry += 22;
@@ -177,12 +181,13 @@ public final class PlayScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(font, title, width / 2, 14, 0xFFFFFF);
-        graphics.drawCenteredString(font, "Your party: " + partyLine(state.partyLevels()), width / 2, 26, 0xAAAAAA);
+        TowerUi.label(graphics,font,"Your party: " + partyLine(state.partyLevels()),12,26,width-statusWidth()-24,TowerUi.MUTED);
 
         PlayStatePayload.Lobby lobby = state.lobby();
-        int column = Math.min(200, (width - 24) / 2);
-        int rightX = width / 2 + 4;
-        int y = controlsBottom + 4;
+        int column = Math.max(96, (width - statusWidth() - 32) / 2);
+        int rightX = width-statusWidth()+4;
+        column=statusWidth()-16;
+        int y = 55;
         if (lobby.role() != 0) {
             graphics.drawString(font, "Host: " + lobby.hostName(), rightX, y, 0xFFFF55);
             y += 10;
@@ -197,6 +202,12 @@ public final class PlayScreen extends Screen {
         }
     }
 
+    @Override public void renderBackground(GuiGraphics g,int mx,int my,float dt){
+        super.renderBackground(g,mx,my,dt);
+        TowerUi.panel(g,6,34,width-statusWidth()-10,height-56,theme.accent);
+        TowerUi.panel(g,width-statusWidth(),34,statusWidth()-8,height-56,theme.accent);
+        g.drawString(font,"TEAM STATUS",width-statusWidth()+7,42,TowerUi.MUTED,false);
+    }
     private static String partyLine(List<Integer> levels) {
         if (levels.isEmpty()) return "no Pokemon";
         StringBuilder line = new StringBuilder();
@@ -214,6 +225,7 @@ public final class PlayScreen extends Screen {
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().setScreen(null);
+        if (hall != null) hall.updateLobby(state);
+        Minecraft.getInstance().setScreen(hall);
     }
 }

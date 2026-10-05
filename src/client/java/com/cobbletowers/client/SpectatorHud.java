@@ -45,7 +45,8 @@ public final class SpectatorHud implements HudRenderCallback {
         int x = 6;
         int y = 6;
         int lineStep = font.lineHeight + 1;
-        graphics.fill(x - 2, y - 2, x + width + 2, y + lines.length * lineStep + 1, 0x88000000);
+        graphics.fill(x - 2, y - 2, x + width + 2, y + lines.length * lineStep + 1, 0xB8121218);
+        graphics.fill(x-2,y-2,x+width+2,y-1,0x668EB8DE);
         for (String line : lines) {
             graphics.drawString(font, line, x, y, 0xFFFFFF);
             y += lineStep;

@@ -37,6 +37,10 @@ public final class TowerNetworking {
      * dedicated server and on an integrated client's own server alike.
      */
     public static void registerPayloadTypes() {
+        PayloadTypeRegistry.playS2C().register(TowerFeatureState.TYPE, TowerFeatureState.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(TowerFeatureRequest.TYPE, TowerFeatureRequest.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(TowerHallStatePayload.TYPE, TowerHallStatePayload.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(TowerHallActionPayload.TYPE, TowerHallActionPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(SpectatorPanelPayload.TYPE, SpectatorPanelPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(RewardRevealPayload.TYPE, RewardRevealPayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(CycleTeammatePayload.TYPE, CycleTeammatePayload.STREAM_CODEC);
@@ -57,6 +61,10 @@ public final class TowerNetworking {
 
     /** The server-side half. */
     public static void installServerReceivers() {
+        ServerPlayNetworking.registerGlobalReceiver(TowerFeatureRequest.TYPE, (payload, context) ->
+                context.server().execute(() -> com.cobbletowers.menu.TowerFeatureService.handle(context.server(), context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(TowerHallActionPayload.TYPE, (payload, context) ->
+                context.server().execute(() -> com.cobbletowers.menu.TowerHallService.handle(context.server(), context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(CycleTeammatePayload.TYPE, (payload, context) -> {
             ServerPlayer spectator = context.player();
             context.server().execute(() -> handleCycle(spectator, payload.next()));

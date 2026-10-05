@@ -16,12 +16,12 @@ import net.minecraft.network.chat.Component;
  * <p>Holds nothing of its own. Every button sends an {@link IntermissionActionPayload} and the server
  * answers with a fresh {@link IntermissionStatePayload}, so what is shown is the server's view of the team.
  */
-public final class IntermissionScreen extends Screen {
+public final class IntermissionScreen extends TowerScreen {
 
     private IntermissionStatePayload state;
 
     public IntermissionScreen(IntermissionStatePayload state) {
-        super(Component.literal("Intermission"));
+        super(Component.literal("Intermission"), TowerUi.Theme.MODIFIER);
         this.state = state;
     }
 
@@ -61,7 +61,7 @@ public final class IntermissionScreen extends Screen {
             int index = i;
             String mark = draft.state() == 2 && draft.chosen() == i ? "[chosen] "
                     : draft.myVote() == i ? "> " : "";
-            Button button = Button.builder(
+            Button button = TowerButton.builder(
                             Component.literal(mark + card.displayName() + "  (" + card.votes() + ")"),
                             b -> send(IntermissionActionPayload.Action.PICK_CARD, index))
                     .pos(left, y).size(220, 18).build();
@@ -72,11 +72,11 @@ public final class IntermissionScreen extends Screen {
 
         // Two buttons to a row, so a draft of four cards and a team of four still fit a short window.
         y += 4;
-        addRenderableWidget(Button.builder(Component.literal("Vendor"),
+        addRenderableWidget(TowerButton.builder(Component.literal("Vendor"),
                         b -> send(IntermissionActionPayload.Action.VENDOR, 0))
                 .pos(left, y).size(106, 18).build());
         boolean ready = mine(true);
-        Button readyButton = Button.builder(Component.literal(ready ? "Not ready" : "Ready"),
+        Button readyButton = TowerButton.builder(Component.literal(ready ? "Not ready" : "Ready"),
                         b -> send(ready ? IntermissionActionPayload.Action.UNREADY : IntermissionActionPayload.Action.READY, 0))
                 .pos(left + 114, y).size(106, 18).build();
         readyButton.active = ready || !open;
@@ -84,10 +84,10 @@ public final class IntermissionScreen extends Screen {
         y += 22;
 
         boolean cashing = mine(false);
-        addRenderableWidget(Button.builder(Component.literal(cashing ? "Keep going" : "Cash out"),
+        addRenderableWidget(TowerButton.builder(Component.literal(cashing ? "Keep going" : "Cash out"),
                         b -> send(cashing ? IntermissionActionPayload.Action.STAY : IntermissionActionPayload.Action.CASH_OUT, 0))
                 .pos(left, y).size(106, 18).build());
-        addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
+        addRenderableWidget(TowerButton.builder(Component.literal("Close"), b -> onClose())
                 .pos(left + 114, y).size(106, 18).build());
         buttonsBottom = y + 18;
     }
@@ -98,6 +98,7 @@ public final class IntermissionScreen extends Screen {
         }
     }
 
+    @Override public void renderBackground(GuiGraphics g,int mx,int my,float dt){super.renderBackground(g,mx,my,dt);TowerUi.panel(g,width/2-119,43,238,height-70,theme.accent);}
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);

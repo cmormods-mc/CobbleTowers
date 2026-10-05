@@ -63,9 +63,9 @@ public final class CobblemonCardFace implements CardFace {
             return;
         }
         int frame = PackReveal.colorAt(card.rarity(), ms);
-        graphics.fill(x, y, x + width, y + height, 0xFF14161C);
-        graphics.renderOutline(x, y, width, height, frame);
-        if (selected) graphics.renderOutline(x - 2, y - 2, width + 4, height + 4, 0xFFFFFFFF);
+        TowerShader.panel(graphics,x,y,width,height,frame,selected?1f:.2f);
+
+
 
         // The card itself: the item's 16-pixel box scaled up to fill the top of the face.
         int art = width - 8;

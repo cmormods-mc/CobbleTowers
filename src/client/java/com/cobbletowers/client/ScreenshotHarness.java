@@ -77,6 +77,7 @@ public final class ScreenshotHarness {
         }
         if (next >= STEPS.size()) return;
         if (System.currentTimeMillis() < due) return;
+        org.lwjgl.glfw.GLFW.glfwSetCursorPos(minecraft.getWindow().getWindow(),0,0);
         Step step = STEPS.get(next++);
         try {
             step.action().run();
@@ -106,7 +107,71 @@ public final class ScreenshotHarness {
 
     // ---- the script --------------------------------------------------------------------------------------------------
 
+    private static void featureScript() {
+        var parent=new TowerHallScreen(new com.cobbletowers.network.TowerHallStatePayload(List.of(),List.of(),
+                new PlayStatePayload(List.of(),PlayStatePayload.Lobby.none(),List.of(),"",false),"",false));
+        add(0,"Progress hub",()->{Minecraft.getInstance().setScreen(parent);parent.navigate("Progress");});
+        add(400,"Progress shot",()->featureShot("features_progress"));
+        add(0,"Social hub",()->parent.navigate("Social"));
+        add(400,"Social shot",()->featureShot("features_social"));
+        for(var sample:FeatureScreenSamples.all()) {
+            TowerFeatureScreen[] screen=new TowerFeatureScreen[1];
+            add(0,sample.section(),()->{screen[0]=TowerFeatureScreen.preview(parent,sample);Minecraft.getInstance().setScreen(screen[0]);});
+            add(400,"feature shot",()->featureShot("features_"+sample.section()));
+            if(sample.section().equals("cosmetics")) {
+                add(0,"Title detail",()->screen[0].mouseClicked(screen[0].contentX+20,screen[0].contentY+63,0));
+                add(300,"Title shot",()->featureShot("features_title_detail"));
+            }
+            if(sample.section().equals("echoes")) {
+                add(0,"Echo confirmation",()->screen[0].mouseClicked(screen[0].contentX+20,screen[0].contentY+63,0));
+                add(300,"Echo confirmation shot",()->featureShot("features_echo_confirmation"));
+            }
+            if(sample.section().equals("watch")) {
+                add(0,"Watch input",()->screen[0].mouseClicked(screen[0].contentX+20,screen[0].contentY+63,0));
+                add(300,"Watch input shot",()->featureShot("features_watch_input"));
+            }
+        }
+        add(0,"Done",()->{});
+    }
+
+    private static void featureShot(String name) {
+        var screen=Minecraft.getInstance().screen;
+        var widgets=screen.children().stream().filter(w->w instanceof net.minecraft.client.gui.components.AbstractWidget)
+                .map(w->(net.minecraft.client.gui.components.AbstractWidget)w).toList();
+        for(var widget:widgets) {
+            if(widget.getX()<0||widget.getY()<0||widget.getX()+widget.getWidth()>screen.width||widget.getY()+widget.getHeight()>screen.height)
+                throw new IllegalStateException("Control outside screen: "+widget.getMessage().getString());
+        }
+        shot(name);
+    }
+
+    private static void hallScript() {
+        var towers = List.of("tideforge", "rootvale", "duskvale", "neutral", "custom_arena").stream()
+                .map(id -> new com.cobbletowers.network.TowerHallStatePayload.Destination(
+                        ResourceLocation.fromNamespaceAndPath("cobbletowers", id),
+                        id.equals("custom_arena") ? "A custom datapack arena with a long title" : id.substring(0,1).toUpperCase()+id.substring(1)+" Tower", 10, 2, true)).toList();
+        var play = new PlayStatePayload(List.of(), PlayStatePayload.Lobby.none(), List.of(50,50,50), "", false);
+        var trial = new com.cobbletowers.network.TowerHallStatePayload.Trial("daily", "sample",
+                "Daily Trial: Stormwatch", towers.getFirst().id(), List.of("5 floors / sample period", "Mode: Level Cap 50", "Enemy level: 50", "First launch is scored; later attempts are practice."));
+        var state = new com.cobbletowers.network.TowerHallStatePayload(towers, List.of(trial), play, "", false);
+        TowerHallScreen[] hall = new TowerHallScreen[1];
+        add(0,"Hall",()->{hall[0]=new TowerHallScreen(state);Minecraft.getInstance().setScreen(hall[0]);});
+        add(900,"Hall screenshot",()->shot("hall_home"));
+        add(0,"Tower briefing",()->hall[0].mouseClicked(hall[0].contentX+20,hall[0].contentY+45,0));
+        add(400,"Briefing screenshot",()->shot("hall_tower"));
+        add(0,"Trials",()->hall[0].navigate("Trials"));
+        add(400,"Trials screenshot",()->shot("hall_trials"));
+        add(0,"Daily",()->hall[0].mouseClicked(hall[0].contentX+20,hall[0].contentY+45,0));
+        add(400,"Daily screenshot",()->shot("hall_daily"));
+        add(0,"Reduced motion",()->{TowerUiSettings.motion=false;TowerUiSettings.shaders=false;hall[0].navigate("Tower Hall");});
+        add(400,"Fallback screenshot",()->shot("hall_fallback"));
+        add(0,"Done",()->{});
+    }
+
     private static void script() throws IOException {
+        if ("1".equals(System.getenv("COBBLETOWERS_FEATURES_ONLY"))) { featureScript(); return; }
+        if ("1".equals(System.getenv("COBBLETOWERS_HALL_ONLY"))) { hallScript(); return; }
+
         List<RentalSetDefinition> pool = rentalPool();
         // A draft whose first pack holds a legendary, so the best reveal is on the screen; and one with a God Pack.
         RentalDraft showy = null;
@@ -126,39 +191,39 @@ public final class ScreenshotHarness {
             screen[0] = new RentalPackScreen(RentalDraftPayload.of(draft, ""));
             Minecraft.getInstance().setScreen(screen[0]);
         });
-        add(700, "pack table", () -> shot("rental_01_pack"));
+        add(700, "pack table", () -> featureShot("rental_01_pack"));
         add(0, "tear", () -> screen[0].mouseClicked(screen[0].width / 2.0, screen[0].height / 2.0, 0));
-        add(600, "tearing", () -> shot("rental_02_tearing"));
-        add(1500, "revealing early", () -> shot("rental_03_reveal_early"));
-        add(1300, "revealing late", () -> shot("rental_04_reveal_late"));
-        add(2000, "choosing", () -> shot("rental_05_choosing"));
+        add(600, "tearing", () -> featureShot("rental_02_tearing"));
+        add(1500, "revealing early", () -> featureShot("rental_03_reveal_early"));
+        add(1300, "revealing late", () -> featureShot("rental_04_reveal_late"));
+        add(2000, "choosing", () -> featureShot("rental_05_choosing"));
         add(0, "pick two", () -> {
             clickCard(screen[0], 1);
             clickCard(screen[0], 3);
         });
-        add(400, "chosen", () -> shot("rental_06_chosen"));
+        add(400, "chosen", () -> featureShot("rental_06_chosen"));
         add(0, "keep pack one", () -> {
             draft.pick(0, List.of(1, 3));
             screen[0].accept(RentalDraftPayload.of(draft, ""));
         });
-        add(500, "second pack", () -> shot("rental_07_second_pack"));
+        add(500, "second pack", () -> featureShot("rental_07_second_pack"));
         add(0, "finish draft", () -> {
             draft.pick(1, List.of(0, 2));
             draft.pick(2, List.of(1, 4));
             screen[0].accept(RentalDraftPayload.of(draft, ""));
         });
-        add(500, "team", () -> shot("rental_08_team"));
+        add(500, "team", () -> featureShot("rental_08_team"));
         add(0, "god pack", () -> {
             screen[0] = new RentalPackScreen(RentalDraftPayload.of(godDraft, ""));
             Minecraft.getInstance().setScreen(screen[0]);
         });
-        add(700, "god pack table", () -> shot("rental_09_god_pack"));
+        add(700, "god pack table", () -> featureShot("rental_09_god_pack"));
         add(0, "skip into the god cards", () -> screen[0].mouseClicked(screen[0].width / 2.0, screen[0].height / 2.0, 0));
-        add(5200, "god cards", () -> shot("rental_10_god_cards"));
+        add(5200, "god cards", () -> featureShot("rental_10_god_cards"));
         add(0, "refused pick", () -> {
             screen[0].accept(RentalDraftPayload.of(godDraft, "A team may keep at most 2 legendary or mythic Pokemon."));
         });
-        add(300, "message", () -> shot("rental_11_message"));
+        add(300, "message", () -> featureShot("rental_11_message"));
 
         // The play screen as a host in Rental mode, then as a plain host; and the mastery screen with the real achievements.
         ResourceLocation tower = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge");
@@ -175,10 +240,10 @@ public final class ScreenshotHarness {
                         new PlayStatePayload.Options(new PlayStatePayload.Depth(2, 4, true),
                                 new PlayStatePayload.Modes(ids, names, "rental", true))),
                 List.of(100, 87, 64, 50, 50, 12), "Mode: Rental Draft. Open your packs with /tower draft.", true))));
-        add(600, "play screen shot", () -> shot("play_01_rental_host"));
+        add(600, "play screen shot", () -> featureShot("play_01_rental_host"));
         add(0, "play screen, plain", () -> Minecraft.getInstance().setScreen(new PlayScreen(new PlayStatePayload(towers,
                 PlayStatePayload.Lobby.none(), List.of(100, 87, 64, 50, 50, 12), "", true))));
-        add(600, "play screen plain shot", () -> shot("play_02_no_lobby"));
+        add(600, "play screen plain shot", () -> featureShot("play_02_no_lobby"));
         add(0, "intermission", () -> Minecraft.getInstance().setScreen(new IntermissionScreen(new IntermissionStatePayload(3,
                 new IntermissionStatePayload.Draft(1, List.of(
                         new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "downpour"), "Downpour", 2),
@@ -188,7 +253,7 @@ public final class ScreenshotHarness {
                 List.of(new IntermissionStatePayload.Member("Alex", true, false), new IntermissionStatePayload.Member("Sam", false, false),
                         new IntermissionStatePayload.Member("Jo", false, true)),
                 27, "Vote for the next floor's modifier.", true))));
-        add(600, "intermission shot", () -> shot("intermission_01_draft"));
+        add(600, "intermission shot", () -> featureShot("intermission_01_draft"));
         add(0, "vendor", () -> Minecraft.getInstance().setScreen(new VendorScreen(new VendorCatalogPayload(18450, List.of(
                 new VendorCatalogPayload.Entry(ResourceLocation.fromNamespaceAndPath("cobbletowers", "heal_party"), "Heal the party", 1200, 3),
                 new VendorCatalogPayload.Entry(ResourceLocation.fromNamespaceAndPath("cobbletowers", "revive_one"), "Revive one Pokemon", 2500, 2),
@@ -197,7 +262,7 @@ public final class ScreenshotHarness {
                         new VendorCatalogPayload.Teammate(new java.util.UUID(0, 2), "Sam", true),
                         new VendorCatalogPayload.Teammate(new java.util.UUID(0, 3), "Jo", false)),
                 "Healed Sam's party."))));
-        add(600, "vendor shot", () -> shot("vendor_01_catalog"));
+        add(600, "vendor shot", () -> featureShot("vendor_01_catalog"));
         add(0, "registration", () -> Minecraft.getInstance().setScreen(new RegistrationScreen(new RegistrationStatePayload(List.of(
                 new RegistrationStatePayload.Entry(new java.util.UUID(1, 1), "Glaceon", 100, false, "Party 1"),
                 new RegistrationStatePayload.Entry(new java.util.UUID(1, 2), "Garchomp", 78, false, "Party 2"),
@@ -206,17 +271,17 @@ public final class ScreenshotHarness {
                 new RegistrationStatePayload.Entry(new java.util.UUID(1, 5), "Charizard", 50, false, "Box 1"),
                 new RegistrationStatePayload.Entry(new java.util.UUID(1, 6), "Gengar", 45, false, "Box 2")),
                 List.of(new java.util.UUID(1, 1), new java.util.UUID(1, 4)), 3, "Choose up to 3.", true))));
-        add(600, "registration shot", () -> shot("registration_01_chooser"));
+        add(600, "registration shot", () -> featureShot("registration_01_chooser"));
         add(0, "reward reveal", () -> Minecraft.getInstance().setScreen(new RewardRevealScreen(new RewardRevealPayload(4, List.of(
                 new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("cobblemon", "rare_candy"), 3),
                 new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("cobblemon", "ultra_ball"), 12),
                 new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("minecraft", "diamond"), 2))))));
-        add(600, "reward reveal shot", () -> shot("reward_01_reveal"));
+        add(600, "reward reveal shot", () -> featureShot("reward_01_reveal"));
         add(0, "scouting", () -> Minecraft.getInstance().setScreen(new ScoutingScreen(new ScoutingRevealPayload(5, List.of(
                 new ScoutingRevealPayload.Category("Types", "Water, Ice"),
                 new ScoutingRevealPayload.Category("Boss", "Gyarados"),
                 new ScoutingRevealPayload.Category("Modifier", "Downpour"))))));
-        add(600, "scouting shot", () -> shot("scouting_01_report"));
+        add(600, "scouting shot", () -> featureShot("scouting_01_report"));
         // The armor set tooltip (P25), over a piece of the set, as the server would describe it. The viewer wears nothing, so the
         // tiers show as locked; Shift (the checklist) cannot be held from here.
         add(0, "armor tooltip", () -> {
@@ -238,11 +303,22 @@ public final class ScreenshotHarness {
                 }
             });
         });
-        add(600, "armor tooltip shot", () -> shot("armor_01_tooltip"));
+        add(600, "armor tooltip shot", () -> featureShot("armor_01_tooltip"));
         add(0, "mastery", () -> Minecraft.getInstance().setScreen(new MasteryScreen(masteryPayload(tower, "mastery"))));
-        add(600, "mastery shot", () -> shot("mastery_01_achievements"));
+        add(600, "mastery shot", () -> featureShot("mastery_01_achievements"));
         add(0, "mastery board", () -> Minecraft.getInstance().setScreen(new MasteryScreen(masteryPayload(tower, "speed"))));
-        add(600, "mastery board shot", () -> shot("mastery_02_board"));
+        add(600, "mastery board shot", () -> featureShot("mastery_02_board"));
+        add(0,"Partner collection",()->Minecraft.getInstance().setScreen(new PartnerInspectionScreen(null,null)));
+        add(700,"Partner shot",()->featureShot("modern_partner"));
+        add(0,"Settings",()->Minecraft.getInstance().setScreen(new TowerOptionsScreen(null)));
+        add(500,"Settings shot",()->featureShot("modern_settings"));
+        add(0,"Shader settings",()->Minecraft.getInstance().screen.mouseClicked(30,130,0));
+        add(500,"Shader settings shot",()->featureShot("modern_shader_settings"));
+        add(0,"Reduced motion",()->TowerUiSettings.motion=false);
+        add(300,"Reduced motion shot",()->featureShot("modern_reduced_motion"));
+        add(0,"Shaders off",()->TowerUiSettings.shaders=false);
+        add(300,"Fallback shot",()->featureShot("modern_fallback"));
+        add(0,"Restore presentation",()->{TowerUiSettings.motion=true;TowerUiSettings.shaders=true;});
     }
 
     private static MasteryScreenPayload masteryPayload(ResourceLocation tower, String tab) {
