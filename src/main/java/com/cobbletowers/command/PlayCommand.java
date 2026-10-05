@@ -36,6 +36,7 @@ public final class PlayCommand {
         EchoCommand.playerCommands().forEach(playRoot::then);
         ClubCommand.playerCommands().forEach(playRoot::then);
         SeasonCommand.playerCommands().forEach(playRoot::then);
+        CosmeticsCommand.playerCommands().forEach(playRoot::then);
         var play = dispatcher.register(Commands.literal("cobbletowers")
                 .then(playRoot
                         .executes(PlayCommand::open)

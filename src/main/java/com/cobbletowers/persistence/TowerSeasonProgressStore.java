@@ -30,6 +30,8 @@ public final class TowerSeasonProgressStore extends SavedData {
 
     private final Map<UUID, Entry> progress = new LinkedHashMap<>();
     private final Map<UUID, Set<String>> cosmetics = new LinkedHashMap<>();
+    /** The title each player has chosen to wear (P36d); empty or absent means none. */
+    private final Map<UUID, String> selectedTitles = new LinkedHashMap<>();
 
     public static SavedData.Factory<TowerSeasonProgressStore> factory() {
         return new SavedData.Factory<>(TowerSeasonProgressStore::new, TowerSeasonProgressStore::load, DataFixTypes.LEVEL);
@@ -55,9 +57,24 @@ public final class TowerSeasonProgressStore extends SavedData {
         return Set.copyOf(cosmetics.getOrDefault(player, Set.of()));
     }
 
-    public void addCosmetics(UUID player, Set<String> earned) {
-        if (earned.isEmpty()) return;
-        cosmetics.computeIfAbsent(player, id -> new TreeSet<>()).addAll(earned);
+    /** Adds cosmetics and returns the ones that were new, so a caller can act on a first award only. */
+    public Set<String> addCosmetics(UUID player, Set<String> earned) {
+        if (earned.isEmpty()) return Set.of();
+        Set<String> held = cosmetics.computeIfAbsent(player, id -> new TreeSet<>());
+        Set<String> added = new TreeSet<>();
+        for (String name : earned) if (held.add(name)) added.add(name);
+        if (!added.isEmpty()) setDirty();
+        return added;
+    }
+
+    /** The title the player wears, or empty for none. Whether they still own it is the caller's check. */
+    public String selectedTitle(UUID player) {
+        return selectedTitles.getOrDefault(player, "");
+    }
+
+    public void selectTitle(UUID player, String id) {
+        if (id == null || id.isEmpty()) selectedTitles.remove(player);
+        else selectedTitles.put(player, id);
         setDirty();
     }
 
@@ -65,6 +82,7 @@ public final class TowerSeasonProgressStore extends SavedData {
     public void clear() {
         progress.clear();
         cosmetics.clear();
+        selectedTitles.clear();
         setDirty();
     }
 
@@ -103,6 +121,14 @@ public final class TowerSeasonProgressStore extends SavedData {
             earned.add(entry);
         }
         tag.put("cosmetics", earned);
+        ListTag worn = new ListTag();
+        for (Map.Entry<UUID, String> title : selectedTitles.entrySet()) {
+            CompoundTag entry = new CompoundTag();
+            entry.putUUID("player", title.getKey());
+            entry.putString("title", title.getValue());
+            worn.add(entry);
+        }
+        tag.put("selected_titles", worn);
         return tag;
     }
 
@@ -128,6 +154,10 @@ public final class TowerSeasonProgressStore extends SavedData {
             ListTag stored = entry.getList("names", Tag.TAG_STRING);
             for (int j = 0; j < stored.size(); j++) names.add(stored.getString(j));
             store.cosmetics.put(entry.getUUID("player"), names);
+        }
+        ListTag worn = tag.getList("selected_titles", Tag.TAG_COMPOUND);
+        for (int i = 0; i < worn.size(); i++) {
+            store.selectedTitles.put(worn.getCompound(i).getUUID("player"), worn.getCompound(i).getString("title"));
         }
         return store;
     }

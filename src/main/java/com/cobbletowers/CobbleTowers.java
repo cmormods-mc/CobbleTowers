@@ -53,6 +53,7 @@ public final class CobbleTowers implements ModInitializer {
                 com.cobbletowers.command.EchoCommand.registerAdmin(dispatcher);
                 com.cobbletowers.command.ClubCommand.registerAdmin(dispatcher);
                 com.cobbletowers.command.SeasonCommand.registerAdmin(dispatcher);
+                com.cobbletowers.command.CosmeticsCommand.registerAdmin(dispatcher);
                 CellsCommand.register(dispatcher);
                 DiagnosticsCommand.register(dispatcher);
                 SpikeCommand.register(dispatcher);
@@ -140,6 +141,7 @@ public final class CobbleTowers implements ModInitializer {
         com.cobbletowers.trial.TrialService.install();
         com.cobbletowers.season.Seasons.install();
         com.cobbletowers.season.SeasonService.install();
+        com.cobbletowers.season.ChatIntegration.install();
         com.cobbletowers.contract.ContractService.install();
         com.cobbletowers.trial.LoginSummary.install();
         com.cobbletowers.runtime.TowerCommandGuard.install();

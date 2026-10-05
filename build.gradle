@@ -58,6 +58,10 @@ dependencies {
     // package may be used; validation/validate_architecture.py enforces that on the bytecode.
     modCompileOnly("com.cobbleraids:cobbleraids:${cobbleraids_version}") { transitive = false }
 
+    // Placeholder API is optional at run time (CobbleTowers registers its placeholders only when it is installed), so it is compile-only and
+    // non-transitive, and nothing outside season.PlaceholderBridge may touch it.
+    modCompileOnly('maven.modrinth:placeholder-api:2.4.2+1.21') { transitive = false }
+
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib:2.2.20'
 
     testImplementation platform('org.junit:junit-bom:5.11.4')

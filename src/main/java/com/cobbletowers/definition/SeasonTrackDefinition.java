@@ -20,10 +20,23 @@ public record SeasonTrackDefinition(int stepCost, List<Step> steps) {
 
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
 
-    public record Grant(String item, int amount) {
+    /**
+     * One grant. {@code components} is empty for a plain item; otherwise it is the item as the game's own item tag text
+     * ({@code {id:"minecraft:blue_banner",count:1,components:{...}}}, P36d) so a grant can be a banner with patterns and a name.
+     * {@code label} is what the delivery message calls it. {@code components} and {@code label} may use {@code {season}},
+     * {@code {season_name}} and {@code {color}} (the spotlight region's dye).
+     */
+    public record Grant(String item, int amount, String components, String label) {
         public Grant {
             if (item == null || item.isBlank()) throw new IllegalArgumentException("a grant needs an item");
             if (amount < 1) throw new IllegalArgumentException("a grant's amount must be >= 1, got " + amount);
+            components = components == null ? "" : components;
+            label = label == null ? "" : label;
+        }
+
+        /** A plain grant of an item or a currency. */
+        public Grant(String item, int amount) {
+            this(item, amount, "", "");
         }
     }
 
@@ -66,7 +79,8 @@ public record SeasonTrackDefinition(int stepCost, List<Step> steps) {
             if (step.has("grants")) {
                 for (JsonElement element : step.getAsJsonArray("grants")) {
                     JsonObject grant = element.getAsJsonObject();
-                    grants.add(new Grant(TowerJson.requireString(grant, "item"), TowerJson.integer(grant, "amount", 1)));
+                    grants.add(new Grant(TowerJson.requireString(grant, "item"), TowerJson.integer(grant, "amount", 1),
+                            TowerJson.string(grant, "components", ""), TowerJson.string(grant, "label", "")));
                 }
             }
             steps.add(new Step(i + 1, grants, TowerJson.strings(step, "cosmetics")));

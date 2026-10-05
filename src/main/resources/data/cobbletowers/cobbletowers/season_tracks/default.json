@@ -45,6 +45,14 @@
     {
       "cosmetics": [
         "banner_1"
+      ],
+      "grants": [
+        {
+          "item": "minecraft:{color}_banner",
+          "amount": 1,
+          "components": "{id:\"minecraft:{color}_banner\",count:1,components:{\"minecraft:banner_patterns\":[{pattern:\"minecraft:stripe_bottom\",color:\"white\"}],\"minecraft:custom_name\":'{\"text\":\"{season_name} Banner I\",\"italic\":false}'}}",
+          "label": "{season_name} Banner I"
+        }
       ]
     },
     {
@@ -90,6 +98,14 @@
     {
       "cosmetics": [
         "banner_2"
+      ],
+      "grants": [
+        {
+          "item": "minecraft:{color}_banner",
+          "amount": 1,
+          "components": "{id:\"minecraft:{color}_banner\",count:1,components:{\"minecraft:banner_patterns\":[{pattern:\"minecraft:stripe_bottom\",color:\"white\"},{pattern:\"minecraft:border\",color:\"white\"}],\"minecraft:custom_name\":'{\"text\":\"{season_name} Banner II\",\"italic\":false}'}}",
+          "label": "{season_name} Banner II"
+        }
       ]
     },
     {
@@ -135,6 +151,14 @@
     {
       "cosmetics": [
         "banner_3"
+      ],
+      "grants": [
+        {
+          "item": "minecraft:{color}_banner",
+          "amount": 1,
+          "components": "{id:\"minecraft:{color}_banner\",count:1,components:{\"minecraft:banner_patterns\":[{pattern:\"minecraft:stripe_bottom\",color:\"white\"},{pattern:\"minecraft:border\",color:\"white\"},{pattern:\"minecraft:circle\",color:\"white\"},{pattern:\"minecraft:flower\",color:\"white\"}],\"minecraft:custom_name\":'{\"text\":\"{season_name} Banner III\",\"italic\":false}'}}",
+          "label": "{season_name} Banner III"
+        }
       ]
     },
     {
@@ -226,7 +250,8 @@
       "grants": [
         {
           "item": "cobbletowers:season_trim_template_{season}",
-          "amount": 4
+          "amount": 4,
+          "label": "{season_name} Trim Template"
         }
       ],
       "cosmetics": [

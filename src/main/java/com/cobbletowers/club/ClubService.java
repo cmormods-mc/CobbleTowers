@@ -151,7 +151,9 @@ public final class ClubService {
             store.book().find(podium.get(rank)).ifPresent(club -> {
                 String banner = ClubBook.PRESTIGE_BANNERS.get(place);
                 store.book().honor(club, banner, "Season " + season + ": " + places[place]);
-                for (UUID member : club.memberIds()) marks.addCosmetics(member, java.util.Set.of("s" + season + ":club_" + banner));
+                for (UUID member : club.memberIds()) {
+                    com.cobbletowers.season.CosmeticsService.award(server, member, java.util.Set.of("s" + season + ":club_" + banner));
+                }
                 TowerLog.info("Club {} finished season {} in {} place and unlocks the {} banner", club.name(), season, places[place], banner);
             });
         }
@@ -169,6 +171,7 @@ public final class ClubService {
         if (result == Result.OK) {
             store.changed();
             store.checkpoint(server);
+            com.cobbletowers.season.ChatTags.refresh(server, player.getUUID());
             return "Club " + name + " [" + useTag.toUpperCase(Locale.ROOT) + "] created. Invite people with /tower club invite <player>.";
         }
         return describe(result);
@@ -199,6 +202,7 @@ public final class ClubService {
         INVITES.remove(player.getUUID());
         store.changed();
         store.checkpoint(server);
+        com.cobbletowers.season.ChatTags.refresh(server, player.getUUID());
         store.book().find(clubName).ifPresent(club -> tell(server, club, player.getGameProfile().getName() + " joined the club."));
         return "You joined " + clubName + ".";
     }
@@ -210,6 +214,7 @@ public final class ClubService {
         if (result == Result.OK) {
             store.changed();
             store.checkpoint(server);
+            com.cobbletowers.season.ChatTags.refresh(server, player.getUUID());
             club.ifPresent(c -> tell(server, c, player.getGameProfile().getName() + " left the club."));
             return "You left the club.";
         }
@@ -218,8 +223,10 @@ public final class ClubService {
 
     public static String disband(MinecraftServer server, ServerPlayer player) {
         TowerClubStore store = TowerClubStore.get(server);
+        List<UUID> members = store.book().clubOf(player.getUUID()).map(Club::memberIds).orElse(List.of());
         Result result = store.book().disband(player.getUUID());
         if (result == Result.OK) {
+            for (UUID member : members) com.cobbletowers.season.ChatTags.refresh(server, member);
             store.changed();
             store.checkpoint(server);
             return "Your club was disbanded.";
@@ -236,6 +243,7 @@ public final class ClubService {
         if (target.isEmpty()) return name + " is not in your club.";
         Result result = store.book().kick(owner.getUUID(), target.get());
         if (result == Result.OK) {
+            com.cobbletowers.season.ChatTags.refresh(server, target.get());
             store.changed();
             store.checkpoint(server);
             return "Removed " + name + " from the club.";
@@ -247,6 +255,9 @@ public final class ClubService {
         TowerClubStore store = TowerClubStore.get(server);
         Result result = store.book().setBanner(owner.getUUID(), color);
         if (result == Result.OK) {
+            store.book().clubOf(owner.getUUID()).ifPresent(club -> {
+                for (UUID member : club.memberIds()) com.cobbletowers.season.ChatTags.refresh(server, member);
+            });
             store.changed();
             store.checkpoint(server);
             return "Banner set to " + color + ".";

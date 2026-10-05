@@ -3,7 +3,9 @@
   "package": "com.cobbletowers.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "CommandsMixin"
+    "CommandsMixin",
+    "PlayerDisplayNameMixin",
+    "ServerPlayerTabNameMixin"
   ],
   "injectors": {
     "defaultRequire": 1

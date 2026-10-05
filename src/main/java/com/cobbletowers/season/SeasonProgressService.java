@@ -114,20 +114,23 @@ public final class SeasonProgressService {
         long now = System.currentTimeMillis();
         UUID grantId = UUID.nameUUIDFromBytes(("season:" + season + ":" + number + ":" + player).getBytes(StandardCharsets.UTF_8));
         List<String> given = new ArrayList<>();
+        java.util.Map<String, String> tokens = tokensOf(season);
         for (SeasonTrackDefinition.Grant grant : step.grants()) {
-            ResourceLocation item = ResourceLocation.tryParse(grant.item().replace("{season}", String.valueOf(season)));
+            ResourceLocation item = ResourceLocation.tryParse(Cosmetics.expand(grant.item(), tokens));
             if (item == null || !grantable(item)) {
                 TowerLog.warn("Season {} track step {}: {} is not an item on this server, so it is skipped.", season, number, grant.item());
                 continue;
             }
-            pending.add(player, new PendingTowerReward(grantId, 1, item, grant.amount(), now));
-            given.add(describe(item, grant.amount()));
+            String components = Cosmetics.expand(grant.components(), tokens);
+            String label = Cosmetics.expand(grant.label(), tokens);
+            pending.add(player, new PendingTowerReward(grantId, 1, item, grant.amount(), now, components, label));
+            given.add(label.isEmpty() ? describe(item, grant.amount()) : label);
         }
         Set<String> cosmetics = new HashSet<>();
         for (String name : step.cosmetics()) cosmetics.add("s" + season + ":" + name);
-        TowerSeasonProgressStore.get(server).addCosmetics(player, cosmetics);
         pending.checkpoint(server);
-        TowerSeasonProgressStore.get(server).checkpoint(server);
+        // The cosmetics go through the one door (P36d): recorded, the first title worn, the earn commands run, the tab list refreshed.
+        CosmeticsService.award(server, player, cosmetics);
         TowerLog.info("{} reached season {} track step {}: {}{}", player, season, number, given,
                 cosmetics.isEmpty() ? "" : " and cosmetics " + cosmetics);
 
@@ -137,6 +140,22 @@ public final class SeasonProgressService {
         online.sendSystemMessage(Component.literal("Season " + season + " track, step " + number + "/" + track.stepCount() + " reached"
                 + reward));
         if (!given.isEmpty()) RewardDelivery.deliver(server, online);
+    }
+
+    /** The tokens a track grant may use: {@code {season}}, {@code {season_name}} and {@code {color}} (the spotlight region's dye). */
+    static java.util.Map<String, String> tokensOf(int season) {
+        SeasonDefinition definition = Seasons.definition(season);
+        String color = definition.spotlight().map(region -> switch (region.getPath()) {
+            case "tideforge" -> "blue";
+            case "rootvale" -> "green";
+            case "duskvale" -> "purple";
+            default -> "white";
+        }).orElse("white");
+        java.util.Map<String, String> tokens = new java.util.LinkedHashMap<>();
+        tokens.put("season", String.valueOf(season));
+        tokens.put("season_name", definition.name());
+        tokens.put("color", color);
+        return tokens;
     }
 
     /** A currency the delivery credits, or an item this server has. */
