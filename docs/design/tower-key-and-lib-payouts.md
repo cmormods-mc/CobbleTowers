@@ -11,7 +11,9 @@ wallet pay is not forfeited if the run is lost later). `TowerEncounters.payAscen
 - a milestone floor (F5 and F10 of each cycle): the library's bands for the floors since the previous milestone.
 
 Everyone who is still a member of the run is paid, knocked out or offline included: the boss is a team fight. A player who
-left the run is not. Trials are skipped for now; they will get rewards tied to their difficulty.
+left the run is not. A Trial (a floor-limited run) pays once, when its last floor is cleared, from the library's trial bands at the rank its length
+implies (1-4 floors rank 1, 5-9 rank 2, 10+ rank 3): 6 / 10+1 facet / 16+2 facets, no Scouter rolls, Cores or fragments, and no key.
+There is no daily budget yet, so a live test must show whether trials out-earn the tower before one is added.
 
 The library pays each (encounter, player, kind) once, so a settlement can always be repeated. `AscensionLibRewards`
 therefore writes each settlement to disk (`TowerLibSettlementStore`) before asking, trims it to the players the library has

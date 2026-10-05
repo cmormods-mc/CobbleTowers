@@ -730,13 +730,13 @@ public final class TowerEncounters {
      * Pays a cleared floor in AscensionLib's wallet, outside the run's unclaimed pool: a Scouter roll for every floor,
      * and the milestone bands (dust, facets, cores, Unique Fragments) on a milestone floor, covering the floors since
      * the previous one. Paid to every member of the run, knocked out or offline included: the boss is a team fight, and
-     * a player who left the run is the only one excluded. Trials are skipped, because they are repeatable practice and
-     * would bypass whatever gates entry to the tower. The payout is durable and retried by {@link AscensionLibRewards}.
+     * a player who left the run is the only one excluded. A Trial (a floor-limited run) pays only its own small band, once,
+     * on its last floor. The payout is durable and retried by {@link AscensionLibRewards}.
      */
     private static void payAscensionLib(MinecraftServer server, TowerBossAdapter.Binding binding,
                                         EncounterResult result, long now) {
         Optional<PersistedRun> found = TowerRuns.get(binding.runId());
-        if (found.isEmpty() || found.get().options().floorLimit() > 0) return;
+        if (found.isEmpty()) return;
         PersistedRun run = found.get();
         TowerContent content = TowerDefinitionRegistry.content();
         String outcome = result.outcome().name();
@@ -746,6 +746,17 @@ public final class TowerEncounters {
                 .toList();
         if (members.isEmpty()) return;
 
+        int floorLimit = run.options().floorLimit();
+        if (floorLimit > 0) {
+            // A Trial pays once, when its last floor is cleared, at the rank its length implies. No Scouter rolls and no
+            // milestone bands: it is repeatable practice and must not out-earn or bypass the tower.
+            if (binding.floorIndex() >= floorLimit) {
+                AscensionLibRewards.settleTrial(server, result.encounterId(), outcome,
+                        trialRank(floorLimit), members, now);
+            }
+            return;
+        }
+
         boolean keenEye = DraftService.effects(run).scoutingBonus() > 0;
         AscensionLibRewards.settleScouterDrops(server, result.encounterId(), outcome, keenEye, members, now);
 
@@ -754,6 +765,11 @@ public final class TowerEncounters {
                 floor -> content.milestoneAt(run.towerId(), floor).isPresent(), binding.floorIndex());
         AscensionLibRewards.settleMilestone(server, result.encounterId(), outcome, from, binding.floorIndex(),
                 members, now);
+    }
+
+    /** A trial's rank (1-3) follows its length like the scouting tiers: 1-4 floors rank 1, 5-9 rank 2, 10 and more rank 3. */
+    static int trialRank(int floorLimit) {
+        return floorLimit < 5 ? 1 : floorLimit < 10 ? 2 : 3;
     }
 
     /**

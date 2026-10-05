@@ -27,7 +27,8 @@ import net.minecraft.nbt.Tag;
 public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, int fromFloor, int bossFloor,
                                    boolean keenEyeFloor, List<UUID> players, long createdAt, int attempts) {
 
-    public enum Kind { MILESTONE, SCOUTER_DROPS }
+    /** TRIAL carries its rank (1-3) in {@code bossFloor}. */
+    public enum Kind { MILESTONE, SCOUTER_DROPS, TRIAL }
 
     /** How long an unpaid settlement is kept trying before it is given up on and logged. */
     public static final long EXPIRY_MILLIS = 7L * 24 * 60 * 60 * 1000;

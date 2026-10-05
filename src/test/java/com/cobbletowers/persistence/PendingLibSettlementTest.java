@@ -22,6 +22,15 @@ class PendingLibSettlementTest {
     }
 
     @Test
+    @DisplayName("a trial settlement keeps its rank through the disk round trip and retries like the others")
+    void trialRankSurvivesTheTagAndRetries() {
+        var trial = new PendingLibSettlement(UUID.randomUUID(), PendingLibSettlement.Kind.TRIAL, "VICTORY", 0, 2, false,
+                List.of(A, B), 1000L, 0);
+        assertEquals(trial, PendingLibSettlement.fromTag(trial.toTag()));
+        assertEquals(List.of(B), trial.afterAttempt(Map.of(A, "GRANTED", B, "DISABLED")).orElseThrow().players());
+    }
+
+    @Test
     @DisplayName("confirmed players drop out and only the unconfirmed ones are retried")
     void keepsOnlyThePlayersStillOwed() {
         var next = milestone().afterAttempt(Map.of(A, "GRANTED", B, "REFUSED", C, "DISABLED")).orElseThrow();

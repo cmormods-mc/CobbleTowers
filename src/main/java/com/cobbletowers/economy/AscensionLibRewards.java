@@ -42,6 +42,7 @@ public final class AscensionLibRewards {
     private static boolean resolved;
     private static Method settleBoss;
     private static Method settleScouters;
+    private static Method settleTrial;
     private static int tickCounter;
 
     private AscensionLibRewards() {}
@@ -91,10 +92,20 @@ public final class AscensionLibRewards {
                 keenEyeFloor, List.copyOf(players), now, 0), false);
     }
 
+    /**
+     * Pays a won Trial (a floor-limited run) at its given rank from the library's trial bands. Flushed to disk first, like a
+     * milestone: it is real value. The rank rides in the settlement's boss-floor field.
+     */
+    public static void settleTrial(MinecraftServer server, UUID encounterId, String outcome, int rank,
+                                   Collection<UUID> players, long now) {
+        submit(server, new PendingLibSettlement(encounterId, PendingLibSettlement.Kind.TRIAL, outcome, 0, rank, false,
+                List.copyOf(players), now, 0), true);
+    }
+
     /** Tries every unconfirmed settlement again; gives up on, and says so for, any older than a week. */
     public static void retryPending(MinecraftServer server, long now) {
         TowerLibSettlementStore store = TowerLibSettlementStore.get(server);
-        if (store.size() == 0 || resolve(true) == null) return;
+        if (store.size() == 0 || resolve(PendingLibSettlement.Kind.MILESTONE) == null) return;
         for (PendingLibSettlement settlement : store.all()) {
             if (settlement.expired(now)) {
                 store.remove(settlement);
@@ -108,7 +119,7 @@ public final class AscensionLibRewards {
 
     private static void submit(MinecraftServer server, PendingLibSettlement settlement, boolean flush) {
         // Not installed (or a contract that does not match): there is nothing to pay and nothing to remember.
-        if (resolve(true) == null) return;
+        if (resolve(PendingLibSettlement.Kind.MILESTONE) == null) return;
         TowerLibSettlementStore store = TowerLibSettlementStore.get(server);
         store.put(settlement);
         if (flush) store.checkpoint(server);
@@ -136,15 +147,17 @@ public final class AscensionLibRewards {
 
     /** The library's per-player statuses, or null when the call could not be made or threw (nothing confirmed). */
     private static Map<?, ?> invoke(PendingLibSettlement settlement) {
-        boolean boss = settlement.kind() == PendingLibSettlement.Kind.MILESTONE;
-        Method method = resolve(boss);
+        Method method = resolve(settlement.kind());
         if (method == null) return null;
         try {
-            Object result = boss
-                    ? method.invoke(null, settlement.encounterId(), settlement.outcome(), settlement.fromFloor(),
-                            settlement.bossFloor(), settlement.players())
-                    : method.invoke(null, settlement.encounterId(), settlement.outcome(), settlement.keenEyeFloor(),
-                            settlement.players());
+            Object result = switch (settlement.kind()) {
+                case MILESTONE -> method.invoke(null, settlement.encounterId(), settlement.outcome(), settlement.fromFloor(),
+                        settlement.bossFloor(), settlement.players());
+                case TRIAL -> method.invoke(null, settlement.encounterId(), settlement.outcome(), settlement.bossFloor(),
+                        settlement.players());
+                case SCOUTER_DROPS -> method.invoke(null, settlement.encounterId(), settlement.outcome(),
+                        settlement.keenEyeFloor(), settlement.players());
+            };
             return result instanceof Map<?, ?> statuses ? statuses : null;
         } catch (ReflectiveOperationException | RuntimeException | LinkageError ex) {
             TowerLog.error("AscensionLib {} for encounter {} could not be settled; will retry",
@@ -154,7 +167,7 @@ public final class AscensionLibRewards {
     }
 
     /** Resolved once; null when the mod is absent or its contract is not what this expects (said in the log). */
-    private static Method resolve(boolean boss) {
+    private static Method resolve(PendingLibSettlement.Kind kind) {
         if (!resolved) {
             resolved = true;
             if (!FabricLoader.getInstance().isModLoaded(MOD_ID)) return null;
@@ -164,13 +177,24 @@ public final class AscensionLibRewards {
                         Collection.class);
                 settleScouters = rewards.getMethod("settleScouterDrops", UUID.class, String.class, boolean.class,
                         Collection.class);
+                try {
+                    // Newer than the others: an older library still pays bosses and Scouters, and trials simply pay nothing.
+                    settleTrial = rewards.getMethod("settleTrial", UUID.class, String.class, int.class, Collection.class);
+                } catch (NoSuchMethodException missing) {
+                    settleTrial = null;
+                }
             } catch (ReflectiveOperationException | LinkageError ex) {
                 settleBoss = null;
                 settleScouters = null;
+                settleTrial = null;
                 TowerLog.error("AscensionLib is installed but " + REWARDS + " does not match what CobbleTowers expects",
                         ex);
             }
         }
-        return boss ? settleBoss : settleScouters;
+        return switch (kind) {
+            case MILESTONE -> settleBoss;
+            case TRIAL -> settleTrial;
+            case SCOUTER_DROPS -> settleScouters;
+        };
     }
 }
