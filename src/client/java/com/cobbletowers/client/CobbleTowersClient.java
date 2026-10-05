@@ -41,7 +41,6 @@ public final class CobbleTowersClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         TowerUiSettings.load();
-        TowerShader.register();
         KeyBindingHelper.registerKeyBinding(OPEN_MENU);
         KeyBindingHelper.registerKeyBinding(PRESENTATION);
         KeyBindingHelper.registerKeyBinding(CYCLE_NEXT);

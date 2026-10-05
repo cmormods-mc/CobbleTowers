@@ -34,7 +34,7 @@ public final class PartnerInspectionScreen extends TowerScreen {
     @Override public boolean mouseDragged(double x,double y,int button,double dx,double dy){if(button==0&&x>12&&x<width-146&&y>60&&y<height-64){yaw+=(float)dx;return true;}return super.mouseDragged(x,y,button,dx,dy);}
     @Override public void render(GuiGraphics g,int mx,int my,float dt){
         super.render(g,mx,my,dt);int right=width-140,vw=right-24,vh=height-132;
-        TowerShader.panel(g,12,60,vw,vh,gear.equals("duskvale")?0xFFBB9AE9:species.equals("scizor")?0xFFE593A1:0xFF83C5DD,.25f);
+        PixelUi.panel(g,12,60,vw,vh,gear.equals("duskvale")?TowerUi.ECHO:species.equals("scizor")?TowerUi.BURGUNDY:TowerUi.BRONZE,.25f);
         TowerUi.panel(g,right,60,128,vh,theme.accent);
         TowerUi.label(g,font,gear.isEmpty()?species.toUpperCase():gear.toUpperCase()+" SET",20,66,vw-16,TowerUi.TEXT);
         g.enableScissor(16,80,right-16,height-74);g.flush();

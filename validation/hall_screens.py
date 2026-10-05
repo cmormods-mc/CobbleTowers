@@ -19,7 +19,7 @@ rig=Path('L:/claude-cobbleraids-work/testserver-181')
 for pattern in ('fabric-api-*.jar','Cobblemon-*.jar','CobbleRaids-*.jar'):
     source=client_launch.first(rig/'mods',pattern)
     shutil.copy2(source,mods/source.name)
-jar=root/'build/libs/CobbleTowers-0.21.0-p21-industrial-preview.jar'
+jar=root/'build/libs/CobbleTowers-0.21.0-p21-warm-pixel-preview.jar'
 for prior in mods.glob('CobbleTowers-*.jar'):
     if prior.name != jar.name:
         prior.unlink()

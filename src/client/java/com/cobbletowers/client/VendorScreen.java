@@ -103,7 +103,7 @@ public final class VendorScreen extends TowerScreen {
         TowerUi.label(g,font,"Balance: "+catalog.cobbleDollars(),sx,15,sw,TowerUi.TEXT);
         if(!catalog.services().isEmpty()){
             var e=catalog.services().get(selected);int y=TowerUi.wrapped(g,font,e.displayName(),sx+8,46,sw-16,TowerUi.TEXT)+12;
-            y=TowerUi.wrapped(g,font,e.priceCobbleDollars()+" CobbleDollars",sx+8,y,sw-16,0xFFE5CE93)+10;
+            y=TowerUi.wrapped(g,font,e.priceCobbleDollars()+" CobbleDollars",sx+8,y,sw-16,TowerUi.BRONZE_LIGHT)+10;
             TowerUi.wrapped(g,font,e.remainingPurchases()<0?"Stock: unlimited":"Stock: "+e.remainingPurchases(),sx+8,y,sw-16,TowerUi.MUTED);
         }
         TowerUi.label(g,font,catalog.message(),12,height-48,catalogWidth(),TowerUi.TEXT);

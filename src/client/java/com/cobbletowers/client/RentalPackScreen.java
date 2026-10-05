@@ -293,7 +293,7 @@ public final class RentalPackScreen extends TowerScreen {
     private void drawHeader(GuiGraphics graphics) {
         String title = stage == Stage.TEAM ? "Your rental team" : "Pack " + (pack + 1) + " of " + draft.packs().size()
                 + (godPack() ? "  -  GOD PACK" : "");
-        int color = stage != Stage.TEAM && godPack() ? 0xFFF5B301 : 0xFFFFFFFF;
+        int color = stage != Stage.TEAM && godPack() ? TowerUi.BRONZE_LIGHT : TowerUi.TEXT;
         graphics.drawCenteredString(font, title, width / 2, 10, color);
         String hint = switch (stage) {
             case TABLE -> "Click the pack to open it";
@@ -302,8 +302,8 @@ public final class RentalPackScreen extends TowerScreen {
             case CHOOSING -> "Choose two cards to keep (" + selected.size() + " of 2)";
             case TEAM -> "Drafted. Close this and the host can start the run.";
         };
-        graphics.drawCenteredString(font, hint, width / 2, 24, 0xFFB8BDC7);
-        if (!message.isEmpty()) graphics.drawCenteredString(font, message, width / 2, height - 46, 0xFFFF6B6B);
+        graphics.drawCenteredString(font, hint, width / 2, 24, TowerUi.MUTED);
+        if (!message.isEmpty()) graphics.drawCenteredString(font, message, width / 2, height - 46, TowerUi.DANGER);
     }
 
     private void drawPack(GuiGraphics graphics, long t) {
@@ -312,7 +312,7 @@ public final class RentalPackScreen extends TowerScreen {
         int x = (width - w) / 2;
         int y = (height - h) / 2 - 6;
         // The sealed pack keeps its secret: gold for the God Pack, otherwise one neutral blue, never the best card colour.
-        int glow = godPack() ? 0xFFF5B301 : 0xFF3F8CFF;
+        int glow = godPack() ? TowerUi.BRONZE_LIGHT : TowerUi.BURGUNDY;
         long since = t - stageStart;
         // The pack glows more as it tears: the suspense.
         float tear = stage == Stage.TEARING ? Math.min(1f, since / (float) PackReveal.TEAR_MS) : 0f;
@@ -320,21 +320,21 @@ public final class RentalPackScreen extends TowerScreen {
         for (int g = 9; g >= 3; g -= 3) {
             graphics.fill(x - g, y - g, x + w + g, y + h + g, (Math.min(255, pulse / (g / 2)) << 24) | (glow & 0xFFFFFF));
         }
-        graphics.fill(x, y, x + w, y + h, 0xFF1B2540);
-        graphics.fillGradient(x + 3, y + 3, x + w - 3, y + h - 3, 0xFF2D4A8C, 0xFF111A33);
-        graphics.renderOutline(x, y, w, h, 0xFFC9A227);
-        graphics.fill(x, y + h / 2 - 1, x + w, y + h / 2 + 1, 0xFFC9A227);
+        graphics.fill(x, y, x + w, y + h, TowerUi.OAK);
+        graphics.fillGradient(x + 3, y + 3, x + w - 3, y + h - 3, 0xFF5A3A28, 0xFF2A1C15);
+        graphics.renderOutline(x, y, w, h, TowerUi.BRONZE);
+        graphics.fill(x, y + h / 2 - 1, x + w, y + h / 2 + 1, TowerUi.BRONZE);
         int cx = x + w / 2;
         int cy = y + h / 2;
-        graphics.fill(cx - 7, cy - 7, cx + 7, cy + 7, 0xFFC9A227);
-        graphics.fill(cx - 4, cy - 4, cx + 4, cy + 4, 0xFF1B2540);
+        graphics.fill(cx - 7, cy - 7, cx + 7, cy + 7, TowerUi.BRONZE);
+        graphics.fill(cx - 4, cy - 4, cx + 4, cy + 4, TowerUi.OAK);
         if (stage == Stage.TEARING) {
             // The seal splits: a bright seam widening across the middle.
             int seam = (int) (tear * 14);
             graphics.fill(x, cy - seam, x + w, cy + seam, 0xCCFFFFFF);
         }
-        graphics.drawCenteredString(font, "RENTAL PACK", cx, y + 10, 0xFFFFFFFF);
-        graphics.drawCenteredString(font, (pack + 1) + " / " + draft.packs().size(), cx, y + h - 16, 0xFFC9A227);
+        graphics.drawCenteredString(font, "RENTAL PACK", cx, y + 10, TowerUi.TEXT);
+        graphics.drawCenteredString(font, (pack + 1) + " / " + draft.packs().size(), cx, y + h - 16, TowerUi.BRONZE);
     }
 
     private void drawCards(GuiGraphics graphics, int mouseX, int mouseY, long t) {

@@ -7,22 +7,40 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 
+/**
+ * A wooden/bronze button. Primary is burgundy, dark() is the chocolate secondary (navigation), and a selected button
+ * shows the active tab face. Pressing draws one GUI pixel lower; the hitbox does not move.
+ */
 public final class TowerButton extends Button {
     private boolean dark;
-    private float glow;private long frame=System.nanoTime();
+    /** Draws the active tab face while staying a normal widget; set with active=false for "you are here". */
+    public boolean selected;
+    private long pressedAt;
     private TowerButton(int x, int y, int w, int h, Component label, OnPress action) {
         super(x, y, w, h, label, action, DEFAULT_NARRATION);
     }
     public static Builder builder(Component label, OnPress action) { return new Builder(label, action); }
+
+    @Override public void onPress() {
+        pressedAt = System.nanoTime();
+        super.onPress();
+    }
+
     @Override protected void renderWidget(GuiGraphics g, int mx, int my, float delta) {
         var font = Minecraft.getInstance().font;
         int x = getX(), y = getY(), w = getWidth(), h = getHeight();
         boolean hover = isHoveredOrFocused() && active;
-        long now=System.nanoTime();float blend=TowerUiSettings.motion?1-(float)Math.exp(-Math.min(.1,(now-frame)/1e9)*16):1;frame=now;glow+=((hover?1:0)-glow)*blend;
-        TowerShader.panel(g,x,y,w,h,0xFFFF8C00,glow);
-        g.fill(x+3,y+4,x+4,y+h-4,active?(hover?0xFFFFB64C:0xFF806039):0xFF39414A);
-        String text=font.plainSubstrByWidth(getMessage().getString(),Math.max(1,w-12));
-        g.drawString(font,text,x+(w-font.width(text))/2,y+(h-8)/2,active?TowerUi.TEXT:0xFF788494,false);
+        boolean pressed = active && pressedAt != 0 && (System.nanoTime() - pressedAt) < 100_000_000L;
+        PixelUi.Frame frame = selected ? PixelUi.Frame.TAB
+                : !active ? PixelUi.Frame.BUTTON_DISABLED
+                : pressed ? PixelUi.Frame.BUTTON_PRESSED
+                : dark ? PixelUi.Frame.DARK
+                : hover ? PixelUi.Frame.BUTTON_HOVER : PixelUi.Frame.BUTTON;
+        PixelUi.frame(g, frame, x, y, w, h);
+        if (hover && dark) PixelUi.brackets(g, x + 2, y + 2, w - 4, h - 4, TowerUi.BRONZE_LIGHT);
+        int color = selected || (active && !dark) || hover ? TowerUi.TEXT : active ? TowerUi.MUTED : 0xFF8F7A5E;
+        String text = font.plainSubstrByWidth(getMessage().getString(), Math.max(1, w - 12));
+        g.drawString(font, text, x + (w - font.width(text)) / 2, y + (h - 8) / 2 + (pressed ? 1 : 0), color, false);
     }
     @Override public void playDownSound(SoundManager manager) {
         if (TowerUiSettings.sounds) super.playDownSound(manager);

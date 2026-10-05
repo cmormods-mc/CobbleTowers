@@ -63,7 +63,7 @@ public final class CobblemonCardFace implements CardFace {
             return;
         }
         int frame = PackReveal.colorAt(card.rarity(), ms);
-        TowerShader.panel(graphics,x,y,width,height,frame,selected?1f:.2f);
+        PixelUi.panel(graphics,x,y,width,height,frame,selected?1f:.2f);
 
 
 
@@ -81,16 +81,16 @@ public final class CobblemonCardFace implements CardFace {
         int left = x + 5;
         int inner = width - 10;
         int line = y + 3 + art + 3;
-        FallbackCardFace.fit(graphics, font, Component.literal(card.name() + "  Lv " + d.level()), left, line, inner, 0xFFFFFFFF, 1.0f);
+        FallbackCardFace.fit(graphics, font, Component.literal(card.name() + "  Lv " + d.level()), left, line, inner, TowerUi.TEXT, 1.0f);
         line += 11;
         FallbackCardFace.fit(graphics, font, Component.translatableWithFallback("cobblemon.ability." + d.ability(),
                 FallbackCardFace.tidy(d.ability())).append(" / ").append(Component.translatableWithFallback("item.cobblemon." + d.item(),
-                FallbackCardFace.tidy(d.item()))), left, line, inner, 0xFFB8BDC7, 0.8f);
+                FallbackCardFace.tidy(d.item()))), left, line, inner, TowerUi.MUTED, 0.8f);
         line += 9;
         for (int i = 0; i < d.moves().size(); i += 2) {
             Component pair = move(d.moves().get(i));
             if (i + 1 < d.moves().size()) pair = pair.copy().append("  -  ").append(move(d.moves().get(i + 1)));
-            FallbackCardFace.fit(graphics, font, pair, left, line, inner, 0xFFE6E8EC, 0.8f);
+            FallbackCardFace.fit(graphics, font, pair, left, line, inner, TowerUi.TEXT, 0.8f);
             line += 9;
         }
     }

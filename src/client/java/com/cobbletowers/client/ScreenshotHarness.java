@@ -163,7 +163,7 @@ public final class ScreenshotHarness {
         add(400,"Trials screenshot",()->shot("hall_trials"));
         add(0,"Daily",()->hall[0].mouseClicked(hall[0].contentX+20,hall[0].contentY+45,0));
         add(400,"Daily screenshot",()->shot("hall_daily"));
-        add(0,"Reduced motion",()->{TowerUiSettings.motion=false;TowerUiSettings.shaders=false;hall[0].navigate("Tower Hall");});
+        add(0,"Reduced motion",()->{TowerUiSettings.motion=false;TowerUiSettings.glow=false;hall[0].navigate("Tower Hall");});
         add(400,"Fallback screenshot",()->shot("hall_fallback"));
         add(0,"Done",()->{});
     }
@@ -316,9 +316,9 @@ public final class ScreenshotHarness {
         add(500,"Shader settings shot",()->featureShot("modern_shader_settings"));
         add(0,"Reduced motion",()->TowerUiSettings.motion=false);
         add(300,"Reduced motion shot",()->featureShot("modern_reduced_motion"));
-        add(0,"Shaders off",()->TowerUiSettings.shaders=false);
+        add(0,"Glow off",()->TowerUiSettings.glow=false);
         add(300,"Fallback shot",()->featureShot("modern_fallback"));
-        add(0,"Restore presentation",()->{TowerUiSettings.motion=true;TowerUiSettings.shaders=true;});
+        add(0,"Restore presentation",()->{TowerUiSettings.motion=true;TowerUiSettings.glow=true;});
     }
 
     private static MasteryScreenPayload masteryPayload(ResourceLocation tower, String tab) {

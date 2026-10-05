@@ -158,7 +158,7 @@ public final class MasteryScreen extends TowerScreen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         if("mastery".equals(state.tab())){
-            TowerUi.label(graphics,font,state.mastery().progress(),112,34,width-124,0xFFE2CE91);
+            TowerUi.label(graphics,font,state.mastery().progress(),112,34,width-124,TowerUi.BRONZE_LIGHT);
             TowerUi.label(graphics,font,"Perks: "+state.mastery().perks(),112,47,width-124,TowerUi.MUTED);
             var nodes=state.mastery().achievements();
             if(!nodes.isEmpty()){
@@ -167,7 +167,7 @@ public final class MasteryScreen extends TowerScreen {
                 graphics.enableScissor(x,63,width-8,height-34);graphics.pose().pushPose();graphics.pose().translate(12*Math.pow(1-t,3),0,0);
                 TowerUi.panel(graphics,x,63,104,height-97,theme.accent);
                 int y=TowerUi.wrapped(graphics,font,node.name(),x+7,72,91,TowerUi.TEXT)+10;
-                y=TowerUi.wrapped(graphics,font,node.held()?"EARNED":"NOT YET EARNED",x+7,y,91,node.held()?0xFF86DFBD:TowerUi.MUTED)+10;
+                y=TowerUi.wrapped(graphics,font,node.held()?"EARNED":"NOT YET EARNED",x+7,y,91,node.held()?TowerUi.SAGE:TowerUi.MUTED)+10;
                 TowerUi.wrapped(graphics,font,node.description(),x+7,y,91,TowerUi.TEXT);graphics.pose().popPose();graphics.disableScissor();
             }return;
         }

@@ -73,7 +73,7 @@ public final class TowerHallScreen extends TowerMenuScreen {
             String[] captions=social?new String[]{"Gather your team","Your trainer community","Watch the challengers","Scout an expedition"}:new String[]{"Your next milestone","Wear your victories","Accept a challenge","Legends of the tower","Study your last battle","Measure your growth"};
             String[] keys=social?new String[]{"lobby","club","watch","codes"}:new String[]{"season","cosmetics","contracts","hall","report","mastery"};
             String[] species={"blastoise","scizor","machamp"};
-            int[] colors={0xFF64C9DC,0xFFEF8F87,0xFFE6C777};
+            int[] colors={TowerUi.SAGE,TowerUi.BURGUNDY,TowerUi.BRONZE_LIGHT};
             int cw=(w-6)/2, cardH=Math.min(57,(height-47-(y+34))/(social?2:3));
             for(int i=0;i<labels.length;i++){
                 String key=keys[i];
@@ -114,12 +114,12 @@ public final class TowerHallScreen extends TowerMenuScreen {
         int x=contentX,y=contentY,w=contentWidth;
         if(section.equals("Tower Hall")) {
             TowerPanorama.draw(g,x,y,w,25,"tideforge",uiAge(),true);
-            g.fill(x,y,x+w/2,y+25,0xB0152935);
+            g.fill(x,y,x+w/2,y+25,0xB02A1A12);
             TowerUi.label(g,font,"Every ascent begins here.",x+7,y+8,w-14,TowerUi.TEXT);
         } else if(section.endsWith("briefing")) {
             TowerPanorama.draw(g,x,y,w,28,section.equals("Tower briefing")?destination:"tideforge",uiAge(),true);
             var lines=details();int limit=detailLines();
-            for(int i=0;i<limit&&detailPage*limit+i<lines.size();i++)g.drawString(font,lines.get(detailPage*limit+i),x+7,y+35+i*11,TowerUi.TEXT,false);
+            for(int i=0;i<limit&&detailPage*limit+i<lines.size();i++)g.drawString(font,lines.get(detailPage*limit+i),x+7,y+35+i*11,TowerUi.INK,false);
         } else {
             TowerUi.panel(g,x,y,w,28,theme.accent);
             String copy=switch(section){
@@ -132,16 +132,16 @@ public final class TowerHallScreen extends TowerMenuScreen {
             };
             if(section.equals("Progress")||section.equals("Social")) {
 
-                TowerUi.label(g,font,section.equals("Progress")?"TRAINER RECORD":"LINK LOUNGE",x+8,y+5,w-16,0xFFFFE4A3);
-                TowerUi.label(g,font,section.equals("Progress")?"Every victory leaves a mark.":"Great battles begin with good company.",x+8,y+17,w-16,0xFFCEE0DB);
+                TowerUi.label(g,font,section.equals("Progress")?"TRAINER RECORD":"LINK LOUNGE",x+8,y+5,w-16,TowerUi.BRONZE_LIGHT);
+                TowerUi.label(g,font,section.equals("Progress")?"Every victory leaves a mark.":"Great battles begin with good company.",x+8,y+17,w-16,TowerUi.MUTED);
             }
-            TowerUi.wrapped(g,font,copy,x+5,y+35,w-10,TowerUi.TEXT);
+            TowerUi.wrapped(g,font,copy,x+5,y+35,w-10,TowerUi.INK);
             
             
         }
-        if(section.equals("Tower Hall")&&state.towers().size()>perPage())g.drawString(font,(page+1)+" / "+((state.towers().size()+perPage()-1)/perPage()),x+51,height-58,TowerUi.MUTED,false);
+        if(section.equals("Tower Hall")&&state.towers().size()>perPage())g.drawString(font,(page+1)+" / "+((state.towers().size()+perPage()-1)/perPage()),x+51,height-58,TowerUi.INK,false);
         String status=!notice.isEmpty()?notice:!state.runStatus().isEmpty()?state.runStatus():play.lobby().role()==0?"Choose a destination to begin.":"Your expedition lobby is available.";
-        TowerUi.label(g,font,status,x,height-40,w,TowerUi.MUTED);
+        TowerUi.label(g,font,status,x,height-40,w,0xFF6B4A33);
     }
 
     private static final class DestinationButton extends Button {
@@ -154,12 +154,11 @@ public final class TowerHallScreen extends TowerMenuScreen {
         @Override protected void renderWidget(GuiGraphics g,int mx,int my,float delta){
             boolean hover=isHoveredOrFocused();if(!hover)hoverAt=0;else if(hoverAt==0)hoverAt=System.nanoTime();
             int x=getX(),y=getY(),w=getWidth(),h=getHeight();
-            g.fill(x,y,x+w,y+h,hover?0xFFD7D4A5:0xFF6C8993);
-            g.fill(x+1,y+1,x+w-1,y+h-1,0xFF223C4A);
-            TowerPanorama.draw(g,x+2,y+2,w-4,Math.max(10,h-17),art,hoverAt==0?1400:(System.nanoTime()-hoverAt)/1_000_000,hover);
+            PixelUi.frame(g,PixelUi.Frame.DARK,x,y,w,h);
+            TowerPanorama.draw(g,x+3,y+3,w-6,Math.max(10,h-18),art,hoverAt==0?1400:(System.nanoTime()-hoverAt)/1_000_000,hover);
             var font=Minecraft.getInstance().font;
             TowerUi.label(g,font,getMessage().getString(),x+5,y+h-12,w-10,TowerUi.TEXT);
-            if(hover)g.fill(x+2,y+2,x+4,y+h-2,0xFFE0D69D);
+            if(hover)PixelUi.brackets(g,x+2,y+2,w-4,h-4,TowerUi.BRONZE_LIGHT);
         }
         @Override public void playDownSound(SoundManager manager){if(TowerUiSettings.sounds)super.playDownSound(manager);}
     }

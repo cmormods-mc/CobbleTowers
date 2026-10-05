@@ -78,7 +78,7 @@ public final class TowerFeatureScreen extends TowerMenuScreen {
             int total=state.entries().size()+state.actions().size(),pages=Math.max(1,(total+rows()-1)/rows());page=Math.min(page,pages-1);
             for(int slot=0;slot<rows()&&page*rows()+slot<total;slot++){
                 int index=page*rows()+slot;String label=index<state.entries().size()?state.entries().get(index).title():state.actions().get(index-state.entries().size()).label();
-                var card=new TrainerCardButton(x,y+34+slot*24,w,22,label,"",feature.equals("echoes")?"scizor":feature.equals("club")?"machamp":"blastoise",0xFF65C7D5,()->{if(index<state.entries().size()){selected=index;linePage=0;rebuild();}else choose(state.actions().get(index-state.entries().size()));});card.active=ready;addRenderableWidget(card);
+                var card=new TrainerCardButton(x,y+34+slot*24,w,22,label,"",feature.equals("echoes")?"scizor":feature.equals("club")?"machamp":"blastoise",TowerUi.BRONZE,()->{if(index<state.entries().size()){selected=index;linePage=0;rebuild();}else choose(state.actions().get(index-state.entries().size()));});card.active=ready;addRenderableWidget(card);
             }
             if(pages>1){button("<",x,height-62,24,()->{page=Math.floorMod(page-1,pages);rebuild();},ready);button(">",x+28,height-62,24,()->{page=(page+1)%pages;rebuild();},ready);}
         }else if(state!=null){
@@ -105,8 +105,8 @@ public final class TowerFeatureScreen extends TowerMenuScreen {
         TowerUi.panel(g,x,y,w,26,theme.accent);
         String heading=review!=null?review.label():state!=null&&selected>=0?state.entries().get(selected).title():section;
         TowerUi.label(g,font,heading,x+7,y+9,w-14,TowerUi.TEXT);
-        if(review!=null||selected>=0){var lines=body();for(int i=0;i<lineCount()&&linePage*lineCount()+i<lines.size();i++)g.drawString(font,lines.get(linePage*lineCount()+i),x+7,y+34+i*11,TowerUi.TEXT,false);}
-        else if(state!=null){int pages=Math.max(1,(state.entries().size()+state.actions().size()+rows()-1)/rows());if(pages>1)g.drawString(font,(page+1)+" / "+pages,x+60,height-56,TowerUi.MUTED,false);}
-        TowerUi.label(g,font,status,x,height-40,w,TowerUi.MUTED);
+        if(review!=null||selected>=0){var lines=body();for(int i=0;i<lineCount()&&linePage*lineCount()+i<lines.size();i++)g.drawString(font,lines.get(linePage*lineCount()+i),x+7,y+34+i*11,TowerUi.INK,false);}
+        else if(state!=null){int pages=Math.max(1,(state.entries().size()+state.actions().size()+rows()-1)/rows());if(pages>1)g.drawString(font,(page+1)+" / "+pages,x+60,height-56,TowerUi.INK,false);}
+        TowerUi.label(g,font,status,x,height-40,w,0xFF6B4A33);
     }
 }

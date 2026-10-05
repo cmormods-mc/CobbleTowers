@@ -3,7 +3,10 @@ package com.cobbletowers.client;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
-/** Shared Hall chrome. Controls never move independently of their hitboxes. */
+/**
+ * Shared Hall chrome: a dark oak header and tab rail around a parchment canvas. Controls never move independently of
+ * their hitboxes. Text drawn straight onto the canvas is {@link TowerUi#INK}; cards and panels on it are dark and use cream.
+ */
 public abstract class TowerMenuScreen extends TowerScreen {
     protected int contentX, contentY, contentWidth, contentHeight;
     protected String section = "Tower Hall";
@@ -16,7 +19,7 @@ public abstract class TowerMenuScreen extends TowerScreen {
         for(int i=0;i<labels.length;i++) {
             String label=labels[i];
             var button=TowerButton.builder(Component.literal(label),b->navigate(label)).pos(9,43+i*22).size(rail-10,20).dark().build();
-            button.active=!section.equals(label);
+            if(section.equals(label)){button.active=false;button.selected=true;}
             addRenderableWidget(button);
         }
         addRenderableWidget(TowerButton.builder(Component.literal("Settings"),b->minecraft.setScreen(new TowerOptionsScreen(this)))
@@ -31,7 +34,8 @@ public abstract class TowerMenuScreen extends TowerScreen {
         super.renderBackground(g,mx,my,delta);
         TowerUi.panel(g,6,6,width-12,31,theme.accent);
         TowerUi.panel(g,6,40,contentX-14,height-46,theme.accent);
-        g.drawString(font,"COBBLE TOWERS",15,12,TowerUi.TEXT,false);
+        PixelUi.sheet(g,contentX-5,contentY-4,contentWidth+10,height-contentY-2);
+        g.drawString(font,"COBBLE TOWERS",15,12,TowerUi.BRONZE_LIGHT,false);
         g.drawString(font,section,15,25,TowerUi.MUTED,false);
         drawContent(g);
     }

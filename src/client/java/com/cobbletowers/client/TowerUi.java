@@ -4,17 +4,26 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
 
-/** Shared pixel geometry; no game state or network decisions live in the renderer. */
+/** Shared pixel geometry and palette; no game state or network decisions live in the renderer. */
 public final class TowerUi {
-    public static final int INK = 0xFF0D0E12;
-    public static final int PAPER = 0xFFDCE4EF;
-    public static final int TEXT = 0xFFE3DDD0;
-    public static final int MUTED = 0xFF9BA7AF;
+    public static final int OUTLINE = 0xFF211510;
+    public static final int OAK = 0xFF38271F;
+    public static final int BRONZE = 0xFFA77B46;
+    public static final int BRONZE_LIGHT = 0xFFE3BD7F;
+    public static final int PARCHMENT = 0xFFE5CCA1;
+    public static final int INK = 0xFF40291E;
+    public static final int TEXT = 0xFFF0DFBF;
+    public static final int MUTED = 0xFFC6AC87;
+    public static final int BURGUNDY = 0xFF773C38;
+    public static final int SAGE = 0xFFA9B781;
+    public static final int ECHO = 0xFFB6A1C5;
+    /** Warning/refusal text on a dark surface (readable on chocolate, unlike pure red). */
+    public static final int DANGER = 0xFFE08A78;
 
     public enum Theme {
-        LOBBY(0xFFFF8C00, 0), PARTY(0xFF61C6CD, 1), MODIFIER(0xFFFF8C00, 2),
-        VENDOR(0xFFDCA45C, 3), SCOUT(0xFF61C6CD, 4), REWARDS(0xFFFFB64C, 5),
-        MASTERY(0xFF61C6CD, 6), RENTAL(0xFFFF8C00, 7);
+        LOBBY(BRONZE, 0), PARTY(SAGE, 1), MODIFIER(BURGUNDY, 2),
+        VENDOR(BRONZE_LIGHT, 3), SCOUT(SAGE, 4), REWARDS(BRONZE_LIGHT, 5),
+        MASTERY(SAGE, 6), RENTAL(BURGUNDY, 7);
         public final int accent;
         public final int effect;
         Theme(int accent, int effect) { this.accent = accent; this.effect = effect; }
@@ -23,7 +32,7 @@ public final class TowerUi {
     private TowerUi() {}
 
     public static void panel(GuiGraphics g, int x, int y, int w, int h, int accent) {
-        TowerShader.panel(g,x,y,w,h,accent,0);
+        PixelUi.panel(g, x, y, w, h, accent, 0);
     }
 
     public static void label(GuiGraphics g, Font font, String text, int x, int y, int max, int color) {

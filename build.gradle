@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.13.6'
 }
 
-version = '0.21.0-p21-reward-revamp'
+version = '0.21.0-p21-warm-pixel-preview'
 group = 'com.cobbletowers'
 
 base {
