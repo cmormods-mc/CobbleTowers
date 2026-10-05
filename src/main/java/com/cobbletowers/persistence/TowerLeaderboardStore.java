@@ -79,7 +79,7 @@ public final class TowerLeaderboardStore extends SavedData {
         server.overworld().getDataStorage().save();
     }
 
-    static TowerLeaderboardStore load(CompoundTag tag, HolderLookup.Provider registries) {
+    public static TowerLeaderboardStore load(CompoundTag tag, HolderLookup.Provider registries) {
         TowerLeaderboardStore store = new TowerLeaderboardStore();
         ListTag list = tag.getList("boards", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
@@ -88,49 +88,16 @@ public final class TowerLeaderboardStore extends SavedData {
                 ResourceLocation tower = ResourceLocation.tryParse(item.getString("tower"));
                 if (tower == null) continue;
                 Key key = new Key(Board.valueOf(item.getString("board")), tower, Mode.valueOf(item.getString("mode")),
-                        item.getString("playlist"));
+                        item.getString("playlist"), item.getString("season"));
                 List<Entry> entries = new ArrayList<>();
                 ListTag rows = item.getList("entries", Tag.TAG_COMPOUND);
-                for (int j = 0; j < rows.size(); j++) entries.add(entryOf(rows.getCompound(j)));
+                for (int j = 0; j < rows.size(); j++) entries.add(BoardCodec.read(rows.getCompound(j)));
                 store.boards.put(key, List.copyOf(entries));
             } catch (IllegalArgumentException ex) {
                 // A board this build does not know (a newer save): skipped, never fatal.
             }
         }
         return store;
-    }
-
-    private static Entry entryOf(CompoundTag tag) {
-        List<Member> players = new ArrayList<>();
-        ListTag members = tag.getList("players", Tag.TAG_COMPOUND);
-        for (int i = 0; i < members.size(); i++) {
-            CompoundTag member = members.getCompound(i);
-            players.add(new Member(member.getUUID("id"), member.getString("name")));
-        }
-        UUID run = tag.hasUUID("run") ? tag.getUUID("run") : null;
-        return new Entry(players, tag.getLong("value"), run, tag.getInt("ascension"), tag.getInt("score"),
-                tag.getInt("ruleset_revision"), tag.getInt("tower_revision"), tag.getString("tower_digest"), tag.getLong("at"));
-    }
-
-    private static CompoundTag tagOf(Entry entry) {
-        CompoundTag tag = new CompoundTag();
-        ListTag members = new ListTag();
-        for (Member member : entry.players()) {
-            CompoundTag memberTag = new CompoundTag();
-            memberTag.putUUID("id", member.id());
-            memberTag.putString("name", member.name());
-            members.add(memberTag);
-        }
-        tag.put("players", members);
-        if (entry.runId() != null) tag.putUUID("run", entry.runId());
-        tag.putLong("value", entry.value());
-        tag.putInt("ascension", entry.ascension());
-        tag.putInt("score", entry.score());
-        tag.putInt("ruleset_revision", entry.rulesetRevision());
-        tag.putInt("tower_revision", entry.towerRevision());
-        tag.putString("tower_digest", entry.towerDigest());
-        tag.putLong("at", entry.at());
-        return tag;
     }
 
     @Override
@@ -142,8 +109,9 @@ public final class TowerLeaderboardStore extends SavedData {
             item.putString("tower", board.getKey().tower().toString());
             item.putString("mode", board.getKey().mode().name());
             item.putString("playlist", board.getKey().playlist());
+            if (!board.getKey().season().isEmpty()) item.putString("season", board.getKey().season());
             ListTag rows = new ListTag();
-            for (Entry entry : board.getValue()) rows.add(tagOf(entry));
+            for (Entry entry : board.getValue()) rows.add(BoardCodec.write(entry));
             item.put("entries", rows);
             list.add(item);
         }

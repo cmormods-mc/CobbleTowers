@@ -7,8 +7,6 @@ import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.persistence.TowerClubStore;
 import com.cobbletowers.persistence.TowerWalletStore;
-import java.time.LocalDate;
-import java.time.temporal.IsoFields;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,10 +36,9 @@ public final class ClubService {
 
     private ClubService() {}
 
-    /** The week a clear belongs to, as {@code 2026-W41}. */
+    /** The week a clear belongs to, as {@code 2026-w41}: the same trial week trials and contracts use (configured zone and reset hour). */
     public static String weekKey() {
-        LocalDate today = LocalDate.now();
-        return today.get(IsoFields.WEEK_BASED_YEAR) + "-W" + String.format("%02d", today.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        return com.cobbletowers.trial.TrialClock.weekKey(com.cobbletowers.trial.TrialService.today());
     }
 
     public static void clear() {

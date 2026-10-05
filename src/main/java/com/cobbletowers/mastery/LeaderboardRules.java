@@ -109,18 +109,34 @@ public final class LeaderboardRules {
     }
 
     /**
-     * A board's identity in storage: board, tower, mode (ANY for a board that has no mode) and playlist ({@code ""} for
-     * Standard), so a Monotype clear is ranked apart from a Standard one (P32).
+     * A board's identity in storage: board, tower, mode (ANY for a board that has no mode), playlist ({@code ""} for
+     * Standard), so a Monotype clear is ranked apart from a Standard one (P32), and season ({@code ""} for the all-time
+     * board, otherwise {@code s<number>}, P36a).
      */
-    public record Key(Board board, ResourceLocation tower, Mode mode, String playlist) {
+    public record Key(Board board, ResourceLocation tower, Mode mode, String playlist, String season) {
         public Key {
             if (!board.hasMode()) mode = Mode.ANY;
             playlist = playlist == null ? "" : playlist;
+            season = season == null ? "" : season;
         }
 
-        /** A Standard board. */
+        /** An all-time board of a playlist (every key before P36a). */
+        public Key(Board board, ResourceLocation tower, Mode mode, String playlist) {
+            this(board, tower, mode, playlist, "");
+        }
+
+        /** A Standard all-time board. */
         public Key(Board board, ResourceLocation tower, Mode mode) {
-            this(board, tower, mode, "");
+            this(board, tower, mode, "", "");
+        }
+
+        /** The same board in a season ({@code ""} for all-time). */
+        public Key inSeason(String seasonId) {
+            return new Key(board, tower, mode, playlist, seasonId);
+        }
+
+        public boolean allTime() {
+            return season.isEmpty();
         }
     }
 

@@ -56,7 +56,7 @@ def supports(name: str, properties: dict) -> bool:
         return properties.get("half") == "top"
     return not any(weak in name for weak in NON_SUPPORTING)
 KINDS = ("towers", "floors", "encounter_pools", "rulesets", "milestones", "boss_pools", "modifiers",
-         "reward_tables", "vendor_services", "scouting_profiles", "regional_themes", "achievements", "playlists", "trial_pools", "contract_templates")
+         "reward_tables", "vendor_services", "scouting_profiles", "regional_themes", "achievements", "playlists", "trial_pools", "contract_templates", "seasons")
 MAX_PARTY = 6
 MIN_LEVEL, MAX_LEVEL = 1, 100
 
@@ -364,6 +364,29 @@ def check_achievements(content: dict, problems: list[str]) -> None:
         problems.append(f"{len(content['achievements'])} achievements are loaded; mastery levels stop at 30")
 
 
+def check_seasons(content: dict, problems: list[str]) -> None:
+    """Seasons (P36a): numbered from 1 without repeats, named, and any spotlight is a loaded regional tower."""
+    numbers = {}
+    for season_id, season in content["seasons"].items():
+        for field in ("schema_version", "number", "name"):
+            if field not in season:
+                problems.append(f"{season_id} is missing required field '{field}'")
+        number = season.get("number")
+        if not isinstance(number, int) or number < 1:
+            problems.append(f"{season_id} has number {number!r}; it must be a whole number >= 1")
+        elif number in numbers:
+            problems.append(f"{season_id} and {numbers[number]} are both season {number}")
+        else:
+            numbers[number] = season_id
+        spotlight = season.get("spotlight")
+        if spotlight is not None:
+            tower = content["towers"].get(spotlight)
+            if tower is None:
+                problems.append(f"{season_id} spotlights {spotlight}, which is not a loaded tower")
+            elif not tower.get("regional_theme"):
+                problems.append(f"{season_id} spotlights {spotlight}, which is not a regional tower")
+
+
 def check_playlists(content: dict, problems: list[str]) -> None:
     """Playlists (P32): readable, sensible limits, and every forced modifier exists."""
     names = {}
@@ -531,6 +554,7 @@ def main() -> None:
     check_scouting_profiles(content, problems)
     check_achievements(content, problems)
     check_playlists(content, problems)
+    check_seasons(content, problems)
     check_trial_pools(content, problems)
     check_contract_templates(content, problems)
     check_regional_themes(content, problems)

@@ -47,13 +47,21 @@ public final class MasteryCommand {
         for (Board board : Board.values()) {
             String name = board.name().toLowerCase(java.util.Locale.ROOT);
             boards.then(Commands.literal(name)
-                    .executes(context -> leaderboard(context, board, defaultTower(), ""))
+                    .executes(context -> leaderboard(context, board, defaultTower(), "", false))
+                    .then(Commands.literal("alltime")
+                            .executes(context -> leaderboard(context, board, defaultTower(), "", true))
+                            .then(Commands.argument("tower", ResourceLocationArgument.id())
+                                    .executes(context -> leaderboard(context, board, ResourceLocationArgument.getId(context, "tower"), "", true))
+                                    .then(Commands.argument("playlist", StringArgumentType.word())
+                                            .executes(context -> leaderboard(context, board,
+                                                    ResourceLocationArgument.getId(context, "tower"),
+                                                    StringArgumentType.getString(context, "playlist"), true)))))
                     .then(Commands.argument("tower", ResourceLocationArgument.id())
-                            .executes(context -> leaderboard(context, board, ResourceLocationArgument.getId(context, "tower"), ""))
+                            .executes(context -> leaderboard(context, board, ResourceLocationArgument.getId(context, "tower"), "", false))
                             .then(Commands.argument("playlist", StringArgumentType.word())
                                     .executes(context -> leaderboard(context, board,
                                             ResourceLocationArgument.getId(context, "tower"),
-                                            StringArgumentType.getString(context, "playlist"))))));
+                                            StringArgumentType.getString(context, "playlist"), false)))));
         }
         return List.of(mastery, boards);
     }
@@ -131,10 +139,14 @@ public final class MasteryCommand {
     }
 
     private static int leaderboard(CommandContext<CommandSourceStack> context, Board board, ResourceLocation towerId,
-                                   String playlist) throws CommandSyntaxException {
+                                   String playlist, boolean allTime) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
-        // The screen shows the Standard boards; a playlist's boards are read in chat.
-        if (playlist.isEmpty() && screen(context, towerId.toString(), board.name().toLowerCase(java.util.Locale.ROOT))) return 1;
+        // The default view is the current season's board (P36a); only a per-run board is ever seasonal, and "alltime" asks for the lifetime one.
+        java.util.Optional<Integer> viewing = allTime || !com.cobbletowers.mastery.Boards.seasonal(board)
+                ? java.util.Optional.empty() : com.cobbletowers.season.Seasons.viewNumber();
+        String season = viewing.map(com.cobbletowers.season.SeasonSchedule::idOf).orElse("");
+        // The screen shows the Standard all-time boards; a season's and a playlist's boards are read in chat.
+        if (playlist.isEmpty() && season.isEmpty() && screen(context, towerId.toString(), board.name().toLowerCase(java.util.Locale.ROOT))) return 1;
         TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(towerId);
         if (tower == null) {
             source.sendFailure(Component.literal("No tower " + towerId + " is loaded."));
@@ -142,11 +154,14 @@ public final class MasteryCommand {
         }
         TowerLeaderboardStore store = TowerLeaderboardStore.get(source.getServer());
         source.sendSuccess(() -> Component.literal(board.title() + " - " + tower.displayName()
-                + (playlist.isEmpty() ? "" : " (" + playlist + ")")).withStyle(ChatFormatting.GOLD), false);
+                + (playlist.isEmpty() ? "" : " (" + playlist + ")")
+                + (viewing.isPresent() ? " - Season " + viewing.get() + ": " + com.cobbletowers.season.Seasons.definition(viewing.get()).name()
+                        : (com.cobbletowers.season.Seasons.enabled() && com.cobbletowers.mastery.Boards.seasonal(board) ? " - all-time" : "")))
+                .withStyle(ChatFormatting.GOLD), false);
         int shown = 0;
         List<Mode> modes = board.hasMode() ? List.of(Mode.SOLO, Mode.TEAM) : List.of(Mode.ANY);
         for (Mode mode : modes) {
-            List<Entry> entries = store.top(new Key(board, towerId, mode, playlist), 10);
+            List<Entry> entries = store.top(new Key(board, towerId, mode, playlist, season), 10);
             if (board.hasMode()) {
                 source.sendSuccess(() -> Component.literal("  " + (mode == Mode.SOLO ? "Solo" : "Team")).withStyle(ChatFormatting.AQUA), false);
             }
@@ -209,10 +224,10 @@ public final class MasteryCommand {
                     attempt.floorsCleared()));
         }
         List<com.cobbletowers.mastery.TuningReport.Board> boards = new java.util.ArrayList<>();
-        com.cobbletowers.persistence.TowerLeaderboardStore.get(server).all().forEach((key, entries) -> boards.add(
+        com.cobbletowers.persistence.TowerLeaderboardStore.get(server).all().forEach((key, entries) -> { if (!key.allTime()) return; boards.add(
                 new com.cobbletowers.mastery.TuningReport.Board(key.board().title() + " / " + key.tower().getPath() + " / " + key.mode()
                         + (key.playlist().isEmpty() ? "" : " / " + key.playlist()), key.board().lowerIsBetter(),
-                        entries.stream().map(com.cobbletowers.mastery.LeaderboardRules.Entry::value).toList())));
+                        entries.stream().map(com.cobbletowers.mastery.LeaderboardRules.Entry::value).toList())); });
         for (String line : com.cobbletowers.mastery.TuningReport.build(standings, achievements, attempts, boards)) {
             context.getSource().sendSuccess(() -> Component.literal(line), false);
         }

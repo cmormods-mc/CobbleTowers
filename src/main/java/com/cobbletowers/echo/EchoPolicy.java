@@ -42,7 +42,7 @@ public final class EchoPolicy {
     public static Set<UUID> topRuns(Map<Key, List<Entry>> boards, ResourceLocation tower) {
         Set<UUID> runs = new HashSet<>();
         for (Map.Entry<Key, List<Entry>> board : boards.entrySet()) {
-            if (!board.getKey().tower().equals(tower) || !counts(board.getKey().board())) continue;
+            if (!board.getKey().tower().equals(tower) || !counts(board.getKey().board()) || !board.getKey().allTime()) continue;
             List<Entry> entries = board.getValue();
             for (int i = 0; i < Math.min(TOP_N, entries.size()); i++) {
                 if (entries.get(i).runId() != null) runs.add(entries.get(i).runId());

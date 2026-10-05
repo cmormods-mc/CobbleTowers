@@ -52,6 +52,7 @@ public final class CobbleTowers implements ModInitializer {
                 com.cobbletowers.command.TrialCommand.registerAdmin(dispatcher);
                 com.cobbletowers.command.EchoCommand.registerAdmin(dispatcher);
                 com.cobbletowers.command.ClubCommand.registerAdmin(dispatcher);
+                com.cobbletowers.command.SeasonCommand.registerAdmin(dispatcher);
                 CellsCommand.register(dispatcher);
                 DiagnosticsCommand.register(dispatcher);
                 SpikeCommand.register(dispatcher);
@@ -112,6 +113,7 @@ public final class CobbleTowers implements ModInitializer {
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.AchievementRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.PlaylistRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.TrialPoolRegistry());
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.SeasonRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.ContractTemplateRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.RentalSetRegistry());
         // Armor sets (P24): the items must exist before any datapack loads; what they do is data.
@@ -134,6 +136,8 @@ public final class CobbleTowers implements ModInitializer {
         com.cobbletowers.vendor.VendorNpc.install();
         com.cobbletowers.mastery.MasteryService.install();
         com.cobbletowers.trial.TrialService.install();
+        com.cobbletowers.season.Seasons.install();
+        com.cobbletowers.season.SeasonService.install();
         com.cobbletowers.contract.ContractService.install();
         com.cobbletowers.trial.LoginSummary.install();
         com.cobbletowers.runtime.TowerCommandGuard.install();

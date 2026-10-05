@@ -205,9 +205,10 @@ public final class MasteryService {
         List<Member> team = new ArrayList<>();
         for (UUID player : clear.players()) team.add(member(server, player));
         LeaderboardRules.Mode mode = LeaderboardRules.modeOf(clear.startedSolo());
-        boards.offer(new Key(Board.DIFFICULTY, run.towerId(), mode, playlistOf(run)), entryOf(team, clear.score(), clear));
+        Optional<String> season = com.cobbletowers.season.Seasons.activeId();
+        Boards.offerBoth(boards, new Key(Board.DIFFICULTY, run.towerId(), mode, playlistOf(run)), entryOf(team, clear.score(), clear), season);
         if (clear.ascension() == 0 && clear.activeMillis() > 0) {
-            boards.offer(new Key(Board.SPEED, run.towerId(), mode, playlistOf(run)), entryOf(team, clear.activeMillis(), clear));
+            Boards.offerBoth(boards, new Key(Board.SPEED, run.towerId(), mode, playlistOf(run)), entryOf(team, clear.activeMillis(), clear), season);
         }
         boards.checkpoint(server);
         com.cobbletowers.echo.EchoService.refresh(server, run);
@@ -250,9 +251,9 @@ public final class MasteryService {
         List<Member> team = new ArrayList<>();
         for (PersistedParticipant participant : run.participants()) team.add(member(server, participant.playerId()));
         TowerLeaderboardStore boards = TowerLeaderboardStore.get(server);
-        boards.offer(new Key(Board.ASCENSION, run.towerId(), LeaderboardRules.modeOf(stats.startSize == 1), playlistOf(run)),
+        Boards.offerBoth(boards, new Key(Board.ASCENSION, run.towerId(), LeaderboardRules.modeOf(stats.startSize == 1), playlistOf(run)),
                 new Entry(team, ascension, run.runId(), ascension, 0, run.rulesetRevision(), run.towerRevision(),
-                        run.towerDigest(), System.currentTimeMillis()));
+                        run.towerDigest(), System.currentTimeMillis()), com.cobbletowers.season.Seasons.activeId());
         boards.checkpoint(server);
         com.cobbletowers.echo.EchoService.refresh(server, run);
     }
