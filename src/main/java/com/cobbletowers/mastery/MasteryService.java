@@ -76,7 +76,7 @@ public final class MasteryService {
         try {
             TowerMasteryStore mastery = TowerMasteryStore.get(server);
             for (PersistedParticipant participant : run.participants()) {
-                mastery.raiseDepth(participant.playerId(), run.towerId(), ascension);
+                raiseDepth(server, run, mastery, participant.playerId(), ascension);
                 unlockByDepth(server, run, participant.playerId(), mastery);
             }
             mastery.checkpoint(server);
@@ -113,7 +113,7 @@ public final class MasteryService {
         if (ascension > 0) {
             TowerMasteryStore mastery = TowerMasteryStore.get(server);
             for (PersistedParticipant participant : run.participants()) {
-                mastery.raiseDepth(participant.playerId(), run.towerId(), ascension);
+                raiseDepth(server, run, mastery, participant.playerId(), ascension);
             }
         }
     }
@@ -187,7 +187,7 @@ public final class MasteryService {
         for (UUID player : clear.players()) {
             TowerMasteryStore.Progress before = mastery.progressOf(player, run.towerId());
             int cycles = mastery.addCycle(player, run.towerId());
-            mastery.raiseDepth(player, run.towerId(), clear.ascension());
+            raiseDepth(server, run, mastery, player, clear.ascension());
             TowerMasteryStore.Progress now2 = mastery.progressOf(player, run.towerId());
             List<AchievementDefinition> fresh = MasteryEvaluator.unlocked(definitions, now2.unlocked().keySet(), clear,
                     new MasteryEvaluator.Lifetime(cycles, now2.ascensionReached()));
@@ -206,9 +206,11 @@ public final class MasteryService {
         for (UUID player : clear.players()) team.add(member(server, player));
         LeaderboardRules.Mode mode = LeaderboardRules.modeOf(clear.startedSolo());
         Optional<String> season = com.cobbletowers.season.Seasons.activeId();
-        Boards.offerBoth(boards, new Key(Board.DIFFICULTY, run.towerId(), mode, playlistOf(run)), entryOf(team, clear.score(), clear), season);
+        int difficultyRank = Boards.offerBoth(boards, new Key(Board.DIFFICULTY, run.towerId(), mode, playlistOf(run)), entryOf(team, clear.score(), clear), season);
+        announceRecord(server, run, Board.DIFFICULTY, difficultyRank, team, clear.score());
         if (clear.ascension() == 0 && clear.activeMillis() > 0) {
-            Boards.offerBoth(boards, new Key(Board.SPEED, run.towerId(), mode, playlistOf(run)), entryOf(team, clear.activeMillis(), clear), season);
+            int speedRank = Boards.offerBoth(boards, new Key(Board.SPEED, run.towerId(), mode, playlistOf(run)), entryOf(team, clear.activeMillis(), clear), season);
+            announceRecord(server, run, Board.SPEED, speedRank, team, clear.activeMillis());
         }
         boards.checkpoint(server);
         com.cobbletowers.echo.EchoService.refresh(server, run);
@@ -217,6 +219,26 @@ public final class MasteryService {
         TowerLog.info("Run {} cleared a cycle of {} at Ascension {}: {} ms, flawless={}, score {}, {} severe",
                 run.runId(), run.towerId(), clear.ascension(), clear.activeMillis(), clear.flawless(), clear.score(),
                 clear.severeModifiers());
+    }
+
+    /** Records a player's deepest Ascension and, when it passes a milestone for the first time, tells the server. */
+    private static void raiseDepth(MinecraftServer server, PersistedRun run, TowerMasteryStore mastery, UUID player, int ascension) {
+        if (!mastery.raiseDepth(player, run.towerId(), ascension)) return;
+        com.cobbletowers.announce.Announcements.ascension(towerName(run), member(server, player).name(), ascension)
+                .ifPresent(sentence -> com.cobbletowers.announce.Announcements.broadcast(server, sentence));
+    }
+
+    private static String towerName(PersistedRun run) {
+        TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(run.towerId());
+        return tower == null ? run.towerId().toString() : tower.displayName();
+    }
+
+    /** Announces a new number one on a record board. */
+    private static void announceRecord(MinecraftServer server, PersistedRun run, Board board, int rank, List<Member> team, long value) {
+        List<String> names = new ArrayList<>();
+        for (Member member : team) names.add(member.name());
+        com.cobbletowers.announce.Announcements.record(board, rank, towerName(run), names, value)
+                .ifPresent(sentence -> com.cobbletowers.announce.Announcements.broadcast(server, sentence));
     }
 
     /** The playlist a run was played under, as a board key part; empty for Standard. */
@@ -252,10 +274,11 @@ public final class MasteryService {
         List<Member> team = new ArrayList<>();
         for (PersistedParticipant participant : run.participants()) team.add(member(server, participant.playerId()));
         TowerLeaderboardStore boards = TowerLeaderboardStore.get(server);
-        Boards.offerBoth(boards, new Key(Board.ASCENSION, run.towerId(), LeaderboardRules.modeOf(stats.startSize == 1), playlistOf(run)),
+        int depthRank = Boards.offerBoth(boards, new Key(Board.ASCENSION, run.towerId(), LeaderboardRules.modeOf(stats.startSize == 1), playlistOf(run)),
                 new Entry(team, ascension, run.runId(), ascension, 0, run.rulesetRevision(), run.towerRevision(),
                         run.towerDigest(), System.currentTimeMillis()), com.cobbletowers.season.Seasons.activeId());
         boards.checkpoint(server);
+        announceRecord(server, run, Board.ASCENSION, depthRank, team, ascension);
         com.cobbletowers.echo.EchoService.refresh(server, run);
     }
 

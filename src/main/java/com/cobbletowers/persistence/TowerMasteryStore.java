@@ -79,11 +79,12 @@ public final class TowerMasteryStore extends SavedData {
     }
 
     /** Raises the deepest Ascension reached, if {@code ascension} is deeper. */
-    public void raiseDepth(UUID player, ResourceLocation tower, int ascension) {
+    public boolean raiseDepth(UUID player, ResourceLocation tower, int ascension) {
         Entry entry = entryFor(player, tower);
-        if (ascension <= entry.depth) return;
+        if (ascension <= entry.depth) return false;
         entry.depth = ascension;
         setDirty();
+        return true;
     }
 
     /** Records an achievement; false if the player already holds it. */

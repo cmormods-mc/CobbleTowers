@@ -118,8 +118,11 @@ public final class RunExitService {
     }
 
     static void sweep(MinecraftServer server, long now) {
+        // Watchers whose run has ended go home before anything is released under them.
+        com.cobbletowers.spectator.Watching.sweep(server);
         // Players first, so a cell is never reset under someone the same pass was about to move.
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (com.cobbletowers.spectator.Watching.isWatching(player.getUUID())) continue;
             if (!inTower(player)) {
                 LEAVING.remove(player.getUUID());
                 continue;
@@ -186,6 +189,10 @@ public final class RunExitService {
     }
 
     /** Back to where they started, or the overworld's spawn if that is gone or was never recorded. */
+    public static void sendHome(MinecraftServer server, ServerPlayer player) {
+        evacuate(server, player);
+    }
+
     static void evacuate(MinecraftServer server, ServerPlayer player) {
         TowerReturnStore store = TowerReturnStore.get(server);
         Optional<ReturnPoint> point = store.pointFor(player.getUUID());
@@ -213,6 +220,7 @@ public final class RunExitService {
         store.remove(player.getUUID());
         store.checkpoint(server);
         LEAVING.remove(player.getUUID());
+        com.cobbletowers.spectator.Watching.restoreMode(player);
         player.sendSystemMessage(Component.literal("You have left the tower."));
     }
 }

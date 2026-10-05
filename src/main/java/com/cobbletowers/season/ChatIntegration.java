@@ -23,6 +23,7 @@ public final class ChatIntegration {
 
     public static void install() {
         CosmeticsConfig.install();
+        com.cobbletowers.announce.Announcements.install();
         if (!FabricLoader.getInstance().isModLoaded("placeholder-api")) {
             TowerLog.info("Placeholder API is not installed, so the %cobbletowers:...% placeholders are not registered");
             return;

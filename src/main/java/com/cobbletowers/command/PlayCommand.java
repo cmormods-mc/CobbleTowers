@@ -81,6 +81,9 @@ public final class PlayCommand {
                                         .executes(PlayCommand::decline)))
                         .then(Commands.literal("ready").executes(context -> ready(context, true)))
                         .then(Commands.literal("unready").executes(context -> ready(context, false)))
+                        .then(Commands.literal("watch")
+                                .then(Commands.argument("player", EntityArgument.player()).executes(PlayCommand::watch)))
+                        .then(Commands.literal("unwatch").executes(PlayCommand::unwatch))
                         .then(Commands.literal("cashout").executes(context -> cashOut(context, true)))
                         .then(Commands.literal("stay").executes(context -> cashOut(context, false)))
                         .then(Commands.literal("pick")
@@ -128,6 +131,17 @@ public final class PlayCommand {
             LobbyService.openScreen(context.getSource().getServer(), player);
         }
         return 1;
+    }
+
+    private static int watch(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer watcher = context.getSource().getPlayerOrException();
+        return say(context, com.cobbletowers.spectator.Watching.start(context.getSource().getServer(), watcher,
+                EntityArgument.getPlayer(context, "player")));
+    }
+
+    private static int unwatch(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        String said = com.cobbletowers.spectator.Watching.stop(context.getSource().getServer(), context.getSource().getPlayerOrException());
+        return said.isEmpty() ? 1 : say(context, said);
     }
 
     private static int tower(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

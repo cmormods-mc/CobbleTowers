@@ -87,7 +87,7 @@ public final class SpectatorPresentation {
         return List.copyOf(ids);
     }
 
-    private static SpectatorPanelPayload panelFor(PersistedRun run, ServerPlayer teammate) {
+    static SpectatorPanelPayload panelFor(PersistedRun run, ServerPlayer teammate) {
         int total = 0;
         int remaining = 0;
         for (Pokemon pokemon : Cobblemon.INSTANCE.getStorage().getParty(teammate)) {
