@@ -10,6 +10,14 @@ from rcon import Rcon
 from run_durability_test import Server, read_password, server_port
 from client_e2e import Remote, PLAYER
 
+# The client acknowledges a 'wait' as soon as it starts it, so keep this script in step with the client's queue.
+_send = Remote.send
+def _send_and_sleep(self, line, wait=True, seconds=60):
+    _send(self, line, wait, seconds)
+    if line.startswith('wait '):
+        time.sleep(int(line.split()[1]) / 1000)
+Remote.send = _send_and_sleep
+
 RIG = Path('L:/claude-cobbleraids-work/testserver-ascend')
 JAVA = Path('L:/claude-cobbleraids-work/jdk-21.0.12.1+1/bin/java.exe')
 OUT = Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
@@ -60,6 +68,9 @@ try:
         remote.send('wait 1900'); remote.shot(f'c{i}b_front')
         remote.send('wait 600'); remote.shot(f'c{i}c_halo')
         remote.send('press Continue'); remote.send('wait 900')
+    # The card back, caught as soon as it opens (before it turns over by itself).
+    print('> reveal', rc(f'execute as {PLAYER} run ascend admin reveal 2')[:80])
+    remote.shot('f0_back'); remote.send('wait 1500'); remote.send('press Continue'); remote.send('wait 800')
     # Reduced motion, then compact mode.
     remote.send('cmd ascendui motion reduced'); remote.send('wait 600')
     print('> reveal', rc(f'execute as {PLAYER} run ascend admin reveal 3')[:80])
