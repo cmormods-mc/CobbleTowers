@@ -140,7 +140,10 @@ def main() -> None:
                 if floor < len(stand_levels):
                     # A tower floor is fought with what the party has left, and a lone bot runs out by floor 6.
                     rcon.command(f"pokeheal {BOT}")
-                    rcon.command(f"cobbletowers runs draft force {run}")
+                    # A relic draft or an event room (P34, P34b) can open behind the ordinary draft; each force settles one,
+                    # and a force with nothing open is refused harmlessly.
+                    for _ in range(3):
+                        rcon.command(f"cobbletowers runs draft force {run}")
                     rcon.command(f"cobbletowers runs advance {run} intermission_complete")
                     rcon.command(f"cobbletowers runs advance {run} next_floor_confirmed")
                     tell_bot(rig, BOT, "FIGHT")

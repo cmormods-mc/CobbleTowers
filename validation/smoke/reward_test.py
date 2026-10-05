@@ -70,7 +70,10 @@ def advance_to_next_floor(rcon: Rcon, run: str) -> None:
     always opens one here -- ten modifiers are loaded and nobody is voting. `draft force` settles it
     without needing a real vote, the same shortcut draft_test.py's own operator path uses.
     """
-    rcon.command(f"cobbletowers runs draft force {run}")
+    # A relic draft or an event room (P34, P34b) can open behind the ordinary draft; each force settles one,
+    # and a force with nothing open is refused harmlessly.
+    for _ in range(3):
+        rcon.command(f"cobbletowers runs draft force {run}")
     rcon.command(f"cobbletowers runs advance {run} intermission_complete")
     rcon.command(f"cobbletowers runs advance {run} next_floor_confirmed")
 
