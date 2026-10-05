@@ -126,8 +126,14 @@ all-time boards; the Hall records the winner when the season ends, once; a re-ru
 board and posts all-time; season 2 starts empty with all-time and the Hall intact; the off switch restores the all-time world);
 `ci_local.sh` clean. Regression sweep: see the commit.
 
-**Not proven live**: a crash or restart between finalisation steps resuming at the next step (the progress store is unit-tested and
-every step is idempotent, but a server was not killed mid-finalisation), a server-down catch-up across several finished seasons, and the
+**Crash-resume, proven live (2026-10-04)**: `validation/smoke/season_crash_test.py` 22/22. A test-only seam
+(`-Dcobbletowers.testOnlyCrashAfterSeasonStep=N`, never set in production) halts the JVM right after step N is saved, with no shutdown hooks
+and no further saves, which is what a real crash leaves on disk. After a hard crash after step 1, and again after step 2, the server was
+booted again and: a dry run still saw the unfinished season; finalisation logged "resumes after step N"; the remaining steps ran; the season
+finished exactly once; the step that had been saved did not run again; the Hall held the season once with both of its boards; and the end of the
+season was announced once. Each step also now logs a line, which helps an operator reading a log.
+
+**Still not proven live**: a server that was down across several finished seasons catching up (the loop is the same one, oldest first), and the
 real clock turning over at a reset hour (the day pin was used).
 
 ## 9. Out of scope (later phases)

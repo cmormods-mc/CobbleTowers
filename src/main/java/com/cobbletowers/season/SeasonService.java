@@ -101,16 +101,21 @@ public final class SeasonService {
         }
 
         int done = store.stepsDone(number);
+        if (done > 0) TowerLog.info("Season {} finalisation resumes after step {}", number, done);
         if (done < 1) {
             if (hall.add(plan)) hall.checkpoint(server);
             store.stepDone(number, 1);
             store.checkpoint(server);
+            TowerLog.info("Season {} finalisation: step 1 done (the Hall season is written)", number);
+            testOnlyCrashAfter(1);
         }
         if (done < 2) {
             boards.prune(key -> SeasonFinalizer.staleSeasonKey(key, number));
             boards.checkpoint(server);
             store.stepDone(number, 2);
             store.checkpoint(server);
+            TowerLog.info("Season {} finalisation: step 2 done (old seasonal boards pruned)", number);
+            testOnlyCrashAfter(2);
         }
         if (done < 3) {
             store.finalized(number);
@@ -123,6 +128,19 @@ public final class SeasonService {
             }
         }
         return List.of("Season " + number + " finalised.");
+    }
+
+    /**
+     * A seam for the live crash test and nothing else: with {@code -Dcobbletowers.testOnlyCrashAfterSeasonStep=N} the JVM halts, with no
+     * shutdown hooks and no further saves, right after finalisation step N has been written. That is what a real crash looks like to the
+     * files on disk. The property is never set in production; it exists so the claim "a crash between steps resumes cleanly" can be tested
+     * against a real server instead of asserted.
+     */
+    private static void testOnlyCrashAfter(int step) {
+        if (Integer.getInteger("cobbletowers.testOnlyCrashAfterSeasonStep", 0) == step) {
+            TowerLog.warn("TEST ONLY: halting the JVM after season finalisation step {}", step);
+            Runtime.getRuntime().halt(137);
+        }
     }
 
     // ---- words ---------------------------------------------------------------------------------------
