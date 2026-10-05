@@ -49,6 +49,12 @@ public final class Seasons {
                 .map(phase -> SeasonSchedule.idOf(((SeasonSchedule.Active) phase).number()));
     }
 
+    /** The number of the season running now, empty before the first, in an off-season, or when seasons are off. */
+    public static Optional<Integer> activeNumber() {
+        return phase().filter(phase -> phase instanceof SeasonSchedule.Active)
+                .map(phase -> ((SeasonSchedule.Active) phase).number());
+    }
+
     /**
      * The season a default view shows: the running one, or during the off-season the one that has just ended (its boards are
      * frozen but still live). Empty before the first season and when seasons are off, so the view falls back to all-time.

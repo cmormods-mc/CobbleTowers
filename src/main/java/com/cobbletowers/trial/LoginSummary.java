@@ -36,6 +36,7 @@ public final class LoginSummary {
         TrialService.summaryLine(server, player.getUUID()).ifPresent(lines::add);
         Optional<String> contracts = ContractService.summary(server, player.getUUID());
         contracts.ifPresent(lines::add);
+        com.cobbletowers.season.SeasonProgressService.loginLine(server, player.getUUID()).ifPresent(lines::add);
         if (!lines.isEmpty()) lines.add(0, "CobbleTowers today:");
         return List.copyOf(lines);
     }

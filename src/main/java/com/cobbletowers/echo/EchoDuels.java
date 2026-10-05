@@ -55,6 +55,8 @@ public final class EchoDuels {
         if (echoId != null) echoes.recordResult(echoId, !playerWon);
         if (playerWon) {
             TowerWalletStore.get(server).credit(binding.playerId(), EchoPolicy.DUEL_REWARD);
+            com.cobbletowers.season.SeasonProgressService.award(server, binding.playerId(),
+                    com.cobbletowers.season.SeasonPoints.Source.ECHO_DUEL, 0, false);
             if (player != null) {
                 player.sendSystemMessage(Component.literal("You won the Echo Duel: +" + EchoPolicy.DUEL_REWARD
                         + " CobbleDollars. Your party was not touched."));

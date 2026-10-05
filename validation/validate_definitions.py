@@ -378,6 +378,13 @@ def check_seasons(content: dict, problems: list[str]) -> None:
             problems.append(f"{season_id} and {numbers[number]} are both season {number}")
         else:
             numbers[number] = season_id
+        # A season's track finale grants its trim template (P36b): the pattern, the template and the language must all exist.
+        if isinstance(number, int) and number >= 1:
+            pattern = DATA / "cobbletowers" / "trim_pattern" / f"season_{number}.json"
+            if number > 12:
+                problems.append(f"{season_id} is season {number}, past the 12 template items registered in code (SeasonTrimItems.MAX_SEASONS)")
+            if not pattern.exists():
+                problems.append(f"{season_id} has no trim pattern {pattern.name}; run tools/generate_season_trims.py after adding the season")
         spotlight = season.get("spotlight")
         if spotlight is not None:
             tower = content["towers"].get(spotlight)

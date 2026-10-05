@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "step_cost": 75,
+  "steps": [
+    {
+      "grants": [
+        {
+          "item": "cobbletowers:cobble_dollar",
+          "amount": 50
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbletowers:cobble_dollar",
+          "amount": 50
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbleraids:raid_points",
+          "amount": 25
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbletowers:cobble_dollar",
+          "amount": 75
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon-cards:booster_pack",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "cosmetics": [
+        "banner_1"
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbletowers:cobble_dollar",
+          "amount": 75
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon:exp_candy_xl",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbleraids:raid_points",
+          "amount": 25
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon-cards:booster_pack",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbletowers:cobble_dollar",
+          "amount": 100
+        }
+      ]
+    },
+    {
+      "cosmetics": [
+        "banner_2"
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon:exp_candy_xl",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbletowers:cobble_dollar",
+          "amount": 100
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon-cards:booster_pack",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbleraids:raid_points",
+          "amount": 50
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbletowers:cobble_dollar",
+          "amount": 100
+        }
+      ]
+    },
+    {
+      "cosmetics": [
+        "banner_3"
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon:exp_candy_xl",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon-cards:booster_pack",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbletowers:cobble_dollar",
+          "amount": 150
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbleraids:raid_points",
+          "amount": 50
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon:exp_candy_xl",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "cosmetics": [
+        "title_challenger"
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon-cards:booster_pack",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbletowers:cobble_dollar",
+          "amount": 150
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbleraids:raid_points",
+          "amount": 50
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon:exp_candy_xl",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbletowers:cobble_dollar",
+          "amount": 200
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbletowers:season_trim_template_{season}",
+          "amount": 4
+        }
+      ],
+      "cosmetics": [
+        "title_champion",
+        "badge"
+      ]
+    }
+  ]
+}

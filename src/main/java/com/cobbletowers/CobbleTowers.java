@@ -114,10 +114,12 @@ public final class CobbleTowers implements ModInitializer {
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.PlaylistRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.TrialPoolRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.SeasonRegistry());
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.SeasonTrackRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.ContractTemplateRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.RentalSetRegistry());
         // Armor sets (P24): the items must exist before any datapack loads; what they do is data.
         com.cobbletowers.armor.ArmorSetItems.register();
+        com.cobbletowers.season.SeasonTrimItems.register();
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.armor.ArmorSetRegistry());
         com.cobbletowers.armor.WornSets.install();
         com.cobbletowers.armor.ArmorBonusEffects.install();

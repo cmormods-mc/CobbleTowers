@@ -210,6 +210,8 @@ public final class ClubService {
         Result result = store.book().claim(player.getUUID(), weekKey());
         if (result == Result.OK) {
             TowerWalletStore.get(server).credit(player.getUUID(), ClubBook.WEEKLY_REWARD);
+            com.cobbletowers.season.SeasonProgressService.award(server, player.getUUID(),
+                    com.cobbletowers.season.SeasonPoints.Source.CLUB_CLAIM, 0, false);
             store.changed();
             store.checkpoint(server);
             return "Weekly club reward claimed: +" + ClubBook.WEEKLY_REWARD + " CobbleDollars.";

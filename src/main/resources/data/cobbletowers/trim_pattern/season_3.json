@@ -1,0 +1,8 @@
+{
+  "asset_id": "cobbletowers:season_3",
+  "decal": false,
+  "description": {
+    "translate": "trim_pattern.cobbletowers.season_3"
+  },
+  "template_item": "cobbletowers:season_trim_template_3"
+}

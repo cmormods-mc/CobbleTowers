@@ -44,6 +44,9 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class TrialService {
 
+    /** Floors a scored trial attempt must clear before it earns season points. */
+    private static final int MIN_FLOORS_FOR_POINTS = 3;
+
     private static volatile Rhythm RHYTHM = Rhythm.standard();
     private static volatile Optional<LocalDate> DAY_OVERRIDE = Optional.empty();
 
@@ -157,6 +160,12 @@ public final class TrialService {
         boards.checkpoint(server);
 
         for (UUID player : scored) store.recordResult(player, instanceId, run.runId(), score, cleared);
+        // A scored attempt that got somewhere earns season points (P36b); one that cleared next to nothing does not.
+        if (cleared >= MIN_FLOORS_FOR_POINTS) {
+            com.cobbletowers.season.SeasonPoints.Source pointsSource = kind == Kind.DAILY
+                    ? com.cobbletowers.season.SeasonPoints.Source.DAILY_TRIAL : com.cobbletowers.season.SeasonPoints.Source.WEEKLY_TRIAL;
+            for (UUID player : scored) com.cobbletowers.season.SeasonProgressService.award(server, player, pointsSource, 0, false);
+        }
         com.cobbletowers.mastery.RunSummaries.trialScore(run.runId(), score);
 
         // The daily streak (P32): the day qualifies when enough floors were cleared.
@@ -193,6 +202,8 @@ public final class TrialService {
             TowerWalletStore.get(server).credit(player, reward);
             TowerWalletStore.get(server).checkpoint(server);
             lines.add(who + " reached a " + milestone + "-day streak: " + reward + " CobbleDollars");
+            com.cobbletowers.season.SeasonProgressService.award(server, player, com.cobbletowers.season.SeasonPoints.Source.STREAK_MILESTONE,
+                    milestone, false);
             TowerLog.info("{} reached a {}-day trial streak and is paid {} CobbleDollars", who, milestone, reward);
         }
         return lines;

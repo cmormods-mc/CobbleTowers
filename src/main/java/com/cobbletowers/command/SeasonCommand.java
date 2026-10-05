@@ -23,7 +23,10 @@ public final class SeasonCommand {
     /** The subcommands players use, to be added under {@code /cobbletowers play}. */
     public static List<LiteralArgumentBuilder<CommandSourceStack>> playerCommands() {
         return List.of(
-                Commands.literal("season").executes(context -> lines(context, SeasonService.status())),
+                Commands.literal("season").executes(context -> lines(context, SeasonService.status()))
+                        .then(Commands.literal("track").executes(context -> lines(context,
+                                com.cobbletowers.season.SeasonProgressService.trackLines(context.getSource().getServer(),
+                                        context.getSource().getPlayerOrException().getUUID())))),
                 Commands.literal("hall")
                         .executes(context -> lines(context, SeasonService.hall(context.getSource().getServer(), Optional.empty())))
                         .then(Commands.argument("season", IntegerArgumentType.integer(1, 999999))
@@ -45,6 +48,17 @@ public final class SeasonCommand {
                         .executes(context -> lines(context, SeasonService.finalizePending(context.getSource().getServer(), false)))
                         .then(Commands.literal("dry").executes(context -> lines(context,
                                 SeasonService.finalizePending(context.getSource().getServer(), true)))))
+                .then(Commands.literal("points")
+                        .then(Commands.argument("player", net.minecraft.commands.arguments.EntityArgument.player())
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(1, 100000))
+                                        .executes(context -> {
+                                            var player = net.minecraft.commands.arguments.EntityArgument.getPlayer(context, "player");
+                                            int added = com.cobbletowers.season.SeasonProgressService.addPoints(
+                                                    context.getSource().getServer(), player.getUUID(),
+                                                    IntegerArgumentType.getInteger(context, "amount"));
+                                            return one(context, added == 0 ? "No season is running, so nothing was added."
+                                                    : "Added " + added + " season points (outside every cap) to " + player.getGameProfile().getName() + ".");
+                                        }))))
                 .then(Commands.literal("enable").executes(context -> {
                     Seasons.setEnabled(true);
                     return one(context, "Seasons are on.");
@@ -57,6 +71,7 @@ public final class SeasonCommand {
                     var server = context.getSource().getServer();
                     TowerSeasonStore.get(server).clear();
                     TowerHallStore.get(server).clear();
+                    com.cobbletowers.persistence.TowerSeasonProgressStore.get(server).clear();
                     TowerLeaderboardStore.get(server).prune(key -> !key.allTime());
                     return one(context, "Season state, the Hall and every seasonal board cleared (all-time boards kept).");
                 }))));
