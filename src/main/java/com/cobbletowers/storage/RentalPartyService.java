@@ -54,7 +54,11 @@ public final class RentalPartyService {
             }
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> JOINED.put(handler.getPlayer().getUUID(), 60));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> JOINED.remove(handler.getPlayer().getUUID()));
+        // DISCONNECT fires on a Netty thread; JOINED is a plain map the server tick iterates, so hop onto the server thread.
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            UUID id = handler.getPlayer().getUUID();
+            com.cobbletowers.runtime.ServerThread.run(server, () -> JOINED.remove(id));
+        });
         // A rental never earns experience: it would level, and could evolve, and it is deleted when the run ends anyway.
         CobblemonEvents.EXPERIENCE_GAINED_EVENT_PRE.subscribe(RentalPartyService::noExperience);
         // Nor does one reach the Pokedex: Cobblemon marks whatever enters a party as owned, and a lent Pokemon is not the
