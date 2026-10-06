@@ -63,9 +63,13 @@ public final class MasteryScreen extends TowerScreen {
         int x = 112;
         // Each tab is as wide as its word needs, with the same small margin, so none is clipped on a narrow window.
         int tabX = x;
+        int natural = 0;
+        for (String name : TAB_NAMES) natural += font.width(name) + 12 + 2;
+        int available = width - x - 6;
         for (int i = 0; i < TABS.length; i++) {
             String tab = TABS[i];
-            int wide = Math.min(font.width(TAB_NAMES[i]) + 12,(width-122)/5-2);
+            // Natural width when they all fit; squeezed evenly (and so clipped) only when the window is too narrow for that.
+            int wide = natural <= available ? font.width(TAB_NAMES[i]) + 12 : Math.min(font.width(TAB_NAMES[i]) + 12, (width - 122) / 5 - 2);
             Button button = TowerButton.builder(Component.literal(TAB_NAMES[i]), b -> request(state.selected(), tab))
                     .pos(tabX, 8).size(wide, 18).build();
             tabX += wide + 2;

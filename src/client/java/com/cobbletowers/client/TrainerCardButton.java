@@ -3,7 +3,6 @@ package com.cobbletowers.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -16,7 +15,6 @@ final class TrainerCardButton extends Button {
     TrainerCardButton(int x,int y,int w,int h,String title,String caption,String species,int accent,Runnable action) {
         super(x,y,w,h,Component.literal(title),b->action.run(),DEFAULT_NARRATION);
         this.caption=caption;this.species=species;this.accent=accent;
-        setTooltip(Tooltip.create(Component.literal(title+"\n"+caption)));
     }
     @Override protected void renderWidget(GuiGraphics g,int mx,int my,float delta) {
         int x=getX(),y=getY(),w=getWidth(),h=getHeight();

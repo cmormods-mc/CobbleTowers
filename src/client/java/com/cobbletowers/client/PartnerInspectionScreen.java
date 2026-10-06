@@ -34,9 +34,10 @@ public final class PartnerInspectionScreen extends TowerScreen {
     @Override public boolean mouseDragged(double x,double y,int button,double dx,double dy){if(button==0&&x>12&&x<width-146&&y>60&&y<height-64){yaw+=(float)dx;return true;}return super.mouseDragged(x,y,button,dx,dy);}
     @Override public void render(GuiGraphics g,int mx,int my,float dt){
         super.render(g,mx,my,dt);int right=width-140,vw=right-24,vh=height-132;
-        PixelUi.panel(g,12,60,vw,vh,gear.equals("duskvale")?TowerUi.ECHO:species.equals("scizor")?TowerUi.BURGUNDY:TowerUi.BRONZE,.25f);
-        TowerUi.panel(g,right,60,128,vh,theme.accent);
-        TowerUi.label(g,font,gear.isEmpty()?species.toUpperCase():gear.toUpperCase()+" SET",20,66,vw-16,TowerUi.TEXT);
+        labDisplay(g,12,60,vw,vh);
+        PixelUi.sheet(g,right,60,128,vh);
+        String plate=gear.isEmpty()?species.toUpperCase():gear.toUpperCase()+" SET";
+        PixelUi.tag(g,font,font.plainSubstrByWidth(plate,vw-44),22,66,false);
         g.enableScissor(16,80,right-16,height-74);g.flush();
         if(gear.isEmpty()&&PokemonSpecies.getByName(species)==null){
             if(java.util.Set.of("blastoise","machamp","scizor").contains(species))g.blit(ResourceLocation.fromNamespaceAndPath("cobbletowers","textures/gui/partners/"+species+".png"),12+vw/2-48,76,96,64,0,0,48,32,48,32);
@@ -54,11 +55,31 @@ public final class PartnerInspectionScreen extends TowerScreen {
         }
         g.disableScissor();
         int y=70;
-        if(!gear.isEmpty()){TowerUi.wrapped(g,font,minecraft.level==null?"Join a world for the equipped armor viewport.":"Move the cursor to turn the equipped set.",right+8,y,112,TowerUi.MUTED);}
-        else if(card!=null){y=TowerUi.wrapped(g,font,"Lv "+card.details().level()+" / "+card.details().ability(),right+8,y,112,TowerUi.TEXT)+8;for(String move:card.details().moves())y=TowerUi.wrapped(g,font,Component.translatable("cobblemon.move."+move).getString(),right+8,y,112,TowerUi.MUTED)+3;}
-        else {var data=PokemonSpecies.getByName(species);g.drawString(font,"Species base stats",right+8,y,TowerUi.MUTED,false);y+=15;if(data==null)TowerUi.wrapped(g,font,"Join a world to load species data and its 3D model.",right+8,y,112,TowerUi.MUTED);if(data!=null)for(var e:data.getBaseStats().entrySet().stream().sorted(java.util.Comparator.comparing(e->e.getKey().getShowdownId())).toList()){TowerUi.label(g,font,e.getKey().getShowdownId()+"  "+e.getValue(),right+8,y,112,TowerUi.TEXT);y+=12;}}
+        int brown=0xFF6B4A33;
+        if(!gear.isEmpty()){TowerUi.wrapped(g,font,minecraft.level==null?"Join a world for the equipped armor viewport.":"Move the cursor to turn the equipped set.",right+8,y,112,brown);}
+        else if(card!=null){y=TowerUi.wrapped(g,font,"Lv "+card.details().level()+" / "+card.details().ability(),right+8,y,112,TowerUi.INK)+8;for(String move:card.details().moves())y=TowerUi.wrapped(g,font,Component.translatable("cobblemon.move."+move).getString(),right+8,y,112,brown)+3;}
+        else {var data=PokemonSpecies.getByName(species);g.drawString(font,"Species base stats",right+8,y,brown,false);y+=15;if(data==null)TowerUi.wrapped(g,font,"Join a world to load species data and its 3D model.",right+8,y,112,brown);if(data!=null)for(var e:data.getBaseStats().entrySet().stream().sorted(java.util.Comparator.comparing(e->e.getKey().getShowdownId())).toList()){TowerUi.label(g,font,e.getKey().getShowdownId()+"  "+e.getValue(),right+8,y,112,TowerUi.INK);y+=12;}}
         g.drawString(font,card==null?"REFERENCE COLLECTION":"RENTAL SET INSPECTION",12,16,TowerUi.TEXT,false);
         if(modelFailed)TowerUi.label(g,font,"Model unavailable",20,height-85,vw-16,TowerUi.MUTED);
+    }
+    /**
+     * The display case: an oak frame with a bronze rim and rivets, a dark well with a faint floor grid, and a bronze pedestal for the
+     * specimen to stand on. Drawn behind the model, inside the area the model is clipped to.
+     */
+    private static void labDisplay(GuiGraphics g,int x,int y,int w,int h){
+        PixelUi.frame(g,PixelUi.Frame.DARK,x,y,w,h);
+        int wx=x+6,wy=y+6,ww=w-12,wh=h-12;
+        g.fill(wx-1,wy-1,wx+ww+1,wy+wh+1,TowerUi.BRONZE);
+        g.fill(wx,wy,wx+ww,wy+wh,0xFF1E1410);
+        g.fillGradient(wx,wy,wx+ww,wy+wh,0x00000000,0x55000000);
+        int floor=wy+wh*72/100;
+        for(int gy=floor;gy<wy+wh;gy+=6)g.fill(wx,gy,wx+ww,gy+1,0x33A77B46);
+        for(int gx=wx+(ww/2)%12;gx<wx+ww;gx+=12)g.fill(gx,floor,gx+1,wy+wh,0x22A77B46);
+        int cx=wx+ww/2,pw=Math.min(ww-16,Math.max(40,ww*40/100));
+        g.fill(cx-pw/2,floor-3,cx+pw/2,floor+3,TowerUi.OUTLINE);
+        g.fill(cx-pw/2+1,floor-2,cx+pw/2-1,floor+2,TowerUi.BRONZE);
+        g.fill(cx-pw/2+1,floor-2,cx+pw/2-1,floor-1,TowerUi.BRONZE_LIGHT);
+        for(int[] r:new int[][]{{x+3,y+3},{x+w-6,y+3},{x+3,y+h-6},{x+w-6,y+h-6}}){g.fill(r[0],r[1],r[0]+3,r[1]+3,TowerUi.OUTLINE);g.fill(r[0]+1,r[1]+1,r[0]+2,r[1]+2,TowerUi.BRONZE_LIGHT);}
     }
     @Override public void onClose(){minecraft.setScreen(parent);}
     @Override public boolean isPauseScreen(){return false;}

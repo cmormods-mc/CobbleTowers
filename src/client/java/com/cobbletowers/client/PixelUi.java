@@ -72,6 +72,26 @@ public final class PixelUi {
         frame(g, Frame.PARCHMENT, x, y, w, h);
     }
 
+    /** A shelf or counter plank: oak with a bronze lip on top and a dark underside, for things to stand on. */
+    public static void plank(GuiGraphics g, int x, int y, int w, int h) {
+        if (w < 4 || h < 3) return;
+        tile(g, Tile.OAK, x, y, w, h);
+        g.fill(x, y, x + w, y + h, 0x44000000);
+        g.fill(x, y, x + w, y + 1, TowerUi.BRONZE);
+        g.fill(x, y + h - 1, x + w, y + h, TowerUi.OUTLINE);
+    }
+
+    /** A small bronze tag (a price, a label) with a punched hole at its left edge; the text is dark ink. */
+    public static void tag(GuiGraphics g, net.minecraft.client.gui.Font font, String text, int x, int y, boolean dim) {
+        int w = font.width(text) + 14;
+        int face = dim ? 0xFF7A6A55 : TowerUi.BRONZE;
+        g.fill(x, y, x + w, y + 12, TowerUi.OUTLINE);
+        g.fill(x + 1, y + 1, x + w - 1, y + 11, face);
+        g.fill(x + 1, y + 1, x + w - 1, y + 2, dim ? 0xFF8F7A5E : TowerUi.BRONZE_LIGHT);
+        g.fill(x + 3, y + 5, x + 5, y + 7, TowerUi.OUTLINE);
+        g.drawString(font, text, x + 8, y + 2, TowerUi.INK, false);
+    }
+
     /** Four bronze corner brackets, the selection mark for cards. */
     public static void brackets(GuiGraphics g, int x, int y, int w, int h, int color) {
         int a = Math.min(5, Math.min(w, h) / 3);

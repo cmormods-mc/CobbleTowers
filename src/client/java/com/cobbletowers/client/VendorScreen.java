@@ -98,13 +98,21 @@ public final class VendorScreen extends TowerScreen {
 
     @Override public void renderBackground(GuiGraphics g,int mx,int my,float dt){
         super.renderBackground(g,mx,my,dt);int sx=catalogWidth()+22,sw=width-sx-10;
-        TowerUi.panel(g,sx,35,sw,height-73,theme.accent);
-        g.drawString(font,"TOWER SUPPLIES",12,14,TowerUi.TEXT,false);
+        PixelUi.sheet(g,sx,35,sw,height-73);
+        // The quartermaster's counter: each row of goods stands on its own plank, under a bronze sign.
+        int count=pageSize();int onPage=Math.max(0,Math.min(count,catalog.services().size()-page*count));
+        for(int row=0;row<(onPage+1)/2;row++)PixelUi.plank(g,8,64+row*48+42,catalogWidth()+8,6);
+        int signW=font.width("TOWER SUPPLIES")+16;
+        g.fill(8,6,8+signW,26,TowerUi.OUTLINE);
+        g.fill(9,7,7+signW,25,TowerUi.BRONZE);
+        g.fill(9,7,7+signW,8,TowerUi.BRONZE_LIGHT);
+        g.fill(12,14,14,18,TowerUi.OUTLINE);g.fill(2+signW,14,4+signW,18,TowerUi.OUTLINE);
+        g.drawString(font,"TOWER SUPPLIES",17,13,TowerUi.INK,false);
         TowerUi.label(g,font,"Balance: "+catalog.cobbleDollars(),sx,15,sw,TowerUi.TEXT);
         if(!catalog.services().isEmpty()){
-            var e=catalog.services().get(selected);int y=TowerUi.wrapped(g,font,e.displayName(),sx+8,46,sw-16,TowerUi.TEXT)+12;
-            y=TowerUi.wrapped(g,font,e.priceCobbleDollars()+" CobbleDollars",sx+8,y,sw-16,TowerUi.BRONZE_LIGHT)+10;
-            TowerUi.wrapped(g,font,e.remainingPurchases()<0?"Stock: unlimited":"Stock: "+e.remainingPurchases(),sx+8,y,sw-16,TowerUi.MUTED);
+            var e=catalog.services().get(selected);int y=TowerUi.wrapped(g,font,e.displayName(),sx+8,46,sw-16,TowerUi.INK)+12;
+            y=TowerUi.wrapped(g,font,e.priceCobbleDollars()+" CobbleDollars",sx+8,y,sw-16,TowerUi.BURGUNDY)+10;
+            TowerUi.wrapped(g,font,e.remainingPurchases()<0?"Stock: unlimited":"Stock: "+e.remainingPurchases(),sx+8,y,sw-16,0xFF6B4A33);
         }
         TowerUi.label(g,font,catalog.message(),12,height-48,catalogWidth(),TowerUi.TEXT);
     }

@@ -28,31 +28,31 @@ final class ModifierScene {
         String detail = theme.contains(":") ? theme.substring(theme.indexOf(':') + 1) : "";
         return switch (key) {
             case "weather" -> switch (detail) {
-                case "sunnyday", "desolateland" -> new Look(0xFFB8793A, 0xFFE3A95E, 0xFF7C5A33, "scizor");
-                case "sandstorm" -> new Look(0xFF9C7F4F, 0xFFC9A66B, 0xFF8A7048, "machamp");
-                case "hail", "snowscape" -> new Look(0xFF6F8CA3, 0xFFB5C9D6, 0xFFD6E0E6, "blastoise");
-                default -> new Look(0xFF3E5468, 0xFF6B7F8C, 0xFF2F4A5C, "blastoise");
+                case "sunnyday", "desolateland" -> new Look(0xFFB8793A, 0xFFE3A95E, 0xFF7C5A33, "charizard");
+                case "sandstorm" -> new Look(0xFF9C7F4F, 0xFFC9A66B, 0xFF8A7048, "tyranitar");
+                case "hail", "snowscape" -> new Look(0xFF6F8CA3, 0xFFB5C9D6, 0xFFD6E0E6, "glalie");
+                default -> new Look(0xFF3E5468, 0xFF6B7F8C, 0xFF2F4A5C, "politoed");
             };
             case "terrain" -> switch (detail) {
-                case "electricterrain" -> new Look(0xFF4A4A3A, 0xFF8C8A4A, 0xFF6E6A2E, "scizor");
-                case "psychicterrain" -> new Look(0xFF4B3A5C, 0xFF8C6AA0, 0xFF6A4A80, "scizor");
-                case "mistyterrain" -> new Look(0xFF5C4350, 0xFFB98FA0, 0xFF8A6678, "scizor");
-                default -> new Look(0xFF47603F, 0xFF7C9A5E, 0xFF4F6B3A, "scizor");
+                case "electricterrain" -> new Look(0xFF4A4A3A, 0xFF8C8A4A, 0xFF6E6A2E, "raichu");
+                case "psychicterrain" -> new Look(0xFF4B3A5C, 0xFF8C6AA0, 0xFF6A4A80, "alakazam");
+                case "mistyterrain" -> new Look(0xFF5C4350, 0xFFB98FA0, 0xFF8A6678, "gardevoir");
+                default -> new Look(0xFF47603F, 0xFF7C9A5E, 0xFF4F6B3A, "rillaboom");
             };
-            case "enemy" -> new Look(0xFF4A2A2A, 0xFF8A4A3C, 0xFF3A2A24, "machamp");
-            case "encounter" -> new Look(0xFF4F4A52, 0xFF8B8470, 0xFF5A5246, "machamp");
-            case "constraint" -> new Look(0xFF3C3A44, 0xFF7C7568, 0xFF4F4A42, "scizor");
-            case "scouting" -> new Look(0xFF2E3A44, 0xFF5E7080, 0xFF3A4650, "blastoise");
-            case "reward_up" -> new Look(0xFF5A4630, 0xFFB8935A, 0xFF6B4A33, "blastoise");
-            case "reward_down" -> new Look(0xFF3A3A40, 0xFF6A6860, 0xFF48443C, "machamp");
+            case "enemy" -> new Look(0xFF4A2A2A, 0xFF8A4A3C, 0xFF3A2A24, "garchomp");
+            case "encounter" -> new Look(0xFF4F4A52, 0xFF8B8470, 0xFF5A5246, "arcanine");
+            case "constraint" -> new Look(0xFF3C3A44, 0xFF7C7568, 0xFF4F4A42, "registeel");
+            case "scouting" -> new Look(0xFF2E3A44, 0xFF5E7080, 0xFF3A4650, "noctowl");
+            case "reward_up" -> new Look(0xFF5A4630, 0xFFB8935A, 0xFF6B4A33, "persian");
+            case "reward_down" -> new Look(0xFF3A3A40, 0xFF6A6860, 0xFF48443C, "slowpoke");
             case "custom" -> switch (detail) {
-                case "glass_cannon" -> new Look(0xFF4A3E52, 0xFF8A7C98, 0xFF574C60, "scizor");
-                case "fortunes_wheel" -> new Look(0xFF4A3A2A, 0xFFB8935A, 0xFF6B4A33, "machamp");
-                case "field_hospital" -> new Look(0xFF4A5A4A, 0xFF9CB596, 0xFF6A7C64, "blastoise");
-                case "black_market" -> new Look(0xFF2E2A36, 0xFF5E566C, 0xFF3C3646, "scizor");
-                case "swift_start" -> new Look(0xFF3E5468, 0xFF8CB0C8, 0xFF4F6670, "scizor");
-                case "iron_hide" -> new Look(0xFF44464C, 0xFF868A94, 0xFF5A5E66, "blastoise");
-                case "war_banner" -> new Look(0xFF4A2E32, 0xFF9C5A52, 0xFF4A3A34, "machamp");
+                case "glass_cannon" -> new Look(0xFF4A3E52, 0xFF8A7C98, 0xFF574C60, "gallade");
+                case "fortunes_wheel" -> new Look(0xFF4A3A2A, 0xFFB8935A, 0xFF6B4A33, "meowth");
+                case "field_hospital" -> new Look(0xFF4A5A4A, 0xFF9CB596, 0xFF6A7C64, "chansey");
+                case "black_market" -> new Look(0xFF2E2A36, 0xFF5E566C, 0xFF3C3646, "sableye");
+                case "swift_start" -> new Look(0xFF3E5468, 0xFF8CB0C8, 0xFF4F6670, "jolteon");
+                case "iron_hide" -> new Look(0xFF44464C, 0xFF868A94, 0xFF5A5E66, "aggron");
+                case "war_banner" -> new Look(0xFF4A2E32, 0xFF9C5A52, 0xFF4A3A34, "conkeldurr");
                 default -> unknown();
             };
             default -> unknown();
@@ -101,7 +101,7 @@ final class ModifierScene {
         if (look.sprite != null && room && !key.equals("constraint")) {
             int sx = key.equals("encounter") ? x + 2 : key.startsWith("reward") ? x + w - SPRITE_W - 2 : spriteX;
             sprite(g, look.sprite, sx, spriteY);
-            if (key.equals("encounter")) sprite(g, "scizor", x + w - SPRITE_W - 2, spriteY);
+            if (key.equals("encounter")) sprite(g, "salamence", x + w - SPRITE_W - 2, spriteY);
         }
         if (look.sprite == null) crest(g, x, y, w, visible);
         g.disableScissor();

@@ -55,6 +55,6 @@ public final class TowerButton extends Button {
         @Override public Builder width(int w) {this.w=w;return this;}
         @Override public Builder bounds(int x,int y,int w,int h) {return pos(x,y).size(w,h);}
         @Override public Builder tooltip(Tooltip tip) {this.tooltip=tip;return this;}
-        @Override public TowerButton build() {var button=new TowerButton(x,y,w,h,label,action);button.dark=dark;button.setTooltip(tooltip == null ? Tooltip.create(label) : tooltip);return button;}
+        @Override public TowerButton build() {var button=new TowerButton(x,y,w,h,label,action);button.dark=dark;if(tooltip!=null)button.setTooltip(tooltip);return button;}
     }
 }
