@@ -291,7 +291,14 @@ public final class IntermissionService {
             String name = modifier != null ? modifier.displayName()
                     : IntermissionEvents.Option.fromCard(draft.cards().get(i)).map(IntermissionEvents.Option::label)
                             .orElse(draft.cards().get(i).toString());
-            cards.add(new IntermissionStatePayload.Card(draft.cards().get(i), name, votes));
+            var option = modifier != null ? java.util.Optional.<IntermissionEvents.Option>empty()
+                    : IntermissionEvents.Option.fromCard(draft.cards().get(i));
+            int risk = modifier != null ? modifier.risk().ordinal() : -1;
+            String theme = modifier != null ? com.cobbletowers.menu.ModifierArt.theme(modifier)
+                    : option.isPresent() ? com.cobbletowers.menu.ModifierArt.EVENT : com.cobbletowers.menu.ModifierArt.UNKNOWN;
+            List<String> lines = modifier != null ? com.cobbletowers.menu.ModifierMenuText.lines(modifier)
+                    : List.of(name);
+            cards.add(new IntermissionStatePayload.Card(draft.cards().get(i), name, votes, risk, theme, lines));
         }
         return new IntermissionStatePayload.Draft(draft.resolved() ? 2 : 1, cards,
                 draft.chosen().orElse(-1), draft.votes().getOrDefault(viewer, -1));

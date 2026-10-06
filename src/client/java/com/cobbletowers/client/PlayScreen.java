@@ -195,7 +195,7 @@ public final class PlayScreen extends TowerScreen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
-        graphics.drawCenteredString(font, title, width / 2, 14, 0xFFFFFF);
+        graphics.drawCenteredString(font, title, width / 2, 14, TowerUi.TEXT);
         TowerUi.label(graphics,font,"Your party: " + partyLine(state.partyLevels()),12,26,width-statusWidth()-24,TowerUi.MUTED);
 
         PlayStatePayload.Lobby lobby = state.lobby();
@@ -206,20 +206,20 @@ public final class PlayScreen extends TowerScreen {
         if (lobby.role() != 0) {
             boolean rental = lobby.options().modes().rental();
             graphics.drawString(font, font.plainSubstrByWidth("Host: " + lobby.hostName()
-                    + (rental && lobby.options().modes().readiness().host() ? "  ready" : ""), column), rightX, y, 0xFFFF55);
+                    + (rental && lobby.options().modes().readiness().host() ? "  ready" : ""), column), rightX, y, TowerUi.BRONZE_LIGHT);
             y += 10;
             for (PlayStatePayload.Member member : lobby.members()) {
                 graphics.drawString(font, font.plainSubstrByWidth(member.name() + (rental ? (member.accepted() ? (member.ready() ? "  ready" : "  drafting") : "  invited")
                         : (member.accepted() ? "  ready" : "  invited")), column),
-                        rightX, y, (rental ? member.ready() : member.accepted()) ? 0x55FF55 : 0xAAAAAA);
+                        rightX, y, (rental ? member.ready() : member.accepted()) ? TowerUi.SAGE : TowerUi.MUTED);
                 y += 10;
             }
         }
         if (lobby.role() == 3 && !lobby.options().modes().readiness().confirmed()) {
-            graphics.drawString(font, font.plainSubstrByWidth("Waiting for the host to confirm the mode", column), rightX, y + 4, 0xAAAAAA);
+            graphics.drawString(font, font.plainSubstrByWidth("Waiting for the host to confirm the mode", column), rightX, y + 4, TowerUi.MUTED);
         }
         if (!state.message().isEmpty()) {
-            graphics.drawCenteredString(font, state.message(), width / 2, height - 14, 0xFFFFFF);
+            graphics.drawCenteredString(font, state.message(), width / 2, height - 14, TowerUi.TEXT);
         }
     }
 

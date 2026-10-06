@@ -320,21 +320,31 @@ public final class RentalPackScreen extends TowerScreen {
         for (int g = 9; g >= 3; g -= 3) {
             graphics.fill(x - g, y - g, x + w + g, y + h + g, (Math.min(255, pulse / (g / 2)) << 24) | (glow & 0xFFFFFF));
         }
-        graphics.fill(x, y, x + w, y + h, TowerUi.OAK);
-        graphics.fillGradient(x + 3, y + 3, x + w - 3, y + h - 3, 0xFF5A3A28, 0xFF2A1C15);
-        graphics.renderOutline(x, y, w, h, TowerUi.BRONZE);
-        graphics.fill(x, y + h / 2 - 1, x + w, y + h / 2 + 1, TowerUi.BRONZE);
+        // A wooden rental case: oak planks in a dark frame, banded in bronze, with a hasp over the seam.
+        PixelUi.frame(graphics, PixelUi.Frame.DARK, x - 3, y - 3, w + 6, h + 6);
+        PixelUi.tile(graphics, PixelUi.Tile.OAK, x + 3, y + 3, w - 6, h - 6);
+        graphics.fillGradient(x + 3, y + 3, x + w - 3, y + h - 3, 0x22000000, 0x66000000);
+        for (int band : new int[] {x + w / 5 - 3, x + w * 4 / 5 - 3}) {
+            graphics.fill(band, y + 3, band + 7, y + h - 3, 0xFF211510);
+            graphics.fill(band + 1, y + 3, band + 6, y + h - 3, TowerUi.BRONZE);
+            graphics.fill(band + 2, y + 3, band + 3, y + h - 3, TowerUi.BRONZE_LIGHT);
+        }
+        graphics.fill(x + 3, y + h / 2 - 2, x + w - 3, y + h / 2 + 2, 0xFF211510);
+        graphics.fill(x + 3, y + h / 2 - 1, x + w - 3, y + h / 2 + 1, TowerUi.BRONZE);
         int cx = x + w / 2;
         int cy = y + h / 2;
+        graphics.fill(cx - 9, cy - 9, cx + 9, cy + 9, 0xFF211510);
         graphics.fill(cx - 7, cy - 7, cx + 7, cy + 7, TowerUi.BRONZE);
-        graphics.fill(cx - 4, cy - 4, cx + 4, cy + 4, TowerUi.OAK);
+        graphics.fill(cx - 4, cy - 4, cx + 4, cy + 4, 0xFF40291E);
         if (stage == Stage.TEARING) {
             // The seal splits: a bright seam widening across the middle.
             int seam = (int) (tear * 14);
-            graphics.fill(x, cy - seam, x + w, cy + seam, 0xCCFFFFFF);
+            graphics.fill(x + 3, cy - seam, x + w - 3, cy + seam, 0xCCE3BD7F);
         }
+        graphics.fill(cx - 36, y + 7, cx + 36, y + 20, 0xCC211510);
         graphics.drawCenteredString(font, "RENTAL PACK", cx, y + 10, TowerUi.TEXT);
-        graphics.drawCenteredString(font, (pack + 1) + " / " + draft.packs().size(), cx, y + h - 16, TowerUi.BRONZE);
+        graphics.fill(cx - 18, y + h - 20, cx + 18, y + h - 8, 0xCC211510);
+        graphics.drawCenteredString(font, (pack + 1) + " / " + draft.packs().size(), cx, y + h - 17, TowerUi.BRONZE_LIGHT);
     }
 
     private void drawCards(GuiGraphics graphics, int mouseX, int mouseY, long t) {

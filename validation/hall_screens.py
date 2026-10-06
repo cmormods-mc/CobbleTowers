@@ -8,7 +8,7 @@ import client_launch
 
 root=Path(__file__).resolve().parent.parent
 scale=int(sys.argv[1]) if len(sys.argv)>1 else 3
-mode=sys.argv[2] if len(sys.argv)>2 and sys.argv[2] in ('features','all') else 'hall'
+mode=sys.argv[2] if len(sys.argv)>2 and sys.argv[2] in ('features','all','modifier') else 'hall'
 game=root/'build'/f'{mode}-client-scale{scale}'
 shots=root/'build'/f'{mode}-screens-scale{scale}'
 game.mkdir(parents=True,exist_ok=True)
@@ -30,7 +30,7 @@ command=client_launch.command(java,game,[],rig)
 startup=subprocess.STARTUPINFO()
 startup.dwFlags|=subprocess.STARTF_USESHOWWINDOW
 startup.wShowWindow=0
-env=dict(os.environ,COBBLETOWERS_SCREENSHOTS=str(shots),COBBLETOWERS_HALL_ONLY='0' if mode=='all' else '1',COBBLETOWERS_FEATURES_ONLY='1' if mode=='features' else '0')
+env=dict(os.environ,COBBLETOWERS_SCREENSHOTS=str(shots),COBBLETOWERS_HALL_ONLY='0' if mode in ('all','modifier') else '1',COBBLETOWERS_FEATURES_ONLY='1' if mode=='features' else '0',COBBLETOWERS_MODIFIER_ONLY='1' if mode=='modifier' else '0')
 with (game/'hall-client.log').open('w',encoding='utf-8') as log:
     process=subprocess.Popen(command,cwd=game,env=env,stdout=log,stderr=subprocess.STDOUT,startupinfo=startup)
     try:
@@ -41,4 +41,4 @@ with (game/'hall-client.log').open('w',encoding='utf-8') as log:
         raise
 print('Client exit:',result,'Screenshots:',len(list(shots.glob('*.png'))),'Log:',game/'hall-client.log')
 log_text=(game/'hall-client.log').read_text(encoding='utf-8',errors='replace')
-sys.exit(0 if result==0 and len(list(shots.glob('*.png')))>=5 and 'Screenshot harness finished' in log_text and not ('Screenshot step' in log_text and 'failed' in log_text) else 1)
+sys.exit(0 if result==0 and len(list(shots.glob('*.png')))>=(12 if mode=='modifier' else 5) and 'Screenshot harness finished' in log_text and not ('Screenshot step' in log_text and 'failed' in log_text) else 1)

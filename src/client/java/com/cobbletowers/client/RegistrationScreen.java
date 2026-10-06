@@ -101,14 +101,14 @@ public final class RegistrationScreen extends TowerScreen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
-        graphics.drawCenteredString(font, title, width / 2, 12, 0xFFFFFF);
+        graphics.drawCenteredString(font, title, width / 2, 12, TowerUi.TEXT);
         String hint = state.chosen().isEmpty()
                 ? "Nothing chosen: your current party will be used"
                 : state.chosen().size() + " of " + state.max() + " registered";
-        graphics.drawCenteredString(font, hint, width / 2, 26, 0xAAAAAA);
-        graphics.drawCenteredString(font, "Page " + (page + 1) + "/" + pages(), width / 2, height - 28, 0x888888);
+        graphics.drawCenteredString(font, hint, width / 2, 26, TowerUi.MUTED);
+        graphics.drawCenteredString(font, "Page " + (page + 1) + "/" + pages(), width / 2, height - 28, 0xFF8F7A5E);
         if (!state.message().isEmpty()) {
-            graphics.drawCenteredString(font, state.message(), width / 2, height - 14, 0xFFFFFF);
+            graphics.drawCenteredString(font, state.message(), width / 2, height - 14, TowerUi.TEXT);
         }
     }
 

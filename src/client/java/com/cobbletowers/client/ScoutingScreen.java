@@ -15,12 +15,13 @@ public final class ScoutingScreen extends TowerScreen {
     }
     @Override public void renderBackground(GuiGraphics g,int mx,int my,float dt){
         super.renderBackground(g,mx,my,dt);g.drawString(font,"SCOUTING / FLOOR "+payload.floorIndex(),12,18,TowerUi.TEXT,false);
-        for(int x=12;x<width-132;x+=10)for(int y=43;y<height-38;y+=10)g.fill(x,y,x+1,y+1,0x304B5D73);
+        // A parchment battle briefing: the categories sit on one sheet and the selected one is read on another.
+        PixelUi.sheet(g,6,40,width-138,height-78);
         float t=TowerUiSettings.motion?Math.min(1,(System.nanoTime()-inspectedAt)/220_000_000f):1;
         g.enableScissor(width-126,43,width-12,height-40);g.pose().pushPose();g.pose().translate(12*Math.pow(1-t,3),0,0);
-        TowerUi.panel(g,width-126,43,114,height-83,theme.accent);
-        if(payload.categories().isEmpty())TowerUi.wrapped(g,font,"Nothing revealed",width-116,55,94,TowerUi.MUTED);
-        else {var c=payload.categories().get(selected);int y=TowerUi.wrapped(g,font,c.name(),width-116,55,94,TowerUi.TEXT)+12;TowerUi.wrapped(g,font,c.value(),width-116,y,94,TowerUi.MUTED);}
+        PixelUi.sheet(g,width-126,43,114,height-83);
+        if(payload.categories().isEmpty())TowerUi.wrapped(g,font,"Nothing revealed",width-116,55,94,0xFF6B4A33);
+        else {var c=payload.categories().get(selected);int y=TowerUi.wrapped(g,font,c.name(),width-116,55,94,TowerUi.INK)+12;TowerUi.wrapped(g,font,c.value(),width-116,y,94,TowerUi.INK);}
         g.pose().popPose();g.disableScissor();
     }
     @Override public boolean isPauseScreen(){return false;}

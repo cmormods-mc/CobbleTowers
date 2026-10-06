@@ -97,11 +97,11 @@ public final class MasteryScreen extends TowerScreen {
         if ("mastery".equals(state.tab())) {
             MasteryScreenPayload.Mastery mastery = state.mastery();
             lines.add(new Line(mastery.progress(), 0xFFD700));
-            lines.add(new Line("Perks: " + mastery.perks(), 0x55FFFF));
-            lines.add(new Line("", 0xFFFFFF));
+            lines.add(new Line("Perks: " + mastery.perks(), TowerUi.BRONZE_LIGHT));
+            lines.add(new Line("", TowerUi.TEXT));
             for (MasteryScreenPayload.Achievement achievement : mastery.achievements()) {
                 lines.add(new Line((achievement.held() ? "[x] " : "[ ] ") + achievement.name() + " - " + achievement.description(),
-                        achievement.held() ? 0x55FF55 : 0xAAAAAA));
+                        achievement.held() ? TowerUi.SAGE : TowerUi.MUTED));
             }
             return lines;
         }
@@ -117,9 +117,9 @@ public final class MasteryScreen extends TowerScreen {
     }
 
     private static void addRows(List<Line> lines, String heading, List<String> rows) {
-        if (heading != null) lines.add(new Line(heading, 0x55FFFF));
-        if (rows.isEmpty()) lines.add(new Line("  no entries yet", 0xAAAAAA));
-        for (String row : rows) lines.add(new Line("  " + row, 0xFFFFFF));
+        if (heading != null) lines.add(new Line(heading, TowerUi.BRONZE_LIGHT));
+        if (rows.isEmpty()) lines.add(new Line("  no entries yet", TowerUi.MUTED));
+        for (String row : rows) lines.add(new Line("  " + row, TowerUi.TEXT));
     }
 
     private record Line(String text, int color) {}
@@ -183,7 +183,7 @@ public final class MasteryScreen extends TowerScreen {
         }
         if (lines.size() > visible) {
             graphics.drawString(font, "scroll for more (" + (scroll + 1) + "-" + Math.min(lines.size(), scroll + visible)
-                    + " of " + lines.size() + ")", x, height - 18, 0x888888);
+                    + " of " + lines.size() + ")", x, height - 18, 0xFF8F7A5E);
         }
     }
 

@@ -18,11 +18,21 @@ import net.minecraft.resources.ResourceLocation;
 public record IntermissionStatePayload(int floor, Draft draft, List<Member> members, int countdown, String message,
                                        boolean open) implements CustomPacketPayload {
 
-    public record Card(ResourceLocation id, String displayName, int votes) {
+    /**
+     * One card on offer.
+     *
+     * @param risk  0 = minor, 1 = moderate, 2 = severe, -1 when the card is not a modifier (an event or an unknown id)
+     * @param theme which scene the client paints it with ({@code ModifierArt}); never a rule, only a picture key
+     * @param lines the card's authoritative description, one fact per line, as the codex shows it
+     */
+    public record Card(ResourceLocation id, String displayName, int votes, int risk, String theme, List<String> lines) {
         static final StreamCodec<RegistryFriendlyByteBuf, Card> STREAM_CODEC = StreamCodec.composite(
                 ResourceLocation.STREAM_CODEC, Card::id,
                 ByteBufCodecs.STRING_UTF8, Card::displayName,
                 ByteBufCodecs.VAR_INT, Card::votes,
+                ByteBufCodecs.VAR_INT, Card::risk,
+                ByteBufCodecs.STRING_UTF8, Card::theme,
+                ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list(32)), Card::lines,
                 Card::new);
     }
 

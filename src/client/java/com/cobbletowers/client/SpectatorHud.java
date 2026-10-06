@@ -8,11 +8,12 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * The spectator information panel TDS #25 asks for (P11).
+ * The spectator information panel TDS #25 asks for (P11): a small dark framed slip with cream text.
  *
  * <p>Shown only while the client's camera is riding a teammate rather than the local player -- the
  * same fact {@code SpectatorPresentation} tracks server-side to know a player is spectating, read back
- * here from the one place the client already has it, with no packet of its own needed to say so.
+ * here from the one place the client already has it, with no packet of its own needed to say so. It draws the same
+ * nine-slice frame as every other panel and never captures a framebuffer.
  */
 public final class SpectatorHud implements HudRenderCallback {
 
@@ -42,14 +43,15 @@ public final class SpectatorHud implements HudRenderCallback {
 
         int width = 0;
         for (String line : lines) width = Math.max(width, font.width(line));
+        int pad = 7;
         int x = 6;
         int y = 6;
         int lineStep = font.lineHeight + 1;
-        graphics.fill(x - 2, y - 2, x + width + 2, y + lines.length * lineStep + 1, 0xB8121218);
-        graphics.fill(x-2,y-2,x+width+2,y-1,0x668EB8DE);
-        for (String line : lines) {
-            graphics.drawString(font, line, x, y, 0xFFFFFF);
-            y += lineStep;
+        PixelUi.frame(graphics, PixelUi.Frame.DARK, x, y, width + pad * 2, lines.length * lineStep + pad * 2 - 1);
+        int textY = y + pad;
+        for (int i = 0; i < lines.length; i++) {
+            graphics.drawString(font, lines[i], x + pad, textY, i == 0 ? TowerUi.BRONZE_LIGHT : TowerUi.TEXT, false);
+            textY += lineStep;
         }
     }
 }

@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.Locale;
 
 /** Static codex rules only; never turns risk into an invented loot percentage. */
-final class ModifierMenuText {
+public final class ModifierMenuText {
     private ModifierMenuText() {}
-    static List<String> lines(ModifierDefinition m) {
+    public static List<String> lines(ModifierDefinition m) {
         List<String> lines=new ArrayList<>();var e=m.effect();
         lines.add("Risk: "+m.risk().name().toLowerCase(Locale.ROOT)+" / Stack limit: "+m.stackLimit());
         if(e.levelOffset()!=0)lines.add("Enemy level offset: "+e.levelOffset());

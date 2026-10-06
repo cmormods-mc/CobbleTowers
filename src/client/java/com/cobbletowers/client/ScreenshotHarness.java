@@ -170,9 +170,105 @@ public final class ScreenshotHarness {
         add(0,"Done",()->{});
     }
 
+
+    // ---- modifier selection stages (the approved oak treatment) -----------------------------------------------------------
+
+    private static IntermissionStatePayload.Card sampleCard(String id, String name, int votes, int risk, String theme, String... lines) {
+        return new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", id), name, votes, risk, theme, List.of(lines));
+    }
+
+    private static IntermissionStatePayload sampleOffer(int state, int chosen, int myVote, List<IntermissionStatePayload.Card> cards) {
+        return new IntermissionStatePayload(4, new IntermissionStatePayload.Draft(state, cards, chosen, myVote),
+                List.of(new IntermissionStatePayload.Member("Alex", true, false), new IntermissionStatePayload.Member("Sam", false, false),
+                        new IntermissionStatePayload.Member("Jo", false, true)), -1, "", true);
+    }
+
+    private static net.minecraft.client.gui.components.AbstractWidget cardWidget(int index) {
+        int seen = 0;
+        for (var child : Minecraft.getInstance().screen.children()) {
+            if (child instanceof ModifierCardButton card) {
+                if (seen++ == index) return card;
+            }
+        }
+        throw new IllegalStateException("no card " + index);
+    }
+
+    private static void press(String label) {
+        for (var child : Minecraft.getInstance().screen.children()) {
+            if (child instanceof net.minecraft.client.gui.components.Button button && button.getMessage().getString().equals(label)) {
+                if (!button.active) throw new IllegalStateException(label + " is not active");
+                button.onPress();
+                return;
+            }
+        }
+        throw new IllegalStateException("no button " + label);
+    }
+
+    private static void modifierScript() {
+        var offer = List.of(
+                sampleCard("downpour", "Downpour", 1, 1, "weather:raindance", "Risk: moderate / Stack limit: 1",
+                        "Battle weather: raindance", "No direct reward amount multiplier.", "Risk is separate from reward amount. Conditional offers are not guaranteed."),
+                sampleCard("glass_cannon", "Glass Cannon", 0, 2, "custom:glass_cannon", "Risk: severe / Stack limit: 1",
+                        "Start battles at 60% HP with +2 Attack and Sp. Atk.", "Boss health: 120% of baseline", "Enemy level offset: 3",
+                        "Eligible reward amounts: x1.25", "Banned moves: recover, roost, softboiled", "Switching is disabled.",
+                        "Items are disabled in battle.", "Conflicts: cobbletowers:iron_hide, cobbletowers:war_banner",
+                        "Tags: offense, risky", "Risk is separate from reward amount. Conditional offers are not guaranteed."),
+                sampleCard("locked_doors", "Locked Doors", 0, 1, "constraint", "Risk: moderate / Stack limit: 1", "Switching is disabled.",
+                        "No direct reward amount multiplier."),
+                sampleCard("windfall", "Windfall", 2, 0, "reward_up", "Risk: minor / Stack limit: 2", "Eligible reward amounts: x1.25"));
+        var strange = sampleOffer(1, -1, -1, List.of(
+                sampleCard("mystery_pack", "Mystery From A Datapack", 0, -1, "unknown", "Mystery From A Datapack"),
+                sampleCard("echo_event", "A Quiet Shrine", 0, -1, "event", "A Quiet Shrine"),
+                sampleCard("ancient", "Ancient Custom Rule", 0, 0, "custom:not_a_real_behavior", "Risk: minor / Stack limit: 1", "Custom behavior: not_a_real_behavior")));
+        var screens = new IntermissionScreen[1];
+        add(0, "open offer", () -> {
+            TowerUiSettings.motion = true;
+            screens[0] = new IntermissionScreen(sampleOffer(1, -1, -1, offer));
+            Minecraft.getInstance().setScreen(screens[0]);
+        });
+        add(120, "shutters closed", () -> featureShot("modifier_01_shutters_closed"));
+        add(1000, "mid reveal", () -> featureShot("modifier_02_mid_reveal"));
+        add(1700, "revealed", () -> featureShot("modifier_03_revealed"));
+        add(0, "focus a card", () -> screens[0].setFocused(cardWidget(0)));
+        add(250, "focused", () -> featureShot("modifier_04_focused"));
+        add(0, "select card 4", () -> ((net.minecraft.client.gui.components.Button) cardWidget(3)).onPress());
+        add(250, "selected", () -> featureShot("modifier_05_selected_inspected"));
+        add(0, "select card 2 (long text)", () -> ((net.minecraft.client.gui.components.Button) cardWidget(1)).onPress());
+        add(250, "long description", () -> featureShot("modifier_06_long_description_page1"));
+        add(0, "next page", () -> press(">"));
+        add(250, "page 2", () -> featureShot("modifier_07_long_description_page2"));
+        add(0, "confirm", () -> press("Confirm"));
+        add(250, "pending", () -> featureShot("modifier_08_pending_confirmation"));
+        add(0, "unknown offer", () -> {
+            screens[0] = new IntermissionScreen(strange);
+            Minecraft.getInstance().setScreen(screens[0]);
+        });
+        add(2400, "unknown shot", () -> featureShot("modifier_09_unknown_fallback"));
+        add(0, "reduced motion", () -> {
+            TowerUiSettings.motion = false;
+            TowerUiSettings.glow = false;
+            screens[0] = new IntermissionScreen(sampleOffer(1, -1, 2, offer));
+            Minecraft.getInstance().setScreen(screens[0]);
+        });
+        add(200, "reduced shot", () -> featureShot("modifier_10_reduced_motion_glow_off"));
+        add(0, "empty offer", () -> {
+            screens[0] = new IntermissionScreen(sampleOffer(0, -1, -1, List.of()));
+            Minecraft.getInstance().setScreen(screens[0]);
+        });
+        add(200, "empty shot", () -> featureShot("modifier_11_empty_offer"));
+        add(0, "settled", () -> {
+            screens[0] = new IntermissionScreen(sampleOffer(2, 3, 3, offer));
+            Minecraft.getInstance().setScreen(screens[0]);
+        });
+        add(200, "settled shot", () -> featureShot("modifier_12_settled_chosen"));
+        add(0, "Done", () -> {});
+    }
+
+
     private static void script() throws IOException {
         if ("1".equals(System.getenv("COBBLETOWERS_FEATURES_ONLY"))) { featureScript(); return; }
         if ("1".equals(System.getenv("COBBLETOWERS_HALL_ONLY"))) { hallScript(); return; }
+        if ("1".equals(System.getenv("COBBLETOWERS_MODIFIER_ONLY"))) { modifierScript(); return; }
         if ("1".equals(System.getenv("COBBLETOWERS_FRAMETIME_ONLY"))) {
             keepCursor = true;
             FrameSampler.script(ScreenshotHarness::add, directory);
@@ -253,9 +349,9 @@ public final class ScreenshotHarness {
         add(600, "play screen plain shot", () -> featureShot("play_02_no_lobby"));
         add(0, "intermission", () -> Minecraft.getInstance().setScreen(new IntermissionScreen(new IntermissionStatePayload(3,
                 new IntermissionStatePayload.Draft(1, List.of(
-                        new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "downpour"), "Downpour", 2),
-                        new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "grassy_terrain"), "Grassy Terrain", 0),
-                        new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "empty_pockets"), "Empty Pockets", 1)),
+                        new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "downpour"), "Downpour", 2, 1, "weather:raindance", List.of("Risk: moderate / Stack limit: 1","Battle weather: raindance","No direct reward amount multiplier.")),
+                        new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "grassy_terrain"), "Grassy Terrain", 0, 0, "terrain:grassyterrain", List.of("Risk: minor / Stack limit: 1","Battle terrain: grassyterrain","No direct reward amount multiplier.")),
+                        new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "empty_pockets"), "Empty Pockets", 1, 1, "reward_down", List.of("Risk: moderate / Stack limit: 1","Eligible reward amounts: x0.50"))),
                         -1, 0),
                 List.of(new IntermissionStatePayload.Member("Alex", true, false), new IntermissionStatePayload.Member("Sam", false, false),
                         new IntermissionStatePayload.Member("Jo", false, true)),

@@ -213,6 +213,26 @@ def main() -> None:
             rcon_run(f"cobbletowers runs advance {started} rewards_banked")
             time.sleep(5)
             results.append(Result("the intermission screen opens on the real client", remote.shot("e2e_11_intermission_screen"), ""))
+            # The modifier draft: choosing a card only marks it; Confirm is what sends the vote, and the server records it.
+            show = f"cobbletowers runs show {started}"
+            before = rcon_run(show)
+            if "OPEN, 0 vote(s)" in before:
+                remote.send("wait 1800")                  # the shutters
+                remote.send("widget ModifierCardButton")  # chooses the first card
+                remote.send("wait 500")
+                remote.shot("e2e_11b_card_selected")
+                chosen = rcon_run(show)
+                results.append(Result("choosing a card sends nothing to the server", "OPEN, 0 vote(s)" in chosen, chosen[-200:]))
+                remote.send("press Confirm")
+                remote.send("wait 1500")
+                # With one player the first vote settles the draft (and an event draft may chain behind it), so the proof is the
+                # server's own "drafted <card>" line for the card that was chosen, not the open count of whatever opened next.
+                first = re.search(r"\[(cobbletowers:[^,\]]+)", before)
+                drafted = bool(first) and f"drafted {first.group(1)} at floor" in server.read_log()
+                results.append(Result("Confirm sends the vote and the server settles on the chosen card", drafted, rcon_run(show)[-200:]))
+                remote.shot("e2e_11c_after_confirm")
+            else:
+                results.append(Result("a modifier draft is open at the intermission", False, before[-300:]))
             remote.send("press Close")
             remote.send("wait 1500")
             remote.shot("e2e_12_intermission_world")
