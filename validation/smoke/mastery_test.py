@@ -134,6 +134,7 @@ def main() -> None:
 
             # ---- a solo cycle --------------------------------------------------------------------------------
             play(rcon, A, f"tower {TOWER}")
+            play(rcon, A, "confirm")
             play(rcon, A, "start")
             first = wait_new_run(rcon, set(), "ENCOUNTER_ACTIVE", 60)
             if not first:
@@ -196,6 +197,7 @@ def main() -> None:
             play(rcon, A, f"tower {TOWER}")
             play(rcon, A, f"invite {B}")
             play(rcon, B, f"accept {A}")
+            play(rcon, A, "confirm")
             play(rcon, A, "start")
             second = wait_new_run(rcon, {first}, "ENCOUNTER_ACTIVE", 60)
             if not second:

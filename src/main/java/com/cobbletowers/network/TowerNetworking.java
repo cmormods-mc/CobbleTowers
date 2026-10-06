@@ -95,6 +95,7 @@ public final class TowerNetworking {
     /** The play screen's buttons: each does what the matching {@code /cobbletowers play} subcommand does. */
     private static void handlePlayAction(MinecraftServer server, ServerPlayer player, PlayActionPayload payload) {
         String reply;
+        boolean keepScreen = false;
         try {
             reply = switch (payload.action()) {
                 case SELECT_TOWER -> LobbyService.select(server, player, ResourceLocation.parse(payload.argument()));
@@ -106,9 +107,14 @@ public final class TowerNetworking {
                 case ACCEPT, DECLINE -> {
                     ServerPlayer host = server.getPlayerList().getPlayerByName(payload.argument());
                     if (host == null) yield "That team no longer exists.";
-                    yield payload.action() == PlayActionPayload.Action.ACCEPT
-                            ? LobbyService.accept(server, player, host.getUUID())
-                            : LobbyService.decline(server, player, host.getUUID());
+                    if (payload.action() == PlayActionPayload.Action.ACCEPT) {
+                        String joined = LobbyService.accept(server, player, host.getUUID());
+                        // Accepting into a rental lobby opens the draft screen; reopening the play screen would cover it.
+                        keepScreen = LobbyService.lobbyOf(player.getUUID())
+                                .filter(lobby -> com.cobbletowers.lobby.RentalDraftService.opensScreen(player, lobby)).isPresent();
+                        yield joined;
+                    }
+                    yield LobbyService.decline(server, player, host.getUUID());
                 }
                 case START -> LobbyService.start(server, player);
                 case LEAVE -> LobbyService.leave(server, player);
@@ -121,13 +127,23 @@ public final class TowerNetworking {
                 case CLEAR_CHOICE -> LobbyService.clearChoice(server, player);
                 case SET_ASCENSION -> LobbyService.setAscension(server, player, Integer.parseInt(payload.argument()));
                 case SET_PLAYLIST -> LobbyService.setPlaylist(server, player, payload.argument());
+                case CONFIRM_MODE -> {
+                    String confirmed = LobbyService.confirmMode(server, player);
+                    // Confirming a rental mode opens everyone's draft, the host's included; the play screen must not cover it.
+                    keepScreen = LobbyService.lobbyOf(player.getUUID())
+                            .filter(lobby -> com.cobbletowers.lobby.RentalDraftService.opensScreen(player, lobby)).isPresent();
+                    yield confirmed;
+                }
+                case READY -> LobbyService.ready(server, player, true);
+                case UNREADY -> LobbyService.ready(server, player, false);
             };
         } catch (RuntimeException ex) {
             // A malformed id or similar from a modified client: refused, never trusted, never fatal.
             TowerLog.warn("Play action {} from {} was refused: {}", payload.action(), player.getUUID(), ex.toString());
             reply = "That did not work.";
         }
-        LobbyService.openScreenWithMessage(server, player, reply);
+        if (keepScreen) player.sendSystemMessage(net.minecraft.network.chat.Component.literal(reply));
+        else LobbyService.openScreenWithMessage(server, player, reply);
     }
 
     /** The intermission screen's buttons: each does what the matching {@code /cobbletowers play} subcommand does. */

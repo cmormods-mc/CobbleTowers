@@ -26,10 +26,12 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
                 Tower::new);
     }
 
-    public record Member(String name, boolean accepted) {
+    /** {@code ready} is the rental team's ready-up (P33); always false outside a rental lobby. */
+    public record Member(String name, boolean accepted, boolean ready) {
         static final StreamCodec<RegistryFriendlyByteBuf, Member> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.STRING_UTF8, Member::name,
                 ByteBufCodecs.BOOL, Member::accepted,
+                ByteBufCodecs.BOOL, Member::ready,
                 Member::new);
     }
 
@@ -58,16 +60,34 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
     }
 
     /** The playlists (P32) on offer and the one chosen ({@code ""} is Standard); {@code rental} when that one lends a drafted team (P33). */
-    public record Modes(List<String> ids, List<String> names, String chosen, boolean rental) {
+    /**
+     * The rental ready-up (P33): whether the host has confirmed the mode (nothing else happens before), whether this player has a finished draft (only then may they ready up), whether they are
+     * ready, and whether the host is.
+     */
+    public record Readiness(boolean confirmed, boolean drafted, boolean mine, boolean host) {
+        static final StreamCodec<RegistryFriendlyByteBuf, Readiness> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.BOOL, Readiness::confirmed,
+                ByteBufCodecs.BOOL, Readiness::drafted,
+                ByteBufCodecs.BOOL, Readiness::mine,
+                ByteBufCodecs.BOOL, Readiness::host,
+                Readiness::new);
+
+        public static Readiness none() {
+            return new Readiness(false, false, false, false);
+        }
+    }
+
+    public record Modes(List<String> ids, List<String> names, String chosen, boolean rental, Readiness readiness) {
         static final StreamCodec<RegistryFriendlyByteBuf, Modes> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()), Modes::ids,
                 ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()), Modes::names,
                 ByteBufCodecs.STRING_UTF8, Modes::chosen,
                 ByteBufCodecs.BOOL, Modes::rental,
+                Readiness.STREAM_CODEC, Modes::readiness,
                 Modes::new);
 
         public static Modes none() {
-            return new Modes(List.of(), List.of(), "", false);
+            return new Modes(List.of(), List.of(), "", false, Readiness.none());
         }
     }
 

@@ -66,8 +66,10 @@ def main() -> None:
 
             rt.play(rcon, f"tower {rt.TOWER}")
             rt.play(rcon, "playlist rental")
+            rt.play(rcon, "confirm")
             drafted = rt.draft_team(rcon)
             results.append(Result("a team drafts", drafted, rt.play(rcon, "draft")[:200]))
+            rt.play(rcon, "ready")
             rt.play(rcon, "start")
             rt.wait_for(lambda: rt.live_run(rcon) != "", 40)
             run = rt.live_run(rcon)

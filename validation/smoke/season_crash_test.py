@@ -83,6 +83,7 @@ def run_case(step: int, server_dir: Path, java: Path, node_modules: Path, result
                 rcon.command(f"execute as {bot_name} run cobbletowers play {command}")
 
             play(f"tower {TOWER}")
+            play("confirm")
             play("start")
             if not wait_state(rcon, "ENCOUNTER_ACTIVE", 1, seconds=40):
                 raise RuntimeError("floor 1 never opened: " + run_line(rcon))

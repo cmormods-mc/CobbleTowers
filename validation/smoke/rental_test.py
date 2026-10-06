@@ -128,8 +128,10 @@ def start_rental_run_for(rcon: Rcon) -> str:
     """Picks the test tower and the Rental playlist, drafts a team in chat, starts, and returns the run id."""
     play(rcon, f"tower {TOWER}")
     play(rcon, "playlist rental")
+    play(rcon, "confirm")   # nothing opens until the host confirms the mode
     if not draft_team(rcon):
         raise RuntimeError("could not draft a team: " + play(rcon, "draft")[:300])
+    play(rcon, "ready")     # a start needs every player ready, and only a finished draft can be
     play(rcon, "start")
     wait_for(lambda: live_run(rcon) != "", 40)
     return live_run(rcon)
@@ -210,8 +212,10 @@ def main() -> None:
     def start_rental_run(rcon: Rcon) -> str:
         play(rcon, f"tower {TOWER}")
         play(rcon, "playlist rental")
+        play(rcon, "confirm")
         if not draft_team(rcon):
             raise RuntimeError("could not draft a team: " + play(rcon, "draft")[:300])
+        play(rcon, "ready")
         play(rcon, "start")
         wait_for(lambda: live_run(rcon) != "", 40)
         return live_run(rcon)
@@ -242,12 +246,18 @@ def main() -> None:
             # ---- the draft's rules -------------------------------------------------------------------------
             play(rcon, f"tower {TOWER}")
             reply = play(rcon, "playlist rental")
-            results.append(Result("the Rental Draft mode is offered and points at the draft", "/tower draft" in reply, reply.strip()[:200]))
-            play(rcon, "start")
-            time.sleep(8)
-            text = server.read_log()
-            results.append(Result("starting before the draft is finished is refused, with the reason",
-                                  "has not finished their draft" in text and not live_run(rcon), text[-300:]))
+            results.append(Result("the Rental Draft mode is offered and points at confirming it", "/tower confirm" in reply, reply.strip()[:200]))
+            early = play(rcon, "draft")
+            results.append(Result("nothing can be drafted before the host confirms the mode", "confirm the mode" in early, early.strip()[:200]))
+            unconfirmed = play(rcon, "start")
+            results.append(Result("a start before the mode is confirmed is refused", "Confirm the mode" in unconfirmed and not live_run(rcon),
+                                  unconfirmed.strip()[:200]))
+            play(rcon, "confirm")
+            premature = play(rcon, "ready")
+            results.append(Result("a player cannot ready up before their draft is finished", "Finish your draft first" in premature, premature.strip()[:200]))
+            refused = play(rcon, "start")
+            results.append(Result("starting before everyone is ready is refused, naming who", "ready up" in refused and not live_run(rcon),
+                                  refused.strip()[:200]))
             view = play(rcon, "draft")
             results.append(Result("the first pack shows five cards with rarity and moves", len(re.findall(r"\d\. \[\w+\]", view)) == 5,
                                   view[:300]))

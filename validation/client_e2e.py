@@ -152,12 +152,21 @@ def main() -> None:
         remote.send("wait 1200")
         remote.send("cmd tower playlist rental")
         remote.send("wait 1200")
-        remote.send("cmd tower")                      # the play screen, with the real lobby state
+        remote.send("cmd tower")                      # the Hall (the warm-pixel menu) ...
         remote.send("wait 1500")
+        remote.send("press Lobby")                    # ... and its Lobby button: the play screen, with the real lobby state
+        remote.send("wait 1200")
         results.append(Result("the play screen shows the lobby from the real server", remote.shot("e2e_01_play_screen"), ""))
-        remote.send("press Draft your team")
+        # Nothing opens until the host confirms the mode; the play screen's Confirm mode button then opens the pack screen itself.
+        remote.send("press Draft your team")          # not there yet: refused, nothing opens
+        remote.send("wait 500")
+        remote.shot("e2e_01b_before_confirm")
+        client_log = game / "logs" / "latest.log"
+        refused = "No active button labelled 'Draft your team'" in client_log.read_text(encoding="utf-8", errors="replace")
+        results.append(Result("there is no Draft button, and no draft screen, before the mode is confirmed", refused, "the button was there"))
+        remote.send("press Confirm mode")
         remote.send("wait 1500")
-        results.append(Result("'Draft your team' opens the pack screen from a real payload", remote.shot("e2e_02_pack_table"), ""))
+        results.append(Result("'Confirm mode' opens the pack screen from a real payload", remote.shot("e2e_02_pack_table"), ""))
 
         for pack in range(3):
             remote.send("center")                     # tear the pack open
@@ -177,8 +186,11 @@ def main() -> None:
         results.append(Result("three packs of picks reach the server and the team is drafted", remote.shot("e2e_09_team"), ""))
         remote.send("press Done")
         remote.send("wait 500")
+        remote.send("cmd tower ready")                # a drafted player readies up; the host cannot start before
+        remote.send("wait 800")
 
         # ---- the run ---------------------------------------------------------------------------------------------
+        remote.send("cmd tower confirm")
         remote.send("cmd tower start")
         started = ""
         for _ in range(60):

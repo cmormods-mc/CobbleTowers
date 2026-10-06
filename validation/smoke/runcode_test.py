@@ -93,6 +93,7 @@ def main() -> None:
             def start_run() -> tuple[str, str]:
                 """Starts the lobby's run; returns (its id, the first battle line it logged)."""
                 mark = len(server.read_log())
+                play("confirm")
                 play("start")
                 if not wait_state(rcon, "ENCOUNTER_ACTIVE", 1, seconds=40):
                     raise RuntimeError("floor 1 never opened: " + run_line(rcon))

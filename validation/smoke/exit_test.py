@@ -137,6 +137,7 @@ def main() -> None:
             rcon.command(f"execute as {A} run cobbletowers play tower {TOWER}")
             rcon.command(f"execute as {A} run cobbletowers play invite {B}")
             rcon.command(f"execute as {B} run cobbletowers play accept {A}")
+            rcon.command(f"execute as {A} run cobbletowers play confirm")
             rcon.command(f"execute as {A} run cobbletowers play start")
             inside = wait_for(lambda: dimension(rcon, A) == "cobbletowers:tower" and dimension(rcon, B) == "cobbletowers:tower", 40)
             results.append(Result("a started run puts both players in the tower", inside, f"{dimension(rcon, A)} {dimension(rcon, B)}"))
@@ -164,6 +165,7 @@ def main() -> None:
             # --- a player disconnects inside, and logs back in after the run ended -----------------------
             clear_tower(rcon)
             rcon.command(f"execute as {B} run cobbletowers play tower {TOWER}")
+            rcon.command(f"execute as {B} run cobbletowers play confirm")
             rcon.command(f"execute as {B} run cobbletowers play start")
             wait_for(lambda: dimension(rcon, B) == "cobbletowers:tower", 40)
             bots.pop(B).kill()

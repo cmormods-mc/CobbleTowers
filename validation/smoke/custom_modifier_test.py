@@ -87,6 +87,7 @@ def main() -> None:
             play(rcon, A, f"tower {TOWER}")
             play(rcon, A, f"invite {B}")
             play(rcon, B, f"accept {A}")
+            play(rcon, A, "confirm")
             play(rcon, A, "start")
             if not wait_state(rcon, "ENCOUNTER_ACTIVE", seconds=40, floor=1):
                 raise RuntimeError("floor 1 never opened: " + run_line(rcon))

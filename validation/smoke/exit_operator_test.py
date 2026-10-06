@@ -72,6 +72,7 @@ def main() -> None:
 
             # --- the reported case: an operator in creative cashes out --------------------------------------------------
             play(f"tower {TOWER}")
+            play("confirm")
             play("start")
             inside = wait_for(lambda: dimension(rcon, BOT) == TOWER_DIM, 40)
             results.append(Result("a started run puts the operator in the tower", inside, dimension(rcon, BOT)))

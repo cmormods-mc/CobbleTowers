@@ -120,6 +120,7 @@ def main() -> None:
             rcon.command(f"execute as {A} run cobbletowers play tower {TOWER}")
             rcon.command(f"execute as {A} run cobbletowers play invite {B}")
             rcon.command(f"execute as {B} run cobbletowers play accept {A}")
+            rcon.command(f"execute as {A} run cobbletowers play confirm")
             rcon.command(f"execute as {A} run cobbletowers play start")
             run = wait_state(rcon, "ENCOUNTER_ACTIVE")
             if not run:

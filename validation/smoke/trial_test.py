@@ -70,6 +70,7 @@ def wait_new(rcon: Rcon, state: str, seconds: int, known: set[str]) -> str:
 def play_trial(rcon: Rcon, name: str, kind: str, floors: int, known: set[str]) -> str:
     """Selects the trial, starts it, and clears every floor by operator event; returns the run id."""
     as_player(rcon, name, f"trial play {kind}")
+    as_player(rcon, name, "confirm")
     as_player(rcon, name, "start")
     run = wait_new(rcon, "ENCOUNTER_ACTIVE", 60, known)
     if not run:
@@ -188,6 +189,7 @@ def main() -> None:
             # ---- practice: same seed, nothing posts ------------------------------------------------------------
             before = len(server.read_log())
             as_player(rcon, A, "trial play daily")
+            as_player(rcon, A, "confirm")
             as_player(rcon, A, "start")
             run2 = wait_new(rcon, "ENCOUNTER_ACTIVE", 60, {run1})
             if not run2:

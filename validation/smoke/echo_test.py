@@ -101,6 +101,7 @@ def main() -> None:
             rcon.command('cobbletowers echoes add Ghost cobbletowers:neutral garchomp level=100 nature=jolly moves=earthquake')
 
             play(f"tower {TOWER}")
+            play("confirm")
             play("start")
             if not wait_state(rcon, "ENCOUNTER_ACTIVE", 1, seconds=40):
                 raise RuntimeError("floor 1 never opened: " + run_line(rcon))

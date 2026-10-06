@@ -122,6 +122,7 @@ def main() -> None:
             play(rcon, A, f"tower {TOWER}")
             play(rcon, A, f"invite {B}")
             play(rcon, B, f"accept {A}")
+            play(rcon, A, "confirm")
             play(rcon, A, "start")
 
             # --- floor 1 is cleared by operator event, then the real intermission ----------------

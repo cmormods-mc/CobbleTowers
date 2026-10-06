@@ -120,6 +120,7 @@ def main() -> None:
 
             # A real regional cycle by BOT alone counts toward the club's score and week.
             play(f"tower {TOWER}")
+            play("confirm")
             play("start")
             if not wait_state(rcon, "ENCOUNTER_ACTIVE", 1, seconds=40):
                 raise RuntimeError("floor 1 never opened: " + run_line(rcon))

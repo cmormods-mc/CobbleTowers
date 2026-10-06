@@ -52,6 +52,37 @@ public final class TowerLobby {
     private java.util.Optional<ResourceLocation> playlist = java.util.Optional.empty();
     /** Pokemon each player chose to register (P18). Absent or empty means "my current party". */
     private final Map<UUID, List<UUID>> chosen = new LinkedHashMap<>();
+    /** Who has readied up (P33): a rental team starts only when every member is, and only a finished draft can be. */
+    private final java.util.Set<UUID> ready = new java.util.HashSet<>();
+
+    /**
+     * Whether the host has confirmed the mode (P33). A rental lobby opens nobody's draft, and takes no ready-up, until they do;
+     * changing the mode, trial or tower takes the confirmation back.
+     */
+    private boolean modeConfirmed;
+
+    public boolean modeConfirmed() {
+        return modeConfirmed;
+    }
+
+    public void confirmMode() {
+        modeConfirmed = true;
+        cancelCountdown();
+    }
+
+    public boolean isReady(UUID player) {
+        return ready.contains(player);
+    }
+
+    public void setReady(UUID player, boolean value) {
+        if (value) ready.add(player);
+        else ready.remove(player);
+    }
+
+    /** Everyone must ready up again: what they readied for has changed. */
+    public void clearReady() {
+        ready.clear();
+    }
 
     /** The seed from a run code (P35), empty for a fresh random one. A different tower is a different offer, so it clears it. */
     private java.util.Optional<Long> seed = java.util.Optional.empty();
@@ -87,6 +118,8 @@ public final class TowerLobby {
 
     public void setTrial(java.util.Optional<com.cobbletowers.trial.TrialSchedule.Instance> next) {
         this.trial = next;
+        modeConfirmed = false;
+        ready.clear();
         cancelCountdown();
     }
 
@@ -96,6 +129,8 @@ public final class TowerLobby {
 
     public void setPlaylist(java.util.Optional<ResourceLocation> next) {
         this.playlist = next;
+        modeConfirmed = false;
+        ready.clear();
         cancelCountdown();
     }
 
@@ -111,6 +146,8 @@ public final class TowerLobby {
         this.playlist = java.util.Optional.empty();
         this.trial = java.util.Optional.empty();
         this.seed = java.util.Optional.empty();
+        modeConfirmed = false;
+        ready.clear();
         // A different tower is a different offer: anyone who already accepted agreed to the old one.
         members.replaceAll((id, member) -> new Member(Response.INVITED, member.invitedAt()));
         cancelCountdown();
@@ -134,12 +171,14 @@ public final class TowerLobby {
 
     public Result decline(UUID player) {
         chosen.remove(player);
+        ready.remove(player);
         return members.remove(player) == null ? Result.NO_INVITE : Result.OK;
     }
 
     /** Takes someone off the team, accepted or not. */
     public boolean remove(UUID player) {
         chosen.remove(player);
+        ready.remove(player);
         boolean removed = members.remove(player) != null;
         if (removed) cancelCountdown();
         return removed;

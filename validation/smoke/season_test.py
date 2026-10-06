@@ -99,6 +99,7 @@ def main() -> None:
             def cycle() -> None:
                 """Plays one four-floor cycle of the Test tower by operator command, ending at its cycle-end intermission."""
                 play(f"tower {TOWER}")
+                play("confirm")
                 play("start")
                 if not wait_state(rcon, "ENCOUNTER_ACTIVE", 1, seconds=40):
                     raise RuntimeError("floor 1 never opened: " + run_line(rcon))

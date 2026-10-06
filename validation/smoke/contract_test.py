@@ -128,6 +128,7 @@ def main() -> None:
 
             # ---- play floors: progress, completion, one payment -----------------------------------------------
             as_player(rcon, A, f"tower {TOWER}")
+            as_player(rcon, A, "confirm")
             as_player(rcon, A, "start")
             run = ""
             for _ in range(30):

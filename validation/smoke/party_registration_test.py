@@ -127,6 +127,7 @@ def main() -> None:
         play(rcon, f"tower {TOWER}")
         for pokemon in boxed:
             play(rcon, f"register toggle {pokemon}")
+        play(rcon, "confirm")
         play(rcon, "start")
         wait_for(lambda: "ENCOUNTER_ACTIVE" in rcon.command("cobbletowers runs list"), 40)
 

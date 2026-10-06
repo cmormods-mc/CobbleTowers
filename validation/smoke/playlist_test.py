@@ -62,6 +62,7 @@ def wait_run(rcon: Rcon, state: str, seconds: int, known: set[str] | None = None
 def start_refused(rcon: Rcon, server: Server, name: str, mode: str, expect: str, results: list[Result]) -> None:
     reply = as_player(rcon, name, f"playlist {mode}")
     before = len(server.read_log())
+    as_player(rcon, name, "confirm")
     as_player(rcon, name, "start")
     time.sleep(10)
     text = server.read_log()[before:]
@@ -126,6 +127,7 @@ def main() -> None:
             invite = as_player(rcon, A, f"invite {B}")
             results.append(Result("Solo Gauntlet allows one player: inviting a second is refused",
                                   "allows 1 player" in invite, invite.strip()[:200]))
+            as_player(rcon, A, "confirm")
             as_player(rcon, A, "start")
             solo = wait_run(rcon, "ENCOUNTER_ACTIVE", 60)
             if not solo:
@@ -139,6 +141,7 @@ def main() -> None:
             # ---- a compliant Monotype run, and the clauses hold on every floor -------------------------------
             play(rcon, B, f"tower {TOWER}")
             as_player(rcon, B, "playlist monotype")
+            as_player(rcon, B, "confirm")
             as_player(rcon, B, "start")
             mono = wait_run(rcon, "ENCOUNTER_ACTIVE", 60, {solo})
             results.append(Result("a party that complies starts under Monotype", bool(mono), rcon.command("cobbletowers runs list")[:200]))
@@ -168,6 +171,7 @@ def main() -> None:
             known = {solo, mono} - {""}
             play(rcon, A, f"tower {TOWER}")
             as_player(rcon, A, "playlist hardcore")
+            as_player(rcon, A, "confirm")
             as_player(rcon, A, "start")
             hard = wait_run(rcon, "ENCOUNTER_ACTIVE", 60, known)
             if not hard:

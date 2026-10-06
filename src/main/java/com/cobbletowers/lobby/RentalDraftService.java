@@ -37,6 +37,13 @@ public final class RentalDraftService {
         return lobby.playlist().flatMap(PlaylistRegistry::get).map(PlaylistDefinition::rental).orElse(false);
     }
 
+    /** A rental lobby whose host has confirmed the mode: the only kind whose drafts may be opened. */
+    public static boolean isOpen(TowerLobby lobby) {
+        return isRentalLobby(lobby) && lobby.modeConfirmed();
+    }
+
+    private static final String UNCONFIRMED = "Waiting for the host to confirm the mode.";
+
     public static Optional<RentalDraft> draftOf(UUID player) {
         return Optional.ofNullable(DRAFTS.get(player));
     }
@@ -60,11 +67,40 @@ public final class RentalDraftService {
         });
     }
 
+    /** Whether {@link #prompt} will open the pack screen for this player (rather than chat lines, or nothing). */
+    public static boolean opensScreen(ServerPlayer player, TowerLobby lobby) {
+        return isOpen(lobby) && !RentalSetRegistry.all().isEmpty()
+                && ServerPlayNetworking.canSend(player, RentalDraftPayload.TYPE);
+    }
+
+    /**
+     * Puts a member's draft in front of them without being asked: the pack screen, or the chat lines for a client that
+     * cannot show it. Used when they join a rental lobby and when the lobby switches to a rental mode.
+     */
+    public static void prompt(MinecraftServer server, TowerLobby lobby, ServerPlayer player) {
+        if (!isOpen(lobby) || RentalSetRegistry.all().isEmpty()) return;
+        RentalDraft draft = open(server, lobby, player.getUUID());
+        if (opensScreen(player, lobby)) {
+            sendScreen(player, draft, "");
+        } else {
+            describe(draft).forEach(line -> player.sendSystemMessage(net.minecraft.network.chat.Component.literal(line)));
+        }
+    }
+
+    /** {@link #prompt} for everyone on the team who is online. */
+    public static void promptAll(MinecraftServer server, TowerLobby lobby) {
+        for (UUID id : lobby.team()) {
+            ServerPlayer member = server.getPlayerList().getPlayer(id);
+            if (member != null) prompt(server, lobby, member);
+        }
+    }
+
     // ---- the chat flow -----------------------------------------------------------------------------------------------
 
     /** What {@code /tower draft} says: the current pack, or the finished team. */
     public static List<String> view(MinecraftServer server, ServerPlayer player) {
         Optional<TowerLobby> lobby = LobbyService.lobbyOf(player.getUUID());
+        if (lobby.isPresent() && isRentalLobby(lobby.get()) && !lobby.get().modeConfirmed()) return List.of(UNCONFIRMED);
         if (lobby.isEmpty() || !isRentalLobby(lobby.get())) {
             return List.of("There is nothing to draft: pick a tower and /tower playlist rental first.");
         }
@@ -80,6 +116,7 @@ public final class RentalDraftService {
     /** The same view as chat lines, whatever the client can show. */
     public static List<String> text(MinecraftServer server, ServerPlayer player) {
         Optional<TowerLobby> lobby = LobbyService.lobbyOf(player.getUUID());
+        if (lobby.isPresent() && isRentalLobby(lobby.get()) && !lobby.get().modeConfirmed()) return List.of(UNCONFIRMED);
         if (lobby.isEmpty() || !isRentalLobby(lobby.get())) return List.of("There is nothing to draft here.");
         return describe(open(server, lobby.get(), player.getUUID()));
     }
@@ -95,17 +132,19 @@ public final class RentalDraftService {
     /** The screen's buttons. Every pick is checked by the draft; a modified client only gets a refusal. */
     public static void handle(MinecraftServer server, ServerPlayer player, RentalDraftActionPayload action) {
         Optional<TowerLobby> lobby = LobbyService.lobbyOf(player.getUUID());
-        if (lobby.isEmpty() || !isRentalLobby(lobby.get()) || RentalSetRegistry.all().isEmpty()) return;
+        if (lobby.isEmpty() || !isOpen(lobby.get()) || RentalSetRegistry.all().isEmpty()) return;
         RentalDraft draft = open(server, lobby.get(), player.getUUID());
         String message = switch (action.action()) {
             case OPEN -> "";
             case PICK -> say(draft.pick(draft.currentPack(), List.of(action.a(), action.b())));
             case RESTART -> {
                 draft.restart();
+                lobby.get().setReady(player.getUUID(), false);
                 yield "";
             }
         };
         sendScreen(player, draft, message);
+        LobbyService.refresh(server, lobby.get());
     }
 
     private static String say(Result result) {
@@ -126,7 +165,7 @@ public final class RentalDraftService {
             lines.add("Your team is drafted:");
             int number = 1;
             for (RentalSetDefinition set : draft.team()) lines.add("  " + number++ + ". " + line(set));
-            lines.add("The host can start once everyone is done. /tower draft restart to draft again.");
+            lines.add("Use Ready on the play screen (/tower ready); the host can start once everyone is ready. /tower draft restart to draft again.");
             return lines;
         }
         int pack = draft.currentPack();
@@ -149,10 +188,12 @@ public final class RentalDraftService {
     /** Keeps two cards from the current pack. {@code a} and {@code b} are 1-based, as shown. */
     public static List<String> pick(MinecraftServer server, ServerPlayer player, int a, int b) {
         Optional<TowerLobby> lobby = LobbyService.lobbyOf(player.getUUID());
+        if (lobby.isPresent() && isRentalLobby(lobby.get()) && !lobby.get().modeConfirmed()) return List.of(UNCONFIRMED);
         if (lobby.isEmpty() || !isRentalLobby(lobby.get())) return List.of("There is nothing to draft here.");
         RentalDraft draft = open(server, lobby.get(), player.getUUID());
         Result result = draft.pick(draft.currentPack(), List.of(a - 1, b - 1));
         sendScreen(player, draft, say(result));
+        LobbyService.refresh(server, lobby.get());
         return switch (result) {
             case OK -> describe(draft);
             case ALREADY_COMPLETE -> List.of("Your draft is finished. /tower draft restart to draft again.");
@@ -167,8 +208,11 @@ public final class RentalDraftService {
 
     public static List<String> restart(MinecraftServer server, ServerPlayer player) {
         Optional<TowerLobby> lobby = LobbyService.lobbyOf(player.getUUID());
+        if (lobby.isPresent() && isRentalLobby(lobby.get()) && !lobby.get().modeConfirmed()) return List.of(UNCONFIRMED);
         if (lobby.isEmpty() || !isRentalLobby(lobby.get())) return List.of("There is nothing to draft here.");
         open(server, lobby.get(), player.getUUID()).restart();
+        lobby.get().setReady(player.getUUID(), false);
+        LobbyService.refresh(server, lobby.get());
         return view(server, player);
     }
 

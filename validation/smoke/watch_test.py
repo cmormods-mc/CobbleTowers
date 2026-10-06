@@ -77,6 +77,7 @@ def main() -> None:
 
             # --- a live run ------------------------------------------------------------------------------------------------
             as_player(RUNNER, f"tower {TOWER}")
+            as_player(RUNNER, "confirm")
             as_player(RUNNER, "start")
             wait_for(lambda: dimension(rcon, RUNNER) == TOWER_DIM, 40)
             run = ""

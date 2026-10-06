@@ -69,6 +69,36 @@ public final class LobbyService {
                 TowerLog.error("A tower lobby tick failed", ex);
             }
         });
+        // DISCONNECT fires on a Netty thread; the lobbies are plain server-thread state.
+        net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            UUID id = handler.getPlayer().getUUID();
+            com.cobbletowers.runtime.ServerThread.run(server, () -> {
+                try {
+                    onDisconnect(server, id);
+                } catch (RuntimeException ex) {
+                    TowerLog.error("Could not tidy the lobby of a disconnecting player", ex);
+                }
+            });
+        });
+    }
+
+    /**
+     * A player dropped. A host going ends their team (nobody else can start it, and it would otherwise sit in memory with
+     * its drafts); anyone else just steps out. Leaving a run is {@code TowerPresence}'s business, not this waiting room's.
+     */
+    static void onDisconnect(MinecraftServer server, UUID id) {
+        TowerLobby hosted = BY_HOST.get(id);
+        if (hosted != null) {
+            dissolve(server, hosted, "The host left, so the team was ended.");
+            return;
+        }
+        Optional<TowerLobby> found = lobbyOf(id);
+        if (found.isEmpty()) return;
+        TowerLobby lobby = found.get();
+        lobby.remove(id);
+        RentalDraftService.clear(id);
+        ServerPlayer gone = server.getPlayerList().getPlayer(id);
+        broadcast(server, lobby, (gone == null ? "A player" : name(gone)) + " left the team.");
     }
 
     /** Memory hygiene at shutdown, like {@code TowerRuns.onServerStopped}. */
@@ -141,6 +171,8 @@ public final class LobbyService {
         TowerLobby.Result result = lobby.accept(player.getUUID(), System.currentTimeMillis());
         if (result != TowerLobby.Result.OK) return "That invite has lapsed.";
         broadcast(server, lobby, name(player) + " joined the team.");
+        // A rental run needs every member's own draft, so put their packs in front of them now.
+        RentalDraftService.prompt(server, lobby, player);
         return "You joined the team for " + towerName(lobby.tower()) + ".";
     }
 
@@ -225,8 +257,8 @@ public final class LobbyService {
         boolean scored = com.cobbletowers.trial.TrialService.wouldBeScored(server, new ArrayList<>(lobby.team()), trial.id());
         return trial.title() + " selected: " + trial.floors() + " floors on " + towerName(trial.entry().tower())
                 + (playlist == null ? "" : ", " + playlist.displayName())
-                + (scored ? ". This will be your scored attempt: it cannot be retried. Use /tower start."
-                        : ". Someone on the team has already used this trial's attempt, so this run is practice and will not post. Use /tower start.");
+                + (scored ? ". This will be your scored attempt: it cannot be retried. Use /tower confirm, then /tower start."
+                        : ". Someone on the team has already used this trial's attempt, so this run is practice and will not post. Use /tower confirm, then /tower start.");
     }
 
     /** The code of the last run each player started, for {@code /tower play code}. In memory only. */
@@ -267,7 +299,7 @@ public final class LobbyService {
         broadcast(server, lobby, "");
         return "Run code accepted: " + towerName(code.tower()) + ", " + playlistName(lobby.playlist())
                 + (code.ascension() > 0 ? ", Ascension " + code.ascension() : "")
-                + ". You will get the same opponents, bosses and draft cards as the player who shared it. Use /tower start.";
+                + ". You will get the same opponents, bosses and draft cards as the player who shared it. Use /tower confirm, then /tower start.";
     }
 
     /** The host picks the playlist (P32): its house rules apply to the whole team. {@code "standard"} clears it. */
@@ -294,7 +326,8 @@ public final class LobbyService {
         lobby.setPlaylist(java.util.Optional.of(id));
         broadcast(server, lobby, "");
         return "Mode: " + playlist.get().displayName() + ". " + playlist.get().description()
-                + (playlist.get().rental() ? " Open your packs with /tower draft." : "");
+                + (playlist.get().rental() ? " Confirm the mode (/tower confirm) when you are happy with it, and everyone's packs open."
+                        : " Confirm the mode (/tower confirm) when you are happy with it.");
     }
 
     static String playlistName(java.util.Optional<ResourceLocation> playlist) {
@@ -336,10 +369,66 @@ public final class LobbyService {
         TowerLobby lobby = BY_HOST.get(host.getUUID());
         if (lobby == null) return inRun(host.getUUID()) ? inRunMessage() : "Pick a tower first.";
         if (lobby.counting()) return "The run is already starting.";
+        if (!lobby.modeConfirmed()) {
+            return "Confirm the mode first (/tower confirm)" + (RentalDraftService.isRentalLobby(lobby)
+                    ? ", then everyone drafts and readies up." : ".");
+        }
+        if (RentalDraftService.isRentalLobby(lobby)) {
+            List<String> waiting = new ArrayList<>();
+            for (UUID id : lobby.team()) {
+                if (lobby.isReady(id)) continue;
+                ServerPlayer member = server.getPlayerList().getPlayer(id);
+                waiting.add(member == null ? id.toString().substring(0, 8) : name(member));
+            }
+            if (!waiting.isEmpty()) {
+                return "Everyone must ready up (after drafting) before the run can start. Waiting on: " + String.join(", ", waiting) + ".";
+            }
+        }
         lobby.beginCountdown(System.currentTimeMillis(), COUNTDOWN_MILLIS);
         broadcast(server, lobby, "Starting " + towerName(lobby.tower()) + " in "
                 + COUNTDOWN_MILLIS / 1000 + " seconds. Anyone may /tower leave to drop out.");
         return "Starting.";
+    }
+
+    /**
+     * The host settles on the mode (P33). For a rental mode that is the moment everyone's draft opens: until then the mode may still
+     * be cycled, and nobody is shown a draft for a mode that might change.
+     */
+    public static String confirmMode(MinecraftServer server, ServerPlayer player) {
+        TowerLobby lobby = BY_HOST.get(player.getUUID());
+        if (lobby == null) return lobbyOf(player.getUUID()).isPresent() ? "Only the host can confirm the mode." : noTeam(player);
+        if (lobby.counting()) return "The run is already starting.";
+        if (lobby.modeConfirmed()) return "The mode is already confirmed.";
+        lobby.confirmMode();
+        boolean rental = RentalDraftService.isRentalLobby(lobby);
+        broadcast(server, lobby, name(player) + " confirmed the mode" + (rental ? ": draft your teams." : "."));
+        RentalDraftService.promptAll(server, lobby);
+        return "Mode confirmed.";
+    }
+
+    /**
+     * Ready up or stand down (P33). Only a rental lobby has a ready-up, and only a finished draft can be readied; a countdown
+     * already running is not interrupted by either.
+     */
+    public static String ready(MinecraftServer server, ServerPlayer player, boolean value) {
+        Optional<TowerLobby> found = lobbyOf(player.getUUID());
+        if (found.isEmpty()) return noTeam(player);
+        TowerLobby lobby = found.get();
+        if (!RentalDraftService.isRentalLobby(lobby)) return "There is nothing to ready up for in this mode.";
+        if (lobby.counting()) return "The run is already starting.";
+        if (!lobby.modeConfirmed()) return "Waiting for the host to confirm the mode.";
+        if (value && !RentalDraftService.draftOf(player.getUUID()).filter(RentalDraft::complete).isPresent()) {
+            RentalDraftService.prompt(server, lobby, player);
+            return "Finish your draft first: you can only ready up once your team is drafted.";
+        }
+        lobby.setReady(player.getUUID(), value);
+        broadcast(server, lobby, name(player) + (value ? " is ready." : " is no longer ready."));
+        return value ? "You are ready." : "You are not ready.";
+    }
+
+    /** Re-sends the lobby to everyone in it (without opening anything), after something changed that it shows. */
+    public static void refresh(MinecraftServer server, TowerLobby lobby) {
+        broadcast(server, lobby, "");
     }
 
     // ---- the tick ----------------------------------------------------------------------------
@@ -736,7 +825,8 @@ public final class LobbyService {
             for (UUID id : lobby.invitees()) {
                 ServerPlayer other = server.getPlayerList().getPlayer(id);
                 String label = other == null ? id.toString().substring(0, 8) : name(other);
-                members.add(new PlayStatePayload.Member(label, lobby.responseOf(id).orElse(null) == TowerLobby.Response.ACCEPTED));
+                members.add(new PlayStatePayload.Member(label, lobby.responseOf(id).orElse(null) == TowerLobby.Response.ACCEPTED,
+                        lobby.isReady(id)));
             }
             countdown = lobby.secondsLeft(now);
             TowerDefinition chosen = content.towers().get(lobby.tower());
@@ -748,7 +838,9 @@ public final class LobbyService {
                 modeNames.add(playlist.displayName());
             }
             modes = new PlayStatePayload.Modes(modeIds, modeNames, lobby.playlist().map(ResourceLocation::getPath).orElse(""),
-                    RentalDraftService.isRentalLobby(lobby));
+                    RentalDraftService.isRentalLobby(lobby),
+                    new PlayStatePayload.Readiness(lobby.modeConfirmed(), RentalDraftService.draftOf(me).filter(RentalDraft::complete).isPresent(),
+                            lobby.isReady(me), lobby.isReady(lobby.host())));
         }
         return new PlayStatePayload(towers,
                 new PlayStatePayload.Lobby(role, selected, hostName, members, countdown,

@@ -124,6 +124,7 @@ def main() -> None:
 
             # --- a player with no Pokemon cannot start, and the team survives -----------------
             as_player(rcon, EMPTY, f"tower {TOWER}")
+            as_player(rcon, EMPTY, "confirm")
             as_player(rcon, EMPTY, "start")
             time.sleep(8)
             still = lobbies(rcon)
@@ -148,6 +149,7 @@ def main() -> None:
             results.append(Result("accepting puts the invitee on the team", "2 ready, 0 pending" in seen, seen.strip()[:200]))
 
             # --- start: countdown, then a real run on floor 1 -----------------------------------
+            as_player(rcon, HOST, "confirm")
             as_player(rcon, HOST, "start")
             counting = lobbies(rcon)
             results.append(Result("starting begins a countdown first", "counting down" in counting, counting.strip()[:200]))
@@ -171,6 +173,7 @@ def main() -> None:
             # --- starting early drops the unanswered ---------------------------------------------
             as_player(rcon, HOST, f"tower {TOWER}")
             as_player(rcon, HOST, f"invite {GUEST}")
+            as_player(rcon, HOST, "confirm")
             as_player(rcon, HOST, "start")
             started = wait_for(lambda: any("ENCOUNTER_ACTIVE" in line for line in runs(rcon)), seconds=40)
             active = [line for line in runs(rcon) if "ENCOUNTER_ACTIVE" in line]

@@ -50,6 +50,8 @@ public final class ScreenshotHarness {
     private static int next;
     private static long due;
     private static boolean started;
+    /** The frame-time run puts the cursor where it wants it; the screenshot runs park it in the corner. */
+    private static boolean keepCursor;
 
     private ScreenshotHarness() {}
 
@@ -77,7 +79,7 @@ public final class ScreenshotHarness {
         }
         if (next >= STEPS.size()) return;
         if (System.currentTimeMillis() < due) return;
-        org.lwjgl.glfw.GLFW.glfwSetCursorPos(minecraft.getWindow().getWindow(),0,0);
+        if (!keepCursor) org.lwjgl.glfw.GLFW.glfwSetCursorPos(minecraft.getWindow().getWindow(),0,0);
         Step step = STEPS.get(next++);
         try {
             step.action().run();
@@ -171,6 +173,11 @@ public final class ScreenshotHarness {
     private static void script() throws IOException {
         if ("1".equals(System.getenv("COBBLETOWERS_FEATURES_ONLY"))) { featureScript(); return; }
         if ("1".equals(System.getenv("COBBLETOWERS_HALL_ONLY"))) { hallScript(); return; }
+        if ("1".equals(System.getenv("COBBLETOWERS_FRAMETIME_ONLY"))) {
+            keepCursor = true;
+            FrameSampler.script(ScreenshotHarness::add, directory);
+            return;
+        }
 
         List<RentalSetDefinition> pool = rentalPool();
         // A draft whose first pack holds a legendary, so the best reveal is on the screen; and one with a God Pack.
@@ -235,10 +242,10 @@ public final class ScreenshotHarness {
         List<String> ids = List.of("hardcore", "level_cap_50", "monotype", "rental", "solo_gauntlet", "underdog");
         List<String> names = List.of("Hardcore", "Level Cap 50", "Monotype", "Rental Draft", "Solo Gauntlet", "Underdog");
         add(0, "play screen, rental", () -> Minecraft.getInstance().setScreen(new PlayScreen(new PlayStatePayload(towers,
-                new PlayStatePayload.Lobby(1, tower.toString(), "Alex", List.of(new PlayStatePayload.Member("Sam", true),
-                        new PlayStatePayload.Member("Jo", false)), -1,
+                new PlayStatePayload.Lobby(1, tower.toString(), "Alex", List.of(new PlayStatePayload.Member("Sam", true, true),
+                        new PlayStatePayload.Member("Jo", false, false)), -1,
                         new PlayStatePayload.Options(new PlayStatePayload.Depth(2, 4, true),
-                                new PlayStatePayload.Modes(ids, names, "rental", true))),
+                                new PlayStatePayload.Modes(ids, names, "rental", true, new PlayStatePayload.Readiness(true, true, false, true)))),
                 List.of(100, 87, 64, 50, 50, 12), "Mode: Rental Draft. Open your packs with /tower draft.", true))));
         add(600, "play screen shot", () -> featureShot("play_01_rental_host"));
         add(0, "play screen, plain", () -> Minecraft.getInstance().setScreen(new PlayScreen(new PlayStatePayload(towers,

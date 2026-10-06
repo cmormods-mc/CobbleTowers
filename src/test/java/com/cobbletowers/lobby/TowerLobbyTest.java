@@ -28,6 +28,28 @@ class TowerLobbyTest {
     }
 
     @Test
+    @DisplayName("ready-ups reset when the mode, trial or tower changes, and when the player leaves")
+    void readyResets() {
+        TowerLobby lobby = new TowerLobby(HOST, NEUTRAL);
+        lobby.invite(A, 0);
+        lobby.accept(A, 1);
+        lobby.setReady(HOST, true);
+        lobby.setReady(A, true);
+        assertTrue(lobby.isReady(A));
+
+        lobby.confirmMode();
+        assertTrue(lobby.modeConfirmed());
+        lobby.setPlaylist(java.util.Optional.of(ResourceLocation.fromNamespaceAndPath("cobbletowers", "rental")));
+        assertFalse(lobby.modeConfirmed());
+        assertFalse(lobby.isReady(HOST));
+        assertFalse(lobby.isReady(A));
+
+        lobby.setReady(A, true);
+        lobby.remove(A);
+        assertFalse(lobby.isReady(A));
+    }
+
+    @Test
     @DisplayName("a lobby starts with only its host on the team")
     void startsWithHost() {
         assertEquals(List.of(HOST), new TowerLobby(HOST, NEUTRAL).team());

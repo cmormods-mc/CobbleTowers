@@ -117,7 +117,15 @@ public final class PlayScreen extends TowerScreen {
         }
 
         // The Rental Draft (P33): every member opens their own packs; the host cannot start until all are done.
-        if (modes.rental() && (lobby.role() == 1 || lobby.role() == 3) && lobby.countdown() < 0) {
+        PlayStatePayload.Readiness readiness = modes.readiness();
+        if (lobby.role() == 1 && !lobby.selected().isEmpty() && !readiness.confirmed() && lobby.countdown() < 0) {
+            // The host settles on the mode first, whatever it is; a rental mode opens nobody's draft until they do.
+            addRenderableWidget(TowerButton.builder(Component.literal("Confirm mode"),
+                            button -> send(PlayActionPayload.Action.CONFIRM_MODE, ""))
+                    .pos(rightX, ry).size(column, 20).build());
+            ry += 22;
+        }
+        if (modes.rental() && (lobby.role() == 1 || lobby.role() == 3) && readiness.confirmed() && lobby.countdown() < 0) {
             addRenderableWidget(TowerButton.builder(Component.literal("Draft your team"),
                             button -> {
                                 if (ClientPlayNetworking.canSend(com.cobbletowers.network.RentalDraftActionPayload.TYPE)) {
@@ -126,6 +134,13 @@ public final class PlayScreen extends TowerScreen {
                                 }
                             })
                     .pos(rightX, ry).size(column, 20).build());
+            ry += 22;
+            // Ready-up: only a finished draft can be readied, and the host starts once every member is.
+            Button ready = TowerButton.builder(Component.literal(readiness.mine() ? "Ready (click to undo)" : "Ready up"),
+                            button -> send(readiness.mine() ? PlayActionPayload.Action.UNREADY : PlayActionPayload.Action.READY, ""))
+                    .pos(rightX, ry).size(column, 20).build();
+            ready.active = readiness.drafted();
+            addRenderableWidget(ready);
             ry += 22;
         }
 
@@ -142,7 +157,7 @@ public final class PlayScreen extends TowerScreen {
             Button start = TowerButton.builder(Component.literal(lobby.countdown() >= 0
                             ? "Starting in " + lobby.countdown() + "..." : "Start"),
                     b -> send(PlayActionPayload.Action.START, "")).pos(width-statusWidth()+6, height-48).size(statusWidth()-20, 22).build();
-            start.active = !lobby.selected().isEmpty() && lobby.countdown() < 0;
+            start.active = !lobby.selected().isEmpty() && lobby.countdown() < 0 && lobby.options().modes().readiness().confirmed();
             addRenderableWidget(start);
             addRenderableWidget(TowerButton.builder(Component.literal("End team"), b -> send(PlayActionPayload.Action.LEAVE, ""))
                     .pos(rightX + half + 4, ry).size(half, 20).build());
@@ -189,13 +204,19 @@ public final class PlayScreen extends TowerScreen {
         column=statusWidth()-16;
         int y = 55;
         if (lobby.role() != 0) {
-            graphics.drawString(font, "Host: " + lobby.hostName(), rightX, y, 0xFFFF55);
+            boolean rental = lobby.options().modes().rental();
+            graphics.drawString(font, font.plainSubstrByWidth("Host: " + lobby.hostName()
+                    + (rental && lobby.options().modes().readiness().host() ? "  ready" : ""), column), rightX, y, 0xFFFF55);
             y += 10;
             for (PlayStatePayload.Member member : lobby.members()) {
-                graphics.drawString(font, font.plainSubstrByWidth(member.name() + (member.accepted() ? "  ready" : "  invited"), column),
-                        rightX, y, member.accepted() ? 0x55FF55 : 0xAAAAAA);
+                graphics.drawString(font, font.plainSubstrByWidth(member.name() + (rental ? (member.accepted() ? (member.ready() ? "  ready" : "  drafting") : "  invited")
+                        : (member.accepted() ? "  ready" : "  invited")), column),
+                        rightX, y, (rental ? member.ready() : member.accepted()) ? 0x55FF55 : 0xAAAAAA);
                 y += 10;
             }
+        }
+        if (lobby.role() == 3 && !lobby.options().modes().readiness().confirmed()) {
+            graphics.drawString(font, font.plainSubstrByWidth("Waiting for the host to confirm the mode", column), rightX, y + 4, 0xAAAAAA);
         }
         if (!state.message().isEmpty()) {
             graphics.drawCenteredString(font, state.message(), width / 2, height - 14, 0xFFFFFF);

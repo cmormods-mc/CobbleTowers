@@ -58,6 +58,8 @@ public final class PlayCommand {
                                         .executes(context -> say(context, com.cobbletowers.lobby.LobbyService.useCode(
                                                 context.getSource().getServer(), context.getSource().getPlayerOrException(),
                                                 com.mojang.brigadier.arguments.StringArgumentType.getString(context, "code"))))))
+                        .then(Commands.literal("confirm").executes(context -> say(context, com.cobbletowers.lobby.LobbyService.confirmMode(
+                                context.getSource().getServer(), context.getSource().getPlayerOrException()))))
                         .then(Commands.literal("draft")
                                 .executes(PlayCommand::draft)
                                 .then(Commands.literal("restart").executes(PlayCommand::draftRestart))
@@ -202,8 +204,12 @@ public final class PlayCommand {
     }
 
     private static int ready(CommandContext<CommandSourceStack> context, boolean value) throws CommandSyntaxException {
-        return say(context, IntermissionService.ready(context.getSource().getServer(),
-                context.getSource().getPlayerOrException(), value));
+        net.minecraft.server.level.ServerPlayer player = context.getSource().getPlayerOrException();
+        // In a team's waiting room (rental ready-up, P33); in a run, the intermission's ready.
+        if (LobbyService.lobbyOf(player.getUUID()).isPresent()) {
+            return say(context, LobbyService.ready(context.getSource().getServer(), player, value));
+        }
+        return say(context, IntermissionService.ready(context.getSource().getServer(), player, value));
     }
 
     private static int cashOut(CommandContext<CommandSourceStack> context, boolean value) throws CommandSyntaxException {

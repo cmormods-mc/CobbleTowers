@@ -99,6 +99,7 @@ def main() -> None:
 
             before = server.read_log().count("prepared with cobbletowers:boss_arena")
             play(f"tower {TOWER}")
+            play("confirm")
             play("start")
             if not wait_state(rcon, "ENCOUNTER_ACTIVE", 1, seconds=40):
                 raise RuntimeError("floor 1 never opened: " + run_line(rcon))

@@ -53,6 +53,7 @@ try:
     with Rcon('127.0.0.1', 25575, password) as r: clear_tower(r)
     time.sleep(2)
     remote.send('cmd tower tower cobbletowers:test'); remote.send('wait 1500')
+    remote.send('cmd tower confirm'); 
     remote.send('cmd tower start'); 
     for _ in range(60):
         out = rc('cobbletowers runs list')

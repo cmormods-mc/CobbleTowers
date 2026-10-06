@@ -103,6 +103,7 @@ def main() -> None:
                                   "Ascension 0 at most" in refused, refused.strip()[:200]))
             play(rcon, A, f"invite {B}")
             play(rcon, B, f"accept {A}")
+            play(rcon, A, "confirm")
             play(rcon, A, "start")
 
             if not wait_state(rcon, "ENCOUNTER_ACTIVE", seconds=40, floor=1):
@@ -171,6 +172,7 @@ def main() -> None:
                                   "Starting at Ascension 1" in accepted, accepted.strip()[:200]))
             too_deep = say(rcon, A, "ascension 2")
             results.append(Result("but not Ascension 2", "Ascension 1 at most" in too_deep, too_deep.strip()[:200]))
+            play(rcon, A, "confirm")
             play(rcon, A, "start")
             direct = wait_new_run(rcon, run, "ENCOUNTER_ACTIVE", seconds=60)
             if not direct:
