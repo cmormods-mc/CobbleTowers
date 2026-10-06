@@ -24,7 +24,7 @@ import org.lwjgl.glfw.GLFW;
  * were chosen; the server checks every pick. Timing and feel come from {@link com.cobbletowers.rental.PackReveal}, the card art from a
  * {@link CardFace}, and a render fault closes the screen with a note instead of taking the client down with it.
  */
-public final class RentalPackScreen extends Screen {
+public final class RentalPackScreen extends TowerScreen {
 
     private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger("cobbletowers");
 
@@ -61,7 +61,7 @@ public final class RentalPackScreen extends Screen {
     private Button lookToggle;
 
     public RentalPackScreen(RentalDraftPayload draft) {
-        super(Component.literal("Rental Draft"));
+        super(Component.literal("Rental Draft"), TowerUi.Theme.RENTAL);
         accept(draft);
     }
 
@@ -113,20 +113,20 @@ public final class RentalPackScreen extends Screen {
 
     @Override
     protected void init() {
-        keep = addRenderableWidget(Button.builder(Component.literal("Keep these two"), b -> sendPick())
+        keep = addRenderableWidget(TowerButton.builder(Component.literal("Keep these two"), b -> sendPick())
                 .pos(width / 2 - 100, height - 30).size(130, 20).build());
-        restart = addRenderableWidget(Button.builder(Component.literal("Draft again"),
+        restart = addRenderableWidget(TowerButton.builder(Component.literal("Draft again"),
                         b -> send(RentalDraftActionPayload.Action.RESTART, 0, 0))
                 .pos(width / 2 + 36, height - 30).size(64, 20).build());
-        done = addRenderableWidget(Button.builder(Component.literal("Done"), b -> onClose())
+        done = addRenderableWidget(TowerButton.builder(Component.literal("Done"), b -> onClose())
                 .pos(width / 2 - 100, height - 30).size(130, 20).build());
-        toggle = addRenderableWidget(Button.builder(animLabel(), b -> {
+        toggle = addRenderableWidget(TowerButton.builder(animLabel(), b -> {
                     animations = !animations;
                     toggle.setMessage(animLabel());
                     if (!animations && (stage == Stage.TEARING || stage == Stage.REVEALING)) enter(Stage.CHOOSING);
                 }).pos(6, height - 24).size(102, 16).build());
         if (CobblemonCardFace.available()) {
-            lookToggle = addRenderableWidget(Button.builder(lookLabel(), b -> {
+            lookToggle = addRenderableWidget(TowerButton.builder(lookLabel(), b -> {
                         collectionLook = !collectionLook;
                         lookToggle.setMessage(lookLabel());
                     }).pos(width - 108, height - 24).size(102, 16).build());
@@ -219,14 +219,14 @@ public final class RentalPackScreen extends Screen {
         // A rare card turning over shakes the whole table.
         float shakeX = 0f;
         float shakeY = 0f;
-        if (stage == Stage.REVEALING) {
+        if (TowerUiSettings.motion && stage == Stage.REVEALING) {
             for (int i = 0; i < landed.length && i < currentCards().size(); i++) {
                 if (!landed[i]) continue;
                 float s = PackReveal.shake(currentCards().get(i).rarity(), t - landedAt[i]);
                 shakeX += s;
                 shakeY += s * 0.6f;
             }
-        } else if (stage == Stage.TEARING) {
+        } else if (TowerUiSettings.motion && stage == Stage.TEARING) {
             shakeX = PackReveal.tearShake(t - stageStart, topRank());
         }
         graphics.pose().pushPose();
@@ -251,8 +251,8 @@ public final class RentalPackScreen extends Screen {
 
     /** Moves the stage along: a tear ends in the reveal, a reveal in the choice. */
     private void advance(long t) {
-        if (stage == Stage.TEARING && (!animations || t - stageStart >= PackReveal.TEAR_MS)) {
-            enter(animations ? Stage.REVEALING : Stage.CHOOSING);
+        if (stage == Stage.TEARING && (!animations || !TowerUiSettings.motion || t - stageStart >= PackReveal.TEAR_MS)) {
+            enter(animations && TowerUiSettings.motion ? Stage.REVEALING : Stage.CHOOSING);
             refreshButtons();
         }
         if (stage == Stage.REVEALING) {
@@ -277,7 +277,7 @@ public final class RentalPackScreen extends Screen {
         int rank = PackReveal.rank(card.rarity());
         float pitch = 0.8f + 0.12f * rank;
         SoundEvent sound = rank >= 4 ? SoundEvents.PLAYER_LEVELUP : SoundEvents.EXPERIENCE_ORB_PICKUP;
-        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(sound, pitch, rank >= 4 ? 0.6f : 0.5f));
+        if(TowerUiSettings.sounds) Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(sound, pitch, rank >= 4 ? 0.6f : 0.5f));
         int[] rect = cardRect(index, count, scale());
         int cx = rect[0] + rect[2] / 2;
         int cy = rect[1] + rect[3] / 2;
@@ -293,7 +293,7 @@ public final class RentalPackScreen extends Screen {
     private void drawHeader(GuiGraphics graphics) {
         String title = stage == Stage.TEAM ? "Your rental team" : "Pack " + (pack + 1) + " of " + draft.packs().size()
                 + (godPack() ? "  -  GOD PACK" : "");
-        int color = stage != Stage.TEAM && godPack() ? 0xFFF5B301 : 0xFFFFFFFF;
+        int color = stage != Stage.TEAM && godPack() ? TowerUi.BRONZE_LIGHT : TowerUi.TEXT;
         graphics.drawCenteredString(font, title, width / 2, 10, color);
         String hint = switch (stage) {
             case TABLE -> "Click the pack to open it";
@@ -302,8 +302,8 @@ public final class RentalPackScreen extends Screen {
             case CHOOSING -> "Choose two cards to keep (" + selected.size() + " of 2)";
             case TEAM -> "Drafted. Close this and the host can start the run.";
         };
-        graphics.drawCenteredString(font, hint, width / 2, 24, 0xFFB8BDC7);
-        if (!message.isEmpty()) graphics.drawCenteredString(font, message, width / 2, height - 46, 0xFFFF6B6B);
+        graphics.drawCenteredString(font, hint, width / 2, 24, TowerUi.MUTED);
+        if (!message.isEmpty()) graphics.drawCenteredString(font, message, width / 2, height - 46, TowerUi.DANGER);
     }
 
     private void drawPack(GuiGraphics graphics, long t) {
@@ -312,7 +312,7 @@ public final class RentalPackScreen extends Screen {
         int x = (width - w) / 2;
         int y = (height - h) / 2 - 6;
         // The sealed pack keeps its secret: gold for the God Pack, otherwise one neutral blue, never the best card colour.
-        int glow = godPack() ? 0xFFF5B301 : 0xFF3F8CFF;
+        int glow = godPack() ? TowerUi.BRONZE_LIGHT : TowerUi.BURGUNDY;
         long since = t - stageStart;
         // The pack glows more as it tears: the suspense.
         float tear = stage == Stage.TEARING ? Math.min(1f, since / (float) PackReveal.TEAR_MS) : 0f;
@@ -320,21 +320,21 @@ public final class RentalPackScreen extends Screen {
         for (int g = 9; g >= 3; g -= 3) {
             graphics.fill(x - g, y - g, x + w + g, y + h + g, (Math.min(255, pulse / (g / 2)) << 24) | (glow & 0xFFFFFF));
         }
-        graphics.fill(x, y, x + w, y + h, 0xFF1B2540);
-        graphics.fillGradient(x + 3, y + 3, x + w - 3, y + h - 3, 0xFF2D4A8C, 0xFF111A33);
-        graphics.renderOutline(x, y, w, h, 0xFFC9A227);
-        graphics.fill(x, y + h / 2 - 1, x + w, y + h / 2 + 1, 0xFFC9A227);
+        graphics.fill(x, y, x + w, y + h, TowerUi.OAK);
+        graphics.fillGradient(x + 3, y + 3, x + w - 3, y + h - 3, 0xFF5A3A28, 0xFF2A1C15);
+        graphics.renderOutline(x, y, w, h, TowerUi.BRONZE);
+        graphics.fill(x, y + h / 2 - 1, x + w, y + h / 2 + 1, TowerUi.BRONZE);
         int cx = x + w / 2;
         int cy = y + h / 2;
-        graphics.fill(cx - 7, cy - 7, cx + 7, cy + 7, 0xFFC9A227);
-        graphics.fill(cx - 4, cy - 4, cx + 4, cy + 4, 0xFF1B2540);
+        graphics.fill(cx - 7, cy - 7, cx + 7, cy + 7, TowerUi.BRONZE);
+        graphics.fill(cx - 4, cy - 4, cx + 4, cy + 4, TowerUi.OAK);
         if (stage == Stage.TEARING) {
             // The seal splits: a bright seam widening across the middle.
             int seam = (int) (tear * 14);
             graphics.fill(x, cy - seam, x + w, cy + seam, 0xCCFFFFFF);
         }
-        graphics.drawCenteredString(font, "RENTAL PACK", cx, y + 10, 0xFFFFFFFF);
-        graphics.drawCenteredString(font, (pack + 1) + " / " + draft.packs().size(), cx, y + h - 16, 0xFFC9A227);
+        graphics.drawCenteredString(font, "RENTAL PACK", cx, y + 10, TowerUi.TEXT);
+        graphics.drawCenteredString(font, (pack + 1) + " / " + draft.packs().size(), cx, y + h - 16, TowerUi.BRONZE);
     }
 
     private void drawCards(GuiGraphics graphics, int mouseX, int mouseY, long t) {
@@ -401,7 +401,7 @@ public final class RentalPackScreen extends Screen {
     /** A pulsing halo behind an epic or better card. */
     private static void glow(GuiGraphics graphics, int x, int y, int w, int h, int color, long t, int rank) {
         int base = 0x10 + rank * 3;
-        int pulse = (int) (base + base * 0.5 * Math.sin(t / 220.0));
+        int pulse = (int) (base + base * 0.5 * Math.sin(TowerUiSettings.motion?t / 220.0:0));
         for (int g = 9; g >= 3; g -= 3) {
             graphics.fill(x - g, y - g, x + w + g, y + h + g, (Math.max(0, Math.min(255, pulse)) << 24) | (color & 0xFFFFFF));
         }
@@ -410,6 +410,7 @@ public final class RentalPackScreen extends Screen {
     private record Spark(double x, double y, double vx, double vy, long born, int life, int color) {}
 
     private void drawSparks(GuiGraphics graphics, long t) {
+        if(!TowerUiSettings.motion){sparks.clear();return;}
         sparks.removeIf(spark -> t - spark.born() > spark.life());
         for (Spark spark : sparks) {
             double age = t - spark.born();
@@ -429,12 +430,13 @@ public final class RentalPackScreen extends Screen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (super.mouseClicked(mouseX, mouseY, button)) return true;
+        if(button==1&&stage==Stage.CHOOSING&&!failed){var cards=currentCards();for(int i=0;i<cards.size();i++)if(inside(mouseX,mouseY,cardRect(i,cards.size(),scale()))){minecraft.setScreen(new PartnerInspectionScreen(this,cards.get(i)));return true;}}
         if (button != 0 || failed) return false;
         switch (stage) {
             case TABLE -> {
-                if (animations) {
+                if (animations && TowerUiSettings.motion) {
                     enter(Stage.TEARING);
-                    Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1f, 0.7f));
+                    if(TowerUiSettings.sounds) Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1f, 0.7f));
                 } else {
                     enter(Stage.CHOOSING);
                 }
@@ -474,6 +476,7 @@ public final class RentalPackScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if(keyCode==GLFW.GLFW_KEY_I&&stage==Stage.CHOOSING&&!selected.isEmpty()){minecraft.setScreen(new PartnerInspectionScreen(this,currentCards().get(selected.getFirst())));return true;}
         if (keyCode == GLFW.GLFW_KEY_SPACE && (stage == Stage.REVEALING || stage == Stage.TEARING)) {
             enter(Stage.CHOOSING);
             refreshButtons();

@@ -24,64 +24,64 @@ public final class FallbackCardFace implements CardFace {
                          boolean selected, long ms) {
         int frame = PackReveal.colorAt(card.rarity(), ms);
         int rank = PackReveal.rank(card.rarity());
-        graphics.fill(x, y, x + width, y + height, 0xFF14161C);
-        graphics.fillGradient(x + 2, y + 2, x + width - 2, y + height - 2, withAlpha(frame, 0x55), 0xFF14161C);
-        graphics.renderOutline(x, y, width, height, frame);
-        graphics.renderOutline(x + 1, y + 1, width - 2, height - 2, withAlpha(frame, 0xAA));
-        if (selected) graphics.renderOutline(x - 2, y - 2, width + 4, height + 4, 0xFFFFFFFF);
+        PixelUi.panel(graphics,x,y,width,height,frame,selected?1f:.2f);
+
+
+
+
 
         int left = x + 6;
         int inner = width - 12;
         int line = y + 6;
         String level = "Lv " + card.details().level();
         fit(graphics, font, Component.literal(label(card.rarity())), left, line, inner - font.width(level) - 4, frame, 1f);
-        graphics.drawString(font, level, x + width - 6 - font.width(level), line, 0xFFB8BDC7, false);
+        graphics.drawString(font, level, x + width - 6 - font.width(level), line, TowerUi.MUTED, false);
         line += 13;
 
-        fit(graphics, font, Component.literal(card.name()), left, line, inner, 0xFFFFFFFF, 1.25f);
+        fit(graphics, font, Component.literal(card.name()), left, line, inner, TowerUi.TEXT, 1.25f);
         line += 15;
         if (!card.details().role().isEmpty()) {
-            fit(graphics, font, Component.literal(card.details().role()), left, line, inner, 0xFF9AA0A6, 0.85f);
+            fit(graphics, font, Component.literal(card.details().role()), left, line, inner, TowerUi.MUTED, 0.85f);
         }
         line += 11;
         graphics.fill(left, line, x + width - 6, line + 1, withAlpha(frame, 0xAA));
         line += 5;
 
         RentalDraftPayload.Details d = card.details();
-        fit(graphics, font, Component.literal("Ability  ").append(translated("cobblemon.ability.", d.ability())), left, line, inner, 0xFFE6E8EC, 0.85f);
+        fit(graphics, font, Component.literal("Ability  ").append(translated("cobblemon.ability.", d.ability())), left, line, inner, TowerUi.TEXT, 0.85f);
         line += 10;
         if (!d.item().isEmpty()) {
             fit(graphics, font, Component.literal("Item  ").append(Component.translatableWithFallback("item.cobblemon." + d.item(), tidy(d.item()))),
-                    left, line, inner, 0xFFE6E8EC, 0.85f);
+                    left, line, inner, TowerUi.TEXT, 0.85f);
             line += 10;
         }
-        fit(graphics, font, Component.literal("Nature  ").append(translated("cobblemon.nature.", d.nature())), left, line, inner, 0xFFE6E8EC, 0.85f);
+        fit(graphics, font, Component.literal("Nature  ").append(translated("cobblemon.nature.", d.nature())), left, line, inner, TowerUi.TEXT, 0.85f);
         line += 13;
         for (String move : d.moves()) {
-            fit(graphics, font, Component.literal("- ").append(translated("cobblemon.move.", move)), left, line, inner, 0xFFFFFFFF, 0.9f);
+            fit(graphics, font, Component.literal("- ").append(translated("cobblemon.move.", move)), left, line, inner, TowerUi.TEXT, 0.9f);
             line += 10;
         }
         if (rank >= 4) {
             // A faint shimmer along the bottom edge for the top rarities, so a legendary reads as one at a glance.
-            int pulse = (int) (0x40 + 0x30 * Math.sin(ms / 250.0));
+            int pulse = (int) (0x40 + 0x30 * Math.sin(TowerUiSettings.motion?ms / 250.0:0));
             graphics.fill(x + 3, y + height - 5, x + width - 3, y + height - 3, withAlpha(frame, pulse));
         }
     }
 
     @Override
     public void drawBack(GuiGraphics graphics, Font font, int x, int y, int width, int height, long ms) {
-        graphics.fill(x, y, x + width, y + height, 0xFF10182B);
-        graphics.fillGradient(x + 3, y + 3, x + width - 3, y + height - 3, 0xFF1F2E57, 0xFF0B1022);
-        graphics.renderOutline(x, y, width, height, 0xFFC9A227);
+        graphics.fill(x, y, x + width, y + height, TowerUi.OUTLINE);
+        graphics.fillGradient(x + 3, y + 3, x + width - 3, y + height - 3, 0xFF4A3426, 0xFF2A1C15);
+        graphics.renderOutline(x, y, width, height, TowerUi.BRONZE);
         graphics.renderOutline(x + 3, y + 3, width - 6, height - 6, 0x66C9A227);
         // A ball: a ring with a bar through it, drawn from rectangles.
         int cx = x + width / 2;
         int cy = y + height / 2;
         int r = Math.max(8, Math.min(width, height) / 5);
-        graphics.fill(cx - r, cy - 1, cx + r, cy + 1, 0xFFC9A227);
-        graphics.fill(cx - 3, cy - 3, cx + 3, cy + 3, 0xFFC9A227);
+        graphics.fill(cx - r, cy - 1, cx + r, cy + 1, TowerUi.BRONZE);
+        graphics.fill(cx - 3, cy - 3, cx + 3, cy + 3, TowerUi.BRONZE);
         graphics.renderOutline(cx - r, cy - r, r * 2, r * 2, 0x88C9A227);
-        graphics.drawCenteredString(font, "?", cx, y + height - 14, 0xFFC9A227);
+        graphics.drawCenteredString(font, "?", cx, y + height - 14, TowerUi.BRONZE);
     }
 
     private static String label(String rarity) {

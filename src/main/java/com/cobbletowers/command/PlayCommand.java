@@ -40,7 +40,8 @@ public final class PlayCommand {
         var play = dispatcher.register(Commands.literal("cobbletowers")
                 .then(playRoot
                         .executes(PlayCommand::open)
-                        .then(Commands.literal("menu").executes(PlayCommand::open))
+                        .then(Commands.literal("menu").executes(PlayCommand::hall))
+                        .then(Commands.literal("lobby").executes(PlayCommand::open))
                         .then(Commands.literal("vote")
                                 .then(Commands.argument("card", IntegerArgumentType.integer(1, 9))
                                         .executes(PlayCommand::pick)))
@@ -118,8 +119,13 @@ public final class PlayCommand {
                                 .executes(PlayCommand::lobbies))));
         // The short form players actually type: /tower, /tower vote 2, /tower ready ...
         dispatcher.register(Commands.literal("tower")
-                .executes(PlayCommand::open)
+                .executes(PlayCommand::hall)
                 .redirect(play.getChild("play")));
+    }
+
+    private static int hall(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        com.cobbletowers.menu.TowerHallService.open(context.getSource().getServer(), context.getSource().getPlayerOrException(), "");
+        return 1;
     }
 
     private static int open(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

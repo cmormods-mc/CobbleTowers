@@ -21,14 +21,14 @@ import net.minecraft.resources.ResourceLocation;
  * purchase, so buying two services for the same teammate takes no re-selecting. The server re-checks the
  * target (in the run, online) and answers with a message that is shown at the bottom.
  */
-public final class VendorScreen extends Screen {
+public final class VendorScreen extends TowerScreen {
 
     private VendorCatalogPayload catalog;
     /** Who a purchase is for. Null until the first catalog arrives, then the buyer. */
     private UUID target;
 
     public VendorScreen(VendorCatalogPayload catalog) {
-        super(Component.literal("Tower Supply Vendor"));
+        super(Component.literal("Tower Supply Vendor"), TowerUi.Theme.VENDOR);
         this.catalog = catalog;
         this.target = defaultTarget(catalog);
     }
@@ -52,49 +52,29 @@ public final class VendorScreen extends Screen {
         buildWidgets();
     }
 
-    private int top() {
-        int rows = catalog.services().size() + (catalog.team().size() > 1 ? 1 : 0);
-        return height / 2 - 12 * rows;
-    }
-
-    private void buildWidgets() {
-        int y = top();
-        if (catalog.team().size() > 1) {
-            int count = catalog.team().size();
-            int each = Math.min(96, 200 / count);
-            int x = width / 2 - each * count / 2;
-            for (VendorCatalogPayload.Teammate member : catalog.team()) {
-                boolean chosen = member.id().equals(target);
-                Button button = Button.builder(Component.literal((chosen ? "> " : "") + member.name()),
-                                b -> choose(member.id()))
-                        .pos(x, y).size(each - 2, 20).build();
-                button.active = member.online() && !chosen;
-                addRenderableWidget(button);
-                x += each;
-            }
-            y += 26;
+    private int selected,page;
+    private int catalogWidth(){return width-Math.max(108,width/4)-30;}
+    private int pageSize(){return Math.max(1,(height-110)/48)*2;}
+    private void buildWidgets(){
+        int cw=catalogWidth(),sx=cw+22,sw=width-sx-10;
+        int count=pageSize();page=Math.min(page,Math.max(0,(catalog.services().size()-1)/count));
+        selected=Math.min(selected,Math.max(0,catalog.services().size()-1));
+        for(int i=0;i<count&&page*count+i<catalog.services().size();i++){
+            int index=page*count+i;var e=catalog.services().get(index);int tile=(cw-6)/2;
+            var card=new ServiceCardButton(12+i%2*(tile+6),64+i/2*48,tile,e,()->{selected=index;clearWidgets();buildWidgets();});
+            addRenderableWidget(card);
         }
-        // As wide as the longest label needs (a long service name must not be cut off), never narrower than 200 or wider than the screen.
-        int wide = 200;
-        for (VendorCatalogPayload.Entry entry : catalog.services()) {
-            wide = Math.max(wide, font.width(label(entry)) + 16);
+        if(!catalog.team().isEmpty()){
+            String name=catalog.team().stream().filter(t->t.id().equals(target)).map(VendorCatalogPayload.Teammate::name).findFirst().orElse("Choose recipient");
+            addRenderableWidget(TowerButton.builder(Component.literal("For: "+name),b->{int i=0;for(int n=0;n<catalog.team().size();n++)if(catalog.team().get(n).id().equals(target))i=n;choose(catalog.team().get((i+1)%catalog.team().size()).id());}).pos(12,35).size(cw,22).build());
         }
-        wide = Math.min(wide, width - 12);
-        for (VendorCatalogPayload.Entry entry : catalog.services()) {
-            boolean canAfford = catalog.cobbleDollars() >= entry.priceCobbleDollars();
-            boolean inStock = entry.remainingPurchases() != 0;
-            Button button = Button.builder(Component.literal(label(entry)), b -> buy(entry.id()))
-                    .pos(width / 2 - wide / 2, y)
-                    .size(wide, 20)
-                    .build();
-            button.active = canAfford && inStock && target != null;
-            addRenderableWidget(button);
-            y += 24;
+        if(!catalog.services().isEmpty()){
+            var e=catalog.services().get(selected);
+            var buy=TowerButton.builder(Component.literal("Purchase"),b->buy(e.id())).pos(sx+6,height-62).size(sw-12,24).build();
+            buy.active=target!=null&&catalog.team().stream().anyMatch(t->t.id().equals(target)&&t.online())&&catalog.cobbleDollars()>=e.priceCobbleDollars()&&e.remainingPurchases()!=0;addRenderableWidget(buy);
         }
-        addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                .pos(width / 2 - 50, y + 10)
-                .size(100, 20)
-                .build());
+        if(catalog.services().size()>count){addRenderableWidget(TowerButton.builder(Component.literal("Previous"),b->{page=Math.max(0,page-1);clearWidgets();buildWidgets();}).pos(12,height-36).size(70,22).build());addRenderableWidget(TowerButton.builder(Component.literal("Next"),b->{page=Math.min((catalog.services().size()-1)/count,page+1);clearWidgets();buildWidgets();}).pos(86,height-36).size(60,22).build());}
+        addRenderableWidget(TowerButton.builder(Component.literal("Close"),b->onClose()).pos(sx+6,height-34).size(sw-12,22).build());
     }
 
     private static String label(VendorCatalogPayload.Entry entry) {
@@ -116,17 +96,17 @@ public final class VendorScreen extends Screen {
         }
     }
 
-    @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
-        graphics.drawCenteredString(font, "CobbleDollars: " + catalog.cobbleDollars(),
-                width / 2, top() - 28, 0xFFFFFF);
-        if (catalog.team().size() > 1) {
-            graphics.drawCenteredString(font, "Buying for:", width / 2, top() - 14, 0xAAAAAA);
+    @Override public void renderBackground(GuiGraphics g,int mx,int my,float dt){
+        super.renderBackground(g,mx,my,dt);int sx=catalogWidth()+22,sw=width-sx-10;
+        TowerUi.panel(g,sx,35,sw,height-73,theme.accent);
+        g.drawString(font,"TOWER SUPPLIES",12,14,TowerUi.TEXT,false);
+        TowerUi.label(g,font,"Balance: "+catalog.cobbleDollars(),sx,15,sw,TowerUi.TEXT);
+        if(!catalog.services().isEmpty()){
+            var e=catalog.services().get(selected);int y=TowerUi.wrapped(g,font,e.displayName(),sx+8,46,sw-16,TowerUi.TEXT)+12;
+            y=TowerUi.wrapped(g,font,e.priceCobbleDollars()+" CobbleDollars",sx+8,y,sw-16,TowerUi.BRONZE_LIGHT)+10;
+            TowerUi.wrapped(g,font,e.remainingPurchases()<0?"Stock: unlimited":"Stock: "+e.remainingPurchases(),sx+8,y,sw-16,TowerUi.MUTED);
         }
-        if (!catalog.message().isEmpty()) {
-            graphics.drawCenteredString(font, catalog.message(), width / 2, height - 20, 0xFFFF55);
-        }
+        TowerUi.label(g,font,catalog.message(),12,height-48,catalogWidth(),TowerUi.TEXT);
     }
 
     @Override

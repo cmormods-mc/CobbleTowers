@@ -15,7 +15,7 @@ import net.minecraft.network.chat.Component;
  * register marked. Holds nothing of its own -- each click sends a {@link PlayActionPayload} and the
  * server answers with a fresh {@link RegistrationStatePayload}.
  */
-public final class RegistrationScreen extends Screen {
+public final class RegistrationScreen extends TowerScreen {
 
     private static final int MAX_PER_PAGE = 8;
 
@@ -23,7 +23,7 @@ public final class RegistrationScreen extends Screen {
     private int page;
 
     public RegistrationScreen(RegistrationStatePayload state) {
-        super(Component.literal("Choose your party"));
+        super(Component.literal("Choose your party"), TowerUi.Theme.PARTY);
         this.state = state;
     }
 
@@ -56,7 +56,7 @@ public final class RegistrationScreen extends Screen {
             RegistrationStatePayload.Entry entry = all.get(i);
             int order = state.chosen().indexOf(entry.id());
             String mark = order >= 0 ? "[" + (order + 1) + "] " : "[ ] ";
-            Button button = Button.builder(Component.literal(mark + entry.name() + "  Lv " + entry.level()
+            Button button = TowerButton.builder(Component.literal(mark + entry.name() + "  Lv " + entry.level()
                             + (entry.fainted() ? "  (fainted)" : "") + "  - " + entry.where()),
                             b -> send(PlayActionPayload.Action.TOGGLE_POKEMON, entry.id().toString()))
                     .pos(left, y).size(240, 20).build();
@@ -65,15 +65,15 @@ public final class RegistrationScreen extends Screen {
         }
 
         int bottom = Math.max(y + 6, 40 + perPage() * 22 + 6);
-        Button previous = Button.builder(Component.literal("<"), b -> turn(-1)).pos(left, bottom).size(30, 20).build();
+        Button previous = TowerButton.builder(Component.literal("<"), b -> turn(-1)).pos(left, bottom).size(30, 20).build();
         previous.active = page > 0;
         addRenderableWidget(previous);
-        Button next = Button.builder(Component.literal(">"), b -> turn(1)).pos(left + 210, bottom).size(30, 20).build();
+        Button next = TowerButton.builder(Component.literal(">"), b -> turn(1)).pos(left + 210, bottom).size(30, 20).build();
         next.active = page < pages() - 1;
         addRenderableWidget(next);
-        addRenderableWidget(Button.builder(Component.literal("Clear"), b -> send(PlayActionPayload.Action.CLEAR_CHOICE, ""))
+        addRenderableWidget(TowerButton.builder(Component.literal("Clear"), b -> send(PlayActionPayload.Action.CLEAR_CHOICE, ""))
                 .pos(left + 36, bottom).size(80, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Done"), b -> done())
+        addRenderableWidget(TowerButton.builder(Component.literal("Done"), b -> done())
                 .pos(left + 124, bottom).size(80, 20).build());
     }
 
@@ -95,6 +95,9 @@ public final class RegistrationScreen extends Screen {
         }
     }
 
+    @Override public void renderBackground(GuiGraphics g,int mx,int my,float dt){
+        super.renderBackground(g,mx,my,dt);TowerUi.panel(g,width/2-127,35,254,height-73,theme.accent);
+    }
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);

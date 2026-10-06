@@ -709,6 +709,10 @@ public final class LobbyService {
 
     private static void sendState(MinecraftServer server, ServerPlayer player, TowerLobby lobby, String message,
                                   boolean open) {
+        TowerNetworking.sendPlayState(player, playState(server, player, lobby, message, open));
+    }
+
+    public static PlayStatePayload playState(MinecraftServer server, ServerPlayer player, TowerLobby lobby, String message, boolean open) {
         TowerContent content = TowerDefinitionRegistry.content();
         List<PlayStatePayload.Tower> towers = content.towers().values().stream()
                 .map(tower -> new PlayStatePayload.Tower(tower.id(), tower.displayName())).toList();
@@ -746,9 +750,9 @@ public final class LobbyService {
             modes = new PlayStatePayload.Modes(modeIds, modeNames, lobby.playlist().map(ResourceLocation::getPath).orElse(""),
                     RentalDraftService.isRentalLobby(lobby));
         }
-        TowerNetworking.sendPlayState(player, new PlayStatePayload(towers,
+        return new PlayStatePayload(towers,
                 new PlayStatePayload.Lobby(role, selected, hostName, members, countdown,
-                        new PlayStatePayload.Options(depth, modes)), levels, message, open));
+                        new PlayStatePayload.Options(depth, modes)), levels, message, open);
     }
 
     // ---- helpers -------------------------------------------------------------------------------

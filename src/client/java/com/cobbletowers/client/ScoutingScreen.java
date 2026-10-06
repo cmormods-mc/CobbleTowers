@@ -1,58 +1,27 @@
 package com.cobbletowers.client;
-
 import com.cobbletowers.network.ScoutingRevealPayload;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-
-/**
- * What a floor's scouting profile reveals about its draw (TDS #22, #49), shown before the encounter
- * rather than gating it -- a slow or absent screen must never delay a floor.
- *
- * <p>Read-only, the same shape {@link RewardRevealScreen} already is: nothing here is a choice.
- */
-public final class ScoutingScreen extends Screen {
-
-    private final ScoutingRevealPayload payload;
-
-    public ScoutingScreen(ScoutingRevealPayload payload) {
-        super(Component.literal("Scouting Report"));
-        this.payload = payload;
+/** Inspectable information nodes, not purchasable scouting upgrades. */
+public final class ScoutingScreen extends TowerScreen {
+    private final ScoutingRevealPayload payload;private int selected,page;private long inspectedAt=System.nanoTime();
+    public ScoutingScreen(ScoutingRevealPayload payload){super(Component.literal("Scouting report"),TowerUi.Theme.SCOUT);this.payload=payload;}
+    private int count(){return Math.max(1,(height-88)/38)*2;}
+    @Override protected void init(){
+        int cw=(width-150)/2;
+        for(int i=0;i<count()&&page*count()+i<payload.categories().size();i++){int index=page*count()+i;var c=payload.categories().get(index);addRenderableWidget(TowerButton.builder(Component.literal(c.name()),b->{selected=index;inspectedAt=System.nanoTime();}).pos(12+i%2*(cw+4),50+i/2*38).size(cw-4,30).tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.literal(c.name()+": "+c.value()))).build());}
+        if(payload.categories().size()>count())addRenderableWidget(TowerButton.builder(Component.literal("Next page"),b->{page=(page+1)%((payload.categories().size()+count()-1)/count());clearWidgets();init();}).pos(12,height-32).size(100,22).build());
+        addRenderableWidget(TowerButton.builder(Component.literal("Close"),b->onClose()).pos(width-110,height-32).size(98,22).build());
     }
-
-    @Override
-    protected void init() {
-        addRenderableWidget(Button.builder(Component.literal("Close"), b -> onClose())
-                .pos(width / 2 - 50, height / 2 + 40)
-                .size(100, 20)
-                .build());
+    @Override public void renderBackground(GuiGraphics g,int mx,int my,float dt){
+        super.renderBackground(g,mx,my,dt);g.drawString(font,"SCOUTING / FLOOR "+payload.floorIndex(),12,18,TowerUi.TEXT,false);
+        for(int x=12;x<width-132;x+=10)for(int y=43;y<height-38;y+=10)g.fill(x,y,x+1,y+1,0x304B5D73);
+        float t=TowerUiSettings.motion?Math.min(1,(System.nanoTime()-inspectedAt)/220_000_000f):1;
+        g.enableScissor(width-126,43,width-12,height-40);g.pose().pushPose();g.pose().translate(12*Math.pow(1-t,3),0,0);
+        TowerUi.panel(g,width-126,43,114,height-83,theme.accent);
+        if(payload.categories().isEmpty())TowerUi.wrapped(g,font,"Nothing revealed",width-116,55,94,TowerUi.MUTED);
+        else {var c=payload.categories().get(selected);int y=TowerUi.wrapped(g,font,c.name(),width-116,55,94,TowerUi.TEXT)+12;TowerUi.wrapped(g,font,c.value(),width-116,y,94,TowerUi.MUTED);}
+        g.pose().popPose();g.disableScissor();
     }
-
-    @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.render(graphics, mouseX, mouseY, partialTick);
-
-        int y = height / 2 - 40;
-        graphics.drawCenteredString(font, "Floor " + payload.floorIndex(), width / 2, y, 0xFFFFFF);
-        y += 14;
-        if (payload.categories().isEmpty()) {
-            graphics.drawCenteredString(font, "Nothing revealed", width / 2, y, 0xAAAAAA);
-        }
-        for (ScoutingRevealPayload.Category category : payload.categories()) {
-            graphics.drawCenteredString(font, category.name() + ": " + category.value(), width / 2, y, 0xFFFFFF);
-            y += 12;
-        }
-    }
-
-    @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
-
-    @Override
-    public void onClose() {
-        Minecraft.getInstance().setScreen(null);
-    }
+    @Override public boolean isPauseScreen(){return false;}
 }

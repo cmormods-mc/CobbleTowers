@@ -124,6 +124,36 @@ public final class ClientRemote {
                 if (minecraft.player != null) minecraft.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(minecraft.player));
             }
             case "close" -> minecraft.setScreen(null);
+            case "summary" -> {
+                // Opens Cobblemon's own summary screen on the player's party (select = index, default 0).
+                var party = com.cobblemon.mod.common.client.CobblemonClient.INSTANCE.getStorage().getParty();
+                var pokemon = new java.util.ArrayList<com.cobblemon.mod.common.pokemon.Pokemon>();
+                for (var slot : party.getSlots()) if (slot != null) pokemon.add(slot);
+                int select = rest.isBlank() ? 0 : Integer.parseInt(rest.trim());
+                com.cobblemon.mod.common.client.gui.summary.Summary.Companion.open(pokemon, true, select);
+            }
+            case "widgets" -> {
+                if (minecraft.screen == null) LOGGER.info("Widgets: no screen");
+                else for (GuiEventListener child : minecraft.screen.children()) {
+                    if (child instanceof AbstractWidget w) LOGGER.info("Widget {} '{}' at {},{} {}x{} visible={} active={}", w.getClass().getName(),
+                            w.getMessage().getString(), w.getX(), w.getY(), w.getWidth(), w.getHeight(), w.visible, w.active);
+                    else LOGGER.info("Child {}", child.getClass().getName());
+                }
+                LOGGER.info("Screen {} {}x{}", minecraft.screen == null ? "-" : minecraft.screen.getClass().getName(),
+                        minecraft.screen == null ? 0 : minecraft.screen.width, minecraft.screen == null ? 0 : minecraft.screen.height);
+            }
+            case "widget" -> {
+                // widget <class name fragment>: clicks the centre of the first widget whose class name contains the text.
+                if (minecraft.screen != null) for (GuiEventListener child : minecraft.screen.children()) {
+                    if (child instanceof AbstractWidget w && w.getClass().getName().contains(rest.trim())) {
+                        double x = w.getX() + w.getWidth() / 2.0, y = w.getY() + w.getHeight() / 2.0;
+                        minecraft.screen.mouseClicked(x, y, 0);
+                        minecraft.screen.mouseReleased(x, y, 0);
+                        LOGGER.info("Clicked widget {}", w.getClass().getName());
+                        break;
+                    }
+                }
+            }
             case "shot" -> shot(minecraft, rest);
             case "quit" -> minecraft.stop();
             default -> LOGGER.warn("Unknown remote command '{}'", line);
