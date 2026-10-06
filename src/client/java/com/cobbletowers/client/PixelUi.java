@@ -51,12 +51,11 @@ public final class PixelUi {
         if (mw > 0 && mh > 0) g.blit(t, x + c, y + c, mw, mh, SRC_CORNER, SRC_CORNER, m, m, SRC, SRC);
     }
 
-    /** A 16x16 material tiled across a box at integer positions (clipped by scissor, never stretched). */
+    /** A 16x16 material tiled across a box at integer positions (never stretched). */
     public static void tile(GuiGraphics g, Tile tile, int x, int y, int w, int h) {
         if (w < 1 || h < 1) return;
-        g.enableScissor(x, y, x + w, y + h);
-        for (int ty = y; ty < y + h; ty += 16) for (int tx = x; tx < x + w; tx += 16) g.blit(tile.texture, tx, ty, 0, 0, 16, 16, 16, 16);
-        g.disableScissor();
+        // One quad, with the texture repeating across it (as vanilla's own menu background does), not a quad per 16x16 tile.
+        g.blit(tile.texture, x, y, w, h, 0f, 0f, w, h, 16, 16);
     }
 
     /**

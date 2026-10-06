@@ -1,15 +1,33 @@
 package com.cobbletowers.client;
 
+import com.mojang.blaze3d.platform.NativeImage;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * The regional tower landscapes from the approved preview, painted with integer-aligned fills and clipped to their
  * box: sea walls for Tideforge, forest canopy for Rootvale, a moonlit sky for Duskvale and plain stone otherwise.
- * No texture, shader or allocation; the only motion is a two-step window lamp and water glint, both off under
+ * No shader and no per-frame allocation; the only motion is a two-step window lamp and water glint, both off under
  * reduced motion.
+ *
+ * <p>A landscape is a couple of hundred fills, so it is painted once into a small texture and drawn as a single quad; the
+ * picture only changes when the box, the region or one of the (at most nine) animation steps does. Painting goes through
+ * {@link Painter}, so the same code draws into the texture's pixels.
  */
 final class TowerPanorama {
     private TowerPanorama() {}
+
+    /** Where a landscape is painted: filled boxes and a top-to-bottom gradient, in the box's own pixels. */
+    private interface Painter {
+        void fill(int x1, int y1, int x2, int y2, int argb);
+
+        void gradient(int x1, int y1, int x2, int y2, int top, int bottom);
+    }
 
     private record Palette(int sky, int skyLow, int far, int near, int ground, int stone, int stoneShade, int window) {}
 
@@ -20,14 +38,119 @@ final class TowerPanorama {
         return new Palette(0xFF5A5A62, 0xFFAB9F89, 0xFF978B73, 0xFF7C705B, 0xFF6B6455, 0xFFC9BA96, 0xFF8A7B5C, 0xFF3A322A);
     }
 
+    // ---- the cache ---------------------------------------------------------------------------------------------------
+
+    private static final int MAX_CACHED = 48;
+    private static int serial;
+    /** Access-ordered, so the least recently drawn landscape is the one let go of. */
+    private static final Map<String, ResourceLocation> CACHE = new LinkedHashMap<>(16, 0.75f, true);
+
     static void draw(GuiGraphics g, int x, int y, int w, int h, String region, long age, boolean animate) {
         if (w < 8 || h < 8) return;
-        Palette p = palette(region);
         boolean moving = animate && TowerUiSettings.motion;
-        g.enableScissor(x, y, x + w, y + h);
+        int glint = moving ? (int) ((age / 700L) % 3) : 0;
+        int lamp = moving ? (int) ((age / 1100L) % 3) : 0;
+        String key = region + '|' + w + 'x' + h + '|' + moving + glint + lamp;
+        ResourceLocation texture = CACHE.get(key);
+        if (texture == null) {
+            texture = paintTexture(region, w, h, moving, glint, lamp);
+            CACHE.put(key, texture);
+            trim();
+        }
+        g.blit(texture, x, y, 0, 0, w, h, w, h);
+    }
+
+    /** Lets go of every cached landscape (the GL textures are freed). */
+    static void clear() {
+        var textures = Minecraft.getInstance().getTextureManager();
+        for (ResourceLocation texture : CACHE.values()) textures.release(texture);
+        CACHE.clear();
+    }
+
+    private static void trim() {
+        var textures = Minecraft.getInstance().getTextureManager();
+        Iterator<ResourceLocation> eldest = CACHE.values().iterator();
+        while (CACHE.size() > MAX_CACHED && eldest.hasNext()) {
+            textures.release(eldest.next());
+            eldest.remove();
+        }
+    }
+
+    private static ResourceLocation paintTexture(String region, int w, int h, boolean moving, int glint, int lamp) {
+        NativeImage image = new NativeImage(w, h, true);
+        image.fillRect(0, 0, w, h, 0);
+        paint(new ImagePainter(image), region, w, h, moving, glint, lamp);
+        DynamicTexture texture = new DynamicTexture(image);
+        texture.setFilter(false, false);
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("cobbletowers", "dynamic/panorama/" + serial++);
+        Minecraft.getInstance().getTextureManager().register(id, texture);
+        return id;
+    }
+
+    /** Paints into the pixels of a texture; clipped to the image, which is exactly the landscape's box. */
+    private static final class ImagePainter implements Painter {
+        private final NativeImage image;
+
+        ImagePainter(NativeImage image) {
+            this.image = image;
+        }
+
+        @Override
+        public void fill(int x1, int y1, int x2, int y2, int argb) {
+            int alpha = argb >>> 24;
+            for (int py = Math.max(0, y1); py < Math.min(image.getHeight(), y2); py++) {
+                for (int px = Math.max(0, x1); px < Math.min(image.getWidth(), x2); px++) {
+                    image.setPixelRGBA(px, py, alpha == 255 ? abgr(argb) : abgr(over(argb, image.getPixelRGBA(px, py))));
+                }
+            }
+        }
+
+        @Override
+        public void gradient(int x1, int y1, int x2, int y2, int top, int bottom) {
+            int rows = Math.max(1, y2 - y1);
+            for (int py = Math.max(0, y1); py < Math.min(image.getHeight(), y2); py++) {
+                int color = lerp(top, bottom, (py - y1 + 0.5f) / rows);
+                fill(x1, py, x2, py + 1, color);
+            }
+        }
+
+        private static int abgr(int argb) {
+            return (argb & 0xFF00FF00) | ((argb >> 16) & 0xFF) | ((argb & 0xFF) << 16);
+        }
+
+        /** {@code src} (ARGB) over what is already in the image ({@code dstAbgr}, as NativeImage stores it); returns ARGB. */
+        private static int over(int src, int dstAbgr) {
+            int dst = (dstAbgr & 0xFF00FF00) | ((dstAbgr >> 16) & 0xFF) | ((dstAbgr & 0xFF) << 16);
+            int a = src >>> 24;
+            int out = 0xFF000000;
+            for (int shift = 16; shift >= 0; shift -= 8) {
+                int s = (src >> shift) & 0xFF;
+                int d = (dst >> shift) & 0xFF;
+                out |= ((s * a + d * (255 - a)) / 255) << shift;
+            }
+            return out;
+        }
+
+        private static int lerp(int from, int to, float t) {
+            int out = 0;
+            for (int shift = 24; shift >= 0; shift -= 8) {
+                int a = (from >>> shift) & 0xFF;
+                int b = (to >>> shift) & 0xFF;
+                out |= (Math.round(a + (b - a) * t) & 0xFF) << shift;
+            }
+            return out;
+        }
+    }
+
+    // ---- the landscape -------------------------------------------------------------------------------------------------
+
+    private static void paint(Painter g, String region, int w, int h, boolean moving, int glint, int lamp) {
+        final int x = 0;
+        final int y = 0;
+        Palette p = palette(region);
         int horizon = y + h * 62 / 100;
         g.fill(x, y, x + w, y + (horizon - y) / 2, p.sky);
-        g.fillGradient(x, y + (horizon - y) / 2, x + w, horizon, p.sky, p.skyLow);
+        g.gradient(x, y + (horizon - y) / 2, x + w, horizon, p.sky, p.skyLow);
         if (region.contains("duskvale")) {
             for (int i = 0; i < Math.max(4, w / 18); i++) {
                 int sx = x + (i * 37 + 11) % Math.max(1, w), sy = y + 3 + (i * 13) % Math.max(1, (horizon - y) / 2);
@@ -55,7 +178,6 @@ final class TowerPanorama {
                 g.fill(tx, horizon - 5, tx + 1, horizon + 2, 0xFF3A2A1F);
             }
         } else if (region.contains("tideforge")) {
-            int glint = moving ? (int) ((age / 700L) % 3) : 0;
             for (int ry = horizon + 3; ry < y + h - 1; ry += 4)
                 for (int rx = x + ((ry - horizon) / 4 % 2) * 6; rx < x + w; rx += 12) g.fill(rx + glint, ry, rx + glint + 4, ry + 1, 0xFF6C9CB6);
         } else {
@@ -63,19 +185,18 @@ final class TowerPanorama {
         }
         // Three stone towers: tall centre, two flanks, with crenellations and lit windows.
         int cx = x + w / 2;
-        tower(g, p, cx - 7 * Math.max(1, w / 60) - Math.max(10, w / 9), horizon, Math.max(10, w / 9), Math.max(14, (horizon - y) * 52 / 100), moving, age, 0);
-        tower(g, p, cx + 7 * Math.max(1, w / 60), horizon, Math.max(10, w / 9), Math.max(14, (horizon - y) * 52 / 100), moving, age, 1);
-        tower(g, p, cx - Math.max(7, w / 14), horizon, Math.max(14, w / 7), Math.max(20, (horizon - y) * 85 / 100), moving, age, 2);
-        g.disableScissor();
+        tower(g, p, cx - 7 * Math.max(1, w / 60) - Math.max(10, w / 9), horizon, Math.max(10, w / 9), Math.max(14, (horizon - y) * 52 / 100), moving, lamp, 0);
+        tower(g, p, cx + 7 * Math.max(1, w / 60), horizon, Math.max(10, w / 9), Math.max(14, (horizon - y) * 52 / 100), moving, lamp, 1);
+        tower(g, p, cx - Math.max(7, w / 14), horizon, Math.max(14, w / 7), Math.max(20, (horizon - y) * 85 / 100), moving, lamp, 2);
     }
 
-    private static void tower(GuiGraphics g, Palette p, int x, int base, int w, int h, boolean moving, long age, int seed) {
+    private static void tower(Painter g, Palette p, int x, int base, int w, int h, boolean moving, int lamp, int seed) {
         int top = base - h;
         g.fill(x, top, x + w, base, p.stone);
         g.fill(x + w - 3, top, x + w, base, p.stoneShade);
         g.fill(x, top, x + w, top + 1, 0xFFF0DFBF);
         for (int cx = x; cx < x + w; cx += 4) g.fill(cx, top - 2, Math.min(cx + 2, x + w), top, p.stone);
-        int lampPhase = moving ? (int) ((age / 1100L + seed) % 3) : 0;
+        int lampPhase = moving ? (lamp + seed) % 3 : 0;
         int n = 0;
         for (int wy = top + 5; wy < base - 8; wy += 7) {
             for (int wx = x + 3; wx < x + w - 5; wx += 6) {

@@ -32,6 +32,9 @@ import org.slf4j.LoggerFactory;
  * center                 clicks the middle of the open screen
  * card 3                 clicks card 3 (0-based) of the open rental pack screen
  * inventory              opens the player's inventory screen; close closes the open screen
+ * uncap                 removes vsync and the frame limit (frame-time runs)
+ * hover card|button|none makes a widget of the open screen draw as hovered
+ * sample begin NAME      records frame times under NAME until sample end; report writes frametime.txt
  * shot name              saves a picture of the frame as name.png
  * wait 800               waits that many milliseconds before the next command
  * quit                   closes the client
@@ -154,6 +157,14 @@ public final class ClientRemote {
                     }
                 }
             }
+            case "uncap" -> FrameSampler.uncap();
+            case "hover" -> FrameSampler.hoverKind(rest.trim());
+            case "sample" -> {
+                // sample begin <phase> / sample end: frame-time recording (FrameSampler); report writes frametime.txt.
+                if (rest.startsWith("begin ")) FrameSampler.begin(rest.substring(6).trim());
+                else FrameSampler.end();
+            }
+            case "report" -> FrameSampler.report(directory);
             case "shot" -> shot(minecraft, rest);
             case "quit" -> minecraft.stop();
             default -> LOGGER.warn("Unknown remote command '{}'", line);
