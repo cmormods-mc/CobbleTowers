@@ -62,8 +62,15 @@ public final class RewardDelivery {
             } else if (!reward.components().isEmpty()) {
                 // A card (P33b): an item that is its data. Not handed over, and not lost, if the mod that owns it is gone.
                 if (giveWithComponents(player, reward)) delivered.add(reward);
-            } else if (give(player, reward.item(), reward.amount())) {
-                delivered.add(reward);
+            } else {
+                // The 777 Unique (AscensionLib) can enlarge an item reward; what is listed to the player is what was given. The key is the
+                // reward itself, so the rounding of a fraction is the same however often delivery is retried.
+                int amount = com.cobbletowers.economy.AscensionLibItemBonus.scale(player.getUUID(), reward.amount(),
+                        reward.runId() + "|" + reward.floorIndex() + "|" + reward.item() + "|" + reward.grantedAt());
+                if (give(player, reward.item(), amount)) {
+                    delivered.add(amount == reward.amount() ? reward : new PendingTowerReward(reward.runId(), reward.floorIndex(),
+                            reward.item(), amount, reward.grantedAt(), reward.components(), reward.label()));
+                }
             }
         }
         store.checkpoint(server);
