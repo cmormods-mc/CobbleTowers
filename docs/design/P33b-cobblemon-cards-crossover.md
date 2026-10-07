@@ -88,11 +88,10 @@ so once per run, and nothing fails. Live (`smoke/card_reward_test.py`, 10/10): n
 completed run with the right species, an epic cap on legendary sets, `_spawn` stats and the mod's own values; three runs earn, the fourth
 is refused (`DAILY_LIMIT`); an abandoned run earns none.
 
-**The look.** The pack payload carries each card's look (shiny, rarity, background, effect). `CobblemonCardFace` (client) builds the
-card item from it and draws it with the mod's own renderer, with our name, ability, item and moves beneath; `RentalPackScreen` uses it
-when `cobblemon-cards` is loaded and offers a "Cards: Collection / Plain" toggle, otherwise the text face. Seen on a real client
-against a real server (`client_e2e.py --cards`, 12/12): real frames and Pokemon art on the table and the team summary, and the six
-granted cards in the inventory drawn by the mod.
+**The look.** *(Superseded 2026-10-06.)* The first version drew each card with CobblemonCards' own renderer and offered a "Cards: Collection / Plain"
+toggle. The pack screen now has a single style, the Pixelated Byzantine mosaic (`ByzantineCardFace`, no toggle), and `CobblemonCardFace` was
+removed. The cards a run grants are still real CobblemonCards items, drawn by that mod wherever the game shows them (the inventory). The
+payload still carries each card's `Look` (shiny, rarity, background, effect); the client no longer reads it.
 
 **Found on the way.**
 * CobblemonCards needs the **Accessories** mod (and owo-lib) at runtime though its `fabric.mod.json` does not say so: without them the

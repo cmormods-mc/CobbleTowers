@@ -38,11 +38,9 @@ public final class RentalPackScreen extends TowerScreen {
     private static final int CARD_H = ByzantineCardFace.HEIGHT;
     private static final int GAP = 6;
 
-    /** Whether to draw cards as CobblemonCards cards when that mod is installed; kept for the session like the animation setting. */
-    private static boolean collectionLook = true;
-
+    /** The one card style: the Pixelated Byzantine mosaic. There is deliberately no way to switch it. */
     private CardFace face() {
-        return collectionLook && CobblemonCardFace.available() ? CobblemonCardFace.INSTANCE : ByzantineCardFace.INSTANCE;
+        return ByzantineCardFace.INSTANCE;
     }
     private RentalDraftPayload draft;
     private Stage stage;
@@ -60,7 +58,6 @@ public final class RentalPackScreen extends TowerScreen {
     private Button toggle;
     private Button done;
     private Button readyUp;
-    private Button lookToggle;
 
     public RentalPackScreen(RentalDraftPayload draft) {
         super(Component.literal("Rental Draft"), TowerUi.Theme.RENTAL);
@@ -143,17 +140,7 @@ public final class RentalPackScreen extends TowerScreen {
                     toggle.setMessage(animLabel());
                     if (!animations && (stage == Stage.TEARING || stage == Stage.REVEALING)) enter(Stage.CHOOSING);
                 }).pos(6, 6).size(102, 16).build());
-        if (CobblemonCardFace.available()) {
-            lookToggle = addRenderableWidget(TowerButton.builder(lookLabel(), b -> {
-                        collectionLook = !collectionLook;
-                        lookToggle.setMessage(lookLabel());
-                    }).pos(width - 108, 6).size(102, 16).build());
-        }
         refreshButtons();
-    }
-
-    private static Component lookLabel() {
-        return Component.literal("Cards: " + (collectionLook ? "Collection" : "Mosaic"));
     }
 
     private static Component animLabel() {

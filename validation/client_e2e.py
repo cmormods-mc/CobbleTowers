@@ -85,7 +85,7 @@ def main() -> None:
     parser.add_argument("--gui-scale", type=int, default=3)
     parser.add_argument("--cards", action="store_true",
                         help="install CobblemonCards (and the Accessories and owo-lib mods it needs) on the server and the client: "
-                             "the pack screen draws real cards, and completing the run grants real ones")
+                             "completing the run grants real cards, drawn by that mod in the inventory (the pack screen is the same with or without it)")
     args = parser.parse_args()
 
     server_dir = args.server_dir.resolve()
@@ -172,12 +172,6 @@ def main() -> None:
             remote.send("center")                     # tear the pack open
             remote.send("wait 5600")                  # the tear and the five-card reveal
             remote.shot(f"e2e_{3 + pack * 2:02d}_pack{pack + 1}_cards")
-            if args.cards and pack == 0:
-                remote.send("press Cards:")           # the plain text cards, for comparison
-                remote.send("wait 400")
-                remote.shot("e2e_04_pack1_plain_look")
-                remote.send("press Cards:")           # and back to the collection look
-                remote.send("wait 400")
             remote.send("card 0")
             remote.send("card 1")
             remote.send("wait 300")
