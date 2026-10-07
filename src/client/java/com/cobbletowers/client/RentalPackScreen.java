@@ -33,15 +33,15 @@ public final class RentalPackScreen extends TowerScreen {
     /** Whether to play the animations at all. Kept for the session, so a player who turns them off is not asked again. */
     private static boolean animations = true;
 
-    private static final int CARD_W = 96;
-    private static final int CARD_H = 140;
-    private static final int GAP = 8;
+    private static final int CARD_W = ByzantineCardFace.WIDTH;
+    private static final int CARD_H = ByzantineCardFace.HEIGHT;
+    private static final int GAP = 6;
 
     /** Whether to draw cards as CobblemonCards cards when that mod is installed; kept for the session like the animation setting. */
     private static boolean collectionLook = true;
 
     private CardFace face() {
-        return collectionLook && CobblemonCardFace.available() ? CobblemonCardFace.INSTANCE : FallbackCardFace.INSTANCE;
+        return collectionLook && CobblemonCardFace.available() ? CobblemonCardFace.INSTANCE : ByzantineCardFace.INSTANCE;
     }
     private RentalDraftPayload draft;
     private Stage stage;
@@ -84,8 +84,12 @@ public final class RentalPackScreen extends TowerScreen {
         refreshButtons();
     }
 
+    /** The card under the pointer, which stays chosen while the pointer is anywhere over it (a lifted card covers its neighbours). */
+    private int hoverIndex = -1;
+
     private void enter(Stage next) {
         stage = next;
+        hoverIndex = -1;
         stageStart = now();
         if (next == Stage.REVEALING) {
             revealOrder.clear();
@@ -135,7 +139,7 @@ public final class RentalPackScreen extends TowerScreen {
     }
 
     private static Component lookLabel() {
-        return Component.literal("Cards: " + (collectionLook ? "Collection" : "Plain"));
+        return Component.literal("Cards: " + (collectionLook ? "Collection" : "Mosaic"));
     }
 
     private static Component animLabel() {
@@ -149,7 +153,7 @@ public final class RentalPackScreen extends TowerScreen {
         keep.active = selected.size() == 2;
         restart.visible = stage == Stage.CHOOSING && pack > 0 || stage == Stage.TEAM;
         restart.setMessage(Component.literal(stage == Stage.TEAM ? "Draft again" : "Start over"));
-        restart.setWidth(64);
+        restart.setWidth(80);
     }
 
     private void send(RentalDraftActionPayload.Action action, int a, int b) {
@@ -166,20 +170,44 @@ public final class RentalPackScreen extends TowerScreen {
 
     // ---- layout ------------------------------------------------------------------------------------------------------
 
+    /** Cards are drawn at their own size whenever the window is tall enough; width is handled by overlapping them, not by shrinking. */
     float scale() {
-        float fit = (width - 16f) / (5 * CARD_W + 4 * GAP);
-        float tall = (height - 110f) / CARD_H;
-        return Math.max(0.5f, Math.min(1f, Math.min(fit, tall)));
+        return Math.max(0.5f, Math.min(1f, (height - 74f) / CARD_H));
     }
 
-    /** x, y, width, height of card {@code index} in a row of {@code count} cards. */
+    /** The distance between one card's left edge and the next's: the natural gap, or less so a whole row fits (a fan). */
+    private int stride(int count, float scale) {
+        int w = Math.round(CARD_W * scale);
+        int natural = w + Math.round(GAP * scale);
+        if (count <= 1) return natural;
+        return Math.min(natural, Math.max(12, (width - 16 - w) / (count - 1)));
+    }
+
+    /** x, y, width, height of card {@code index} in a row of {@code count} cards; later cards overlap earlier ones when the row is wide. */
     int[] cardRect(int index, int count, float scale) {
         int w = Math.round(CARD_W * scale);
         int h = Math.round(CARD_H * scale);
-        int gap = Math.round(GAP * scale);
-        int total = count * w + (count - 1) * gap;
+        int stride = stride(count, scale);
+        int total = w + (count - 1) * stride;
         int left = (width - total) / 2;
-        return new int[] {left + index * (w + gap), (height - h) / 2 - 4, w, h};
+        return new int[] {left + index * stride, (height - h) / 2 + 6, w, h};
+    }
+
+    /** A point on the part of card {@code index} that no other card covers, for a script that wants to click it. */
+    int[] visiblePoint(int index, int count, float scale) {
+        int[] r = cardRect(index, count, scale);
+        int visible = index == count - 1 ? r[2] : Math.min(r[2], stride(count, scale));
+        return new int[] {r[0] + visible / 2, r[1] + r[3] / 2};
+    }
+
+    /** Which card a point is on, honouring who is on top: the hovered card, then later cards over earlier ones. */
+    private int topCardAt(double mx, double my, int count) {
+        float scale = scale();
+        if (hoverIndex >= 0 && hoverIndex < count && inside(mx, my, cardRect(hoverIndex, count, scale))) return hoverIndex;
+        for (int i = count - 1; i >= 0; i--) {
+            if (inside(mx, my, cardRect(i, count, scale))) return i;
+        }
+        return -1;
     }
 
     // ---- drawing -----------------------------------------------------------------------------------------------------
@@ -351,17 +379,22 @@ public final class RentalPackScreen extends TowerScreen {
         List<RentalDraftPayload.Card> cards = currentCards();
         float scale = scale();
         long since = t - stageStart;
-        for (int i = 0; i < cards.size(); i++) {
-            int[] r = cardRect(i, cards.size(), scale);
-            float flip = 1f;
-            if (stage == Stage.REVEALING) {
-                int position = revealOrder.indexOf(i);
-                flip = PackReveal.flip(since - PackReveal.flipStart(position));
+        hoverIndex = stage == Stage.CHOOSING ? topCardAt(mouseX, mouseY, cards.size()) : -1;
+        // Left to right, so a later card lies over an earlier one; kept cards after those, and the hovered card last of all.
+        for (int pass = 0; pass < 3; pass++) {
+            for (int i = 0; i < cards.size(); i++) {
+                boolean hover = i == hoverIndex;
+                if ((hover ? 2 : selected.contains(i) ? 1 : 0) != pass) continue;
+                int[] r = cardRect(i, cards.size(), scale);
+                float flip = 1f;
+                if (stage == Stage.REVEALING) {
+                    int position = revealOrder.indexOf(i);
+                    flip = PackReveal.flip(since - PackReveal.flipStart(position));
+                }
+                boolean chosen = selected.contains(i);
+                int lift = chosen ? -10 : hover ? -8 : 0;
+                drawOne(graphics, cards.get(i), r[0], r[1] + lift, r[2], r[3], flip, chosen, t, scale);
             }
-            boolean chosen = selected.contains(i);
-            boolean hover = stage == Stage.CHOOSING && inside(mouseX, mouseY, r);
-            int lift = chosen ? -10 : hover ? -4 : 0;
-            drawOne(graphics, cards.get(i), r[0], r[1] + lift, r[2], r[3], flip, chosen, t, scale);
         }
     }
 
@@ -372,10 +405,15 @@ public final class RentalPackScreen extends TowerScreen {
                 if (index >= 0 && index < kept.cards().size()) team.add(kept.cards().get(index));
             }
         }
-        float scale = Math.max(0.5f, Math.min(1f, (width - 16f) / (team.size() * (CARD_W + GAP))));
-        for (int i = 0; i < team.size(); i++) {
-            int[] r = cardRect(i, team.size(), scale);
-            drawOne(graphics, team.get(i), r[0], r[1], r[2], r[3], 1f, false, t, scale);
+        float scale = scale();
+        hoverIndex = topCardAt(mouseX, mouseY, team.size());
+        for (int pass = 0; pass < 2; pass++) {
+            for (int i = 0; i < team.size(); i++) {
+                boolean hover = i == hoverIndex;
+                if (hover != (pass == 1)) continue;
+                int[] r = cardRect(i, team.size(), scale);
+                drawOne(graphics, team.get(i), r[0], r[1] + (hover ? -8 : 0), r[2], r[3], 1f, false, t, scale);
+            }
         }
     }
 
@@ -440,7 +478,7 @@ public final class RentalPackScreen extends TowerScreen {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (super.mouseClicked(mouseX, mouseY, button)) return true;
-        if(button==1&&stage==Stage.CHOOSING&&!failed){var cards=currentCards();for(int i=0;i<cards.size();i++)if(inside(mouseX,mouseY,cardRect(i,cards.size(),scale()))){minecraft.setScreen(new PartnerInspectionScreen(this,cards.get(i)));return true;}}
+        if(button==1&&stage==Stage.CHOOSING&&!failed){var cards=currentCards();int top=topCardAt(mouseX,mouseY,cards.size());if(top>=0){minecraft.setScreen(new PartnerInspectionScreen(this,cards.get(top)));return true;}}
         if (button != 0 || failed) return false;
         switch (stage) {
             case TABLE -> {
@@ -463,8 +501,8 @@ public final class RentalPackScreen extends TowerScreen {
             }
             case CHOOSING -> {
                 List<RentalDraftPayload.Card> cards = currentCards();
-                for (int i = 0; i < cards.size(); i++) {
-                    if (!inside(mouseX, mouseY, cardRect(i, cards.size(), scale()))) continue;
+                int i = topCardAt(mouseX, mouseY, cards.size());
+                if (i >= 0) {
                     if (selected.contains(i)) {
                         selected.remove((Integer) i);
                     } else if (selected.size() < 2) {

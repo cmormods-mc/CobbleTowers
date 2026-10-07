@@ -22,7 +22,7 @@ import net.minecraft.world.item.ItemStack;
  * our information (name, level, role, ability, item, moves) set beneath it.
  *
  * <p>There is no compile-time dependency on the mod: the card is an ordinary item built from plain names, so this class loads and works
- * with or without it. {@link #available()} says whether the mod is loaded; the screen uses {@link FallbackCardFace} when it is not,
+ * with or without it. {@link #available()} says whether the mod is loaded; the screen uses {@link ByzantineCardFace} when it is not,
  * and this face itself falls back to it for any card the item cannot be made for.
  */
 public final class CobblemonCardFace implements CardFace {
@@ -59,7 +59,7 @@ public final class CobblemonCardFace implements CardFace {
                          boolean selected, long ms) {
         Optional<ItemStack> stack = stackOf(card);
         if (stack.isEmpty()) {
-            FallbackCardFace.INSTANCE.drawFace(graphics, font, card, x, y, width, height, selected, ms);
+            ByzantineCardFace.INSTANCE.drawFace(graphics, font, card, x, y, width, height, selected, ms);
             return;
         }
         int frame = PackReveal.colorAt(card.rarity(), ms);
@@ -81,27 +81,27 @@ public final class CobblemonCardFace implements CardFace {
         int left = x + 5;
         int inner = width - 10;
         int line = y + 3 + art + 3;
-        FallbackCardFace.fit(graphics, font, Component.literal(card.name() + "  Lv " + d.level()), left, line, inner, TowerUi.TEXT, 1.0f);
+        ByzantineCardFace.fit(graphics, font, Component.literal(card.name() + "  Lv " + d.level()), left, line, inner, TowerUi.TEXT, 1.0f);
         line += 11;
-        FallbackCardFace.fit(graphics, font, Component.translatableWithFallback("cobblemon.ability." + d.ability(),
-                FallbackCardFace.tidy(d.ability())).append(" / ").append(Component.translatableWithFallback("item.cobblemon." + d.item(),
-                FallbackCardFace.tidy(d.item()))), left, line, inner, TowerUi.MUTED, 0.8f);
+        ByzantineCardFace.fit(graphics, font, Component.translatableWithFallback("cobblemon.ability." + d.ability(),
+                ByzantineCardFace.tidy(d.ability())).append(" / ").append(Component.translatableWithFallback("item.cobblemon." + d.item(),
+                ByzantineCardFace.tidy(d.item()))), left, line, inner, TowerUi.MUTED, 0.8f);
         line += 9;
         for (int i = 0; i < d.moves().size(); i += 2) {
-            Component pair = move(d.moves().get(i));
-            if (i + 1 < d.moves().size()) pair = pair.copy().append("  -  ").append(move(d.moves().get(i + 1)));
-            FallbackCardFace.fit(graphics, font, pair, left, line, inner, TowerUi.TEXT, 0.8f);
+            Component pair = move(d.moves().get(i).id());
+            if (i + 1 < d.moves().size()) pair = pair.copy().append("  -  ").append(move(d.moves().get(i + 1).id()));
+            ByzantineCardFace.fit(graphics, font, pair, left, line, inner, TowerUi.TEXT, 0.8f);
             line += 9;
         }
     }
 
     /** A move by the name Cobblemon's own language file gives it, or a tidied id if there is none. */
     private static net.minecraft.network.chat.MutableComponent move(String id) {
-        return Component.translatableWithFallback("cobblemon.move." + id, FallbackCardFace.tidy(id));
+        return Component.translatableWithFallback("cobblemon.move." + id, ByzantineCardFace.tidy(id));
     }
 
     @Override
     public void drawBack(GuiGraphics graphics, Font font, int x, int y, int width, int height, long ms) {
-        FallbackCardFace.INSTANCE.drawBack(graphics, font, x, y, width, height, ms);
+        ByzantineCardFace.INSTANCE.drawBack(graphics, font, x, y, width, height, ms);
     }
 }

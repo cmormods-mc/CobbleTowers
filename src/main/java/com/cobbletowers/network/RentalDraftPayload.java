@@ -19,15 +19,35 @@ import net.minecraft.resources.ResourceLocation;
  */
 public record RentalDraftPayload(List<Pack> packs, int current, boolean complete, String message) implements CustomPacketPayload {
 
+    /**
+     * One move on a card: its id, and the type and damage category the card's gem is cut from (the colour is the type, the shape the
+     * category). Both are empty when they could not be resolved, which the client draws as a plain gem.
+     */
+    public record Move(String id, String type, String category) {
+        static final StreamCodec<RegistryFriendlyByteBuf, Move> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.STRING_UTF8, Move::id,
+                ByteBufCodecs.STRING_UTF8, Move::type,
+                ByteBufCodecs.STRING_UTF8, Move::category,
+                Move::new);
+    }
+
+    /** Where a move's type and category come from. The server passes Cobblemon's own data; tests and previews pass {@link #UNKNOWN}. */
+    @FunctionalInterface
+    public interface MoveSource {
+        Move resolve(String id);
+    }
+
+    public static final MoveSource UNKNOWN = id -> new Move(id, "", "");
+
     /** What the card face shows beyond its name: the set's level, ability, nature, held item, role and moves. */
-    public record Details(int level, String ability, String nature, String item, String role, List<String> moves) {
+    public record Details(int level, String ability, String nature, String item, String role, List<Move> moves) {
         static final StreamCodec<RegistryFriendlyByteBuf, Details> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.VAR_INT, Details::level,
                 ByteBufCodecs.STRING_UTF8, Details::ability,
                 ByteBufCodecs.STRING_UTF8, Details::nature,
                 ByteBufCodecs.STRING_UTF8, Details::item,
                 ByteBufCodecs.STRING_UTF8, Details::role,
-                ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()), Details::moves,
+                Move.STREAM_CODEC.apply(ByteBufCodecs.list()), Details::moves,
                 Details::new);
     }
 
@@ -65,8 +85,13 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
                 Pack::new);
     }
 
-    /** A draft as the screen shows it. Pure: it only reads the draft and the sets it holds. */
+    /** A draft as the screen shows it, with moves of unknown type. Pure: it only reads the draft and the sets it holds. */
     public static RentalDraftPayload of(RentalDraft draft, String message) {
+        return of(draft, message, UNKNOWN);
+    }
+
+    /** A draft as the screen shows it, each move's type and category taken from {@code moves}. */
+    public static RentalDraftPayload of(RentalDraft draft, String message, MoveSource moves) {
         List<Pack> packs = new ArrayList<>();
         List<List<Integer>> picks = draft.picks();
         for (int i = 0; i < draft.offer().packs().size(); i++) {
@@ -77,7 +102,7 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
                 RentalCards.Spec card = RentalCards.of(set, pack.god(), RentalSetDefinition.Rarity.MYTHIC);
                 cards.add(new Card(set.id(), set.species(), set.displayName(), set.rarity().lower(),
                         new Details(set.level(), set.ability(), set.nature(), set.item().map(item -> item.getPath()).orElse(""),
-                                set.role(), set.moves()),
+                                set.role(), set.moves().stream().map(moves::resolve).toList()),
                         new Look(card.shiny(), card.rarity(), card.background().orElse(""), card.effect().orElse(""))));
             }
             packs.add(new Pack(pack.god(), cards, i < picks.size() ? picks.get(i) : List.of()));

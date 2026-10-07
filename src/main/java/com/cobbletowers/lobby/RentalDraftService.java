@@ -125,7 +125,7 @@ public final class RentalDraftService {
 
     public static void sendScreen(ServerPlayer player, RentalDraft draft, String message) {
         if (ServerPlayNetworking.canSend(player, RentalDraftPayload.TYPE)) {
-            ServerPlayNetworking.send(player, RentalDraftPayload.of(draft, message));
+            ServerPlayNetworking.send(player, RentalDraftPayload.of(draft, message, com.cobbletowers.battle.cobblemon.CobblemonMoves::resolve));
         }
     }
 

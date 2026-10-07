@@ -88,10 +88,28 @@ class RentalDraftPayloadTest {
             assertEquals(set.species(), card.species());
             assertEquals(set.displayName(), card.name());
             assertEquals(set.rarity().lower(), card.rarity());
-            assertEquals(set.moves(), card.details().moves());
+            assertEquals(set.moves(), card.details().moves().stream().map(RentalDraftPayload.Move::id).toList());
             assertEquals(set.level(), card.details().level());
             assertEquals(set.ability(), card.details().ability());
         }
+    }
+
+    @Test
+    @DisplayName("a card's moves carry the type and category the source gives, and survive the wire; unknown moves carry none")
+    void moveTypes() throws IOException {
+        RentalDraft draft = new RentalDraft(RentalDraw.draw(pool(), 11, false));
+        RentalDraftPayload typed = RentalDraftPayload.of(draft, "",
+                id -> new RentalDraftPayload.Move(id, "fire", "physical"));
+        for (RentalDraftPayload.Card card : typed.packs().get(0).cards()) {
+            for (RentalDraftPayload.Move move : card.details().moves()) {
+                assertEquals("fire", move.type());
+                assertEquals("physical", move.category());
+            }
+        }
+        assertEquals(typed, roundTrip(RentalDraftPayload.STREAM_CODEC, typed));
+        RentalDraftPayload plain = RentalDraftPayload.of(draft, "");
+        assertEquals("", plain.packs().get(0).cards().get(0).details().moves().get(0).type());
+        assertEquals(plain, roundTrip(RentalDraftPayload.STREAM_CODEC, plain));
     }
 
     @Test

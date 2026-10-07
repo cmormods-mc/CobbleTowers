@@ -119,8 +119,8 @@ public final class ClientRemote {
             }
             case "card" -> {
                 if (minecraft.screen instanceof RentalPackScreen pack) {
-                    int[] r = pack.cardRect(Integer.parseInt(rest), 5, pack.scale());
-                    pack.mouseClicked(r[0] + r[2] / 2.0, r[1] + r[3] / 2.0, 0);
+                    int[] p = pack.visiblePoint(Integer.parseInt(rest), 5, pack.scale());
+                    pack.mouseClicked(p[0], p[1], 0);
                 }
             }
             case "inventory" -> {

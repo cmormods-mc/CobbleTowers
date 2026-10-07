@@ -204,6 +204,13 @@ public final class ScreenshotHarness {
         throw new IllegalStateException("no button " + label);
     }
 
+    /** Stand-in move data for pictures (the title screen has none loaded): a type and a category from the id, so every gem appears. */
+    private static RentalDraftPayload.Move sampleMove(String id) {
+        int h = Math.abs(id.hashCode());
+        return new RentalDraftPayload.Move(id, ByzantineCardFace.TYPES.get(h % ByzantineCardFace.TYPES.size()),
+                ByzantineCardFace.SHAPES.get((h / 7) % ByzantineCardFace.SHAPES.size()));
+    }
+
     private static void modifierScript() {
         var offer = List.of(
                 sampleCard("downpour", "Downpour", 1, 1, "weather:raindance", "Risk: moderate / Stack limit: 1",
@@ -291,7 +298,7 @@ public final class ScreenshotHarness {
         RentalPackScreen[] screen = new RentalPackScreen[1];
 
         add(0, "open pack", () -> {
-            screen[0] = new RentalPackScreen(RentalDraftPayload.of(draft, ""));
+            screen[0] = new RentalPackScreen(RentalDraftPayload.of(draft, "", ScreenshotHarness::sampleMove));
             Minecraft.getInstance().setScreen(screen[0]);
         });
         add(700, "pack table", () -> featureShot("rental_01_pack"));
@@ -305,26 +312,30 @@ public final class ScreenshotHarness {
             clickCard(screen[0], 3);
         });
         add(400, "chosen", () -> featureShot("rental_06_chosen"));
+        add(0, "inspect a card", () -> Minecraft.getInstance().setScreen(new PartnerInspectionScreen(screen[0],
+                RentalDraftPayload.of(draft, "", ScreenshotHarness::sampleMove).packs().get(0).cards().get(2))));
+        add(500, "inspect shot", () -> shot("rental_12_inspect"));
+        add(0, "back to the pack", () -> Minecraft.getInstance().setScreen(screen[0]));
         add(0, "keep pack one", () -> {
             draft.pick(0, List.of(1, 3));
-            screen[0].accept(RentalDraftPayload.of(draft, ""));
+            screen[0].accept(RentalDraftPayload.of(draft, "", ScreenshotHarness::sampleMove));
         });
         add(500, "second pack", () -> featureShot("rental_07_second_pack"));
         add(0, "finish draft", () -> {
             draft.pick(1, List.of(0, 2));
             draft.pick(2, List.of(1, 4));
-            screen[0].accept(RentalDraftPayload.of(draft, ""));
+            screen[0].accept(RentalDraftPayload.of(draft, "", ScreenshotHarness::sampleMove));
         });
         add(500, "team", () -> featureShot("rental_08_team"));
         add(0, "god pack", () -> {
-            screen[0] = new RentalPackScreen(RentalDraftPayload.of(godDraft, ""));
+            screen[0] = new RentalPackScreen(RentalDraftPayload.of(godDraft, "", ScreenshotHarness::sampleMove));
             Minecraft.getInstance().setScreen(screen[0]);
         });
         add(700, "god pack table", () -> featureShot("rental_09_god_pack"));
         add(0, "skip into the god cards", () -> screen[0].mouseClicked(screen[0].width / 2.0, screen[0].height / 2.0, 0));
         add(5200, "god cards", () -> featureShot("rental_10_god_cards"));
         add(0, "refused pick", () -> {
-            screen[0].accept(RentalDraftPayload.of(godDraft, "A team may keep at most 2 legendary or mythic Pokemon."));
+            screen[0].accept(RentalDraftPayload.of(godDraft, "A team may keep at most 2 legendary or mythic Pokemon.", ScreenshotHarness::sampleMove));
         });
         add(300, "message", () -> featureShot("rental_11_message"));
 
@@ -454,8 +465,8 @@ public final class ScreenshotHarness {
     }
 
     private static void clickCard(RentalPackScreen screen, int index) {
-        int[] rect = screen.cardRect(index, 5, screen.scale());
-        screen.mouseClicked(rect[0] + rect[2] / 2.0, rect[1] + rect[3] / 2.0, 0);
+        int[] point = screen.visiblePoint(index, 5, screen.scale());
+        screen.mouseClicked(point[0], point[1], 0);
     }
 
     /** Every shipped rental set, read from the mod's own resources. */
