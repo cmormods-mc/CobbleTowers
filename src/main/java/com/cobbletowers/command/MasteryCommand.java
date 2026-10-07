@@ -126,8 +126,8 @@ public final class MasteryCommand {
         }
         ServerPlayer player = source.getPlayerOrException();
         TowerMasteryStore.Progress progress = TowerMasteryStore.get(source.getServer()).progressOf(player.getUUID(), towerId);
-        MasteryPerks.Perks perks = MasteryPerks.at(progress.level());
-        source.sendSuccess(() -> Component.literal(tower.displayName() + " mastery: " + MasteryView.progressLine(progress.level()))
+        MasteryPerks.Perks perks = MasteryPerks.at(towerId, progress.level());
+        source.sendSuccess(() -> Component.literal(tower.displayName() + " mastery: " + MasteryView.progressLine(towerId, progress.level()))
                 .withStyle(ChatFormatting.GOLD), false);
         source.sendSuccess(() -> Component.literal("  perks: " + MasteryView.perksLine(perks)), false);
         for (AchievementDefinition achievement : AchievementRegistry.all()) {

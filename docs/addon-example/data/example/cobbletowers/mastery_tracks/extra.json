@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "ranks": [ { "level": 40, "name": "Mythic" } ],
+  "levels": [
+    { "level": 3, "label": "A little extra", "grants": [ { "item": "minecraft:apple", "amount": 3 } ] },
+    { "level": 40, "perks": { "vendor_discount_percent": 12 }, "grants": [ { "item": "minecraft:diamond", "amount": 4 } ] }
+  ]
+}

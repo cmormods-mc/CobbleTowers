@@ -355,10 +355,10 @@ public final class MasteryService {
                     .append(Component.literal("  " + achievement.description()).withStyle(ChatFormatting.GRAY)));
         }
         int levelAfter = levelBefore + fresh.size();
-        player.sendSystemMessage(Component.literal(tower + " mastery: level " + levelAfter + " (" + MasteryPerks.rankOf(levelAfter) + ")")
+        player.sendSystemMessage(Component.literal(tower + " mastery: level " + levelAfter + " (" + MasteryPerks.rankOf(run.towerId(), levelAfter) + ")")
                 .withStyle(ChatFormatting.AQUA));
-        if (!MasteryPerks.rankOf(levelAfter).equals(MasteryPerks.rankOf(levelBefore))) {
-            player.sendSystemMessage(Component.literal("New rank: " + MasteryPerks.rankOf(levelAfter) + "!")
+        if (!MasteryPerks.rankOf(run.towerId(), levelAfter).equals(MasteryPerks.rankOf(run.towerId(), levelBefore))) {
+            player.sendSystemMessage(Component.literal("New rank: " + MasteryPerks.rankOf(run.towerId(), levelAfter) + "!")
                     .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
         }
     }
@@ -367,7 +367,7 @@ public final class MasteryService {
 
     /** What a player's mastery in a tower earns them there. */
     public static MasteryPerks.Perks perksOf(MinecraftServer server, UUID player, ResourceLocation tower) {
-        return MasteryPerks.at(TowerMasteryStore.get(server).progressOf(player, tower).level());
+        return MasteryPerks.at(tower, TowerMasteryStore.get(server).progressOf(player, tower).level());
     }
 
     /** The perks that apply to a player right now: those of the tower their live run is in, none outside a run. */

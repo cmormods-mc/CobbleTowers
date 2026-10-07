@@ -53,10 +53,14 @@ public final class MasteryView {
 
     /** What the next rank needs, for a level. */
     public static String progressLine(int level) {
-        int next = MasteryPerks.nextRankAt(level);
-        String rank = MasteryPerks.rankOf(level);
+        return progressLine(null, level);
+    }
+
+    public static String progressLine(net.minecraft.resources.ResourceLocation tower, int level) {
+        int next = MasteryPerks.nextRankAt(tower, level);
+        String rank = MasteryPerks.rankOf(tower, level);
         return next < 0 ? "level " + level + " (" + rank + ", the top)"
-                : "level " + level + " (" + rank + "), " + (next - level) + " to " + MasteryPerks.rankOf(next);
+                : "level " + level + " (" + rank + "), " + (next - level) + " to " + MasteryPerks.rankOf(tower, next);
     }
 
     /** The perks a level has earned, in words; "none yet" below the first. */

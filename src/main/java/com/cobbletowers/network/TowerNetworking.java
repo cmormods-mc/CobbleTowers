@@ -41,6 +41,8 @@ public final class TowerNetworking {
         PayloadTypeRegistry.playC2S().register(TowerFeatureRequest.TYPE, TowerFeatureRequest.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(TowerHallStatePayload.TYPE, TowerHallStatePayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(TowerHallActionPayload.TYPE, TowerHallActionPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(TrackStatePayload.TYPE, TrackStatePayload.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(TrackActionPayload.TYPE, TrackActionPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(SpectatorPanelPayload.TYPE, SpectatorPanelPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(RewardRevealPayload.TYPE, RewardRevealPayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(CycleTeammatePayload.TYPE, CycleTeammatePayload.STREAM_CODEC);
@@ -65,6 +67,8 @@ public final class TowerNetworking {
                 context.server().execute(() -> com.cobbletowers.menu.TowerFeatureService.handle(context.server(), context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(TowerHallActionPayload.TYPE, (payload, context) ->
                 context.server().execute(() -> com.cobbletowers.menu.TowerHallService.handle(context.server(), context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(TrackActionPayload.TYPE, (payload, context) ->
+                context.server().execute(() -> com.cobbletowers.track.TrackService.handle(context.server(), context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(CycleTeammatePayload.TYPE, (payload, context) -> {
             ServerPlayer spectator = context.player();
             context.server().execute(() -> handleCycle(spectator, payload.next()));

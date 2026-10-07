@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "ranks": [
+    { "level": 1, "name": "Bronze" },
+    { "level": 5, "name": "Silver" },
+    { "level": 10, "name": "Gold" },
+    { "level": 15, "name": "Platinum" },
+    { "level": 20, "name": "Diamond" },
+    { "level": 25, "name": "Master" },
+    { "level": 30, "name": "Champion" }
+  ],
+  "levels": [
+    { "level": 1, "grants": [ { "item": "cobbletowers:cobble_dollar", "amount": 50 } ] },
+    { "level": 5, "perks": { "vendor_discount_percent": 3 }, "grants": [ { "item": "cobbletowers:cobble_dollar", "amount": 100 } ] },
+    { "level": 10, "perks": { "cobble_dollar_bonus_percent": 5 }, "grants": [ { "item": "cobbletowers:cobble_dollar", "amount": 150 } ] },
+    { "level": 15, "perks": { "vendor_discount_percent": 6 }, "grants": [ { "item": "cobbletowers:cobble_dollar", "amount": 200 } ] },
+    { "level": 20, "perks": { "cobble_dollar_bonus_percent": 10 }, "grants": [ { "item": "cobbletowers:cobble_dollar", "amount": 300 } ] },
+    { "level": 25, "perks": { "raid_points_bonus_percent": 10 }, "grants": [ { "item": "cobbletowers:cobble_dollar", "amount": 400 } ] },
+    { "level": 30, "perks": { "vendor_discount_percent": 10, "cobble_dollar_bonus_percent": 15 }, "grants": [ { "item": "cobbletowers:cobble_dollar", "amount": 750 } ] }
+  ]
+}

@@ -66,6 +66,62 @@ public record SeasonTrackDefinition(int stepCost, List<Step> steps) {
         return Math.min(steps.size(), Math.max(0, points) / stepCost);
     }
 
+    /** The grants of a JSON object's {@code grants} array (item, amount, optional components and label). */
+    public static List<Grant> grants(JsonObject json) {
+        List<Grant> grants = new ArrayList<>();
+        if (json.has("grants")) {
+            for (JsonElement element : json.getAsJsonArray("grants")) {
+                JsonObject grant = element.getAsJsonObject();
+                grants.add(new Grant(TowerJson.requireString(grant, "item"), TowerJson.integer(grant, "amount", 1),
+                        TowerJson.string(grant, "components", ""), TowerJson.string(grant, "label", "")));
+            }
+        }
+        return grants;
+    }
+
+    /** Extra rewards for one step, from a datapack or the owner's config: they are appended to the step (P37). */
+    public record AddStep(int step, List<Grant> grants, List<String> cosmetics) {
+        public AddStep {
+            if (step < 1) throw new IllegalArgumentException("add_steps: step must be >= 1, got " + step);
+            grants = List.copyOf(grants);
+            cosmetics = List.copyOf(cosmetics);
+        }
+    }
+
+    /** The {@code add_steps} array of a JSON object (empty when there is none). */
+    public static List<AddStep> addSteps(JsonObject root) {
+        List<AddStep> added = new ArrayList<>();
+        if (root.has("add_steps")) {
+            for (JsonElement element : root.getAsJsonArray("add_steps")) {
+                JsonObject json = element.getAsJsonObject();
+                added.add(new AddStep(TowerJson.requireInt(json, "step"), grants(json), TowerJson.strings(json, "cosmetics")));
+            }
+        }
+        return added;
+    }
+
+    /** This track with {@code added} appended to its steps; a step past the end extends the track with empty steps first. */
+    public SeasonTrackDefinition withAdded(List<AddStep> added) {
+        if (added.isEmpty()) return this;
+        List<List<Grant>> grants = new ArrayList<>();
+        List<List<String>> cosmetics = new ArrayList<>();
+        for (Step step : steps) {
+            grants.add(new ArrayList<>(step.grants()));
+            cosmetics.add(new ArrayList<>(step.cosmetics()));
+        }
+        for (AddStep add : added) {
+            while (grants.size() < add.step()) {
+                grants.add(new ArrayList<>());
+                cosmetics.add(new ArrayList<>());
+            }
+            grants.get(add.step() - 1).addAll(add.grants());
+            cosmetics.get(add.step() - 1).addAll(add.cosmetics());
+        }
+        List<Step> merged = new ArrayList<>();
+        for (int i = 0; i < grants.size(); i++) merged.add(new Step(i + 1, grants.get(i), cosmetics.get(i)));
+        return new SeasonTrackDefinition(stepCost, merged);
+    }
+
     public static SeasonTrackDefinition fromJson(JsonObject root) {
         int version = TowerJson.requireInt(root, "schema_version");
         if (version != SUPPORTED_SCHEMA_VERSION) {
@@ -75,15 +131,7 @@ public record SeasonTrackDefinition(int stepCost, List<Step> steps) {
         JsonArray array = root.has("steps") ? root.getAsJsonArray("steps") : new JsonArray();
         for (int i = 0; i < array.size(); i++) {
             JsonObject step = array.get(i).getAsJsonObject();
-            List<Grant> grants = new ArrayList<>();
-            if (step.has("grants")) {
-                for (JsonElement element : step.getAsJsonArray("grants")) {
-                    JsonObject grant = element.getAsJsonObject();
-                    grants.add(new Grant(TowerJson.requireString(grant, "item"), TowerJson.integer(grant, "amount", 1),
-                            TowerJson.string(grant, "components", ""), TowerJson.string(grant, "label", "")));
-                }
-            }
-            steps.add(new Step(i + 1, grants, TowerJson.strings(step, "cosmetics")));
+            steps.add(new Step(i + 1, grants(step), TowerJson.strings(step, "cosmetics")));
         }
         return new SeasonTrackDefinition(TowerJson.integer(root, "step_cost", 75), steps);
     }

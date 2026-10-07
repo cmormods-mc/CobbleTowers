@@ -82,6 +82,11 @@ public final class CobbleTowersClient implements ClientModInitializer {
                     else context.client().setScreen(new TowerHallScreen(payload));
                 }));
 
+        ClientPlayNetworking.registerGlobalReceiver(com.cobbletowers.network.TrackStatePayload.TYPE, (payload, context) ->
+                context.client().execute(() -> {
+                    if (context.client().screen instanceof TowerHallScreen hall) hall.updateTracks(payload);
+                }));
+
         ClientPlayNetworking.registerGlobalReceiver(PlayStatePayload.TYPE, (payload, context) ->
                 context.client().execute(() -> {
                     Screen current = Minecraft.getInstance().screen;

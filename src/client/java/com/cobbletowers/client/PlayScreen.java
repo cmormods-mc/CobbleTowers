@@ -68,8 +68,7 @@ public final class PlayScreen extends TowerScreen {
         int y = 40;
         for (PlayStatePayload.Tower tower : state.towers()) {
             boolean selected = tower.id().toString().equals(lobby.selected());
-            String art=tower.id().getPath().contains("rootvale")?"machamp":tower.id().getPath().contains("duskvale")?"scizor":"blastoise";
-            Button button=new TrainerCardButton(leftX,y,column,step-4,tower.displayName(),selected?"Selected destination":"Open expedition",art,theme.accent,()->send(PlayActionPayload.Action.SELECT_TOWER,tower.id().toString()));
+            Button button=new TrainerCardButton(leftX,y,column,step-4,tower.displayName(),selected?"Selected":"Open expedition","tower",theme.accent,()->send(PlayActionPayload.Action.SELECT_TOWER,tower.id().toString()));
             button.active = canChoose && lobby.countdown() < 0;
             addRenderableWidget(button);
             y += step;

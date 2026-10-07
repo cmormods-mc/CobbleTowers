@@ -93,13 +93,32 @@ public final class SeasonProgressService {
         TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
         Optional<SeasonTrackDefinition> track = SeasonTrackRegistry.current();
         Progress saved = next;
+        if (track.isPresent() && !com.cobbletowers.track.TrackConfig.current().autoClaim()) {
+            // Claimable (P37): reaching a step only records the points; the player claims the prize from the track.
+            int before = track.get().stepsFor(store.of(player, season).total());
+            int reached = track.get().stepsFor(next.total());
+            store.put(player, season, next);
+            store.checkpoint(server);
+            if (reached > before) {
+                ServerPlayer online = server.getPlayerList().getPlayer(player);
+                if (online != null) {
+                    online.sendSystemMessage(Component.literal("Season " + season + " track: step " + reached + "/" + track.get().stepCount()
+                            + " reached. Claim it from the Progress tab (or /tower track claim)."));
+                }
+            }
+            return;
+        }
         if (track.isPresent()) {
             int reached = track.get().stepsFor(next.total());
             if (reached > next.steps()) {
                 // Queue first (flushed, and deduplicated by grant, so a replay adds nothing twice), then record the steps, then tell and deliver.
                 // A crash after queueing and before the step count is saved replays the grant harmlessly; the other order lost a prize.
                 List<Runnable> afterwards = new ArrayList<>();
-                for (int step = next.steps() + 1; step <= reached; step++) afterwards.add(grantStep(server, player, season, track.get(), step));
+                for (int step = next.steps() + 1; step <= reached; step++) {
+                    // A step already claimed by hand (auto_claim was off earlier) is not granted again.
+                    if (store.claimed(player, claimKey(season, step))) continue;
+                    afterwards.add(grantStep(server, player, season, track.get(), step));
+                }
                 saved = next.withSteps(reached);
                 store.put(player, season, saved);
                 store.checkpoint(server);
@@ -119,6 +138,7 @@ public final class SeasonProgressService {
         UUID grantId = UUID.nameUUIDFromBytes(("season:" + season + ":" + number + ":" + player).getBytes(StandardCharsets.UTF_8));
         List<String> given = new ArrayList<>();
         java.util.Map<String, String> tokens = tokensOf(season);
+        int index = 0;
         for (SeasonTrackDefinition.Grant grant : step.grants()) {
             ResourceLocation item = ResourceLocation.tryParse(Cosmetics.expand(grant.item(), tokens));
             if (item == null || !grantable(item)) {
@@ -127,7 +147,12 @@ public final class SeasonProgressService {
             }
             String components = Cosmetics.expand(grant.components(), tokens);
             String label = Cosmetics.expand(grant.label(), tokens);
-            pending.addIfAbsent(player, new PendingTowerReward(grantId, 1, item, grant.amount(), now, components, label));
+            // One id per grant, not per step: the queue deduplicates on (id, item, components), so two grants of the same item in a step
+            // (an addon adding diamonds to a step that already has diamonds) would otherwise collapse into the first one.
+            UUID grantOf = index == 0 ? grantId : UUID.nameUUIDFromBytes(("season:" + season + ":" + number + ":" + player + ":" + index)
+                    .getBytes(StandardCharsets.UTF_8));
+            index++;
+            pending.addIfAbsent(player, new PendingTowerReward(grantOf, 1, item, grant.amount(), now, components, label));
             given.add(label.isEmpty() ? describe(item, grant.amount()) : label);
         }
         Set<String> cosmetics = new HashSet<>();
@@ -142,10 +167,60 @@ public final class SeasonProgressService {
             ServerPlayer online = server.getPlayerList().getPlayer(player);
             if (online == null) return;
             String reward = given.isEmpty() && cosmetics.isEmpty() ? "" : ": " + describeStep(step, season);
-            online.sendSystemMessage(Component.literal("Season " + season + " track, step " + number + "/" + track.stepCount() + " reached"
-                    + reward));
+            online.sendSystemMessage(Component.literal("Season " + season + " track, step " + number + "/" + track.stepCount()
+                    + (com.cobbletowers.track.TrackConfig.current().autoClaim() ? " reached" : " claimed") + reward));
             if (!given.isEmpty()) RewardDelivery.deliver(server, online);
         };
+    }
+
+    // ---- claiming (P37) ---------------------------------------------------------------------------
+
+    public static String claimKey(int season, int step) {
+        return "s" + season + ":" + step;
+    }
+
+    /** Whether a step has been claimed: recorded as a claim, or granted before claiming existed (a step within {@code Progress.steps}). */
+    public static boolean claimed(TowerSeasonProgressStore store, UUID player, int season, int step) {
+        return step <= store.of(player, season).steps() || store.claimed(player, claimKey(season, step));
+    }
+
+    /** Why a claim is refused, or empty when {@code step} of the running season can be claimed now. */
+    public static Optional<String> refusal(MinecraftServer server, UUID player, int step) {
+        Optional<Integer> season = Seasons.activeNumber();
+        Optional<SeasonTrackDefinition> track = SeasonTrackRegistry.current();
+        if (season.isEmpty() || track.isEmpty()) return Optional.of("There is no season track running.");
+        TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
+        if (step < 1 || step > track.get().stepCount()) return Optional.of("There is no step " + step + ".");
+        if (track.get().stepsFor(store.of(player, season.get()).total()) < step) return Optional.of("Step " + step + " is not reached yet.");
+        if (claimed(store, player, season.get(), step)) return Optional.of("Step " + step + " is already claimed.");
+        return Optional.empty();
+    }
+
+    /**
+     * Claims one reached step: the grants are queued first (deduplicated by the same deterministic grant id the automatic path used, so a
+     * replay or a crash cannot pay twice), then the claim is recorded, then the player is told and delivered to.
+     * @return the refusal, or empty when claimed
+     */
+    public static Optional<String> claim(MinecraftServer server, UUID player, int step) {
+        Optional<String> refused = refusal(server, player, step);
+        if (refused.isPresent()) return refused;
+        int season = Seasons.activeNumber().orElseThrow();
+        SeasonTrackDefinition track = SeasonTrackRegistry.current().orElseThrow();
+        TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
+        Runnable afterwards = grantStep(server, player, season, track, step);
+        store.markClaimed(player, claimKey(season, step));
+        store.checkpoint(server);
+        afterwards.run();
+        return Optional.empty();
+    }
+
+    /** Claims every reached, unclaimed step in order; returns how many. */
+    public static int claimAll(MinecraftServer server, UUID player) {
+        int claimed = 0;
+        for (int step = 1; step <= SeasonTrackRegistry.current().map(SeasonTrackDefinition::stepCount).orElse(0); step++) {
+            if (claim(server, player, step).isEmpty()) claimed++;
+        }
+        return claimed;
     }
 
     /** The tokens a track grant may use: {@code {season}}, {@code {season_name}} and {@code {color}} (the spotlight region's dye). */
@@ -165,13 +240,13 @@ public final class SeasonProgressService {
     }
 
     /** A currency the delivery credits, or an item this server has. */
-    private static boolean grantable(ResourceLocation id) {
+    public static boolean grantable(ResourceLocation id) {
         return id.equals(CobbleDollars.ITEM_ID) || id.equals(RaidPointsCurrency.ITEM_ID) || BuiltInRegistries.ITEM.containsKey(id);
     }
 
     // ---- words ------------------------------------------------------------------------------------
 
-    static String describe(ResourceLocation item, int amount) {
+    public static String describe(ResourceLocation item, int amount) {
         if (item.equals(CobbleDollars.ITEM_ID)) return amount + " CobbleDollars";
         if (item.equals(RaidPointsCurrency.ITEM_ID)) return amount + " Raid Points";
         String name = item.getPath().replace('_', ' ');

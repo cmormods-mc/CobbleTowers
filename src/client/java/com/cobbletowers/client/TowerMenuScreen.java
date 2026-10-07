@@ -13,17 +13,18 @@ public abstract class TowerMenuScreen extends TowerScreen {
     protected TowerMenuScreen() { super(Component.literal("CobbleTowers"), TowerUi.Theme.LOBBY); }
 
     protected void layoutShell() {
-        int rail = width < 400 ? 72 : 86;
+        int rail = width < 400 ? 80 : 96;
         contentX=rail+12; contentY=43; contentWidth=width-contentX-12; contentHeight=height-contentY-58;
         String[] labels={"Tower Hall","Trials","Codex","Progress","Echoes","Social","Collection"};
+        String[] icons={"tower","hourglass","book","stairs","echo","group","cards"};
         for(int i=0;i<labels.length;i++) {
             String label=labels[i];
-            var button=TowerButton.builder(Component.literal(label),b->navigate(label)).pos(9,43+i*22).size(rail-10,20).dark().build();
+            var button=TowerButton.builder(Component.literal(label),b->navigate(label)).pos(9,43+i*22).size(rail-10,20).dark().icon(icons[i]).build();
             if(section.equals(label)){button.active=false;button.selected=true;}
             addRenderableWidget(button);
         }
         addRenderableWidget(TowerButton.builder(Component.literal("Settings"),b->minecraft.setScreen(new TowerOptionsScreen(this)))
-                .pos(9,height-30).size(rail-10,20).dark().build());
+                .pos(9,height-30).size(rail-10,20).dark().icon("gear").build());
         addRenderableWidget(TowerButton.builder(Component.literal("Back"),b->onClose()).pos(width-100,10).size(42,20).dark().build());
         addRenderableWidget(TowerButton.builder(Component.literal("Close"),b->closeAll()).pos(width-54,10).size(42,20).dark().build());
     }

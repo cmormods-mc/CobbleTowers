@@ -78,7 +78,7 @@ public final class TowerFeatureScreen extends TowerMenuScreen {
             int total=state.entries().size()+state.actions().size(),pages=Math.max(1,(total+rows()-1)/rows());page=Math.min(page,pages-1);
             for(int slot=0;slot<rows()&&page*rows()+slot<total;slot++){
                 int index=page*rows()+slot;String label=index<state.entries().size()?state.entries().get(index).title():state.actions().get(index-state.entries().size()).label();
-                var card=new TrainerCardButton(x,y+34+slot*24,w,22,label,"",feature.equals("echoes")?"scizor":feature.equals("club")?"machamp":"blastoise",TowerUi.BRONZE,()->{if(index<state.entries().size()){selected=index;linePage=0;rebuild();}else choose(state.actions().get(index-state.entries().size()));});card.active=ready;addRenderableWidget(card);
+                var card=new TrainerCardButton(x,y+34+slot*24,w,22,label,"",feature.equals("echoes")?"echo":feature.equals("club")?"flag":feature.equals("contracts")?"scroll":feature.equals("cosmetics")?"crown":feature.equals("season")?"star":feature.equals("hall")?"trophy":feature.equals("report")?"book":"book",TowerUi.BRONZE,()->{if(index<state.entries().size()){selected=index;linePage=0;rebuild();}else choose(state.actions().get(index-state.entries().size()));});card.active=ready;addRenderableWidget(card);
             }
             if(pages>1){button("<",x,height-62,24,()->{page=Math.floorMod(page-1,pages);rebuild();},ready);button(">",x+28,height-62,24,()->{page=(page+1)%pages;rebuild();},ready);}
         }else if(state!=null){

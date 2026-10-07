@@ -45,7 +45,7 @@ public final class MasteryScreens {
         for (ResourceLocation id : ids) {
             TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(id);
             int level = store.progressOf(player.getUUID(), id).level();
-            towers.add(new MasteryScreenPayload.Tower(id, tower.displayName(), level, MasteryPerks.rankOf(level)));
+            towers.add(new MasteryScreenPayload.Tower(id, tower.displayName(), level, MasteryPerks.rankOf(id, level)));
         }
         ResourceLocation tower = ResourceLocation.tryParse(towerRaw == null ? "" : towerRaw);
         if (tower == null || !ids.contains(tower)) tower = ids.isEmpty() ? null : ids.get(0);
@@ -79,9 +79,9 @@ public final class MasteryScreens {
             achievements.add(new MasteryScreenPayload.Achievement(achievement.displayName(), achievement.description(),
                     progress.unlocked().containsKey(achievement.id())));
         }
-        String stats = MasteryView.progressLine(progress.level()) + "; " + progress.cyclesCleared() + " cycle(s) cleared, deepest Ascension "
+        String stats = MasteryView.progressLine(tower, progress.level()) + "; " + progress.cyclesCleared() + " cycle(s) cleared, deepest Ascension "
                 + progress.ascensionReached();
-        return new MasteryScreenPayload.Mastery(stats, MasteryView.perksLine(MasteryPerks.at(progress.level())), achievements);
+        return new MasteryScreenPayload.Mastery(stats, MasteryView.perksLine(MasteryPerks.at(tower, progress.level())), achievements);
     }
 
     private static MasteryScreenPayload.Board boardOf(MinecraftServer server, Board board, ResourceLocation tower) {

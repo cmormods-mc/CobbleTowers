@@ -165,11 +165,54 @@ public final class ScreenshotHarness {
         add(400,"Trials screenshot",()->shot("hall_trials"));
         add(0,"Daily",()->hall[0].mouseClicked(hall[0].contentX+20,hall[0].contentY+45,0));
         add(400,"Daily screenshot",()->shot("hall_daily"));
+        var tracks = sampleTracks();
+        add(0,"Progress",()->{TowerUiSettings.motion=true;TowerUiSettings.glow=true;hall[0].navigate("Progress");hall[0].updateTracks(tracks);});
+        add(500,"Progress mastery screenshot",()->shot("hall_progress_mastery"));
+        add(0,"Select the claimable tile",()->{double x=hall[0].contentX+34,y=hall[0].contentY+51+25;hall[0].mouseClicked(x,y,0);hall[0].mouseReleased(x,y,0);});
+        add(400,"Selected tile screenshot",()->shot("hall_progress_selected"));
+        add(0,"Season lane",()->press("Season"));
+        add(400,"Season lane screenshot",()->shot("hall_progress_season"));
+        add(0,"Records",()->press("Records"));
+        add(400,"Records screenshot",()->shot("hall_progress_records"));
         add(0,"Reduced motion",()->{TowerUiSettings.motion=false;TowerUiSettings.glow=false;hall[0].navigate("Tower Hall");});
         add(400,"Fallback screenshot",()->shot("hall_fallback"));
         add(0,"Done",()->{});
     }
 
+
+    /** Stand-in battle tracks for pictures: a mastery lane at level 8 (35 levels) and a season lane at step 4 of 12. */
+    private static com.cobbletowers.network.TrackStatePayload sampleTracks() {
+        var tide = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge");
+        var root = ResourceLocation.fromNamespaceAndPath("cobbletowers", "rootvale");
+        var towers = List.of(new com.cobbletowers.network.TrackStatePayload.Tower(tide, "Tideforge Tower", 8),
+                new com.cobbletowers.network.TrackStatePayload.Tower(root, "Rootvale Tower", 3));
+        var mastery = new java.util.ArrayList<com.cobbletowers.network.TrackStatePayload.Node>();
+        for (int level = 1; level <= 35; level++) {
+            boolean reward = level == 1 || level % 5 == 0;
+            String note = level == 1 ? "Bronze rank" : level == 5 ? "Silver rank, vendor prices -3%" : level == 10 ? "Gold rank, +5% CobbleDollars" : "";
+            if (!reward) {
+                mastery.add(new com.cobbletowers.network.TrackStatePayload.Node(level, com.cobbletowers.network.TrackStatePayload.INFO, "", "", note));
+                continue;
+            }
+            int state = level > 8 ? com.cobbletowers.network.TrackStatePayload.LOCKED
+                    : level == 5 ? com.cobbletowers.network.TrackStatePayload.CLAIMABLE : com.cobbletowers.network.TrackStatePayload.CLAIMED;
+            mastery.add(new com.cobbletowers.network.TrackStatePayload.Node(level, state, level == 10 ? "minecraft:diamond" : "cobbletowers:cobble_dollar",
+                    level == 10 ? "2 diamonds" : (level * 20) + " CobbleDollars", note));
+        }
+        var season = new java.util.ArrayList<com.cobbletowers.network.TrackStatePayload.Node>();
+        String[] items = {"cobbletowers:cobble_dollar", "minecraft:emerald", "cobbleraids:raid_points", "minecraft:golden_apple", "minecraft:diamond",
+                "cobbletowers:cobble_dollar", "minecraft:netherite_scrap", "minecraft:emerald", "cobbletowers:cobble_dollar", "minecraft:diamond",
+                "cobbletowers:cobble_dollar", "minecraft:nether_star"};
+        for (int step = 1; step <= 12; step++) {
+            int state = step > 4 ? com.cobbletowers.network.TrackStatePayload.LOCKED
+                    : step <= 2 ? com.cobbletowers.network.TrackStatePayload.CLAIMED : com.cobbletowers.network.TrackStatePayload.CLAIMABLE;
+            season.add(new com.cobbletowers.network.TrackStatePayload.Node(step, state, items[step - 1], "Step " + step + " reward", ""));
+        }
+        long endsIn = (11L * 24 + 3) * 3_600_000L;
+        return new com.cobbletowers.network.TrackStatePayload(false, towers, tide.toString(),
+                new com.cobbletowers.network.TrackStatePayload.Lane(true, "Mastery", "Silver, 2 to Gold", 8, 0, 0, 0L, mastery),
+                new com.cobbletowers.network.TrackStatePayload.Lane(true, "Season 1: The Rising Tide", "300 points", 4, 40, 75, endsIn, season), "");
+    }
 
     // ---- modifier selection stages (the approved oak treatment) -----------------------------------------------------------
 

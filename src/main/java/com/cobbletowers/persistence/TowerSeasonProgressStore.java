@@ -32,6 +32,7 @@ public final class TowerSeasonProgressStore extends SavedData {
     private final Map<UUID, Set<String>> cosmetics = new LinkedHashMap<>();
     /** The title each player has chosen to wear (P36d); empty or absent means none. */
     private final Map<UUID, String> selectedTitles = new LinkedHashMap<>();
+    private final Map<UUID, Set<String>> claims = new LinkedHashMap<>();
 
     public static SavedData.Factory<TowerSeasonProgressStore> factory() {
         return new SavedData.Factory<>(TowerSeasonProgressStore::new, TowerSeasonProgressStore::load, DataFixTypes.LEVEL);
@@ -50,6 +51,18 @@ public final class TowerSeasonProgressStore extends SavedData {
     public void put(UUID player, int season, Progress next) {
         progress.put(player, new Entry(season, next));
         setDirty();
+    }
+
+    /** Which track nodes the player has claimed (P37): keys such as {@code s3:5} (season 3, step 5) and {@code m:cobbletowers:tideforge:10}. */
+    public boolean claimed(UUID player, String key) {
+        return claims.getOrDefault(player, Set.of()).contains(key);
+    }
+
+    /** Records a claim; false when it was already recorded. */
+    public boolean markClaimed(UUID player, String key) {
+        boolean added = claims.computeIfAbsent(player, id -> new TreeSet<>()).add(key);
+        if (added) setDirty();
+        return added;
     }
 
     /** Every cosmetic the player has earned, such as {@code s1:banner_1}. */
@@ -83,6 +96,7 @@ public final class TowerSeasonProgressStore extends SavedData {
         progress.clear();
         cosmetics.clear();
         selectedTitles.clear();
+        claims.clear();
         setDirty();
     }
 
@@ -129,6 +143,16 @@ public final class TowerSeasonProgressStore extends SavedData {
             worn.add(entry);
         }
         tag.put("selected_titles", worn);
+        ListTag claimed = new ListTag();
+        for (Map.Entry<UUID, Set<String>> item : claims.entrySet()) {
+            CompoundTag entry = new CompoundTag();
+            entry.putUUID("player", item.getKey());
+            ListTag keys = new ListTag();
+            for (String key : item.getValue()) keys.add(StringTag.valueOf(key));
+            entry.put("keys", keys);
+            claimed.add(entry);
+        }
+        tag.put("claims", claimed);
         return tag;
     }
 
@@ -158,6 +182,13 @@ public final class TowerSeasonProgressStore extends SavedData {
         ListTag worn = tag.getList("selected_titles", Tag.TAG_COMPOUND);
         for (int i = 0; i < worn.size(); i++) {
             store.selectedTitles.put(worn.getCompound(i).getUUID("player"), worn.getCompound(i).getString("title"));
+        }
+        ListTag claimed = tag.getList("claims", Tag.TAG_COMPOUND);
+        for (int i = 0; i < claimed.size(); i++) {
+            Set<String> keys = new TreeSet<>();
+            ListTag stored = claimed.getCompound(i).getList("keys", Tag.TAG_STRING);
+            for (int j = 0; j < stored.size(); j++) keys.add(stored.getString(j));
+            store.claims.put(claimed.getCompound(i).getUUID("player"), keys);
         }
         return store;
     }
