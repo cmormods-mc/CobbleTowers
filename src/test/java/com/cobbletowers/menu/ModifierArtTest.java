@@ -20,7 +20,8 @@ class ModifierArtTest {
     @Test
     @DisplayName("a reward modifier is keyed by the direction of its reward factor, so a cut never gets the open coffer")
     void rewardDirection() {
-        assertEquals("reward_up", ModifierArt.theme(TestRuns.modifier("more", "reward", "\"reward_percent\":150")));
+        assertEquals("reward_up", ModifierArt.theme(TestRuns.modifier("some", "reward", "\"reward_percent\":120")));
+        assertEquals("reward_up:hoard", ModifierArt.theme(TestRuns.modifier("more", "reward", "\"reward_percent\":150")));
         assertEquals("reward_down", ModifierArt.theme(TestRuns.modifier("less", "reward", "\"reward_percent\":50")));
         assertNotEquals(ModifierArt.theme(TestRuns.modifier("more", "reward", "\"reward_percent\":150")),
                 ModifierArt.theme(TestRuns.modifier("less", "reward", "\"reward_percent\":50")));
@@ -29,8 +30,11 @@ class ModifierArtTest {
     @Test
     @DisplayName("enemy and constraint modifiers get their own scenes")
     void otherTypes() {
-        assertEquals("enemy", ModifierArt.theme(TestRuns.modifier("tough", "enemy", "\"level_offset\":3")));
-        assertEquals("constraint", ModifierArt.theme(TestRuns.modifier("locked", "player_constraint", "\"allow_switching\":false")));
+        assertEquals("enemy:veteran", ModifierArt.theme(TestRuns.modifier("tough", "enemy", "\"level_offset\":3")));
+        assertEquals("enemy:tough", ModifierArt.theme(TestRuns.modifier("wall", "enemy", "\"boss_health_percent\":130")));
+        assertEquals("enemy:fragile", ModifierArt.theme(TestRuns.modifier("soft", "enemy", "\"boss_health_percent\":70")));
+        assertEquals("constraint:no_switch", ModifierArt.theme(TestRuns.modifier("locked", "player_constraint", "\"allow_switching\":false")));
+        assertEquals("encounter:crowd", ModifierArt.theme(TestRuns.modifier("mob", "encounter", "\"extra_opponents\":2")));
     }
 
     @Test

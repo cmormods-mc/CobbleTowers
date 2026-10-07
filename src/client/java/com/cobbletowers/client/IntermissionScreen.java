@@ -346,7 +346,7 @@ public final class IntermissionScreen extends TowerScreen implements ModifierCar
             TowerUi.label(graphics, font, "You can still visit the vendor, ready up or cash out.", sheetX + 7, sheetY + 19, sheetW - 14, 0xFF6B4A33);
         } else {
             var card = cards.get(inspected);
-            TowerUi.label(graphics, font, card.displayName() + "  -  " + ModifierCardButton.riskLabel(card.risk()),
+            TowerUi.label(graphics, font, card.displayName() + "  -  " + ModifierCardButton.riskLabel(card.risk()) + (card.risk() >= 0 ? " risk" : ""),
                     sheetX + 7, sheetY + 6, sheetW - 14, TowerUi.INK);
             int y = sheetY + 18;
             int first = page * linesPerPage;

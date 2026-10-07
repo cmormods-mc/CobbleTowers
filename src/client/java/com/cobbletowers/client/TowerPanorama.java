@@ -148,7 +148,8 @@ final class TowerPanorama {
         final int x = 0;
         final int y = 0;
         Palette p = palette(region);
-        int horizon = y + h * 62 / 100;
+        boolean banner = w >= h * 3;
+        int horizon = y + h * (banner ? 80 : 62) / 100;
         g.fill(x, y, x + w, y + (horizon - y) / 2, p.sky);
         g.gradient(x, y + (horizon - y) / 2, x + w, horizon, p.sky, p.skyLow);
         if (region.contains("duskvale")) {
@@ -183,11 +184,18 @@ final class TowerPanorama {
         } else {
             for (int ry = horizon + 3; ry < y + h; ry += 5) g.fill(x, ry, x + w, ry + 1, 0x33000000);
         }
-        // Three stone towers: tall centre, two flanks, with crenellations and lit windows.
-        int cx = x + w / 2;
-        tower(g, p, cx - 7 * Math.max(1, w / 60) - Math.max(10, w / 9), horizon, Math.max(10, w / 9), Math.max(14, (horizon - y) * 52 / 100), moving, lamp, 0);
-        tower(g, p, cx + 7 * Math.max(1, w / 60), horizon, Math.max(10, w / 9), Math.max(14, (horizon - y) * 52 / 100), moving, lamp, 1);
-        tower(g, p, cx - Math.max(7, w / 14), horizon, Math.max(14, w / 7), Math.max(20, (horizon - y) * 85 / 100), moving, lamp, 2);
+        // Three stone towers: tall centre, two flanks, with crenellations and lit windows. A wide, short banner keeps them whole
+        // (never cut by the top edge) and puts them right of centre, clear of the title written over the left of the strip.
+        int cx = banner ? x + w * 70 / 100 : x + w / 2;
+        int room = horizon - y - 4;
+        int flankH = Math.min(room, Math.max(14, (horizon - y) * 52 / 100));
+        int mainH = Math.min(room, Math.max(20, (horizon - y) * 85 / 100));
+        int flankW = banner ? Math.max(10, Math.min(w / 9, flankH * 3 / 4)) : Math.max(10, w / 9);
+        int mainW = banner ? Math.max(14, Math.min(w / 7, mainH * 3 / 4)) : Math.max(14, w / 7);
+        int gap = banner ? 4 : 7 * Math.max(1, w / 60);
+        tower(g, p, cx - mainW / 2 - gap - flankW, horizon, flankW, flankH, moving, lamp, 0);
+        tower(g, p, cx + mainW / 2 + gap, horizon, flankW, flankH, moving, lamp, 1);
+        tower(g, p, cx - mainW / 2, horizon, mainW, mainH, moving, lamp, 2);
     }
 
     private static void tower(Painter g, Palette p, int x, int base, int w, int h, boolean moving, int lamp, int seed) {

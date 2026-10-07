@@ -89,10 +89,11 @@ final class ModifierScene {
         switch (key) {
             case "weather" -> weather(g, detail, x, y, w, visible, horizon, step);
             case "terrain" -> terrain(g, detail, x, y, w, visible, horizon, step);
-            case "enemy" -> claws(g, x, y, w, visible);
-            case "constraint" -> bars(g, x, y, w, visible);
+            case "enemy" -> enemy(g, detail, x, y, w, visible, step);
+            case "encounter" -> { if (detail.equals("crowd")) crowd(g, x, y, w, horizon, step); }
+            case "constraint" -> constraint(g, detail, x, y, w, visible, step);
             case "scouting" -> lantern(g, x, y, w, step);
-            case "reward_up" -> coffer(g, x, y, w, visible, true, step);
+            case "reward_up" -> { coffer(g, x, y, w, visible, true, step); if (detail.equals("hoard")) coins(g, x + w - 30, y + visible - 14, step); }
             case "reward_down" -> coffer(g, x, y, w, visible, false, step);
             case "custom" -> custom(g, detail, x, y, w, visible, step);
             default -> {
@@ -165,6 +166,112 @@ final class ModifierScene {
             int sx = x + w * 55 / 100 + k * 7, sy = y + 3;
             for (int s = 0; s < h * 55 / 100; s++) g.fill(sx + s * 2 / 3, sy + s, sx + s * 2 / 3 + 2, sy + s + 1, CLAW);
         }
+    }
+
+    /** An enemy modifier, painted for what it does to the opposition. */
+    private static void enemy(GuiGraphics g, String kind, int x, int y, int w, int h, int step) {
+        int px = x + w - 26, py = y + 5;
+        switch (kind) {
+            case "tough" -> { shield(g, px, py, false); bar(g, x + 5, y + 5, 28, 100); }
+            case "fragile" -> { shield(g, px, py, true); bar(g, x + 5, y + 5, 28, 35); }
+            case "champion" -> { crown(g, px - 1, py + 2); chevrons(g, x + 6, y + 6, 2, true, GOLD); }
+            case "veteran" -> { claws(g, x, y, w, h); chevrons(g, x + 6, y + 6, 3, true, GOLD); }
+            case "novice" -> chevrons(g, x + 6, y + 6, 2, false, 0xFFB8B09C);
+            default -> claws(g, x, y, w, h);
+        }
+    }
+
+    /** A modifier that takes something from the party; a bar-slashed icon says which. */
+    private static void constraint(GuiGraphics g, String kind, int x, int y, int w, int h, int step) {
+        int ix = x + w - 25, iy = y + 5;
+        switch (kind) {
+            case "no_heal" -> { plus(g, ix, iy, 0xFFF0DFBF); slash(g, ix - 2, iy - 2, 18); }
+            case "no_setup" -> { chevrons(g, ix, iy, 3, true, 0xFFF0DFBF); slash(g, ix - 2, iy - 2, 18); }
+            case "no_switch" -> {
+                g.fill(ix, iy + 3, ix + 14, iy + 5, 0xFFF0DFBF);
+                g.fill(ix + 10, iy, ix + 12, iy + 8, 0xFFF0DFBF);
+                g.fill(ix, iy + 11, ix + 14, iy + 13, 0xFFF0DFBF);
+                g.fill(ix + 2, iy + 8, ix + 4, iy + 16, 0xFFF0DFBF);
+                slash(g, ix - 2, iy - 2, 18);
+            }
+            case "no_items" -> {
+                g.fill(ix + 1, iy + 5, ix + 15, iy + 17, WOOD);
+                g.fill(ix + 3, iy + 1, ix + 13, iy + 5, TowerUi.BRONZE);
+                g.fill(ix + 6, iy + 8, ix + 10, iy + 11, GOLD);
+                slash(g, ix - 2, iy - 1, 20);
+            }
+            default -> bars(g, x, y, w, h);
+        }
+    }
+
+    /** Many small dark figures: a modifier that adds opponents. */
+    private static void crowd(GuiGraphics g, int x, int y, int w, int horizon, int step) {
+        for (int i = 0; i < 6; i++) {
+            int fx = x + 3 + i * Math.max(8, (w - 12) / 6), fy = horizon - 8 - (i % 2) * 3 + (step + i) % 2;
+            g.fill(fx, fy, fx + 6, fy + 9, 0xCC2A1A12);
+            g.fill(fx + 1, fy - 3, fx + 5, fy, 0xCC2A1A12);
+            g.fill(fx + 1, fy - 2, fx + 2, fy - 1, 0xFFC0453A);
+            g.fill(fx + 4, fy - 2, fx + 5, fy - 1, 0xFFC0453A);
+        }
+    }
+
+    private static void shield(GuiGraphics g, int x, int y, boolean cracked) {
+        g.fill(x - 1, y - 1, x + 19, y + 15, 0xFF211510);
+        g.fill(x, y, x + 18, y + 14, TowerUi.BRONZE_LIGHT);
+        g.fill(x + 2, y + 14, x + 16, y + 18, TowerUi.BRONZE_LIGHT);
+        g.fill(x + 5, y + 18, x + 13, y + 21, TowerUi.BRONZE_LIGHT);
+        g.fill(x + 2, y + 2, x + 16, y + 14, 0xFF8C95A0);
+        g.fill(x + 4, y + 14, x + 14, y + 17, 0xFF8C95A0);
+        g.fill(x + 7, y + 6, x + 11, y + 10, TowerUi.BRONZE);
+        if (cracked) {
+            for (int i = 0; i < 12; i++) g.fill(x + 9 + (i % 4 < 2 ? -1 : 1), y + 1 + i, x + 10 + (i % 4 < 2 ? -1 : 1), y + 2 + i, 0xFF211510);
+        }
+    }
+
+    private static void bar(GuiGraphics g, int x, int y, int w, int percent) {
+        g.fill(x, y, x + w, y + 5, 0xFF2A1A12);
+        g.fill(x + 1, y + 1, x + w - 1, y + 4, 0xFF4A2A2A);
+        g.fill(x + 1, y + 1, x + 1 + (w - 2) * percent / 100, y + 4, percent > 60 ? 0xFF6FA55A : 0xFFC0453A);
+    }
+
+    private static void crown(GuiGraphics g, int x, int y) {
+        g.fill(x, y + 6, x + 20, y + 14, GOLD);
+        for (int i = 0; i < 3; i++) g.fill(x + i * 8, y, x + i * 8 + 4, y + 6, GOLD);
+        g.fill(x + 2, y + 9, x + 18, y + 11, TowerUi.BURGUNDY);
+    }
+
+    /** Stacked V marks, pointing up or down: more, or fewer, levels. */
+    private static void chevrons(GuiGraphics g, int x, int y, int count, boolean up, int color) {
+        for (int c = 0; c < count; c++) {
+            int cy = y + c * 6;
+            for (int i = 0; i < 6; i++) {
+                int dy = up ? i : 5 - i;
+                g.fill(x + i * 2, cy + dy, x + i * 2 + 2, cy + dy + 2, color);
+                g.fill(x + 22 - i * 2 - 2, cy + dy, x + 22 - i * 2, cy + dy + 2, color);
+            }
+        }
+    }
+
+    private static void plus(GuiGraphics g, int x, int y, int color) {
+        g.fill(x + 5, y, x + 9, y + 14, color);
+        g.fill(x, y + 5, x + 14, y + 9, color);
+    }
+
+    /** A red diagonal slash across an icon: "not allowed". */
+    private static void slash(GuiGraphics g, int x, int y, int size) {
+        for (int i = 0; i < size; i++) g.fill(x + i, y + size - 1 - i, x + i + 2, y + size - i, 0xFFC0453A);
+    }
+
+    private static void coins(GuiGraphics g, int x, int y, int step) {
+        for (int row = 0; row < 3; row++) {
+            for (int i = 0; i <= 2 - row; i++) {
+                int cx = x + row * 4 + i * 8;
+                g.fill(cx, y + 8 - row * 4, cx + 7, y + 11 - row * 4, GOLD);
+                g.fill(cx, y + 10 - row * 4, cx + 7, y + 11 - row * 4, TowerUi.BRONZE);
+            }
+        }
+        int sp = step % 3;
+        g.fill(x + 4 + sp * 6, y - 4, x + 5 + sp * 6, y - 1, 0xFFF0DFBF);
     }
 
     private static void bars(GuiGraphics g, int x, int y, int w, int h) {
@@ -257,6 +364,6 @@ final class ModifierScene {
         g.fill(cx + 5, cy + 2, cx + 19, cy + 26, TowerUi.BRONZE);
         g.fill(cx + 2, cy + 5, cx + 22, cy + 23, TowerUi.BRONZE);
         g.fill(cx + 6, cy + 4, cx + 18, cy + 24, BARK);
-        g.drawCenteredString(Minecraft.getInstance().font, "?", cx + 12, cy + 10, GOLD);
+        g.drawCenteredString(TowerFonts.get(), "?", cx + 12, cy + 10, GOLD);
     }
 }

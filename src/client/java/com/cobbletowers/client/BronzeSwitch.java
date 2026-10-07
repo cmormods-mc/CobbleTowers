@@ -13,7 +13,7 @@ final class BronzeSwitch extends Button {
         boolean on=value.getAsBoolean();float target=on?1:0;long now=System.nanoTime();float blend=TowerUiSettings.motion?Math.min(1,(now-last)/1e9f*8):1;last=now;position+=(target-position)*blend;
         setMessage(Component.literal(label+": "+(on?"On":"Off")));
         PixelUi.panel(g,getX(),getY(),getWidth(),getHeight(),TowerUi.BRONZE,isHoveredOrFocused()?.8f:0);
-        var font=Minecraft.getInstance().font;TowerUi.label(g,font,label,getX()+9,getY()+9,getWidth()-62,TowerUi.TEXT);
+        var font=TowerFonts.get();TowerUi.label(g,font,label,getX()+9,getY()+9,getWidth()-62,TowerUi.TEXT);
         int x=getX()+getWidth()-43,y=getY()+7;
         g.fill(x,y,x+32,y+13,TowerUi.OUTLINE);g.fill(x+1,y+1,x+31,y+12,on?0xFF4F5C33:0xFF2B1D17);
         int knob=x+2+Math.round(position*17);

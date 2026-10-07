@@ -27,7 +27,7 @@ public final class TowerButton extends Button {
     }
 
     @Override protected void renderWidget(GuiGraphics g, int mx, int my, float delta) {
-        var font = Minecraft.getInstance().font;
+        var font = TowerFonts.get();
         int x = getX(), y = getY(), w = getWidth(), h = getHeight();
         boolean hover = isHoveredOrFocused() && active;
         boolean pressed = active && pressedAt != 0 && (System.nanoTime() - pressedAt) < 100_000_000L;

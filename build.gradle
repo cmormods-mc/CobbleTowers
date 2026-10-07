@@ -10,6 +10,7 @@ base {
 }
 
 loom {
+    accessWidenerPath = file('src/main/resources/cobbletowers.accesswidener')
     // First client-only code this mod has (P11): a spectator HUD and a reward reveal screen. Every
     // phase before this was server-authoritative logic with no client presentation at all, so there
     // was nothing for a split source set to separate out until now.

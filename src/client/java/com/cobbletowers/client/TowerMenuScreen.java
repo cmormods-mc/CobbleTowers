@@ -24,7 +24,8 @@ public abstract class TowerMenuScreen extends TowerScreen {
         }
         addRenderableWidget(TowerButton.builder(Component.literal("Settings"),b->minecraft.setScreen(new TowerOptionsScreen(this)))
                 .pos(9,height-30).size(rail-10,20).dark().build());
-        addRenderableWidget(TowerButton.builder(Component.literal("Back"),b->onClose()).pos(width-54,10).size(42,20).dark().build());
+        addRenderableWidget(TowerButton.builder(Component.literal("Back"),b->onClose()).pos(width-100,10).size(42,20).dark().build());
+        addRenderableWidget(TowerButton.builder(Component.literal("Close"),b->closeAll()).pos(width-54,10).size(42,20).dark().build());
     }
 
     protected abstract void navigate(String section);
@@ -41,5 +42,6 @@ public abstract class TowerMenuScreen extends TowerScreen {
     }
 
     @Override protected boolean showUiHint() { return false; }
+    @Override protected boolean cornerClose() { return false; }
     @Override public boolean isPauseScreen() { return false; }
 }

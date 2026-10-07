@@ -17,6 +17,7 @@
     "main": ["com.cobbletowers.CobbleTowers"],
     "client": ["com.cobbletowers.client.CobbleTowersClient"]
   },
+  "accessWidener": "cobbletowers.accesswidener",
   "mixins": ["mixins/cobbletowers.mixins.json"],
   "depends": {
     "fabricloader": ">=0.17.2",

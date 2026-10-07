@@ -43,19 +43,19 @@ public final class TowerHallScreen extends TowerMenuScreen {
     @Override public void tick(){if(requested!=0&&(System.nanoTime()-requested)>8_000_000_000L){requested=0;notice="No response. Refresh to check the latest state.";rebuild();}}
     private Button control(String label,int x,int y,int w,Runnable callback){var b=TowerButton.builder(Component.literal(label),ignored->callback.run()).pos(x,y).size(w,20).dark().build();b.active=requested==0;addRenderableWidget(b);return b;}
     private void tile(String label,String subtitle,String art,int x,int y,int w,int h,Runnable callback){addRenderableWidget(new DestinationButton(x,y,w,h,label,subtitle,art,callback));}
-    private int rows(){return Math.max(1,Math.min(2,(contentHeight-68)/52));}
+    private int rows(){return Math.max(1,Math.min(2,(contentHeight-75)/52));}
     private int perPage(){return rows()*2;}
 
     private void buildPage(){
         int x=contentX,y=contentY,w=contentWidth,bottom=height-64;
         if(section.equals("Tower Hall")) {
             int count=perPage(),pages=Math.max(1,(state.towers().size()+count-1)/count);page=Math.min(page,pages-1);
-            int h=Math.max(38,(contentHeight-68)/rows()),cw=(w-6)/2;
+            int h=Math.max(38,(contentHeight-75)/rows()),cw=(w-6)/2;
             for(int i=0;i<count&&page*count+i<state.towers().size();i++) {
                 var t=state.towers().get(page*count+i);
-                tile(t.name(),t.floors()+" floors / cycle",t.id().getPath(),x+(i%2)*(cw+6),y+31+(i/2)*h,cw,h-4,()->{destination=t.id().toString();navigate("Tower briefing");});
+                tile(t.name(),t.floors()+" floors / cycle",t.id().getPath(),x+(i%2)*(cw+6),y+38+(i/2)*h,cw,h-4,()->{destination=t.id().toString();navigate("Tower briefing");});
             }
-            int ty=y+31+rows()*h;
+            int ty=y+38+rows()*h;
             control("Daily Tower",x,ty,cw,()->openTrial("daily"));control("Weekly Tower",x+cw+6,ty,cw,()->openTrial("weekly"));
             if(pages>1){control("<",x,bottom,20,()->{page=Math.floorMod(page-1,pages);rebuild();});control(">",x+24,bottom,20,()->{page=(page+1)%pages;rebuild();});}
         } else if(section.equals("Trials")) {
@@ -113,9 +113,9 @@ public final class TowerHallScreen extends TowerMenuScreen {
     @Override protected void drawContent(GuiGraphics g){
         int x=contentX,y=contentY,w=contentWidth;
         if(section.equals("Tower Hall")) {
-            TowerPanorama.draw(g,x,y,w,25,"tideforge",uiAge(),true);
-            g.fill(x,y,x+w/2,y+25,0xB02A1A12);
-            TowerUi.label(g,font,"Every ascent begins here.",x+7,y+8,w-14,TowerUi.TEXT);
+            TowerPanorama.draw(g,x,y,w,32,"tideforge",uiAge(),true);
+            g.fill(x,y,x+w*46/100,y+32,0xA02A1A12);
+            TowerUi.label(g,font,"Every ascent begins here.",x+7,y+12,w-14,TowerUi.TEXT);
         } else if(section.endsWith("briefing")) {
             TowerPanorama.draw(g,x,y,w,28,section.equals("Tower briefing")?destination:"tideforge",uiAge(),true);
             var lines=details();int limit=detailLines();
@@ -156,7 +156,7 @@ public final class TowerHallScreen extends TowerMenuScreen {
             int x=getX(),y=getY(),w=getWidth(),h=getHeight();
             PixelUi.frame(g,PixelUi.Frame.DARK,x,y,w,h);
             TowerPanorama.draw(g,x+3,y+3,w-6,Math.max(10,h-18),art,hoverAt==0?1400:(System.nanoTime()-hoverAt)/1_000_000,hover);
-            var font=Minecraft.getInstance().font;
+            var font=TowerFonts.get();
             TowerUi.label(g,font,getMessage().getString(),x+5,y+h-12,w-10,TowerUi.TEXT);
             if(hover)PixelUi.brackets(g,x+2,y+2,w-4,h-4,TowerUi.BRONZE_LIGHT);
         }

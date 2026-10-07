@@ -19,7 +19,7 @@ final class TrainerCardButton extends Button {
     @Override protected void renderWidget(GuiGraphics g,int mx,int my,float delta) {
         int x=getX(),y=getY(),w=getWidth(),h=getHeight();
         boolean focus=active&&isHoveredOrFocused();
-        var font=Minecraft.getInstance().font;
+        var font=TowerFonts.get();
         PixelUi.panel(g,x,y,w,h,accent,focus?1f:.12f);
         g.enableScissor(x+5,y+2,x+w-2,y+h-2);
                 int artSize=h>=42?48:24;

@@ -75,6 +75,9 @@ public final class RewardRevealScreen extends TowerScreen {
     }
 
     @Override
+    protected void closeAll() { onClose(); }
+
+    @Override
     public void onClose() {
         Minecraft.getInstance().setScreen(null);
         // A floor that banks sends this on top of the intermission screen; ask for that one back so

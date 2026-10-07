@@ -10,6 +10,8 @@ public final class TowerUiSettings {
     public static boolean glow = true;
     public static boolean motion = true;
     public static boolean sounds = true;
+    /** The bundled pixel font (Pixelify Sans, OFL) in every CobbleTowers menu; off uses Minecraft's own font. */
+    public static boolean pixelFont = true;
     private TowerUiSettings() {}
     public static void load() {
         var file = FabricLoader.getInstance().getConfigDir().resolve("cobbletowers-ui.properties");
@@ -19,6 +21,7 @@ public final class TowerUiSettings {
             glow = Boolean.parseBoolean(p.getProperty("glow", p.getProperty("shaders", "true")));
             motion = Boolean.parseBoolean(p.getProperty("motion", "true"));
             sounds = Boolean.parseBoolean(p.getProperty("sounds", "true"));
+            pixelFont = Boolean.parseBoolean(p.getProperty("pixelFont", "true"));
         } catch (java.io.IOException e) {
             org.slf4j.LoggerFactory.getLogger("cobbletowers-ui").warn("Cannot read UI settings", e);
         }
@@ -32,6 +35,7 @@ public final class TowerUiSettings {
                 p.setProperty("glow", Boolean.toString(glow));
                 p.setProperty("motion", Boolean.toString(motion));
                 p.setProperty("sounds", Boolean.toString(sounds));
+                p.setProperty("pixelFont", Boolean.toString(pixelFont));
                 p.store(writer, "CobbleTowers client presentation only");
             }
         } catch (java.io.IOException e) {

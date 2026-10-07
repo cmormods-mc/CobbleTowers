@@ -47,7 +47,7 @@ final class ModifierCardButton extends Button {
 
     @Override
     protected void renderWidget(GuiGraphics g, int mx, int my, float delta) {
-        var font = Minecraft.getInstance().font;
+        var font = TowerFonts.get();
         int x = getX(), y = getY(), w = getWidth(), h = getHeight();
         float reveal = view.reveal(index);
         boolean hot = active && isHoveredOrFocused();
@@ -85,7 +85,7 @@ final class ModifierCardButton extends Button {
         int plateY = sceneY + sceneH - plate + 2;
         PixelUi.sheet(g, sceneX - 2, plateY, sceneW + 4, plate);
         TowerUi.label(g, font, card.displayName(), sceneX + 7, plateY + 6, sceneW - 12, TowerUi.INK);
-        TowerUi.label(g, font, riskLabel(card.risk()), sceneX + 7, plateY + 15, sceneW - 12, 0xFF6B4A33);
+        TowerUi.label(g, font, riskLabel(card.risk()), sceneX + 7, plateY + 15, sceneW - 12, riskColor(card.risk()));
 
         if (selected || view.chosen(index)) {
             PixelUi.brackets(g, x + 2, y + 2, w - 4, h - 4, TowerUi.BRONZE_LIGHT);
@@ -98,12 +98,22 @@ final class ModifierCardButton extends Button {
         if (reveal < 1f) shutters(g, x + 3, y + 3, w - 6, h - 6, reveal);
     }
 
+    /** Short enough for a card's nameplate in the UI font, and coloured so the risk reads before it is read. */
     static String riskLabel(int risk) {
         return switch (risk) {
-            case 0 -> "Risk: minor";
-            case 1 -> "Risk: moderate";
-            case 2 -> "Risk: severe";
+            case 0 -> "Minor";
+            case 1 -> "Moderate";
+            case 2 -> "Severe";
             default -> "Special offer";
+        };
+    }
+
+    static int riskColor(int risk) {
+        return switch (risk) {
+            case 0 -> 0xFF3F6B34;
+            case 1 -> 0xFF8A5A14;
+            case 2 -> 0xFF9A2E24;
+            default -> 0xFF6B4A33;
         };
     }
 

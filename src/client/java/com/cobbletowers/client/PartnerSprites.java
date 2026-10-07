@@ -86,6 +86,6 @@ final class PartnerSprites {
         g.fill(cx - 10, cy - 13, cx + 10, cy + 13, TowerUi.OUTLINE);
         g.fill(cx - 8, cy - 11, cx + 8, cy + 11, TowerUi.BRONZE);
         g.fill(cx - 6, cy - 9, cx + 6, cy + 9, 0xFF4A3426);
-        g.drawCenteredString(Minecraft.getInstance().font, "?", cx, cy - 4, TowerUi.BRONZE_LIGHT);
+        g.drawCenteredString(TowerFonts.get(), "?", cx, cy - 4, TowerUi.BRONZE_LIGHT);
     }
 }

@@ -17,7 +17,7 @@ public final class TowerOptionsScreen extends TowerScreen {
         }
         int x=content+12,w=width-x-20;
         switch(tab){
-            case "General" -> toggle("Animations",()->TowerUiSettings.motion,x,55,w,()->TowerUiSettings.motion=!TowerUiSettings.motion);
+            case "General" -> {toggle("Animations",()->TowerUiSettings.motion,x,55,w,()->TowerUiSettings.motion=!TowerUiSettings.motion);toggle("Pixel font",()->TowerUiSettings.pixelFont,x,85,w,()->{TowerUiSettings.pixelFont=!TowerUiSettings.pixelFont;font=TowerFonts.get();});}
             case "Audio" -> toggle("UI sounds",()->TowerUiSettings.sounds,x,55,w,()->TowerUiSettings.sounds=!TowerUiSettings.sounds);
             case "Graphics" -> toggle("Torch glow",()->TowerUiSettings.glow,x,55,w,()->TowerUiSettings.glow=!TowerUiSettings.glow);
             case "Keybinds" -> addRenderableWidget(TowerButton.builder(Component.literal("Edit Minecraft keybinds"),b->minecraft.setScreen(new net.minecraft.client.gui.screens.options.controls.KeyBindsScreen(this,minecraft.options))).pos(x,101).size(w,24).build());
@@ -31,7 +31,7 @@ public final class TowerOptionsScreen extends TowerScreen {
         super.renderBackground(g,mx,my,dt);TowerUi.panel(g,7,36,content-9,height-76,theme.accent);PixelUi.sheet(g,content+4,36,width-content-12,height-76);
         g.drawString(font,title,14,17,TowerUi.BRONZE_LIGHT,false);
         String note=switch(tab){case "General"->"Reduced motion keeps every choice available.";case "Audio"->"Game volume remains in Minecraft sound settings.";case "Graphics"->"The torch glow is a soft light behind headers. Turning it off keeps every material and control.";default->CobbleTowersClient.PRESENTATION.getTranslatedKeyMessage().getString()+": presentation settings. Tab: focus. Enter: select. Esc: back.";};
-        TowerUi.wrapped(g,font,note,content+12,tab.equals("Keybinds")?55:90,width-content-32,TowerUi.INK);
+        TowerUi.wrapped(g,font,note,content+12,tab.equals("Keybinds")?55:tab.equals("General")?120:90,width-content-32,TowerUi.INK);
     }
     @Override public void onClose(){minecraft.setScreen(parent);}
     @Override public boolean isPauseScreen(){return false;}

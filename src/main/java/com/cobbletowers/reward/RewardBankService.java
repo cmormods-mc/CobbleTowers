@@ -85,6 +85,14 @@ public final class RewardBankService {
         return List.copyOf(priced);
     }
 
+    /** The final-payout bonus for the modifiers the run holds, a locked-in one counted twice (as {@code DifficultyScore} does). */
+    static int riskBonusPercent(TowerContent content, PersistedRun run) {
+        List<com.cobbletowers.api.modifier.RiskTier> risks = new ArrayList<>();
+        for (var held : DraftService.held(content, run.modifiers())) risks.add(held.risk());
+        for (var locked : run.modifiers().lockedIn()) content.modifier(locked).ifPresent(m -> risks.add(m.risk()));
+        return RiskReward.bonusPercent(risks);
+    }
+
     /** Who a grant is split across: everybody still a member, not only those who can fight right now. */
     static List<UUID> currentParticipants(PersistedRun run) {
         List<UUID> ids = new ArrayList<>();
@@ -164,6 +172,14 @@ public final class RewardBankService {
         List<RewardValuation.Grant> grants = RewardValuation.value(lootSeed(run), priced, table.get(), effects,
                 DraftService.customs(run), content.towers().get(run.towerId()).ascension() ? content.towers().get(run.towerId()).floorCount() : 0,
                 id -> content.milestoneKindOf(id), com.cobbletowers.season.SeasonSpotlight.weights(run.towerId()));
+        // The risk bonus is paid once, with the final payout of the tower: the run is over (completed or cashed out).
+        if (run.state() == RunState.COMPLETED || run.state() == RunState.CASHED_OUT) {
+            int bonus = riskBonusPercent(content, run);
+            if (bonus > 0) {
+                grants = RiskReward.apply(grants, bonus);
+                TowerLog.info("Run {} final payout carries a +{}% risk bonus", runId, bonus);
+            }
+        }
         List<UUID> participants = currentParticipants(run);
 
         TowerRuns.save(server, run.banked(run.floorIndex(), key, now), true);

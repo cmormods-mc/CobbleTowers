@@ -22,7 +22,7 @@ final class AchievementNode extends Button {
             g.fill(x+10,y+18,x+12,y+23,dark);g.fill(x+7,y+23,x+15,y+25,dark);                                   // stem and base
             g.fill(x+9,y+11,x+10,y+15,0xFFF0DFBF);
         }
-        TowerUi.label(g,Minecraft.getInstance().font,getMessage().getString(),x+20,y+14,w-26,earned?TowerUi.TEXT:TowerUi.MUTED);
+        TowerUi.label(g,TowerFonts.get(),getMessage().getString(),x+20,y+14,w-26,earned?TowerUi.TEXT:TowerUi.MUTED);
     }
     @Override public void playDownSound(SoundManager manager){if(TowerUiSettings.sounds)super.playDownSound(manager);}
 }
