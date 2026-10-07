@@ -43,6 +43,7 @@ C = f"TVc{STAMP}"
 UUID_RE = r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"
 LIVE = ("ENCOUNTER_ACTIVE", "INTERMISSION", "RECOVERY_REQUIRED")
 SERVICE = "cobbletowers:full_heal"
+PRICE = 25  # full_heal.json
 
 
 def start_bot(name: str, port: int, node_modules: Path, log: Path) -> subprocess.Popen:
@@ -139,8 +140,12 @@ def main() -> None:
             bought = rcon.command(f"cobbletowers runs vendor buy {run} {SERVICE} {A} {B}")
             results.append(Result("buying for a teammate succeeds", bought_result(bought) == "SUCCESS", bought.strip()[:200]))
             after_a, after_b = wallet(rcon, A), wallet(rcon, B)
+            # Buying can complete the daily "shopper" contract, which pays the payer a bonus.
+            bonus = sum(int(n) for n in re.findall(r"completed the contract \S+ and is paid (\d+) CobbleDollars",
+                                                   server.read_log()))
             results.append(Result("the payer was debited and the teammate was not",
-                                  0 <= after_a < before_a and after_b == before_b, f"A={after_a} B={after_b}"))
+                                  after_a == before_a - PRICE + bonus and after_b == before_b,
+                                  f"A={after_a} (expected {before_a - PRICE + bonus}) B={after_b}"))
             shown = rcon.command(f"cobbletowers runs show {run}")
             results.append(Result("the purchase is counted against the run", "full_heal" in shown and "1" in shown.split("vendor purchases:")[-1][:60],
                                   shown[-300:]))
