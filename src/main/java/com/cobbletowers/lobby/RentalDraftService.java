@@ -133,9 +133,18 @@ public final class RentalDraftService {
     public static void handle(MinecraftServer server, ServerPlayer player, RentalDraftActionPayload action) {
         Optional<TowerLobby> lobby = LobbyService.lobbyOf(player.getUUID());
         if (lobby.isEmpty() || !isOpen(lobby.get()) || RentalSetRegistry.all().isEmpty()) return;
+        if (action.action() == RentalDraftActionPayload.Action.READY) {
+            // The draft is done: ready up and go back to the lobby, where the host starts (the pack screen is not left open over it).
+            LobbyService.openScreenWithMessage(server, player, LobbyService.ready(server, player, true));
+            return;
+        }
+        if (action.action() == RentalDraftActionPayload.Action.LOBBY) {
+            LobbyService.openScreen(server, player);
+            return;
+        }
         RentalDraft draft = open(server, lobby.get(), player.getUUID());
         String message = switch (action.action()) {
-            case OPEN -> "";
+            case OPEN, READY, LOBBY -> "";
             case PICK -> say(draft.pick(draft.currentPack(), List.of(action.a(), action.b())));
             case RESTART -> {
                 draft.restart();

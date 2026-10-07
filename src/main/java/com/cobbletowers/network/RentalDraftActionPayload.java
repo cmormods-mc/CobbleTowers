@@ -13,7 +13,8 @@ import net.minecraft.resources.ResourceLocation;
  */
 public record RentalDraftActionPayload(Action action, int a, int b) implements CustomPacketPayload {
 
-    public enum Action { OPEN, PICK, RESTART }
+    /** READY readies the player up and opens the team's lobby screen; LOBBY just opens it. Both are for a finished draft. */
+    public enum Action { OPEN, PICK, RESTART, READY, LOBBY }
 
     public static final CustomPacketPayload.Type<RentalDraftActionPayload> TYPE = new CustomPacketPayload.Type<>(
             ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "rental_draft_action"));

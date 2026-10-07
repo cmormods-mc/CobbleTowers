@@ -184,10 +184,8 @@ def main() -> None:
             remote.send("press Keep these two")
             remote.send("wait 1500")
         results.append(Result("three packs of picks reach the server and the team is drafted", remote.shot("e2e_09_team"), ""))
-        remote.send("press Done")
-        remote.send("wait 500")
-        remote.send("cmd tower ready")                # a drafted player readies up; the host cannot start before
-        remote.send("wait 800")
+        remote.send("press Ready up")                 # a drafted player readies up from the pack screen, which returns to the lobby
+        remote.send("wait 1200")
 
         # ---- the run ---------------------------------------------------------------------------------------------
         remote.send("cmd tower confirm")

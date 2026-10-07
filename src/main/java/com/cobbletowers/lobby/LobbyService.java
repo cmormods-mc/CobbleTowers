@@ -131,6 +131,11 @@ public final class LobbyService {
         }
         if (existing.isPresent() && existing.get().counting()) return "The run is already starting.";
 
+        if (existing.isPresent() && existing.get().tower().equals(towerId)) {
+            // The same tower again changes nothing: a new offer would send everyone back to "invited" and throw away the mode,
+            // the drafts and the ready-ups, which looks like a brand-new lobby to a team that only wanted to look at this one.
+            return "That is already your tower: " + towerName(towerId) + ".";
+        }
         TowerLobby lobby = existing.orElseGet(() -> {
             TowerLobby created = new TowerLobby(player.getUUID(), towerId);
             BY_HOST.put(player.getUUID(), created);

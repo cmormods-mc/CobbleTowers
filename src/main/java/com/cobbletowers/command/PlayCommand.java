@@ -126,7 +126,15 @@ public final class PlayCommand {
     }
 
     private static int hall(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        com.cobbletowers.menu.TowerHallService.open(context.getSource().getServer(), context.getSource().getPlayerOrException(), "");
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        // A team that is forming (or at an intermission) wants to see that, not the tower picker; /tower menu is the picker.
+        if (IntermissionService.isAtIntermission(player)) {
+            IntermissionService.openScreen(context.getSource().getServer(), player, "");
+        } else if (LobbyService.lobbyOf(player.getUUID()).isPresent()) {
+            LobbyService.openScreen(context.getSource().getServer(), player);
+        } else {
+            com.cobbletowers.menu.TowerHallService.open(context.getSource().getServer(), player, "");
+        }
         return 1;
     }
 

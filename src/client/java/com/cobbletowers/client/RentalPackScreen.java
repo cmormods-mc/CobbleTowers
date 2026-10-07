@@ -59,6 +59,7 @@ public final class RentalPackScreen extends TowerScreen {
     private Button restart;
     private Button toggle;
     private Button done;
+    private Button readyUp;
     private Button lookToggle;
 
     public RentalPackScreen(RentalDraftPayload draft) {
@@ -129,19 +130,24 @@ public final class RentalPackScreen extends TowerScreen {
                 .pos(width / 2 - 100, height - 30).size(130, 20).build());
         restart = addRenderableWidget(TowerButton.builder(Component.literal("Draft again"),
                         b -> send(RentalDraftActionPayload.Action.RESTART, 0, 0))
-                .pos(width / 2 + 36, height - 30).size(64, 20).build());
-        done = addRenderableWidget(TowerButton.builder(Component.literal("Done"), b -> onClose())
-                .pos(width / 2 - 100, height - 30).size(130, 20).build());
+                .pos(width / 2 + 55, height - 30).size(80, 20).build());
+        // A finished draft: Ready up (which also returns to the lobby, where the host starts), or just go back to the lobby.
+        readyUp = addRenderableWidget(TowerButton.builder(Component.literal("Ready up"),
+                        b -> send(RentalDraftActionPayload.Action.READY, 0, 0))
+                .pos(width / 2 - 143, height - 30).size(130, 20).build());
+        done = addRenderableWidget(TowerButton.builder(Component.literal("Lobby"),
+                        b -> send(RentalDraftActionPayload.Action.LOBBY, 0, 0))
+                .pos(width / 2 - 9, height - 30).size(60, 20).build());
         toggle = addRenderableWidget(TowerButton.builder(animLabel(), b -> {
                     animations = !animations;
                     toggle.setMessage(animLabel());
                     if (!animations && (stage == Stage.TEARING || stage == Stage.REVEALING)) enter(Stage.CHOOSING);
-                }).pos(6, height - 24).size(102, 16).build());
+                }).pos(6, 6).size(102, 16).build());
         if (CobblemonCardFace.available()) {
             lookToggle = addRenderableWidget(TowerButton.builder(lookLabel(), b -> {
                         collectionLook = !collectionLook;
                         lookToggle.setMessage(lookLabel());
-                    }).pos(width - 108, height - 24).size(102, 16).build());
+                    }).pos(width - 108, 6).size(102, 16).build());
         }
         refreshButtons();
     }
@@ -158,6 +164,7 @@ public final class RentalPackScreen extends TowerScreen {
         if (keep == null) return;
         keep.visible = stage == Stage.CHOOSING;
         done.visible = stage == Stage.TEAM;
+        readyUp.visible = stage == Stage.TEAM;
         keep.active = selected.size() == 2;
         restart.visible = stage == Stage.CHOOSING && pack > 0 || stage == Stage.TEAM;
         restart.setMessage(Component.literal(stage == Stage.TEAM ? "Draft again" : "Start over"));
@@ -348,7 +355,7 @@ public final class RentalPackScreen extends TowerScreen {
             case TEARING -> "";
             case REVEALING -> "Click to skip the reveal";
             case CHOOSING -> "Choose two cards to keep (" + selected.size() + " of 2)";
-            case TEAM -> "Drafted. Close this and the host can start the run.";
+            case TEAM -> "Drafted. Ready up; the host starts once everyone is ready.";
         };
         graphics.drawCenteredString(font, hint, width / 2, 24, TowerUi.MUTED);
         if (!message.isEmpty()) graphics.drawCenteredString(font, message, width / 2, height - 46, TowerUi.DANGER);
