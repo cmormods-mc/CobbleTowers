@@ -1,13 +1,8 @@
 package com.cobbletowers.encounter;
 
 /**
- * The number painted on a jersey signature's uniform (TDS #67).
- *
- * <p>Sports jersey range, 1-99. Pure arithmetic over the same seed {@link EncounterDraw} already
- * derives for this encounter -- TDS #67 A only asks that a restart cannot reroll it, and a second
- * random source here would be exactly the scattered generator P0's coding gate warns against. The
- * fourth "one place this arithmetic exists" class alongside {@link TowerLevelPolicy} and
- * {@link RegionalWeighting}.
+ * The number on a jersey signature's uniform (TDS #67): 1-99, pure arithmetic over the encounter's seed from {@link
+ * EncounterDraw}, so a restart cannot reroll it.
  */
 public final class JerseyNumbers {
 

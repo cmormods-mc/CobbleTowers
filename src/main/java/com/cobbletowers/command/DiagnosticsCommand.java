@@ -17,12 +17,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
 /**
- * {@code /cobbletowers diagnostics[ run <run>]}: TDS #60's "structured developer diagnostics keyed by
- * run/encounter," the counts and timings section 11 lists.
- *
- * <p>State, modifiers, seed and last transition already have a home in {@code runs show}; this
- * command is only the two words nothing else prints -- timings and adapter status -- plus the counts.
- * Read-only, the same posture {@code definitions} and {@code transitions} already take.
+ * {@code /cobbletowers diagnostics[ run <run>]}: the counts, timings and adapter status of TDS #60 and section 11.
+ * State, modifiers and seed are in {@code runs show}. Read-only.
  */
 public final class DiagnosticsCommand {
 
@@ -42,10 +38,8 @@ public final class DiagnosticsCommand {
         CommandSourceStack source = context.getSource();
         int towerEntities = countTowerEntities(source);
 
-        // Not TowerRuns.all().size(): a run reaching a terminal state stays indexed for its history
-        // (the same retention every finished run already has), so counting every indexed run would
-        // report a soak test's whole abandoned history as "active" and never come back down. TDS
-        // section 11 asks to track active runs, not every run this server has ever seen.
+        // Not TowerRuns.all().size(): finished runs stay indexed for history, and TDS section 11 asks for active
+        // runs.
         long activeRuns = TowerRuns.all().stream().filter(run -> !run.isRetired()).count();
         source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
                 "%d active run(s), %d active encounter(s), %d tower chunk(s), %d tower entities",

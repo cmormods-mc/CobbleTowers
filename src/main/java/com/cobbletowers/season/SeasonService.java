@@ -19,12 +19,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * Seasons at run time (P36a): announces a season's start, finalises a season once it has ended (the Hall entry, the pruning, the
- * announcement), and words the player's and operator's views. The rules are {@link SeasonSchedule} and {@link SeasonFinalizer};
- * this is the part that knows a server.
- *
- * <p>Finalisation is three steps with progress stored after each, so a crash resumes at the next step and no step runs twice:
- * (1) write the Hall season, (2) prune the seasonal boards older than the one that just ended, (3) mark it finalised and announce.
+ * Seasons at run time (P36a): announces a start, finalises an ended season (Hall entry, pruning, announcement) and
+ * words the views. Rules are {@link SeasonSchedule} and {@link SeasonFinalizer}. Finalisation stores progress after
+ * each of its three steps, so a crash resumes at the next.
  */
 public final class SeasonService {
 
@@ -44,7 +41,10 @@ public final class SeasonService {
         });
     }
 
-    /** One look at the calendar: announce a start, finalise anything that has ended. Idempotent, so any number of calls is safe. */
+    /**
+     * One look at the calendar: announce a start, finalise anything that has ended. Idempotent, so any number of
+     * calls is safe.
+     */
     public static void check(MinecraftServer server) {
         if (!Seasons.enabled()) return;
         TowerSeasonStore store = TowerSeasonStore.get(server);
@@ -64,8 +64,8 @@ public final class SeasonService {
     // ---- finalisation --------------------------------------------------------------------------------
 
     /**
-     * Finalises every season that has ended and is not yet finalised, oldest first. With {@code dry} nothing is written: the
-     * returned lines say what would be.
+     * Finalises every ended, unfinalised season, oldest first. With {@code dry} nothing is written; the lines say
+     * what would be.
      */
     public static List<String> finalizePending(MinecraftServer server, boolean dry) {
         List<String> lines = new ArrayList<>();
@@ -116,7 +116,8 @@ public final class SeasonService {
             testOnlyCrashAfter(1);
         }
         if (done < 2) {
-            // The podium is read from what the Hall froze in step 1, so a resume awards the same clubs whatever changed since.
+            // The podium is read from what the Hall froze in step 1, so a resume awards the same clubs whatever
+            // changed since.
             List<String> podium = TowerHallStore.get(server).get(number).map(season -> season.clubs().stream()
                     .map(HallSeason.Club::name).toList()).orElse(List.of());
             com.cobbletowers.club.ClubService.awardSeason(server, number, podium);
@@ -141,10 +142,8 @@ public final class SeasonService {
     }
 
     /**
-     * A seam for the live crash test and nothing else: with {@code -Dcobbletowers.testOnlyCrashAfterSeasonStep=N} the JVM halts, with no
-     * shutdown hooks and no further saves, right after finalisation step N has been written. That is what a real crash looks like to the
-     * files on disk. The property is never set in production; it exists so the claim "a crash between steps resumes cleanly" can be tested
-     * against a real server instead of asserted.
+     * Test seam: with {@code -Dcobbletowers.testOnlyCrashAfterSeasonStep=N} the JVM halts right after finalisation
+     * step N is written, like a real crash. Never set in production.
      */
     private static void testOnlyCrashAfter(int step) {
         if (Integer.getInteger("cobbletowers.testOnlyCrashAfterSeasonStep", 0) == step) {

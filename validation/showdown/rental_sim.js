@@ -1,18 +1,8 @@
 #!/usr/bin/env node
-// A tuning aid for the Rental Draft (P33): is any rental set a trap, is any one a guaranteed win, and does a team full of
-// legendaries run away with it?
-//
-//   node validation/showdown/rental_sim.js --showdown-dir L:/claude-cobbleraids-work/testserver-181/showdown
-//
-// It plays real Showdown battles through BattleStream. One floor is modelled as one battle: a drafted team of six against a row
-// of wild enemies at the rentals' own level (health carries over, as the waves of a real floor do). The enemy is built like
-// Cobblemon builds a wild one (the last four level-up moves it knows, no EVs, middling IVs) and picks moves at random; the player
-// is a greedy damage picker that never sets up and never switches voluntarily, so it UNDER-rates support sets (Umbreon, Vaporeon)
-// that a human would play well. The numbers are a relative yardstick between sets, not a prediction of any run.
-//
-// The drafts are sampled the way RentalDraw deals them, in simplified form: three packs of three common, one uncommon and one
-// rare-or-better, two kept from each at random, at most two legendaries. The real draw is unit-tested in Java; this only needs a
-// representative spread of teams.
+// Tuning aid for the Rental Draft (P33): is any set a trap or a guaranteed win? Run `node
+// validation/showdown/rental_sim.js --showdown-dir <rig>/showdown`. Plays real Showdown battles: a sampled team of
+// six against a row of wild enemies at the rentals' level. A relative yardstick between sets; the greedy player
+// under-rates support sets.
 
 const fs = require('fs');
 const path = require('path');
@@ -44,7 +34,10 @@ const sets = fs.readdirSync(SETS).filter(f => f.endsWith('.json')).sort()
   .map(f => JSON.parse(fs.readFileSync(path.join(SETS, f), 'utf8')));
 const byRarity = r => sets.filter(s => s.rarity === r);
 
-/** Cobblemon's packed set: name|species|uuid|hp|status|statusDuration|item|ability|moves|pp|nature|evs|gender|ivs|?|level| */
+/**
+ * Cobblemon's packed set:
+ * name|species|uuid|hp|status|statusDuration|item|ability|moves|pp|nature|evs|gender|ivs|?|level|
+ */
 function pack(m, n) {
   const item = m.item ? m.item.replace('cobblemon:', '').replace(/_/g, '') : 'none';
   return [m.species, m.species, `00000000-0000-0000-0000-${String(n).padStart(12, '0')}`, '', '', '', item, m.ability,
@@ -82,7 +75,8 @@ function mulberry(seed) {
   };
 }
 
-// ---- drafts --------------------------------------------------------------------------------------------------------
+// ---- drafts
+// --------------------------------------------------------------------------------------------------------
 
 function sample(list, rng, used) {
   const free = list.filter(s => !used.has(s.species));
@@ -121,7 +115,8 @@ function draft(rng, strategy) {
   return team;
 }
 
-// ---- play ----------------------------------------------------------------------------------------------------------
+// ---- play
+// ----------------------------------------------------------------------------------------------------------
 
 function effectiveness(moveType, targetTypes) {
   let mod = 1;
@@ -229,7 +224,8 @@ async function fight(team, seed) {
   return {won, left: won ? left : 0, timeout: result === 'timeout'};
 }
 
-// ---- the report ----------------------------------------------------------------------------------------------------
+// ---- the report
+// ----------------------------------------------------------------------------------------------------
 
 const pct = (n, d) => d ? (100 * n / d).toFixed(0) + '%' : '-';
 

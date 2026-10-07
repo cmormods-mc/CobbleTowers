@@ -21,12 +21,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Hands a player whatever the tower owes them, the moment they are somewhere to receive it.
- *
- * <p>No choice, no claim command -- P9's deliberate simplification over CobbleRaids'
- * {@code RaidRewardService}, whose GUI and per-player claim locking exist only because that mod lets
- * a player pick between several reward choices. Nothing here ever offers a choice, so a roll from
- * {@link RewardValuation} is simply delivered.
+ * Hands a player whatever the tower owes them as soon as they can receive it. No choice and no claim command (P9): a
+ * roll from {@link RewardValuation} is simply delivered.
  */
 public final class RewardDelivery {
 
@@ -60,10 +56,12 @@ public final class RewardDelivery {
                         com.cobbletowers.armor.ArmorBonusEffects.raidPoints(player, reward.amount(), reward.runId()));
                 delivered.add(reward);
             } else if (!reward.components().isEmpty()) {
-                // A card (P33b): an item that is its data. Not handed over, and not lost, if the mod that owns it is gone.
+                // A card (P33b): an item that is its data. Not handed over, and not lost, if the mod that owns it is
+                // gone.
                 if (giveWithComponents(player, reward)) delivered.add(reward);
             } else {
-                // The 777 Unique (AscensionLib) can enlarge an item reward; what is listed to the player is what was given. The key is the
+                // The 777 Unique (AscensionLib) can enlarge an item reward; what is listed to the player is what was
+                // given. The key is the
                 // reward itself, so the rounding of a fraction is the same however often delivery is retried.
                 int amount = com.cobbletowers.economy.AscensionLibItemBonus.scale(player.getUUID(), reward.amount(),
                         reward.runId() + "|" + reward.floorIndex() + "|" + reward.item() + "|" + reward.grantedAt());
@@ -82,10 +80,7 @@ public final class RewardDelivery {
         return delivered.size();
     }
 
-    /**
-     * The screen's payload, alongside the chat line above rather than instead of it (P11): a client
-     * without the channel registered still gets the grant as text, exactly as it does today.
-     */
+    /** The screen payload, sent alongside the chat line; a client without the channel still gets text. */
     private static RewardRevealPayload revealOf(List<PendingTowerReward> delivered) {
         int throughFloor = delivered.stream().mapToInt(PendingTowerReward::floorIndex).max().orElse(0);
         List<RewardRevealPayload.Grant> grants = new ArrayList<>(delivered.size());
@@ -96,13 +91,8 @@ public final class RewardDelivery {
     }
 
     /**
-     * Places one reward in the inventory, dropping the remainder at the player's feet when it does
-     * not fit. Returns false, having granted nothing, when the item no longer resolves.
-     *
-     * <p>The same shape CobbleRaids' own {@code RaidRewardGrantEngine.give} uses, including the
-     * resolution check: {@code BuiltInRegistries.ITEM.get} returns air for an unknown id rather than
-     * throwing, so a definition an unrelated mod update broke is skipped and logged rather than
-     * silently handed out as air.
+     * Places one reward in the inventory, dropping the rest at the player's feet. Returns false, granting nothing,
+     * when the item no longer resolves ({@code BuiltInRegistries.ITEM.get} returns air for an unknown id).
      */
     private static boolean give(ServerPlayer player, ResourceLocation itemId, int amount) {
         Item item = BuiltInRegistries.ITEM.get(itemId);
@@ -121,7 +111,10 @@ public final class RewardDelivery {
         return true;
     }
 
-    /** Builds the stack the pending reward describes and places it in the inventory; false, granting nothing, if it does not resolve. */
+    /**
+     * Builds the stack the pending reward describes and places it in the inventory; false, granting nothing, if it
+     * does not resolve.
+     */
     private static boolean giveWithComponents(ServerPlayer player, PendingTowerReward reward) {
         java.util.Optional<ItemStack> built = com.cobbletowers.rental.CardStacks.parse(player.registryAccess(), reward.components());
         if (built.isEmpty()) {

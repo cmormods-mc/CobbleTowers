@@ -6,14 +6,10 @@ import java.util.Objects;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A contract a player can be handed (P32c): what to do, how many times, and a small bounded reward. The day's contracts are drawn
- * from the templates by the date ({@code ContractSchedule}); progress is per player.
- *
- * <p>The conditions are deliberately a small vocabulary over the tower event stream rather than scripts: a kind, a count, and
- * optional constraints that make it a little harder (a time limit per floor, no faint, solo, a minimum depth).
- *
- * @param period  how often it is drawn (daily or weekly)
- * @param reward  CobbleDollars paid once on completion
+ * A contract a player can be handed (P32c): what to do, how many times and a small bounded reward. Drawn by date
+ * ({@code ContractSchedule}); progress is per player. Conditions are a small vocabulary over the tower event stream.
+ * @param period daily or weekly
+ * @param reward CobbleDollars paid once on completion
  */
 public record ContractTemplateDefinition(
         ResourceLocation id,
@@ -33,11 +29,11 @@ public record ContractTemplateDefinition(
     }
 
     /**
-     * @param count      how many times
-     * @param maxSeconds a floor must be cleared within this many seconds (0 = no limit); FLOORS_CLEARED only
-     * @param flawless   no fainted Pokemon on that floor; FLOORS_CLEARED only
-     * @param solo       the run is a solo run
-     * @param minFloor   the floor must be at least this deep (0 = any), so the cheapest floors cannot be farmed
+     * @param count how many times
+     * @param maxSeconds clear the floor within this long (0 = no limit); FLOORS_CLEARED only
+     * @param flawless no fainted Pokemon on that floor; FLOORS_CLEARED only
+     * @param solo a solo run
+     * @param minFloor at least this deep (0 = any), so cheap floors cannot be farmed
      */
     public record Condition(Kind kind, int count, int maxSeconds, boolean flawless, boolean solo, int minFloor) {
         public Condition {

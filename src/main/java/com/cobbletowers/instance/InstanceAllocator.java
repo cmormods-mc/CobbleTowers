@@ -15,18 +15,9 @@ import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * Who holds which cell.
- *
- * <p>Indexed both ways (TDS #34): cell to run and run to cell are map hits, and the next free cell
- * is the first clear bit of a {@link BitSet} rather than a walk over every cell asking whether it is
- * busy.
- *
- * <p>The authority for a lease is the run itself -- {@link PersistedRun#cell()} -- and this index is
- * rebuilt from the runs at start. There is therefore no second file that can disagree with the first
- * about who holds what, and a lease cannot outlive the run that owns it.
- *
- * <p>Quarantine is the exception and lives in {@link CellStateStore}, because a cell taken out of
- * service has to stay out after its run is gone.
+ * Who holds which cell, indexed both ways (TDS #34); the next free cell is the first clear bit of a {@link BitSet}.
+ * The run is the authority ({@link PersistedRun#cell()}) and this index is rebuilt from the runs at start. Quarantine
+ * lives in {@link CellStateStore} so it outlives the run.
  */
 public final class InstanceAllocator {
 
@@ -61,12 +52,8 @@ public final class InstanceAllocator {
     public record Quarantined(int cell, String reason) implements Release {}
 
     /**
-     * Rebuilds the index from the runs that were loaded.
-     *
-     * <p>Two runs claiming one cell cannot happen through the allocator, but it can happen through a
-     * hand-edited save, so it is checked here rather than assumed: the second claimant is left
-     * without a cell and the cell is quarantined, because at that point nobody can say which run's
-     * contents are in it.
+     * Rebuilds the index from the loaded runs. A cell claimed twice (a hand-edited save) is quarantined and the
+     * second claimant left without one.
      */
     public static int rebuild(MinecraftServer server, Collection<PersistedRun> runs) {
         LEASED.clear();
@@ -94,11 +81,8 @@ public final class InstanceAllocator {
     }
 
     /**
-     * The lowest cell that is neither leased nor quarantined.
-     *
-     * <p>Separated from {@link #allocate} so the choice can be tested without a server, and so the
-     * scan is one place: {@link BitSet#nextClearBit} jumps straight to a free index rather than
-     * asking every cell in turn whether it is busy.
+     * The lowest cell that is neither leased nor quarantined. Separate from {@link #allocate} so it is testable
+     * without a server.
      */
     static OptionalInt nextFree(java.util.function.IntPredicate quarantined) {
         for (int cell = LEASED.nextClearBit(0); cell < CellGrid.MAX_CELLS; cell = LEASED.nextClearBit(cell + 1)) {
@@ -125,11 +109,8 @@ public final class InstanceAllocator {
     }
 
     /**
-     * Gives a cell back, verifying it first.
-     *
-     * <p>A cell that does not verify is quarantined rather than freed. The lease is dropped either
-     * way: the run is finished with it, and leaving the lease in place would make the cell look busy
-     * rather than broken -- which is the state nobody can act on.
+     * Gives a cell back, verifying it first; a cell that does not verify is quarantined. The lease is dropped either
+     * way.
      */
     public static Release release(MinecraftServer server, UUID runId, int cell) {
         CellGrid.requireValid(cell);
@@ -165,12 +146,7 @@ public final class InstanceAllocator {
         }
     }
 
-    /**
-     * Moves a lease from one holder to another without the cell ever being free.
-     *
-     * <p>What the warm pool hands over. Releasing and re-allocating would do the same job with a
-     * window in the middle where another run could take the cell that was just built for this one.
-     */
+    /** Moves a lease between holders without the cell ever being free (used by the warm pool). */
     public static void transferLease(int cell, UUID from, UUID to) {
         CellGrid.requireValid(cell);
         RUN_BY_CELL.remove(cell, from);

@@ -11,9 +11,8 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * A playlist's party clauses, applied (P32). Pure: a registered party and the clauses in, readable problems out, in the same
- * wording the other party rules use. A clause about something a member does not say (no species recorded) is skipped rather
- * than guessed at, which only happens in tests and for a Pokemon Cobblemon could not describe.
+ * A playlist's party clauses, applied (P32). Pure: a registered party and clauses in, readable problems out. A clause
+ * about something a member does not say is skipped, not guessed.
  */
 public final class PlaylistRules {
 

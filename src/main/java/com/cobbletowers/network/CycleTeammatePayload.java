@@ -8,11 +8,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A spectator's keybind asking to follow the next or previous still-active teammate (TDS #25).
- *
- * <p>The server, not the client, decides who is a legal target: a request from a player who is not
- * actually spectating is dropped and logged, never trusted, the same posture every other C2S handler
- * in this mod already takes toward a client's claim about run state.
+ * A spectator's request to follow the next or previous active teammate (TDS #25). The server decides who is a legal
+ * target; a request from a non-spectator is dropped and logged.
  */
 public record CycleTeammatePayload(boolean next) implements CustomPacketPayload {
 

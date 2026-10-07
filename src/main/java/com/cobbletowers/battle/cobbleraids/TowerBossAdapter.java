@@ -25,29 +25,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The boss half of a floor, run by CobbleRaids (TDS #52, #53).
- *
- * <p>The only place this mod names the CobbleRaids API, as {@code battle/cobblemon/} is the only
- * place it names a Cobblemon battle. Two adapters, so a floor's rules read the same whichever engine
- * is executing the fight.
- *
- * <p>This is also what makes the boss multiplayer without any work here: CobbleRaids already runs one
- * to four players against a shared-health boss, proven at four players in Milestone 1. The ordinary
- * encounters are one battle each precisely so that this can be the shared one.
+ * The boss half of a floor, run by CobbleRaids (TDS #52, #53). The only place that names the CobbleRaids API; the
+ * shared fight is the boss.
  */
 public final class TowerBossAdapter {
 
     /** Who owns these encounters, so CobbleRaids can tell a tower boss from a wild raid. */
     private static final ResourceLocation OWNER = ResourceLocation.fromNamespaceAndPath("cobbletowers", "floor");
 
-    /**
-     * The policy the spike proved: no catching, no raid rewards, no raid progression or history, and
-     * damage and PP carried back to the party.
-     *
-     * <p>Carryover is TDS #16 -- a tower floor is fought with what the party has left. The rest is
-     * the tower owning its own economy: a boss beaten here feeds the unclaimed pool, and must not
-     * also pay out as a wild raid would.
-     */
+    /** No catching, no raid rewards, no raid progression; damage and PP carry back to the party (TDS #16). */
     static final EncounterPolicy POLICY = EncounterPolicy.none().withCarryover(true, true);
 
     /** What a running boss belongs to. Ids only; a live reference here would pin its level. */
@@ -76,27 +62,14 @@ public final class TowerBossAdapter {
 
     /**
      * Starts this floor's boss against everybody still standing.
-     *
-     * @return the encounter id, or empty when CobbleRaids refused -- an unknown definition, a missing
-     *         Showdown integration, too many players. All of those are technical faults, never a loss.
+     * @return the encounter id, empty if CobbleRaids refused (a technical fault, never a loss)
      */
     public static Optional<UUID> start(MinecraftServer server, ServerLevel level, List<ServerPlayer> players,
                                        BossDraw.Boss boss, BlockPos where, UUID runId, int floorIndex) {
         return start(server, level, players, boss, where, runId, floorIndex, ModifierEffects.NONE);
     }
 
-    /**
-     * The same start, under the rules a run has drafted (TDS #2: the challenge affects the next boss).
-     *
-     * <p>This is the whole of the modifier-to-CobbleRaids boundary, and it is one method on one
-     * adapter on purpose -- the GATE's rule that external-mod integration lives behind an adapter, so
-     * a version change there has the smallest blast radius here. Nothing else in CobbleTowers knows
-     * that {@code EncounterRules} exists.
-     *
-     * <p>Only the <b>boss</b> is fought under these. A floor's prerequisite battles are ordinary
-     * Cobblemon battles run by our own adapter, which CobbleRaids is no part of -- and that matches
-     * #2 exactly, which says the selected challenge affects the next boss.
-     */
+    /** The same start under the rules a run has drafted (TDS #2). Only the boss is fought under them. */
     public static Optional<UUID> start(MinecraftServer server, ServerLevel level, List<ServerPlayer> players,
                                        BossDraw.Boss boss, BlockPos where, UUID runId, int floorIndex,
                                        ModifierEffects effects) {
@@ -104,9 +77,8 @@ public final class TowerBossAdapter {
     }
 
     /**
-     * The same start, calling {@code beforeStart} with the boss encounter's id before the battle exists, so the caller can
-     * declare the boss to AscensionLib (for Scouters, and for the ascension effects that ride the boss battle's
-     * {@code >start}). The players are armed for that encounter only around the start itself.
+     * The same start, calling {@code beforeStart} with the encounter id first so the caller can declare the boss to
+     * AscensionLib.
      */
     public static Optional<UUID> start(MinecraftServer server, ServerLevel level, List<ServerPlayer> players,
                                        BossDraw.Boss boss, BlockPos where, UUID runId, int floorIndex,
@@ -167,12 +139,7 @@ public final class TowerBossAdapter {
         return Optional.of(started);
     }
 
-    /**
-     * A run's drafted effects as the rules CobbleRaids understands.
-     *
-     * <p>A translation and nothing else: no decision is taken here that {@code ModifierEffects} did
-     * not already take, so the two cannot drift into disagreeing about what a party drafted.
-     */
+    /** A run's drafted effects as CobbleRaids rules; a translation only. */
     private static EncounterRules rulesFor(ModifierEffects effects) {
         if (!effects.changesBattleRules()) return EncounterRules.none();
         return EncounterRules.none()

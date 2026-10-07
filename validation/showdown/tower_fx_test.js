@@ -1,14 +1,7 @@
 #!/usr/bin/env node
-// Tests tower-fx.js (P23) against the REAL Showdown simulator Cobblemon unbundles, with no Minecraft server.
-//
-//   node validation/showdown/tower_fx_test.js --showdown-dir L:/claude-cobbleraids-work/testserver-full/showdown
-//
-// Showdown is plain CommonJS, so the patch can be installed into it and driven through BattleStream with the same
-// `>start` / `>player` lines Cobblemon writes. Each test asserts what the simulator actually did -- the weather the
-// field holds, the stat stage, the HP, the damage a move dealt -- never what the patch claims it asked for.
-//
-// Not part of ci_local.sh: it needs the unbundled simulator, which lives in a server directory the CI has no
-// business downloading. Run it after touching tower-fx.js, and after a Cobblemon upgrade (Showdown can change).
+// Tests tower-fx.js (P23) against the real Showdown simulator, no Minecraft server: node
+// validation/showdown/tower_fx_test.js --showdown-dir <rig>/showdown. Asserts what the simulator did, not what the
+// patch asked for. Not in ci_local.sh; run after touching tower-fx.js or upgrading Cobblemon.
 
 const assert = require('assert');
 const fs = require('fs');
@@ -20,7 +13,8 @@ const args = process.argv.slice(2);
 const dirArg = args.indexOf('--showdown-dir');
 const raidArg = args.indexOf('--raid-patch');
 const SHOWDOWN = path.resolve(dirArg >= 0 ? args[dirArg + 1] : (process.env.SHOWDOWN_DIR || 'showdown'));
-// The CobbleRaids raid-patch.js to test the extension loader against. The one in a server's showdown/ directory is only
+// The CobbleRaids raid-patch.js to test the extension loader against. The one in a server's showdown/ directory is
+// only
 // replaced when the server next starts, so after changing the loader pass the source copy from the CobbleRaids repo.
 const RAID_PATCH = raidArg >= 0 ? path.resolve(args[raidArg + 1]) : path.join(SHOWDOWN, 'raid-patch.js');
 const FX_FILE = path.resolve(__dirname, '../../src/main/resources/assets/cobbletowers/showdown/tower-fx.js');
@@ -48,8 +42,8 @@ const BLASTOISE = () => pack('Blastoise', 'torrent', ['hydropump', 'icebeam', 's
 const CHARIZARD = () => pack('Charizard', 'blaze', ['flamethrower', 'airslash', 'dragonclaw', 'roost'], 50);
 
 /**
- * Runs a battle to the end of turn one. `towerFx` goes on the format object exactly where CobbleRaids' format
- * provider would put it. Returns the log, the stream's battle, and anything the stream threw.
+ * Runs a battle to the end of turn one, with `towerFx` on the format object where CobbleRaids' provider puts it.
+ * Returns the log, the stream's battle and anything the stream threw.
  */
 async function battle({towerFx, moves = ['move 2', 'move 4'], extraFormat = {}, turns = 1} = {}) {
   const stream = new BS.BattleStream();
@@ -301,10 +295,9 @@ test('towerFx on a battle that is a restored (deserialized) battle is not applie
 });
 
 /**
- * Cobblemon runs Showdown inside GraalJS, where Node built-ins do not exist: require('fs') throws "Cannot load module".
- * This preload makes plain Node behave the same for exactly the files an extension author controls (raid-patch.js and
- * ext-*.js), so a loader or extension that leans on a built-in fails HERE instead of silently never loading on a
- * real server -- which is what happened to the first version of this patch.
+ * Cobblemon runs Showdown in GraalJS, which has no Node built-ins (require('fs') throws). This preload makes plain
+ * Node match for raid-patch.js and ext-*.js, so a leaning extension fails here rather than silently not loading on a
+ * server.
  */
 const NO_NODE_BUILTINS = `
   const Module = require('module');

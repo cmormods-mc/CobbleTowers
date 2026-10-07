@@ -17,7 +17,10 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
-/** Loads contract templates (P32c) from {@code data/<namespace>/cobbletowers/contract_templates/*.json}; malformed files are skipped by name. */
+/**
+ * Loads contract templates (P32c) from {@code data/<namespace>/cobbletowers/contract_templates/*.json}; malformed
+ * files are skipped by name.
+ */
 public final class ContractTemplateRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, ContractTemplateDefinition>>
         implements IdentifiableResourceReloadListener {

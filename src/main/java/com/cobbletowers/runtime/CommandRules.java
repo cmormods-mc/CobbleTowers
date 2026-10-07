@@ -4,16 +4,9 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Which commands are turned off inside the tower (P27): the ones that undo what the tower is for.
- *
- * <p>A tower fight is won with the party as it stands -- healed only by the vendor, which costs CobbleDollars, and
- * moved only by the run. {@code /pokeheal}, a home or warp command, a PC or ender chest, or a kit would each be a way
- * around that, so none of them may be used from inside it. Pure: a command line in, a yes or no out.
- *
- * <p>This is a deny list, not an allow list, because the server's command set is whatever its mods add and an allow
- * list would break every one of them. It matches the first word only, with or without a {@code namespace:} in front
- * (so {@code /cobblemon:pokeheal} does not slip past {@code pokeheal}). Operators extend it from a file; see
- * {@link TowerCommandGuard}.
+ * Which commands are off inside the tower (P27): the ones that undo its rules ({@code /pokeheal}, home or warp
+ * commands, PC, ender chest, kits). Pure; a deny list matching the first word, with or without a {@code namespace:}
+ * prefix. Operators extend it; see {@link TowerCommandGuard}.
  */
 public final class CommandRules {
 

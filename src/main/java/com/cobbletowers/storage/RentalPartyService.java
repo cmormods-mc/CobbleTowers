@@ -25,13 +25,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Lends a player a team for a rental run, and makes sure it is taken back (P33).
- *
- * <p>The safety argument is the party journal's (P18), extended: <b>journal, flush, then move</b>. The journal names the rental ids
- * <em>before</em> the player's own Pokemon are moved aside or any rental exists, so a crash at any point leaves a record that says what
- * to delete and what to put back. Every exit goes through {@code PartyJournalService.restoreNow}, which deletes the rentals first.
- * Behind that sits a sweep for any tagged Pokemon that belongs to no live rental run, and a guard that stops a rental earning
- * experience.
+ * Lends a player a team for a rental run and makes sure it is taken back (P33). Journal, flush, then move: the
+ * journal names the rental ids before anything moves. Every exit goes through {@code PartyJournalService.restoreNow},
+ * which deletes rentals first; a sweep removes tagged leaks.
  */
 public final class RentalPartyService {
 
@@ -54,15 +50,19 @@ public final class RentalPartyService {
             }
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> JOINED.put(handler.getPlayer().getUUID(), 60));
-        // DISCONNECT fires on a Netty thread; JOINED is a plain map the server tick iterates, so hop onto the server thread.
+        // DISCONNECT fires on a Netty thread; JOINED is a plain map the server tick iterates, so hop onto the server
+        // thread.
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             UUID id = handler.getPlayer().getUUID();
             com.cobbletowers.runtime.ServerThread.run(server, () -> JOINED.remove(id));
         });
-        // A rental never earns experience: it would level, and could evolve, and it is deleted when the run ends anyway.
+        // A rental never earns experience: it would level, and could evolve, and it is deleted when the run ends
+        // anyway.
         CobblemonEvents.EXPERIENCE_GAINED_EVENT_PRE.subscribe(RentalPartyService::noExperience);
-        // Nor does one reach the Pokedex: Cobblemon marks whatever enters a party as owned, and a lent Pokemon is not the
-        // player's. Servers hang rewards and ranks on Pokedex progress, so this is as much a leak as a stray Pokemon would be.
+        // Nor does one reach the Pokedex: Cobblemon marks whatever enters a party as owned, and a lent Pokemon is not
+        // the
+        // player's. Servers hang rewards and ranks on Pokedex progress, so this is as much a leak as a stray Pokemon
+        // would be.
         CobblemonEvents.POKEDEX_DATA_CHANGED_PRE.subscribe(RentalPartyService::noPokedex);
     }
 
@@ -90,18 +90,22 @@ public final class RentalPartyService {
         return PartyArrangement.plan(snapshot.contents(), snapshot.pcSlots(), List.of()).ok();
     }
 
-    /** Journals, flushes, moves the player's own Pokemon to their boxes, then creates the rentals and fills the party. */
+    /**
+     * Journals, flushes, moves the player's own Pokemon to their boxes, then creates the rentals and fills the party.
+     */
     public static Lock lock(MinecraftServer server, UUID runId, ServerPlayer player, RentalDraft.Team team) {
         if (PartyStorage.inBattle(player)) return Lock.IN_BATTLE;
         TowerPartyJournalStore store = TowerPartyJournalStore.get(server);
-        // An earlier journal means an earlier run's Pokemon are not yet back; put them back first so the new journal is true.
+        // An earlier journal means an earlier run's Pokemon are not yet back; put them back first so the new journal
+        // is true.
         if (store.entryFor(player.getUUID()).isPresent()) PartyJournalService.restoreNow(server, player);
 
         PartyStorage.Snapshot snapshot = PartyStorage.snapshot(player);
         Plan plan = PartyArrangement.plan(snapshot.contents(), snapshot.pcSlots(), List.of());
         if (!plan.ok()) return Lock.NO_ROOM;
 
-        // The whole safety argument: the rental ids and the originals, written and flushed before a single Pokemon moves.
+        // The whole safety argument: the rental ids and the originals, written and flushed before a single Pokemon
+        // moves.
         List<PartyJournalEntry.LentCard> cards = new ArrayList<>();
         for (int i = 0; i < team.ids().size(); i++) {
             cards.add(new PartyJournalEntry.LentCard(team.ids().get(i), team.sets().get(i).id().toString(), team.god().get(i)));
@@ -125,7 +129,8 @@ public final class RentalPartyService {
                 PartyJournalService.restoreNow(server, player);
                 return Lock.FAILED;
             }
-            // Once they are in the party (the library only profiles an owned Pokemon): the rentals fight with ascension profiles like
+            // Once they are in the party (the library only profiles an owned Pokemon): the rentals fight with
+            // ascension profiles like
             // any other Pokemon, instead of with none while their opponents have them.
             com.cobbletowers.economy.AscensionLibGrants.profileRentals(rentals, team.sets());
         } catch (RuntimeException ex) {
@@ -138,7 +143,8 @@ public final class RentalPartyService {
         return Lock.LOCKED;
     }
 
-    // ---- the stray sweep ---------------------------------------------------------------------------------------------
+    // ---- the stray sweep
+    // ---------------------------------------------------------------------------------------------
 
     private static void tick(MinecraftServer server) {
         ticks++;
@@ -158,9 +164,8 @@ public final class RentalPartyService {
     }
 
     /**
-     * Deletes every rental Pokemon the player holds that belongs to no live rental run. A rental in a live run is listed by its
-     * journal entry; anything else tagged is a leak, however it got there, and is removed.
-     *
+     * Deletes every rental Pokemon the player holds that is in no live rental run (anything tagged but not in a
+     * journal entry is a leak).
      * @return how many were deleted
      */
     public static int sweep(MinecraftServer server, ServerPlayer player) {

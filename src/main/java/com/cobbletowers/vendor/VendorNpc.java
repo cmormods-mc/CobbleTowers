@@ -26,13 +26,9 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.npc.VillagerProfession;
 
 /**
- * The vendor as a mob in the world (P28): a cleric villager that stands at the floor's exit anchor for the
- * length of an intermission and opens the vendor screen when a run participant right-clicks it.
- *
- * <p>It is a plain vanilla villager with no AI, invulnerable and silent, so no client mod or renderer is
- * needed. It exists only while its run is at an intermission: spawned on arrival, discarded the moment the run
- * leaves that state, and again when the cell is released. A crash can leave one in a saved chunk, so any
- * vendor that loads without a live intermission run behind it is discarded too.
+ * The vendor as a mob (P28): a cleric villager at the floor's exit anchor during an intermission that opens the
+ * vendor screen on right-click. Vanilla, no AI, invulnerable and silent. Spawned on arrival, discarded when the run
+ * leaves that state or the cell is released.
  */
 public final class VendorNpc {
 

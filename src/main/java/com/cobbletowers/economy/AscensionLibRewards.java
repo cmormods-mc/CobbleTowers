@@ -16,20 +16,10 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * Pays a boss victory in AscensionLib's shared wallet (resonance dust, facets, cores, Unique Fragments, Scouters).
- *
- * <p>Reached by reflection, as CobbleRaids reaches {@code AscensionGrants}: AscensionLib is optional here, and a
- * compile-time dependency would make it a required artifact for every build. The contract is two static methods on
- * {@code com.ascensionlib.AscensionRewards}, both taking only {@code java.*} types. The library owns the amounts and the
- * rolls; this class says which encounter ended, which floors it covers and who is owed.
- *
- * <p><b>Nothing is lost to a bad moment.</b> The library pays each player once per encounter, so repeating a call is
- * always safe, and this class leans on that: every settlement is written to disk
- * ({@link TowerLibSettlementStore}) before the library is asked, and removed only once the library has confirmed each
- * player. If the library is disabled, the wallet refuses, the call throws or the server stops first, the entry stays
- * and is tried again every {@link #RETRY_TICKS} and when the server starts, for up to a week.
- *
- * <p>A failure never touches the run: the floor has been cleared whatever the wallet says.
+ * Pays a boss victory in AscensionLib's wallet, reached by reflection since the library is optional. Each settlement
+ * is written to disk ({@link TowerLibSettlementStore}) before the library is asked and removed once confirmed; the
+ * library pays once per encounter, so retries every {@link #RETRY_TICKS} and at start are safe. A failure never
+ * touches the run.
  */
 public final class AscensionLibRewards {
 
@@ -63,9 +53,7 @@ public final class AscensionLibRewards {
 
     /**
      * The first floor of the segment a milestone boss pays for: the floor after the previous milestone, or 1.
-     *
-     * @param isMilestone whether a run floor is a milestone floor (a content lookup, so an ascending tower's later
-     *                    cycles count too)
+     * @param isMilestone whether a run floor is a milestone floor
      */
     public static int segmentStart(IntPredicate isMilestone, int bossFloor) {
         for (int floor = bossFloor - 1; floor >= 1; floor--) {
@@ -83,8 +71,8 @@ public final class AscensionLibRewards {
     }
 
     /**
-     * Rolls the Scouter drop for a cleared floor, once per player. Not flushed to disk first: a crash in that instant
-     * costs at most a 5% roll, which does not justify a full save on every floor.
+     * Rolls the Scouter drop for a cleared floor, once per player. Not flushed first: a crash costs at most a small
+     * roll.
      */
     public static void settleScouterDrops(MinecraftServer server, UUID encounterId, String outcome, boolean keenEyeFloor,
                                           Collection<UUID> players, long now) {
@@ -93,8 +81,8 @@ public final class AscensionLibRewards {
     }
 
     /**
-     * Pays a won Trial (a floor-limited run) at its given rank from the library's trial bands. Flushed to disk first, like a
-     * milestone: it is real value. The rank rides in the settlement's boss-floor field.
+     * Pays a won Trial at its rank from the library's trial bands. Flushed first because it is real value; the rank
+     * rides in the boss-floor field.
      */
     public static void settleTrial(MinecraftServer server, UUID encounterId, String outcome, int rank,
                                    Collection<UUID> players, long now) {
@@ -178,7 +166,8 @@ public final class AscensionLibRewards {
                 settleScouters = rewards.getMethod("settleScouterDrops", UUID.class, String.class, boolean.class,
                         Collection.class);
                 try {
-                    // Newer than the others: an older library still pays bosses and Scouters, and trials simply pay nothing.
+                    // Newer than the others: an older library still pays bosses and Scouters, and trials simply pay
+                    // nothing.
                     settleTrial = rewards.getMethod("settleTrial", UUID.class, String.class, int.class, Collection.class);
                 } catch (NoSuchMethodException missing) {
                     settleTrial = null;

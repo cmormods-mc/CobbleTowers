@@ -18,8 +18,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Cosmetics (P36d): {@code /tower cosmetics} lists everything a player has earned, {@code /tower title} wears a title. Operators get
- * {@code /cobbletowers cosmeticsadmin} to grant a cosmetic and to read out how a player's names are decorated (what a live test checks).
+ * Cosmetics (P36d): {@code /tower cosmetics} lists what a player earned and {@code /tower title} wears a title.
+ * Operators get {@code /cobbletowers cosmeticsadmin} to grant one and read how names are decorated.
  */
 public final class CosmeticsCommand {
 
@@ -62,7 +62,9 @@ public final class CosmeticsCommand {
         return one(context, "Granted " + id + " to " + player.getGameProfile().getName() + " (nothing happens if they had it).");
     }
 
-    /** Resolves placeholder text through Placeholder API for a player, so a test can see what a formatter would get. */
+    /**
+     * Resolves placeholder text through Placeholder API for a player, so a test can see what a formatter would get.
+     */
     private static int parse(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = EntityArgument.getPlayer(context, "player");
         String text = StringArgumentType.getString(context, "text");
@@ -70,7 +72,10 @@ public final class CosmeticsCommand {
                 .map(result -> "parsed=[" + result + "]").orElse("Placeholder API is not available"));
     }
 
-    /** Prints the plain text of the player's display name and tab-list name, which is how a test sees what the mixins produce. */
+    /**
+     * Prints the plain text of the player's display name and tab-list name, which is how a test sees what the mixins
+     * produce.
+     */
     private static int names(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = EntityArgument.getPlayer(context, "player");
         Component tab = player.getTabListDisplayName();

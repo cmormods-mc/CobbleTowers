@@ -18,12 +18,9 @@ import net.minecraft.sounds.SoundEvents;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * The Rental Draft's pack opening (P33): a sealed pack that shakes and tears open, five cards that turn over one by one with the
- * best last, then a choice of two to keep, three times, and a summary of the six-Pokemon team.
- *
- * <p>The screen decides nothing. It draws what the server sent in a {@link RentalDraftPayload} and sends back which two cards
- * were chosen; the server checks every pick. Timing and feel come from {@link com.cobbletowers.rental.PackReveal}, the card art from a
- * {@link CardFace}, and a render fault closes the screen with a note instead of taking the client down with it.
+ * The Rental Draft's pack opening (P33): a pack tears open, five cards turn over, choose two to keep, three times,
+ * then a team summary. Decides nothing: it draws a {@link RentalDraftPayload} and sends the chosen pair for the
+ * server to check. A render fault closes the screen with a note.
  */
 public final class RentalPackScreen extends TowerScreen {
 
@@ -31,7 +28,9 @@ public final class RentalPackScreen extends TowerScreen {
 
     private enum Stage { TABLE, TEARING, REVEALING, CHOOSING, TEAM }
 
-    /** Whether to play the animations at all. Kept for the session, so a player who turns them off is not asked again. */
+    /**
+     * Whether to play the animations at all. Kept for the session, so a player who turns them off is not asked again.
+     */
     private static boolean animations = true;
 
     private static final int CARD_W = ByzantineCardFace.WIDTH;
@@ -83,7 +82,10 @@ public final class RentalPackScreen extends TowerScreen {
         refreshButtons();
     }
 
-    /** The card under the pointer, which stays chosen while the pointer is anywhere over it (a lifted card covers its neighbours). */
+    /**
+     * The card under the pointer, which stays chosen while the pointer is anywhere over it (a lifted card covers its
+     * neighbours).
+     */
     private int hoverIndex = -1;
 
     private boolean slicePlayed;
@@ -119,7 +121,8 @@ public final class RentalPackScreen extends TowerScreen {
         return pack >= 0 && pack < draft.packs().size() && draft.packs().get(pack).god();
     }
 
-    // ---- widgets -----------------------------------------------------------------------------------------------------
+    // ---- widgets
+    // -----------------------------------------------------------------------------------------------------
 
     @Override
     protected void init() {
@@ -128,7 +131,8 @@ public final class RentalPackScreen extends TowerScreen {
         restart = addRenderableWidget(TowerButton.builder(Component.literal("Draft again"),
                         b -> send(RentalDraftActionPayload.Action.RESTART, 0, 0))
                 .pos(width / 2 + 55, height - 30).size(80, 20).build());
-        // A finished draft: Ready up (which also returns to the lobby, where the host starts), or just go back to the lobby.
+        // A finished draft: Ready up (which also returns to the lobby, where the host starts), or just go back to the
+        // lobby.
         readyUp = addRenderableWidget(TowerButton.builder(Component.literal("Ready up"),
                         b -> send(RentalDraftActionPayload.Action.READY, 0, 0))
                 .pos(width / 2 - 143, height - 30).size(130, 20).build());
@@ -170,14 +174,20 @@ public final class RentalPackScreen extends TowerScreen {
         keep.active = false;   // until the server answers with the next pack
     }
 
-    // ---- layout ------------------------------------------------------------------------------------------------------
+    // ---- layout
+    // ------------------------------------------------------------------------------------------------------
 
-    /** Cards are drawn at their own size whenever the window is tall enough; width is handled by overlapping them, not by shrinking. */
+    /**
+     * Cards are drawn at their own size whenever the window is tall enough; width is handled by overlapping them, not
+     * by shrinking.
+     */
     float scale() {
         return Math.max(0.5f, Math.min(1f, (height - 74f) / CARD_H));
     }
 
-    /** The distance between one card's left edge and the next's: the natural gap, or less so a whole row fits (a fan). */
+    /**
+     * The distance between one card's left edge and the next's: the natural gap, or less so a whole row fits (a fan).
+     */
     private int stride(int count, float scale) {
         int w = Math.round(CARD_W * scale);
         int natural = w + Math.round(GAP * scale);
@@ -185,7 +195,10 @@ public final class RentalPackScreen extends TowerScreen {
         return Math.min(natural, Math.max(12, (width - 16 - w) / (count - 1)));
     }
 
-    /** x, y, width, height of card {@code index} in a row of {@code count} cards; later cards overlap earlier ones when the row is wide. */
+    /**
+     * x, y, width, height of card {@code index} in a row of {@code count} cards; later cards overlap earlier ones
+     * when the row is wide.
+     */
     int[] cardRect(int index, int count, float scale) {
         int w = Math.round(CARD_W * scale);
         int h = Math.round(CARD_H * scale);
@@ -212,13 +225,15 @@ public final class RentalPackScreen extends TowerScreen {
         return -1;
     }
 
-    // ---- drawing -----------------------------------------------------------------------------------------------------
+    // ---- drawing
+    // -----------------------------------------------------------------------------------------------------
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         if (failed) return;
         try {
-            // Screen.render draws the background (once: a second pass would blur everything drawn before it), then calls
+            // Screen.render draws the background (once: a second pass would blur everything drawn before it), then
+            // calls
             // renderBackground below for our own content, then the widgets on top.
             super.render(graphics, mouseX, mouseY, partialTick);
         } catch (RuntimeException ex) {
@@ -282,7 +297,8 @@ public final class RentalPackScreen extends TowerScreen {
     /** Moves the stage along: a tear ends in the reveal, a reveal in the choice. */
     private void advance(long t) {
         if (stage == Stage.TEARING && TowerUiSettings.motion) {
-            // One cue as the blade goes through and one as the light spills out: once each, never from the render loop's own state.
+            // One cue as the blade goes through and one as the light spills out: once each, never from the render
+            // loop's own state.
             float p = Math.min(1f, (t - stageStart) / (float) PackReveal.TEAR_MS);
             if (!slicePlayed && p >= CUT_START) {
                 slicePlayed = true;
@@ -348,14 +364,18 @@ public final class RentalPackScreen extends TowerScreen {
         if (!message.isEmpty()) graphics.drawCenteredString(font, message, width / 2, height - 46, TowerUi.DANGER);
     }
 
-    // ---- the pack, and the blade that opens it -------------------------------------------------------------------------------
+    // ---- the pack, and the blade that opens it
+    // -------------------------------------------------------------------------------
 
     private static final ResourceLocation PACK_TOP = ResourceLocation.fromNamespaceAndPath("cobbletowers", "textures/gui/byzantine/pack_top.png");
     private static final ResourceLocation PACK_BODY = ResourceLocation.fromNamespaceAndPath("cobbletowers", "textures/gui/byzantine/pack_body.png");
     private static final int PACK_W = 112;
     private static final int PACK_TOP_H = 16;
     private static final int PACK_BODY_H = 144;
-    /** The cut, as fractions of the tear: a held breath, the blade across, then the foil strip lifts away on a spill of light. */
+    /**
+     * The cut, as fractions of the tear: a held breath, the blade across, then the foil strip lifts away on a spill
+     * of light.
+     */
     private static final float CUT_START = 0.25f;
     private static final float CUT_END = 0.55f;
     private static final float SPILL_START = 0.55f;
@@ -372,7 +392,8 @@ public final class RentalPackScreen extends TowerScreen {
         int x = (width - PACK_W) / 2;
         int y = (height - (PACK_TOP_H + PACK_BODY_H)) / 2 + 6;
         int cutY = y + PACK_TOP_H;
-        // The sealed pack keeps its secret: gold for the God Pack, otherwise one neutral colour, never the best card colour.
+        // The sealed pack keeps its secret: gold for the God Pack, otherwise one neutral colour, never the best card
+        // colour.
         int glow = godPack() ? TowerUi.BRONZE_LIGHT : TowerUi.BURGUNDY;
         long since = t - stageStart;
         float p = stage == Stage.TEARING ? clamp01(since / (float) PackReveal.TEAR_MS) : 0f;
@@ -381,7 +402,8 @@ public final class RentalPackScreen extends TowerScreen {
             graphics.fill(x - g, y - g, x + PACK_W + g, y + PACK_TOP_H + PACK_BODY_H + g, (Math.min(255, pulse / (g / 2)) << 24) | (glow & 0xFFFFFF));
         }
         graphics.blit(PACK_BODY, x, cutY, PACK_W, PACK_BODY_H, 0f, 0f, PACK_W, PACK_BODY_H, PACK_W, PACK_BODY_H);
-        // No drop shadow: dark lettering on a gold plate turns to a smudge with one (the cards' lettering has none either).
+        // No drop shadow: dark lettering on a gold plate turns to a smudge with one (the cards' lettering has none
+        // either).
         String label = "RENTAL PACK";
         graphics.drawString(font, label, x + (PACK_W - font.width(label)) / 2, cutY + 112 + 5, TowerUi.INK, false);
 
@@ -393,7 +415,8 @@ public final class RentalPackScreen extends TowerScreen {
         float fade = 1f - clamp01((p - 0.9f) / 0.1f);         // the light settles as the cards take over
         boolean cutting = stage == Stage.TEARING && p >= CUT_START;
 
-        // The light that spills out of the opening, behind the strip: a bright gap, and a beam that is hottest in the middle.
+        // The light that spills out of the opening, behind the strip: a bright gap, and a beam that is hottest in the
+        // middle.
         if (cutting && lift > 0f) {
             float strength = (1f - 0.35f * lift) * fade;
             graphics.fill(x + 3, cutY - rise, x + PACK_W - 3, cutY, white(strength));
@@ -433,7 +456,8 @@ public final class RentalPackScreen extends TowerScreen {
         float scale = scale();
         long since = t - stageStart;
         hoverIndex = stage == Stage.CHOOSING ? topCardAt(mouseX, mouseY, cards.size()) : -1;
-        // Left to right, so a later card lies over an earlier one; kept cards after those, and the hovered card last of all.
+        // Left to right, so a later card lies over an earlier one; kept cards after those, and the hovered card last
+        // of all.
         for (int pass = 0; pass < 3; pass++) {
             for (int i = 0; i < cards.size(); i++) {
                 boolean hover = i == hoverIndex;
@@ -470,7 +494,10 @@ public final class RentalPackScreen extends TowerScreen {
         }
     }
 
-    /** One card at one point of its turn: the back before halfway, the face after, squeezed sideways through the middle. */
+    /**
+     * One card at one point of its turn: the back before halfway, the face after, squeezed sideways through the
+     * middle.
+     */
     private void drawOne(GuiGraphics graphics, RentalDraftPayload.Card card, int x, int y, int w, int h, float flip,
                          boolean chosen, long t, float scale) {
         float squeeze = (float) Math.abs(Math.cos(Math.PI * flip));
@@ -483,7 +510,8 @@ public final class RentalPackScreen extends TowerScreen {
         if (flip >= 0.5f) {
             int rank = PackReveal.rank(card.rarity());
             if (rank >= 3 && flip >= 1f) glow(graphics, x, y, w, h, PackReveal.colorAt(card.rarity(), t), t, rank);
-            // The card is drawn at its natural size and scaled whole, so its text stays inside the frame at any GUI size.
+            // The card is drawn at its natural size and scaled whole, so its text stays inside the frame at any GUI
+            // size.
             graphics.pose().pushPose();
             graphics.pose().translate(x, y, 0);
             graphics.pose().scale(scale, scale, 1f);
@@ -526,7 +554,8 @@ public final class RentalPackScreen extends TowerScreen {
         return mx >= r[0] && mx < r[0] + r[2] && my >= r[1] - 10 && my < r[1] + r[3];
     }
 
-    // ---- input -------------------------------------------------------------------------------------------------------
+    // ---- input
+    // -------------------------------------------------------------------------------------------------------
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {

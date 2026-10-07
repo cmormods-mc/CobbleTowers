@@ -7,17 +7,8 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * Nothing drops on the ground in the tower dimension (P27).
- *
- * <p>A defeated opponent drops its loot table where it stood, and a tower's rewards are the run's, banked and
- * delivered by the reward service -- so a pile of loose items and experience orbs is both a second, unaccounted
- * reward and mess for the cell reset to sweep. Rather than chase every source (Cobblemon's own drops, CobbleRaids
- * bosses, anything another mod adds), this discards the result: an item with no thrower, or an experience orb,
- * that appears in the tower dimension is removed as it loads.
- *
- * <p>Two things are left alone. An item a player threw has a thrower, so tossing something is unaffected. And a
- * dying player's inventory drops with no thrower, so an item is kept when a dead or dying player is next to it:
- * losing someone's whole inventory to a cleanup rule would be far worse than a loot pile.
+ * Nothing drops on the ground in the tower dimension (P27); an item with no thrower, or an experience orb, is removed
+ * as it loads. Items a player threw, and items beside a dead or dying player, are left alone.
  */
 public final class TowerDropGuard {
 

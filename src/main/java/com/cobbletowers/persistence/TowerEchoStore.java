@@ -16,23 +16,17 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /** The recorded Echoes (P35) and the players who opted out of having one. Plain values; outlives any run. */
-public final class TowerEchoStore extends SavedData {
+public final class TowerEchoStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_echoes";
 
     private final Map<UUID, Echo> echoes = new LinkedHashMap<>();
     private final Set<UUID> optedOut = new HashSet<>();
 
-    public static SavedData.Factory<TowerEchoStore> factory() {
-        return new SavedData.Factory<>(TowerEchoStore::new, TowerEchoStore::load, DataFixTypes.LEVEL);
-    }
-
     public static TowerEchoStore get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerEchoStore::new, TowerEchoStore::load, FILE_ID);
     }
 
     /** Records an Echo, replacing the same player's older one on the same tower. */
@@ -55,9 +49,9 @@ public final class TowerEchoStore extends SavedData {
     }
 
     /**
-     * Drops the tower's Echoes that no longer belong (P36c): one of the current season (or of the all-time boards, when {@code current} is
-     * 0) whose run has left the top ten of {@code currentTopRuns}, and any older than the previous season. The previous season's Echoes
-     * are kept whatever happens to its boards: they are the Hall teams that serve until the new season has its own. Returns how many left.
+     * Drops the tower's Echoes that no longer belong (P36c): a current-season one whose run left the top ten of
+     * {@code currentTopRuns} and any older than the previous season. The previous season's are kept until the new one
+     * has its own. Returns how many left.
      */
     public int prune(ResourceLocation tower, int current, Set<UUID> currentTopRuns) {
         int before = echoes.size();
@@ -108,10 +102,6 @@ public final class TowerEchoStore extends SavedData {
         echoes.clear();
         optedOut.clear();
         setDirty();
-    }
-
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     @Override

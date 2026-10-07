@@ -50,7 +50,8 @@ class RentalDraftTest {
         return pack.cards().stream().filter(card -> card.rarity() == rarity).count();
     }
 
-    // ---- the sets --------------------------------------------------------------------------------------------------
+    // ---- the sets
+    // --------------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("the shipped sets parse, each species appears once, and there are enough of each rarity to draw from")
@@ -95,7 +96,8 @@ class RentalDraftTest {
                 "{" + base + ",\"level\":101}").getAsJsonObject()));
     }
 
-    // ---- the draw --------------------------------------------------------------------------------------------------
+    // ---- the draw
+    // --------------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("a normal pack is three common, one uncommon and one rare or better; a draft is three packs of five")
@@ -174,7 +176,8 @@ class RentalDraftTest {
         assertThrows(IllegalArgumentException.class, () -> RentalDraw.draw(List.of(), 1, false));
     }
 
-    // ---- the draft -------------------------------------------------------------------------------------------------
+    // ---- the draft
+    // -------------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("a draft keeps two cards from each pack in order and finishes with six Pokemon, each with its own id")

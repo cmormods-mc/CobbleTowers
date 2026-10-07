@@ -64,7 +64,8 @@ class CardRewardPolicyTest {
         return team;
     }
 
-    // ---- the policy -------------------------------------------------------------------------------------------------
+    // ---- the policy
+    // -------------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("a completed, scored run earns one card for each Pokemon the player ran with")
@@ -113,7 +114,8 @@ class CardRewardPolicyTest {
         assertEquals("Kingambit card (shiny epic)", decision.cards().get(0).label());
     }
 
-    // ---- the playlist file --------------------------------------------------------------------------------------------
+    // ---- the playlist file
+    // --------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("the shipped Rental playlist grants cards, capped at epic, from three runs a day; no other playlist does")
@@ -145,7 +147,8 @@ class CardRewardPolicyTest {
         assertEquals(CardRewards.NONE, PlaylistDefinition.fromJson(id, JsonParser.parseString(base + "\"x\":1}").getAsJsonObject()).cardRewards());
     }
 
-    // ---- the plain data that carries a card ------------------------------------------------------------------------
+    // ---- the plain data that carries a card
+    // ------------------------------------------------------------------------
 
     @Test
     @DisplayName("a pending card keeps its data and its label through disk, and an old pending reward still loads")

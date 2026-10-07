@@ -5,12 +5,10 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * An armor set as a tooltip needs to know it (P25): its name and colour, the item in each slot, and what each tier of
- * pieces does, already worded. This is what the server syncs to clients; it carries no behaviour, so a client can show a
- * set without being able to apply one.
- *
- * @param pieces the set's items, in head-to-feet order
- * @param tiers each distinct piece count that unlocks something, ascending, with the lines it unlocks
+ * An armor set as a tooltip needs it (P25): name, colour, the item per slot and what each tier does, already worded.
+ * Synced to clients; no behaviour.
+ * @param pieces the set's items, head to feet
+ * @param tiers each piece count that unlocks something, ascending, with its lines
  */
 public record ArmorSetView(ResourceLocation id, String name, int color, List<Piece> pieces, List<Tier> tiers) {
 

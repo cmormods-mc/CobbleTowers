@@ -4,11 +4,7 @@ import java.util.Objects;
 import net.minecraft.nbt.CompoundTag;
 
 /**
- * Why a cell is out of circulation, and since when.
- *
- * <p>The reason is kept because a quarantined cell is a message to an operator, not just a flag: the
- * useful question is always "what was left in it", and a cell that is simply marked bad tells nobody
- * whether it is safe to clear.
+ * Why a cell is out of circulation and since when. The reason is a message to an operator about what was left in it.
  */
 public record CellQuarantine(int cell, String reason, long since) {
 

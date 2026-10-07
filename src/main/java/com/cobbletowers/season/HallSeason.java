@@ -7,10 +7,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * One finished season in the Hall of Fame (P36a): who won what, frozen at the season's end and never edited.
- *
- * @param spotlight the season's spotlight region as an id string, empty if it had none
- * @param boards    every board that had entries, with its top ten
+ * One finished season in the Hall of Fame (P36a), frozen and never edited.
+ * @param spotlight the spotlight region as an id string, empty if none
+ * @param boards every board that had entries, with its top ten
  */
 public record HallSeason(int number, String name, Optional<String> spotlight, LocalDate endedOn, List<Board> boards,
                          List<Club> clubs) {

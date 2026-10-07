@@ -25,11 +25,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * {@code /cobbletowers spike start <definition> <players>} and {@code /cobbletowers spike abort}.
- *
- * <p>Dev-only (permission level 2). Starts a CobbleRaids-backed boss fight owned by CobbleTowers,
- * with the rules a tower floor will have: no catch, no raid rewards or history, no progression, and
- * battle damage and PP carried back to the party (TDS #16: no free healing).
+ * {@code /cobbletowers spike start <definition> <players>} and {@code spike abort}. Dev-only (permission 2): starts a
+ * CobbleRaids boss fight under tower floor rules (no catch, rewards or progression; damage and PP carry back, TDS
+ * #16).
  */
 public final class SpikeCommand {
 
@@ -41,9 +39,7 @@ public final class SpikeCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("cobbletowers")
-                // Gated here rather than on the root: Brigadier merges a re-registered literal into
-                // the node that is already there and keeps that node's requirement, so a gate on
-                // "cobbletowers" would also gate the one subcommand players are meant to run.
+                // Gated here, not on the root: Brigadier keeps a merged literal's first requirement.
                 .then(Commands.literal("spike")
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.literal("start")

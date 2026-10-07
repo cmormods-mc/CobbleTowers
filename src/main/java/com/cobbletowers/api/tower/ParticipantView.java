@@ -12,9 +12,6 @@ public interface ParticipantView {
     /** Connection, combat and membership; see {@link ParticipantState}. */
     ParticipantState state();
 
-    /**
-     * The Pokemon this player registered, by Cobblemon's own uuids, in registration order. Locked
-     * when the run's party was validated, so it does not follow later party edits.
-     */
+    /** The Pokemon this player registered, by Cobblemon uuid, in registration order; locked at party validation. */
     List<UUID> registeredPokemon();
 }

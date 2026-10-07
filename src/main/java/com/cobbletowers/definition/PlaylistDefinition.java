@@ -8,20 +8,15 @@ import com.cobbletowers.encounter.TowerLevelSnapshot;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A playlist (P32): the house rules a run is played under, chosen in the lobby. It changes <b>who may enter and what the run
- * forbids</b>, never the tower: the floors, bosses and economy are the same. Standard is simply "no playlist".
- *
- * <p>Everything is data: party clauses (checked at registration and again whenever a floor opens), an enemy level ceiling and a
- * party cap that narrow the tower's ruleset, modifiers forced onto the run, whether the vendor is closed, a player limit, and a
- * difficulty bonus added to the difficulty score so boards stay comparable. A playlist has its own leaderboards.
- *
- * @param enemyLevelMax    a ceiling on enemy levels, 0 for none
- * @param forcedModifiers  modifiers every run of this playlist starts holding
- * @param vendorClosed     whether the vendor refuses every purchase
- * @param maxPlayers       the most players a team may have, 0 for no limit
- * @param difficultyBonus  points added to the run's difficulty score
- * @param rental           whether the party is a drafted rental team instead of the player's own Pokemon (P33)
- * @param cardRewards      the real CobblemonCards cards a completed run grants (P33b), or {@link CardRewards#NONE}
+ * A playlist (P32): the house rules a run is played under. It changes who may enter and what the run forbids, never
+ * the tower. Standard is "no playlist". Each playlist has its own leaderboards.
+ * @param enemyLevelMax enemy level ceiling, 0 for none
+ * @param forcedModifiers modifiers every run starts holding
+ * @param vendorClosed vendor refuses every purchase
+ * @param maxPlayers team size cap, 0 for none
+ * @param difficultyBonus points added to the difficulty score
+ * @param rental whether the party is a drafted rental team (P33)
+ * @param cardRewards CobblemonCards rewards for a completed run (P33b), or {@link CardRewards#NONE}
  */
 public record PlaylistDefinition(
         ResourceLocation id,
@@ -40,8 +35,8 @@ public record PlaylistDefinition(
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
 
     /**
-     * Real CobblemonCards cards for completing a run of this playlist (P33b): one for each Pokemon the player ran with, never above
-     * {@code maxRarity}, and from at most {@code runsPerDay} completed runs a day.
+     * CobblemonCards rewards for completing a run (P33b): one per Pokemon used, up to {@code maxRarity}, from at most
+     * {@code runsPerDay} runs a day.
      */
     public record CardRewards(boolean enabled, RentalSetDefinition.Rarity maxRarity, int runsPerDay) {
         public static final CardRewards NONE = new CardRewards(false, RentalSetDefinition.Rarity.EPIC, 0);
@@ -66,13 +61,12 @@ public record PlaylistDefinition(
     }
 
     /**
-     * What a party must satisfy. Every clause is neutral when unset.
-     *
-     * @param sameType         every registered Pokemon shares at least one type
-     * @param maxLevel         no registered Pokemon above this level, 0 for none
-     * @param noFullyEvolved   no Pokemon that cannot evolve further
-     * @param bannedLabels     Cobblemon labels that may not appear (legendary, mythical, ultra_beast, paradox...)
-     * @param maxParty         at most this many Pokemon are registered, 0 for the ruleset's own size
+     * What a party must satisfy; every clause is neutral when unset.
+     * @param sameType shared type
+     * @param maxLevel level cap, 0 for none
+     * @param noFullyEvolved no fully evolved Pokemon
+     * @param bannedLabels Cobblemon labels that may not appear
+     * @param maxParty party size cap, 0 for the ruleset's own
      */
     public record Clauses(boolean sameType, int maxLevel, boolean noFullyEvolved, Set<String> bannedLabels, int maxParty) {
 
@@ -106,8 +100,8 @@ public record PlaylistDefinition(
     }
 
     /**
-     * The ruleset a run of this playlist is played under: the tower's, narrowed. The enemy level ceiling can only lower the
-     * ruleset's maximum (never below its minimum), and the party cap can only shrink how many register.
+     * The tower's ruleset narrowed by this playlist: the level ceiling can only lower the maximum and the party cap
+     * only shrink the party.
      */
     public RulesetDefinition narrow(RulesetDefinition base) {
         int max = enemyLevelMax > 0 ? Math.max(base.minEnemyLevel(), Math.min(base.maxEnemyLevel(), enemyLevelMax)) : base.maxEnemyLevel();

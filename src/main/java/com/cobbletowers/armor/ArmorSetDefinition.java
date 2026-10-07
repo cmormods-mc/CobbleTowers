@@ -15,8 +15,8 @@ import java.util.Set;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What an armor set is and does (P24): the pieces that make it up and the bonuses its worn pieces switch on.
- * Pure data: the items themselves are registered in code, because they must exist before any datapack is read.
+ * What an armor set is and does (P24): its pieces and the bonuses its worn pieces switch on. Pure data; the items are
+ * registered in code because they must exist before any datapack is read.
  */
 public record ArmorSetDefinition(
         ResourceLocation id,

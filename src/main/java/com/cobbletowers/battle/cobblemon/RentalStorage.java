@@ -20,11 +20,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * The Cobblemon side of the Rental Draft (P33): builds a lent Pokemon from a {@link RentalSetDefinition}, puts it in a party, finds
- * it again and deletes it. Every rental carries a persistent tag, so a rental that somehow outlives its run can always be recognised
- * and removed, whatever the journal says.
- *
- * <p>Deliberately never touches a Pokemon without the tag: what this deletes is only ever something it made.
+ * The Cobblemon side of the Rental Draft (P33): builds, parties, finds and deletes lent Pokemon. Every rental carries
+ * a persistent tag, and only tagged Pokemon are ever deleted.
  */
 public final class RentalStorage {
 
@@ -32,9 +29,8 @@ public final class RentalStorage {
     public static final String TAG = "cobbletowers_rental";
 
     /**
-     * AscensionLib's contract for a lent Pokemon: a persistent boolean with this name locks every upgrade (the upgrade screen, and any
-     * craft). Set on every rental so a player cannot spend materials on a Pokemon that is deleted when the run ends. Plain NBT, so
-     * neither mod needs the other.
+     * AscensionLib's contract for a lent Pokemon: a persistent boolean with this name locks every upgrade and craft,
+     * so materials are not spent on a Pokemon deleted at run end.
      */
     public static final String ASCENSION_LOCK_TAG = "ascensionlib_craft_locked";
 
@@ -106,10 +102,7 @@ public final class RentalStorage {
         return held(player).stream().map(Pokemon::getUuid).toList();
     }
 
-    /**
-     * Deletes every rental Pokemon of the player whose id the predicate accepts, wherever it is. Only ever removes a tagged Pokemon,
-     * and only by id. Returns how many were deleted.
-     */
+    /** Deletes every tagged rental Pokemon of the player whose id the predicate accepts. Returns how many. */
     public static int removeAll(ServerPlayer player, Predicate<UUID> which) {
         int removed = 0;
         PlayerPartyStore party = Cobblemon.INSTANCE.getStorage().getParty(player);
@@ -126,7 +119,10 @@ public final class RentalStorage {
         return removed;
     }
 
-    /** What a rental is, for a test or a log: species, level, nature, ability, moves and held item as Cobblemon holds them. */
+    /**
+     * What a rental is, for a test or a log: species, level, nature, ability, moves and held item as Cobblemon holds
+     * them.
+     */
     public static String describe(Pokemon pokemon) {
         List<String> moves = new ArrayList<>();
         for (var move : pokemon.getMoveSet().getMoves()) moves.add(move.getName());

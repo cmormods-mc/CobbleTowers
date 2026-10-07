@@ -16,11 +16,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.scores.PlayerTeam;
 
 /**
- * The title and club tag in front of a player's name (P36d). The mixins on a player's display name and tab-list name call {@link #decorate} and
- * {@link #tabName}; the placeholders and {@code /tower} lines call {@link #segmentsOf}. Nothing here changes a name for a player with neither a worn
- * title nor a club, and the whole thing is off with {@code "chat_tags": false} in the cosmetics config.
- *
- * <p>Everything reads from the stores on demand (a handful of map lookups and a short scan of the clubs), so there is no cache to go stale.
+ * The title and club tag in front of a player's name (P36d), used by the display-name and tab-list mixins ({@link
+ * #decorate}, {@link #tabName}) and by placeholders ({@link #segmentsOf}). Off with {@code "chat_tags": false} in the
+ * cosmetics config. Reads the stores on demand, so there is no cache.
  */
 public final class ChatTags {
 
@@ -63,7 +61,10 @@ public final class ChatTags {
         return segments.isEmpty() ? base : compose(segments, base);
     }
 
-    /** The tab-list name: {@code current} (a name some other mod set) or the team-formatted name, with the decoration in front; null when nothing applies. */
+    /**
+     * The tab-list name: {@code current} (a name some other mod set) or the team-formatted name, with the decoration
+     * in front; null when nothing applies.
+     */
     public static Component tabName(ServerPlayer player, Component current) {
         if (!CosmeticsConfig.chatTags()) return current;
         MinecraftServer server = player.getServer();
@@ -74,7 +75,10 @@ public final class ChatTags {
         return compose(segments, base);
     }
 
-    /** Sends the tab list a fresh name for one player, after their title or club changed. A no-op for an offline player. */
+    /**
+     * Sends the tab list a fresh name for one player, after their title or club changed. A no-op for an offline
+     * player.
+     */
     public static void refresh(MinecraftServer server, UUID player) {
         ServerPlayer online = server.getPlayerList().getPlayer(player);
         if (online == null) return;

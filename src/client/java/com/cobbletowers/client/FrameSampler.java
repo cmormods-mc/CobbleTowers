@@ -20,10 +20,9 @@ import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
 /**
- * Development tooling for {@link ScreenshotHarness} and {@link ClientRemote} ({@code COBBLETOWERS_FRAMETIME_ONLY=1}): frame time of the Hall, measured
- * rather than guessed. It records how long the screen takes to draw (CPU side) and how long a whole frame takes, with the real
- * cursor resting nowhere, on a destination card and on a plain button; then draws each building block on its own many times over
- * with the GPU waited on. The report is {@code frametime.txt} in the harness's output folder.
+ * Development tooling for {@link ScreenshotHarness} and {@link ClientRemote} ({@code COBBLETOWERS_FRAMETIME_ONLY=1}):
+ * measures Hall draw time and whole-frame time, then each building block on its own. The report is {@code
+ * frametime.txt} in the harness's output folder.
  */
 final class FrameSampler {
 
@@ -51,10 +50,7 @@ final class FrameSampler {
 
     private FrameSampler() {}
 
-    /**
-     * Starts watching: every frame (the HUD draws once per frame in a world) gives a whole-frame time, and every frame of a Hall
-     * screen gives how long that screen took to draw. Idempotent; nothing is recorded until {@link #begin}.
-     */
+    /** Starts watching every frame. Idempotent; nothing is recorded until {@link #begin}. */
     static void install() {
         if (installed) return;
         installed = true;
@@ -85,7 +81,10 @@ final class FrameSampler {
         recording = false;
     }
 
-    /** Removes the frame limit and vsync, so the whole-frame time is what the machine can do rather than the monitor's rate. */
+    /**
+     * Removes the frame limit and vsync, so the whole-frame time is what the machine can do rather than the monitor's
+     * rate.
+     */
     static void uncap() {
         var options = Minecraft.getInstance().options;
         options.enableVsync().set(false);
@@ -155,8 +154,8 @@ final class FrameSampler {
     }
 
     /**
-     * Makes a widget draw as hovered (nothing for null). A scripted window gets no real mouse events, so the widget is given
-     * keyboard focus instead: isHoveredOrFocused is what every button draws its hover state from.
+     * Makes a widget draw as hovered (nothing for null) by giving it keyboard focus, since a scripted window gets no
+     * mouse events.
      */
     private static void hover(AbstractWidget widget) {
         target = widget;

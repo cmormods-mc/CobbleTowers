@@ -4,11 +4,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 /**
- * Ascension's battle effects (P30) as logical {@code evs} operations for the tower-fx extension: the enemy's growth and the
- * player's matching boon. Pure; the adapters merge them with whatever armor and custom modifiers contribute.
- *
- * <p>The enemy operation is one per battle, not one per player: a boss battle merges every player's operations, so the
- * boss side would otherwise be raised once per teammate.
+ * Ascension's battle effects (P30) as logical {@code evs} operations for the tower-fx extension: the enemy's growth
+ * and the player's boon. Pure. The enemy operation is one per battle, since a boss battle merges every player's
+ * operations.
  */
 public final class AscensionFx {
 
@@ -28,7 +26,9 @@ public final class AscensionFx {
         return ops;
     }
 
-    /** One operation carries at most {@link AscensionPolicy#MAX_EVS_PER_OPERATION}; a deeper Ascension sends several. */
+    /**
+     * One operation carries at most {@link AscensionPolicy#MAX_EVS_PER_OPERATION}; a deeper Ascension sends several.
+     */
     private static void addChunks(JsonArray ops, String side, int total) {
         for (int left = total; left > 0; left -= AscensionPolicy.MAX_EVS_PER_OPERATION) {
             ops.add(evs(side, Math.min(left, AscensionPolicy.MAX_EVS_PER_OPERATION)));

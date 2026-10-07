@@ -15,14 +15,12 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * Each player's season points and track progress (P36b), and the cosmetics they have earned. Points belong to one season: a record
- * for another season reads as nothing. Cosmetics are permanent and never touched by a new season.
+ * Each player's season points, track progress and earned cosmetics (P36b). Points belong to one season (another
+ * season's record reads as nothing); cosmetics are permanent.
  */
-public final class TowerSeasonProgressStore extends SavedData {
+public final class TowerSeasonProgressStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_season_progress";
 
@@ -34,12 +32,8 @@ public final class TowerSeasonProgressStore extends SavedData {
     private final Map<UUID, String> selectedTitles = new LinkedHashMap<>();
     private final Map<UUID, Set<String>> claims = new LinkedHashMap<>();
 
-    public static SavedData.Factory<TowerSeasonProgressStore> factory() {
-        return new SavedData.Factory<>(TowerSeasonProgressStore::new, TowerSeasonProgressStore::load, DataFixTypes.LEVEL);
-    }
-
     public static TowerSeasonProgressStore get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerSeasonProgressStore::new, TowerSeasonProgressStore::load, FILE_ID);
     }
 
     /** The player's tally for {@code season}; empty if they have none, or only one from another season. */
@@ -53,7 +47,10 @@ public final class TowerSeasonProgressStore extends SavedData {
         setDirty();
     }
 
-    /** Which track nodes the player has claimed (P37): keys such as {@code s3:5} (season 3, step 5) and {@code m:cobbletowers:tideforge:10}. */
+    /**
+     * Which track nodes the player has claimed (P37): keys such as {@code s3:5} (season 3, step 5) and {@code
+     * m:cobbletowers:tideforge:10}.
+     */
     public boolean claimed(UUID player, String key) {
         return claims.getOrDefault(player, Set.of()).contains(key);
     }
@@ -98,10 +95,6 @@ public final class TowerSeasonProgressStore extends SavedData {
         selectedTitles.clear();
         claims.clear();
         setDirty();
-    }
-
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     @Override

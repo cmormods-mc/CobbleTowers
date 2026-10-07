@@ -12,11 +12,9 @@ import org.joml.Matrix4f;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The warm pixel renderer: oak, aged bronze, parchment, chocolate and burgundy, drawn from the 16x16 material tiles and
- * 48x48 nine-slice frames under {@code textures/gui/pixel}. Everything is integer-positioned and nearest-sampled by
- * the GUI atlas; there is no shader, no framebuffer capture and no blur, so nothing here can fail to compile or leak
- * render state. Corners are drawn at {@link #CORNER} GUI pixels (half the 16px source corner) and never stretch; only
- * the edge strips and the flat centre are scaled, along their own length.
+ * The warm pixel renderer: oak, bronze, parchment, chocolate and burgundy from the tiles and nine-slice frames under
+ * {@code textures/gui/pixel}. Integer-positioned and nearest-sampled; no shader or blur. Corners are drawn at {@link
+ * #CORNER} GUI pixels and never stretch.
  */
 public final class PixelUi {
     public static final int CORNER = 8;
@@ -38,9 +36,8 @@ public final class PixelUi {
     private PixelUi() {}
 
     /**
-     * A nine-slice frame, drawn as ONE batched draw call (nine quads in one buffer) with the same shader and texture state a vanilla
-     * {@code blit} sets, instead of nine separate blits: a menu is dozens of frames, and a draw call each is what made it slow.
-     * Tiny boxes shrink the corners instead of overlapping them.
+     * A nine-slice frame drawn as one batched draw call with the state a vanilla {@code blit} sets. Tiny boxes shrink
+     * the corners instead of overlapping them.
      */
     public static void frame(GuiGraphics g, Frame frame, int x, int y, int w, int h) {
         if (w < 2 || h < 2) return;
@@ -68,7 +65,10 @@ public final class PixelUi {
         BufferUploader.drawWithShader(b.buildOrThrow());
     }
 
-    /** One textured quad: a box of {@code w}x{@code h} GUI pixels showing the {@code uw}x{@code vh} texel region at ({@code u},{@code v}). */
+    /**
+     * One textured quad: a box of {@code w}x{@code h} GUI pixels showing the {@code uw}x{@code vh} texel region at
+     * ({@code u},{@code v}).
+     */
     private static void quad(BufferBuilder b, Matrix4f matrix, int x, int y, int w, int h, int u, int v, int uw, int vh) {
         float u1 = u / (float) SRC, u2 = (u + uw) / (float) SRC, v1 = v / (float) SRC, v2 = (v + vh) / (float) SRC;
         b.addVertex(matrix, x, y, 0).setUv(u1, v1);
@@ -80,13 +80,14 @@ public final class PixelUi {
     /** A 16x16 material tiled across a box at integer positions (never stretched). */
     public static void tile(GuiGraphics g, Tile tile, int x, int y, int w, int h) {
         if (w < 1 || h < 1) return;
-        // One quad, with the texture repeating across it (as vanilla's own menu background does), not a quad per 16x16 tile.
+        // One quad, with the texture repeating across it (as vanilla's own menu background does), not a quad per
+        // 16x16 tile.
         g.blit(tile.texture, x, y, w, h, 0f, 0f, w, h, 16, 16);
     }
 
     /**
-     * A recessed chocolate panel with a bronze edge. {@code accent} marks the selected state with two bronze/burgundy
-     * brackets; {@code hover} (0..1) lights them. Text on it is cream.
+     * A recessed chocolate panel with a bronze edge. {@code accent} marks the selected state; {@code hover} (0..1)
+     * lights the brackets.
      */
     public static void panel(GuiGraphics g, int x, int y, int w, int h, int accent, float hover) {
         frame(g, Frame.DARK, x, y, w, h);

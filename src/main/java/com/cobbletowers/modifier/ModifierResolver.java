@@ -8,27 +8,14 @@ import java.util.Map;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Whether a set of modifiers can legally be held together (TDS #58).
- *
- * <p><b>The contract is "validate the complete resulting ruleset", and it is written literally.</b>
- * {@link #eligible} does not check a candidate against the held set; it builds the set that <i>would
- * result</i> from taking the candidate and validates the whole thing. Those two are equivalent under
- * today's four rules, and writing the cheaper one would have been fine -- right up until a rule
- * arrives that a candidate can break for somebody else. Then the cheap version is silently wrong in
- * one direction, which is the hardest kind of bug to see.
- *
- * <p>Pure: no server, no world, no registry. Every rule here is a unit test.
+ * Whether a set of modifiers can legally be held together (TDS #58). {@link #eligible} validates the whole resulting
+ * set rather than checking the candidate alone, so a later rule cannot be silently missed. Pure.
  */
 public final class ModifierResolver {
 
     private ModifierResolver() {}
 
-    /**
-     * Everything wrong with holding exactly this set, empty if nothing is.
-     *
-     * <p>Order-independent by construction -- it counts and compares rather than walking pairs in
-     * sequence -- so a set is legal or not regardless of the order it was drafted in.
-     */
+    /** Everything wrong with holding exactly this set, empty if nothing. Order-independent. */
     public static List<String> validate(List<ModifierDefinition> set) {
         List<String> problems = new ArrayList<>();
 
@@ -59,9 +46,7 @@ public final class ModifierResolver {
                     problems.add(modifier.id() + " requires " + required + ", which is not held");
                 }
             }
-            // A group admits one *modifier*, not one copy: stack limit is what governs repeats of
-            // the same id, and letting the group rule veto those would make any stack limit above 1
-            // unreachable for a grouped modifier.
+            // A group admits one modifier, not one copy; the stack limit governs repeats of the same id.
             modifier.group().ifPresent(group -> {
                 ResourceLocation owner = groupOwner.putIfAbsent(group, modifier.id());
                 if (owner != null && !owner.equals(modifier.id())) {

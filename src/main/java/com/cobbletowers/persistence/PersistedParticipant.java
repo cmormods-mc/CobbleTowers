@@ -14,11 +14,9 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 
 /**
- * One participant as it is written to disk: an id, three state axes and the Pokemon they registered.
- *
- * <p>Identifiers only -- never a live player or Pokemon object (TDS §10). The registered Pokemon are
- * Cobblemon's own uuids, captured when the party was validated, so a run is not rewritten by someone
- * reorganising their party between floors.
+ * One participant as written to disk: an id, three state axes and the registered Pokemon. Identifiers only (TDS
+ * section 10); the Pokemon uuids are captured at validation so rearranging a party between floors does not rewrite
+ * the run.
  */
 public record PersistedParticipant(UUID playerId, ParticipantState state, List<UUID> registeredPokemon) {
 
@@ -58,8 +56,8 @@ public record PersistedParticipant(UUID playerId, ParticipantState state, List<U
     }
 
     /**
-     * An unknown axis value is refused rather than defaulted. Guessing here would silently put a
-     * player back into a run in a state they were not in -- the mistake the three axes exist to avoid.
+     * An unknown axis value is refused rather than defaulted, which would put a player back in a state they were not
+     * in.
      */
     private static <E extends Enum<E>> E parse(Class<E> type, String raw, String field) {
         try {

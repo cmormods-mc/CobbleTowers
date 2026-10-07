@@ -6,16 +6,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.AABB;
 
 /**
- * Where a cell is. Index in, coordinates out, and nothing else.
- *
- * <p>One cell per 512-block square, which is exactly one region file (32x32 chunks). That is what
- * "region/chunk-aware" (TDS #26) buys: two cells can never share a chunk, so nothing one run does can
- * load, tick or corrupt another's, and a cell's storage is separable because it is a region of its
- * own. The interior is centred inside its square with a {@value #BUFFER}-block margin on every side,
- * so a structure that overruns slightly still cannot reach the neighbour.
- *
- * <p>Pure: no world, no server, no state. Every claim here is a unit test, including the inverse,
- * which is what arena containment will ask (TDS #38) once players can stand in a cell.
+ * Where a cell is: index in, coordinates out. One cell per 512-block square (one region file), so cells never share a
+ * chunk (TDS #26). The interior is centred with a {@value #BUFFER}-block margin. Pure.
  */
 public final class CellGrid {
 
@@ -42,13 +34,8 @@ public final class CellGrid {
     public static final int FLOOR_Y = 64;
 
     /**
-     * How far below the cell a cleanup sweep still looks.
-     *
-     * <p>The tower is a void dimension, so anything left behind does not stay where it was left --
-     * it falls, and it keeps falling below y=0 for some seconds before the void finally removes it.
-     * A sweep bounded by the cell's own floor therefore reports "clean" for exactly the case it
-     * exists to catch. Found live: a pig summoned in a cell was at y=-28 a moment later, and the
-     * cell verified clean with it plainly there.
+     * How far below the cell a cleanup sweep still looks: the tower is a void, so leftovers keep falling below y=0
+     * for a while.
      */
     public static final int SWEEP_BELOW = 320;
 
@@ -82,8 +69,8 @@ public final class CellGrid {
     }
 
     /**
-     * The volume a cleanup sweep covers: the interior, plus the void beneath it where anything left
-     * in a cell ends up. Wider than {@link #boundsOf} on purpose -- see {@link #SWEEP_BELOW}.
+     * The volume a cleanup sweep covers: the interior plus the void beneath it. Wider than {@link #boundsOf}; see
+     * {@link #SWEEP_BELOW}.
      */
     public static AABB sweepBoundsOf(int index) {
         BlockPos origin = originOf(index);
@@ -91,11 +78,7 @@ public final class CellGrid {
                 origin.getX() + INTERIOR, MAX_Y, origin.getZ() + INTERIOR);
     }
 
-    /**
-     * Which cell contains this position, or empty for the buffer between cells and anywhere outside
-     * the grid. Deliberately not "the nearest cell": something standing in the gap belongs to no run,
-     * and saying otherwise would hand one run's cleanup a position in another's neighbourhood.
-     */
+    /** Which cell contains this position, or empty for the buffer between cells and outside the grid. */
     public static OptionalInt indexAt(double x, double z) {
         int column = Math.floorDiv((int) Math.floor(x), CELL_SPAN);
         int row = Math.floorDiv((int) Math.floor(z), CELL_SPAN);

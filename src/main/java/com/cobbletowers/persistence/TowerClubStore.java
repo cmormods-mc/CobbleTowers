@@ -11,22 +11,16 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /** The clubs (P35) and every player's best regional clear. Plain values; outlives any run. */
-public final class TowerClubStore extends SavedData {
+public final class TowerClubStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_clubs";
 
     private final ClubBook book = new ClubBook();
 
-    public static SavedData.Factory<TowerClubStore> factory() {
-        return new SavedData.Factory<>(TowerClubStore::new, TowerClubStore::load, DataFixTypes.LEVEL);
-    }
-
     public static TowerClubStore get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerClubStore::new, TowerClubStore::load, FILE_ID);
     }
 
     /** The data. Callers that change it must call {@link #changed()}. */
@@ -36,10 +30,6 @@ public final class TowerClubStore extends SavedData {
 
     public void changed() {
         setDirty();
-    }
-
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     @Override

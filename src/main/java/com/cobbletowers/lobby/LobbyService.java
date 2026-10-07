@@ -41,15 +41,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Everything a player does to get into a run: pick a tower, invite a team, answer an invite, start.
- *
- * <p>Both the commands and the play screen call the same methods here, and each returns the sentence the
- * caller should show -- so the two doors cannot drift apart. Lobbies live only in memory (see
- * {@link TowerLobby}); the first persisted fact is the run, created when the countdown ends.
- *
- * <p>Starting takes the team through party validation, instance allocation and preparation to the
- * opening of floor 1, and the lobby lives until that works: a rejected party or a failed allocation
- * leaves the team together to try again. What happens <em>between</em> floors is not driven from here.
+ * Everything a player does to get into a run: pick a tower, invite a team, answer an invite, start. Commands and the
+ * play screen share these methods, each returning the sentence to show. Lobbies live in memory ({@link TowerLobby});
+ * a rejected start leaves the team together to retry.
  */
 public final class LobbyService {
 
@@ -82,10 +76,7 @@ public final class LobbyService {
         });
     }
 
-    /**
-     * A player dropped. A host going ends their team (nobody else can start it, and it would otherwise sit in memory with
-     * its drafts); anyone else just steps out. Leaving a run is {@code TowerPresence}'s business, not this waiting room's.
-     */
+    /** A player dropped. A host going ends their team; anyone else just steps out. */
     static void onDisconnect(MinecraftServer server, UUID id) {
         TowerLobby hosted = BY_HOST.get(id);
         if (hosted != null) {
@@ -132,8 +123,10 @@ public final class LobbyService {
         if (existing.isPresent() && existing.get().counting()) return "The run is already starting.";
 
         if (existing.isPresent() && existing.get().tower().equals(towerId)) {
-            // The same tower again changes nothing: a new offer would send everyone back to "invited" and throw away the mode,
-            // the drafts and the ready-ups, which looks like a brand-new lobby to a team that only wanted to look at this one.
+            // The same tower again changes nothing: a new offer would send everyone back to "invited" and throw away
+            // the mode,
+            // the drafts and the ready-ups, which looks like a brand-new lobby to a team that only wanted to look at
+            // this one.
             return "That is already your tower: " + towerName(towerId) + ".";
         }
         TowerLobby lobby = existing.orElseGet(() -> {
@@ -189,10 +182,7 @@ public final class LobbyService {
         return "Declined.";
     }
 
-    /**
-     * What to say to a player with no team. A team is only the waiting room: it is gone the moment the run
-     * starts, so a player already in a run must be told that, not that they have no team.
-     */
+    /** What to say to a player with no team; a player already in a run is told that instead. */
     public static String noTeam(ServerPlayer player) {
         return inRun(player.getUUID()) ? inRunMessage() : "You are not in a team.";
     }
@@ -227,10 +217,7 @@ public final class LobbyService {
     }
 
     /** The host confirms; the countdown runs and {@link #tick} launches the run when it ends. */
-    /**
-     * The host picks today's trial (P32): the tower, playlist, mutators, level and seed come from the trial, so the lobby is
-     * fixed to it until the host chooses a tower again.
-     */
+    /** The host picks today's trial (P32); its tower, playlist, mutators, level and seed fix the lobby. */
     public static String selectTrial(MinecraftServer server, ServerPlayer player,
                                      com.cobbletowers.definition.TrialPoolDefinition.Kind kind) {
         if (inRun(player.getUUID())) return "You are already in a tower run.";
@@ -275,10 +262,7 @@ public final class LobbyService {
         return code == null ? "You have not started a run since the server last restarted." : "Your last run code: " + code;
     }
 
-    /**
-     * The host sets the lobby to a run code (P35): its tower, mode, starting Ascension and seed. Refused when the code is
-     * not valid, names something not loaded, or asks for an Ascension the team has not reached.
-     */
+    /** The host sets the lobby to a run code (P35). Refused if invalid, unloaded, or above the team's Ascension. */
     public static String useCode(MinecraftServer server, ServerPlayer player, String raw) {
         java.util.Optional<com.cobbletowers.runcode.RunCode.Decoded> decoded = com.cobbletowers.runcode.RunCode.decode(raw);
         if (decoded.isEmpty()) return "That is not a valid run code. Check it was copied whole (it looks like CT1-...).";
@@ -339,10 +323,7 @@ public final class LobbyService {
         return playlist.flatMap(PlaylistRegistry::get).map(PlaylistDefinition::displayName).orElse("Standard");
     }
 
-    /**
-     * The deepest Ascension the whole team may start at (P30): the lowest record on the team, since nobody should be thrown
-     * into depth they have not earned.
-     */
+    /** The deepest Ascension the whole team may start at (P30): the lowest record on the team. */
     public static int maxAscension(MinecraftServer server, TowerLobby lobby) {
         TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(lobby.tower());
         if (tower == null || !tower.ascension()) return 0;
@@ -395,10 +376,7 @@ public final class LobbyService {
         return "Starting.";
     }
 
-    /**
-     * The host settles on the mode (P33). For a rental mode that is the moment everyone's draft opens: until then the mode may still
-     * be cycled, and nobody is shown a draft for a mode that might change.
-     */
+    /** The host settles on the mode (P33). A rental mode opens everyone's draft now. */
     public static String confirmMode(MinecraftServer server, ServerPlayer player) {
         TowerLobby lobby = BY_HOST.get(player.getUUID());
         if (lobby == null) return lobbyOf(player.getUUID()).isPresent() ? "Only the host can confirm the mode." : noTeam(player);
@@ -412,8 +390,8 @@ public final class LobbyService {
     }
 
     /**
-     * Ready up or stand down (P33). Only a rental lobby has a ready-up, and only a finished draft can be readied; a countdown
-     * already running is not interrupted by either.
+     * Ready up or stand down (P33). Rental lobbies only, finished drafts only; a running countdown is not
+     * interrupted.
      */
     public static String ready(MinecraftServer server, ServerPlayer player, boolean value) {
         Optional<TowerLobby> found = lobbyOf(player.getUUID());
@@ -451,7 +429,8 @@ public final class LobbyService {
             if (!lobby.counting()) continue;
             if (lobby.countdownDue(now)) {
                 if (!com.cobbletowers.instance.HeavyWork.tryAcquire(now)) {
-                    // The tower is busy building or clearing other arenas (one at a time keeps the server responsive): wait a second.
+                    // The tower is busy building or clearing other arenas (one at a time keeps the server
+                    // responsive): wait a second.
                     lobby.beginCountdown(now, 1_000L);
                     for (UUID id : lobby.team()) {
                         ServerPlayer player = server.getPlayerList().getPlayer(id);
@@ -471,10 +450,7 @@ public final class LobbyService {
         }
     }
 
-    /**
-     * The countdown ended. Everything that can be checked without touching a player's world is checked
-     * first, so a team that cannot start finds out before a run record exists.
-     */
+    /** The countdown ended. Everything checkable without touching a player's world is checked first. */
     private static void launch(MinecraftServer server, TowerLobby lobby, long now) {
         lobby.cancelCountdown();
         TowerContent content = TowerDefinitionRegistry.content();
@@ -505,7 +481,8 @@ public final class LobbyService {
                 continue;
             }
             if (rentalRun) {
-                // A rental run (P33): the party is the drafted team, so the player's own Pokemon are not judged at all.
+                // A rental run (P33): the party is the drafted team, so the player's own Pokemon are not judged at
+                // all.
                 Optional<RentalDraft> draft = RentalDraftService.draftOf(id).filter(RentalDraft::complete);
                 if (draft.isEmpty()) {
                     problems.add(name(player) + " has not finished their draft (/tower draft)");
@@ -582,7 +559,8 @@ public final class LobbyService {
         RunOptions options = RunOptions.of(lobby.playlist());
         List<ResourceLocation> trialModifiers = List.of();
         if (lobby.trial().isPresent()) {
-            // A trial (P32): the same seed, mutators and enemy level for everybody, limited to its floors, from floor 1.
+            // A trial (P32): the same seed, mutators and enemy level for everybody, limited to its floors, from floor
+            // 1.
             com.cobbletowers.trial.TrialSchedule.Instance trial = lobby.trial().get();
             boolean scored = com.cobbletowers.trial.TrialService.wouldBeScored(server, players, trial.id());
             options = new RunOptions(lobby.playlist(), Optional.of(trial.id()), trial.floors(), scored, trial.entry().enemyLevel());
@@ -613,7 +591,8 @@ public final class LobbyService {
             List<UUID> target = locks.get(id);
             if (target == null && lent == null) continue;
             ServerPlayer player = server.getPlayerList().getPlayer(id);
-            // A rental run (P33) lends the drafted team through the same journal; anything else moves the player's own Pokemon.
+            // A rental run (P33) lends the drafted team through the same journal; anything else moves the player's
+            // own Pokemon.
             Object result = lent != null
                     ? (player == null ? RentalPartyService.Lock.FAILED : RentalPartyService.lock(server, runId, player, lent))
                     : (player == null ? PartyJournalService.Lock.FAILED : PartyJournalService.lockIn(server, runId, player, target));
@@ -656,7 +635,8 @@ public final class LobbyService {
         if (keyRun) {
             for (UUID id : players) {
                 ServerPlayer keyholder = server.getPlayerList().getPlayer(id);
-                // The run is open and cannot be undone here, so a key that vanished in the gap is logged, not enforced.
+                // The run is open and cannot be undone here, so a key that vanished in the gap is logged, not
+                // enforced.
                 if (keyholder != null && com.cobbletowers.economy.TowerKeys.take(keyholder)) {
                     keyholder.sendSystemMessage(Component.literal("Used 1 Tower Key."));
                 } else {

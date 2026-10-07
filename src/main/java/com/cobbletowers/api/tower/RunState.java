@@ -1,10 +1,8 @@
 package com.cobbletowers.api.tower;
 
 /**
- * Where a tower run is. The nine core states of the run's life, plus the branches it can end on.
- *
- * <p>A run's state is owned by the server and moved only by {@code RunTransitions}; see
- * {@code docs/design/P1-contracts.md} for the table.
+ * Where a tower run is: the nine core states plus the branches it can end on. Owned by the server and moved only by
+ * {@code RunTransitions}; see {@code docs/design/P1-contracts.md}.
  */
 public enum RunState {
     /** The run object exists; nothing has been validated or allocated. */
@@ -28,8 +26,8 @@ public enum RunState {
     /** Ended by the party or an operator, rather than by the tower. */
     ABANDONED,
     /**
-     * A technical failure -- battle initialization, a missing entity, a crash, an adapter fault.
-     * Never reported as a player loss, and always resumable from the last checkpoint.
+     * A technical failure (battle init, missing entity, crash, adapter fault). Never a player loss; resumable from
+     * the last checkpoint.
      */
     RECOVERY_REQUIRED;
 

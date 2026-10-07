@@ -19,13 +19,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * The one place a draft opens, takes a vote and settles (TDS #2, #23, #57).
- *
- * <p>Split the way {@link com.cobbletowers.runtime.ParticipantService} is: the decisions are pure
- * functions over a run, and only the handful of methods taking a server write anything. Every rule
- * below is therefore a unit test with no Minecraft in reach, which is the only way the tie-break and
- * the lock-in cadence get tested at all -- neither is reachable in a smoke test without playing five
- * floors.
+ * Opens, takes votes on and settles a draft (TDS #2, #23, #57). Decisions are pure functions over a run; only a few
+ * methods write.
  */
 public final class DraftService {
 
@@ -36,24 +31,12 @@ public final class DraftService {
 
     // ---------------------------------------------------------------- pure
 
-    /**
-     * Whether the next draft this run opens should be a Lock-In Draft.
-     *
-     * <p>Derived rather than stored. A run owes one lock-in per five challenges, and it has had as
-     * many as it has locked in; when it owes more than it has had, the next draft is the lock-in.
-     * Storing a "lock-in due" flag would be a second source of truth that a crash could disagree
-     * with.
-     */
+    /** Whether the next draft is a Lock-In Draft: one per five challenges, derived rather than stored. */
     public static boolean lockInDue(RunModifierState state) {
         return state.challengeCount() / LOCK_IN_EVERY > state.lockedIn().size();
     }
 
-    /**
-     * The seed a draft at this floor is drawn from, and the one its tie is broken with.
-     *
-     * <p>The same seed for both on purpose: the tie-break is then fixed at the moment the cards are,
-     * before anybody has voted, so it cannot be steered by voting order.
-     */
+    /** The seed a draft is drawn from and tie-broken with; the same seed so voting order cannot steer the tie. */
     public static long draftSeed(PersistedRun run, int floorIndex) {
         return EncounterSeed.of(run.seed(), floorIndex, DraftDraw.DRAFT_ORDINAL_BASE);
     }
@@ -79,10 +62,7 @@ public final class DraftService {
         return EncounterSeed.of(run.seed(), floorIndex, DraftDraw.RELIC_ORDINAL_BASE);
     }
 
-    /**
-     * The relics a run would be offered after clearing this floor: only on a milestone floor, only while there is
-     * room, and only what the run may legally hold with what it already has.
-     */
+    /** The relics offered after clearing this floor: milestone floors only, with room, and legal for the run. */
     public static List<ResourceLocation> relicCardsFor(TowerContent content, PersistedRun run, int floorIndex) {
         RunModifierState state = run.modifiers();
         if (!state.hasRelicRoom() || content.milestoneAt(run.towerId(), floorIndex).isEmpty()) return List.of();
@@ -93,16 +73,7 @@ public final class DraftService {
         return List.copyOf(cards);
     }
 
-    /**
-     * What a run's modifiers add up to, with locked-in ones counted twice.
-     *
-     * <p><b>This is what locking in means mechanically.</b> The TDS calls it "a permanent lock-in
-     * mechanic" (#2, #57) without saying what it does, and a lock-in that only set a flag would be a
-     * ceremony -- the party would vote on nothing. Counting the chosen modifier a second time makes
-     * the Lock-In Draft a real decision about which challenge to intensify for the rest of the run,
-     * using machinery that already exists: {@link ModifierEffects} compounds percentages and sums
-     * offsets, so a second copy needs no special case anywhere.
-     */
+    /** What a run's modifiers add up to, with locked-in ones counted twice (that is what a lock-in does). */
     public static ModifierEffects effects(TowerContent content, RunModifierState state) {
         List<ModifierDefinition> counted = new ArrayList<>(held(content, state));
         for (ResourceLocation locked : state.lockedIn()) {
@@ -112,7 +83,9 @@ public final class DraftService {
         return ModifierEffects.of(counted);
     }
 
-    /** What a run's CUSTOM modifiers (P29) reduce to; locked-in copies do not matter, a behavior is held or it is not. */
+    /**
+     * What a run's CUSTOM modifiers (P29) reduce to; locked-in copies do not matter, a behavior is held or it is not.
+     */
     public static CustomEffects customs(PersistedRun run) {
         TowerContent content = TowerDefinitionRegistry.content();
         List<ModifierDefinition> all = new ArrayList<>(held(content, run.modifiers()));
@@ -132,10 +105,8 @@ public final class DraftService {
     }
 
     /**
-     * The cards a run would be offered at this floor, or empty if it should not be offered a draft.
-     *
-     * <p>A lock-in draws from what the run already holds (#57); an ordinary draft draws from the
-     * floor's pool, filtered to what the run is eligible for (#58).
+     * The cards offered at this floor, or empty. A lock-in draws from held modifiers (#57); an ordinary draft from
+     * the floor's pool (#58).
      */
     public static List<ResourceLocation> cardsFor(TowerContent content, PersistedRun run, int floorIndex) {
         RunModifierState state = run.modifiers();
@@ -180,14 +151,8 @@ public final class DraftService {
     // -------------------------------------------------------------- writing
 
     /**
-     * Opens a draft, if this run should have one.
-     *
-     * <p>Called on arrival at {@code INTERMISSION} rather than from the event that got there, for
-     * the reason P7 gives about revives: every road into an intermission has to behave the same, or
-     * "you draft between floors" is a promise that holds only on the common path.
-     *
-     * <p>Idempotent. A run that already has an open draft keeps it -- re-opening would discard votes
-     * already cast, and recovery replays arrival at a state it was already in.
+     * Opens a draft if the run should have one. Called on arrival at INTERMISSION; idempotent, so an open draft keeps
+     * its votes.
      */
     public static Optional<PersistedDraft> open(MinecraftServer server, UUID runId, long now) {
         Optional<PersistedRun> found = TowerRuns.get(runId);
@@ -222,11 +187,7 @@ public final class DraftService {
         return Optional.of(draft);
     }
 
-    /**
-     * Records one player's vote, and settles the draft once everybody has voted.
-     *
-     * @return the draft as it stands, or empty when there is nothing open to vote on
-     */
+    /** Records a vote and settles once everybody has voted. @return the draft, or empty when none is open */
     public static Optional<PersistedDraft> vote(MinecraftServer server, UUID runId, UUID playerId,
                                                 int cardIndex, long now) {
         Optional<PersistedRun> found = TowerRuns.get(runId);
@@ -244,10 +205,7 @@ public final class DraftService {
     }
 
     /**
-     * Settles whatever draft is open, whether or not everybody voted.
-     *
-     * <p>Used by the last vote, by the operator command, and by the watchdog when a party has walked
-     * away from a draft it never answered. An unvoted draft still resolves -- see {@link DraftVote}.
+     * Settles the open draft whether or not everybody voted; an unvoted draft still resolves (see {@link DraftVote}).
      */
     public static PersistedDraft settle(MinecraftServer server, UUID runId, long now) {
         PersistedRun run = TowerRuns.get(runId).orElseThrow(
@@ -345,12 +303,7 @@ public final class DraftService {
         return resolved;
     }
 
-    /**
-     * Clears a settled draft away as a run leaves its intermission.
-     *
-     * <p>Only a settled one: an open draft is what stops {@code INTERMISSION_COMPLETE}, and clearing
-     * it here would turn "you must draft" into "you must draft unless you ask twice".
-     */
+    /** Clears a settled draft as the run leaves its intermission; an open one stays and blocks it. */
     public static void clearIfSettled(MinecraftServer server, UUID runId, long now) {
         TowerRuns.get(runId).ifPresent(run -> {
             if (run.modifiers().draft().isPresent() && run.modifiers().draft().get().resolved()) {

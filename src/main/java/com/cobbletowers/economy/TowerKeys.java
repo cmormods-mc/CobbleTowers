@@ -16,13 +16,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 
 /**
- * The tower key (decided 2026-10-05): the entry item for an ordinary run, one per player. It is an ordinary item, so
- * anything can hand it out by id ({@code cobbletowers:tower_key}): the daily vote crate, a Raids shop entry, a command.
- *
- * <p>Off until an operator turns it on with {@code config/cobbletowers-keys.json} ({@code {"required": true}}), so that
- * updating the mod before the key has a source cannot lock every player out. Which runs cost a key is
- * {@link TowerKeyPolicy}; the lobby checks everyone has one before the countdown ends and takes it only once the run
- * has really started, so a launch that fails costs nothing.
+ * The tower key (decided 2026-10-05): the entry item for an ordinary run, one per player ({@code
+ * cobbletowers:tower_key}). Off until {@code config/cobbletowers-keys.json} sets {@code {"required": true}}. {@link
+ * TowerKeyPolicy} says which runs cost a key; the lobby takes one only once the run has started.
  */
 public final class TowerKeys {
 

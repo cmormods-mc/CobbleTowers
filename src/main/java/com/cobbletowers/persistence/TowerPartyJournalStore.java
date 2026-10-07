@@ -12,19 +12,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * Disk storage for the party journal (P18): one entry per player whose Pokemon a run has moved and not yet
- * put back. Copies {@link TowerPendingRewardStore}'s exact shape, with one deliberate difference.
- *
- * <p>An entry that cannot be read is <b>kept</b>, raw, and written back out unchanged, where the reward
- * store drops what it cannot read. A dropped reward is an inconvenience; a dropped journal is a player
- * whose Pokemon are never put back. The unreadable entry is reported loudly so someone can act on it.
+ * Disk storage for the party journal (P18): one entry per player whose Pokemon a run moved and has not put back. An
+ * unreadable entry is kept raw and written back unchanged, unlike the reward store, because a dropped journal means
+ * Pokemon never put back; it is reported loudly.
  */
-public final class TowerPartyJournalStore extends SavedData {
+public final class TowerPartyJournalStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_party_journal";
     private static final String ENTRIES = "entries";
@@ -32,13 +26,8 @@ public final class TowerPartyJournalStore extends SavedData {
     private final Map<UUID, PartyJournalEntry> entries = new LinkedHashMap<>();
     private final List<CompoundTag> unreadable = new ArrayList<>();
 
-    public static SavedData.Factory<TowerPartyJournalStore> factory() {
-        return new SavedData.Factory<>(TowerPartyJournalStore::new, TowerPartyJournalStore::load, DataFixTypes.LEVEL);
-    }
-
     public static TowerPartyJournalStore get(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerPartyJournalStore::new, TowerPartyJournalStore::load, FILE_ID);
     }
 
     public Optional<PartyJournalEntry> entryFor(UUID player) {
@@ -61,15 +50,6 @@ public final class TowerPartyJournalStore extends SavedData {
 
     public void remove(UUID player) {
         if (entries.remove(player) != null) setDirty();
-    }
-
-    /**
-     * Writes the file to disk immediately. The journal is written <em>before</em> any Pokemon moves, so this
-     * is what makes "crash after the moves" recoverable -- a journal still waiting for the next autosave
-     * would be no journal at all.
-     */
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     static TowerPartyJournalStore load(CompoundTag tag, HolderLookup.Provider registries) {

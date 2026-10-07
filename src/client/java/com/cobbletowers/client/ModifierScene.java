@@ -5,13 +5,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The little battle dioramas on the modifier cards: stepped, integer-aligned fills in the warm palette with a Pokemon sprite from
- * the mod's own {@code textures/gui/partners} (drawn at its own size, never resampled). The server picks a theme key
- * ({@code ModifierArt}) from what the modifier really does, so a scene only ever shows something the modifier does; an
- * unrecognised key, such as a datapack modifier, gets a deliberate neutral scene with a bronze crest and no sprite.
- *
- * <p>Everything is drawn inside the given box and clipped to it. Motion is a stepped offset of the clock and is off under reduced
- * motion.
+ * The battle dioramas on modifier cards: stepped, integer-aligned fills with a Pokemon sprite from {@code
+ * textures/gui/partners}. The server picks a theme key ({@code ModifierArt}); an unknown key gets a neutral scene.
+ * Motion is off under reduced motion.
  */
 final class ModifierScene {
     private ModifierScene() {}
@@ -64,8 +60,8 @@ final class ModifierScene {
     }
 
     /**
-     * @param reserve pixels along the bottom that the caller covers with a nameplate: the sky and ground still run under it, but
-     *                the horizon, sprite and props are placed in what is left, so nothing important hides behind the label
+     * @param reserve pixels along the bottom covered by a nameplate; the horizon, sprite and props are placed above
+     *     it
      */
     static void draw(GuiGraphics g, int x, int y, int w, int h, String theme, long ms, boolean animate, int reserve) {
         if (w < 16 || h < 16) return;

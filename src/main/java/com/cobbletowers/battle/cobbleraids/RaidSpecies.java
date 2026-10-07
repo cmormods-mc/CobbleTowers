@@ -9,10 +9,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * The Pokemon species of a CobbleRaids boss definition. The encounter API takes a definition id and never says what is
- * in it, but a definition is a data file ({@code data/<namespace>/raids/<path>.json}, with a {@code species} field), so it
- * is read as data like any datapack entry. Used only to tell AscensionLib what a scouted boss is; a definition that
- * cannot be read simply makes that boss unscoutable.
+ * The species of a CobbleRaids boss definition, read as data ({@code data/<namespace>/raids/<path>.json}, field
+ * {@code species}) because the encounter API does not say. Used only to tell AscensionLib what a scouted boss is; an
+ * unreadable definition makes that boss unscoutable.
  */
 public final class RaidSpecies {
 

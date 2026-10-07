@@ -9,11 +9,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * What an earned cosmetic is called and how it is shown (P36d), with no server in sight.
- *
- * <p>A cosmetic is a plain name the season track and the club podium already record: {@code s1:title_champion}, {@code s1:badge},
- * {@code s1:banner_2}, {@code s1:club_gold}. Only a <b>title</b> can be worn (owner decision: banners and badges are collectables);
- * a worn title and the player's club tag are shown in front of their name, and this class decides the words and colours.
+ * What an earned cosmetic is called and how it is shown (P36d). A cosmetic is a plain name such as {@code
+ * s1:title_champion}, {@code s1:badge}, {@code s1:banner_2} or {@code s1:club_gold}. Only a title can be worn (owner
+ * decision); a worn title and the club tag show before the player's name. Pure.
  */
 public final class Cosmetics {
 
@@ -22,7 +20,10 @@ public final class Cosmetics {
     /** A cosmetic taken apart: its season, its own name ({@code title_champion}) and what kind it is. */
     public record Parsed(int season, String name, Kind kind) {}
 
-    /** One piece of the text in front of a name, with the colour it is shown in (a vanilla formatting name such as {@code gold}). */
+    /**
+     * One piece of the text in front of a name, with the colour it is shown in (a vanilla formatting name such as
+     * {@code gold}).
+     */
     public record Segment(String text, String color) {}
 
     private Cosmetics() {}
@@ -71,7 +72,10 @@ public final class Cosmetics {
         return Optional.of(capitalize(rest) + " S" + cosmetic.season());
     }
 
-    /** The titles among {@code owned}, newest season first and, within a season, the higher title first (Champion before Challenger). */
+    /**
+     * The titles among {@code owned}, newest season first and, within a season, the higher title first (Champion
+     * before Challenger).
+     */
     public static List<String> titlesOf(Collection<String> owned) {
         List<String> titles = new ArrayList<>();
         for (String id : owned) if (parse(id).map(p -> p.kind() == Kind.TITLE).orElse(false)) titles.add(id);
@@ -91,8 +95,8 @@ public final class Cosmetics {
     }
 
     /**
-     * The text in front of a name: the worn title (gold), then the club tag in brackets in the club's banner colour. Empty when the
-     * player has neither, so such a player's name is not touched at all.
+     * The text before a name: the worn title (gold), then the club tag in brackets in the banner colour. Empty if
+     * neither, leaving the name untouched.
      */
     public static List<Segment> decoration(Optional<String> shortTitle, Optional<String> clubTag, Optional<String> clubBanner) {
         List<Segment> segments = new ArrayList<>();
@@ -108,7 +112,10 @@ public final class Cosmetics {
         return out.toString();
     }
 
-    /** The vanilla chat colour a banner colour is shown in. Dye colours map to the nearest, the prestige banners to metals. */
+    /**
+     * The vanilla chat colour a banner colour is shown in. Dye colours map to the nearest, the prestige banners to
+     * metals.
+     */
     public static String chatColor(String banner) {
         return switch (banner.toLowerCase(Locale.ROOT)) {
             case "white" -> "white";

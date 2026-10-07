@@ -53,9 +53,7 @@ class BossDrawTest {
     @Test
     @DisplayName("the boss cannot be read off the floor's first ordinary opponent")
     void notCorrelatedWithTheTrash() {
-        // If the boss were simply ordinal zero of the same sequence, a party could look at what they
-        // fought first and know what was waiting at the end. Different runs must disagree about the
-        // two independently.
+        // The boss must not be ordinal zero of the same sequence, or the first opponent would reveal it.
         int agreements = 0;
         for (long seed = 0; seed < 300; seed++) {
             String boss = BossDraw.pick(pool(), EncounterSeed.of(seed, 1, 1_000_003)).definition().getPath();

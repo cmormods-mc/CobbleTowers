@@ -9,17 +9,14 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What a run just banked, for the reveal screen (docs/design/P9-economy.md, P11).
- *
- * <p>Sent alongside the existing chat line, not instead of it (see {@code RewardDelivery}): a client
- * without this channel registered still gets the grant, just as plain text.
+ * What a run just banked, for the reveal screen (docs/design/P9-economy.md, P11). Sent alongside the chat line; a
+ * client without the channel still gets text.
  */
 public record RewardRevealPayload(int floorIndex, List<Grant> grants) implements CustomPacketPayload {
 
     /**
-     * One item and how many of it, exactly as {@code RewardValuation.Grant} priced it.
-     *
-     * @param label what to call it when its id says too little (a card is "Garchomp card (epic)"), or empty
+     * One item and how many, as {@code RewardValuation.Grant} priced it.
+     * @param label what to call it when its id says too little, or empty
      */
     public record Grant(ResourceLocation item, int amount, String label) {
         public Grant(ResourceLocation item, int amount) {

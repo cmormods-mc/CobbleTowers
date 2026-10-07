@@ -16,10 +16,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * Server-wide announcements (P36e): a new number-one on a board, and a player reaching a milestone Ascension.
- *
- * <p>The sentences and the "is this worth announcing" rules are pure and tested; {@link #broadcast} is the only part that touches a server. Switched
- * on or off in {@code config/cobbletowers-announce.json} ({@code {"enabled": true}}); a bad file leaves them on and says so in the log.
+ * Server-wide announcements (P36e): a new number-one on a board and a milestone Ascension. Wording and the worth-
+ * announcing rules are pure; {@link #broadcast} touches the server. Toggled in {@code config/cobbletowers-
+ * announce.json}; a bad file leaves them on and logs it.
  */
 public final class Announcements {
 
@@ -69,10 +68,9 @@ public final class Announcements {
     }
 
     /**
-     * The sentence for a new number one, or empty when there is nothing to say (not first place, not a record board, no names).
-     *
-     * @param rank the all-time rank the entry took, 1 meaning it now leads the board
-     * @param value the board's own number: milliseconds for Speed, otherwise the score or Ascension level
+     * The sentence for a new number one, or empty (not first place, not a record board, no names).
+     * @param rank the all-time rank taken, 1 meaning it leads
+     * @param value the board's number: milliseconds for Speed, else score or Ascension level
      */
     public static Optional<String> record(Board board, int rank, String tower, List<String> names, long value) {
         if (rank != 1 || !announcesRecords(board) || names.isEmpty()) return Optional.empty();
@@ -102,7 +100,8 @@ public final class Announcements {
         return (seconds / 60) + ":" + String.format("%02d", seconds % 60);
     }
 
-    // ---- the door ---------------------------------------------------------------------------------------------------
+    // ---- the door
+    // ---------------------------------------------------------------------------------------------------
 
     /** Tells every player on the server, if announcements are on. */
     public static void broadcast(MinecraftServer server, String sentence) {

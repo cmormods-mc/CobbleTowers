@@ -8,11 +8,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Bits of a run's story that are known at different moments and gathered here until the run ends and its report is built (P32d):
- * the achievements it unlocked, the trial score and streak line the trial judge produced. In memory only, and removed when the report
- * is made; losing them to a restart costs a line on a card, never anything a player earned.
- *
- * <p>Also keeps each player's last report so {@code /tower report} can show it again.
+ * Bits of a run's story gathered until its report is built (P32d): unlocked achievements and the trial score and
+ * streak line. In memory, removed when the report is made. Also keeps each player's last report for {@code /tower
+ * report}.
  */
 public final class RunSummaries {
 

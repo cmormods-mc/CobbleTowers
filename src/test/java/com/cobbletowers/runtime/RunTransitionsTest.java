@@ -19,10 +19,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * The state machine as properties rather than examples: a table nobody can walk out of, and no state
- * nobody can leave.
- */
+/** The state machine as properties: nobody can walk out of the table and no state is a dead end. */
 class RunTransitionsTest {
 
     @Test
@@ -120,9 +117,8 @@ class RunTransitionsTest {
                 }
             }
         }
-        // The moves that can legitimately repeat -- abandoning and breaking -- carry no key at all,
-        // which is why nothing here collides any more. A run that is parked, resumed and parked
-        // again would otherwise commit one key twice and be refused the second time.
+        // Abandoning and breaking carry no key, so a run parked, resumed and parked again never commits one key
+        // twice.
         assertFalse(committedBy.containsKey("run:" + run + ":abandoned"),
                 "abandoning commits no value, so it needs no key");
     }

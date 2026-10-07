@@ -12,12 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * Which cell gets handed out, and which never does.
- *
- * <p>The choice is tested here without a server; the rest of allocation is a map write and the live
- * test drives it end to end.
- */
+/** Which cell gets handed out and which never does, without a server; the live test covers the rest. */
 class InstanceAllocatorTest {
 
     private static final IntPredicate NOTHING_QUARANTINED = cell -> false;

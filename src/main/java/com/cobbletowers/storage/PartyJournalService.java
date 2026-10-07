@@ -22,9 +22,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Moves a player's registered Pokemon into the party at the start of a run and puts everything back after
- * (P18). See {@code docs/design/P18-registration-chooser.md}: the order is <b>journal, flush, then move</b>,
- * and restoring is idempotent, so a crash at any point is recoverable.
+ * Moves a player's registered Pokemon into the party at run start and puts everything back after (P18); see {@code
+ * docs/design/P18-registration-chooser.md}. Order is journal, flush, then move; restoring is idempotent.
  */
 public final class PartyJournalService {
 
@@ -103,8 +102,8 @@ public final class PartyJournalService {
     }
 
     /**
-     * Puts a player's collection back and deletes their journal. Idempotent; a no-op when there is no
-     * journal. Never throws a Pokemon away: a missing one is reported, the rest are restored.
+     * Puts a player's collection back and deletes their journal. Idempotent; a missing Pokemon is reported and the
+     * rest restored.
      */
     public static void restoreNow(MinecraftServer server, ServerPlayer player) {
         TowerPartyJournalStore store = TowerPartyJournalStore.get(server);
@@ -112,7 +111,8 @@ public final class PartyJournalService {
         if (found.isEmpty()) return;
         PartyJournalEntry entry = found.get();
 
-        // Rentals first (P33): they occupy the party, and the originals cannot come back to a full one. Deleted by the ids the
+        // Rentals first (P33): they occupy the party, and the originals cannot come back to a full one. Deleted by
+        // the ids the
         // journal recorded before they were created, so a crash mid-creation leaves nothing behind either.
         if (!entry.rentals().isEmpty()) {
             int removed = com.cobbletowers.battle.cobblemon.RentalStorage.removeAll(player, entry.rentals()::contains);
@@ -156,9 +156,8 @@ public final class PartyJournalService {
     }
 
     /**
-     * Restores every player whose run is over: gone, finished, or one they left. One idempotent mechanism for
-     * a normal ending, a leave, a crash and a player who was offline -- they are restored when they next
-     * appear. Skips anyone mid-battle; the next sweep tries again.
+     * Restores every player whose run is over (gone, finished or left): one idempotent path for a normal ending, a
+     * leave, a crash and an offline player. Skips anyone mid-battle; the next sweep retries.
      */
     public static void reconcile(MinecraftServer server) {
         TowerPartyJournalStore store = TowerPartyJournalStore.get(server);

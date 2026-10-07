@@ -31,13 +31,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Operator tools for armor sets (P24): what a player's worn armor switches on, and a probe that proves the bonuses
- * reach the game.
- *
- * <p>The probe exists because three of the bonuses live inside Cobblemon's own event flow (experience, catch rate,
- * shiny odds), where nothing in a tower run reliably triggers them. It builds each event the way Cobblemon does, posts
- * it on the real {@code CobblemonEvents} bus -- so the handlers CobbleTowers subscribed are what answers, on whatever
- * Cobblemon is actually installed -- and reports the number that came out. Nothing is granted, caught or rolled.
+ * Operator tools for armor sets (P24): what a player's worn armor switches on, and a probe that posts the events on
+ * the real {@code CobblemonEvents} bus so the bonuses are measured where applied. Nothing is granted, caught or
+ * rolled.
  */
 public final class ArmorCommand {
 
@@ -106,8 +102,8 @@ public final class ArmorCommand {
     }
 
     /**
-     * Queues a Raid Points reward and delivers it through the real path ({@link RewardDelivery#deliver}), so the Raid
-     * Points bonus is measured where it is applied: in CobbleRaids' own balance, afterwards.
+     * Queues a Raid Points reward and delivers it through {@link RewardDelivery#deliver}, so the bonus is measured in
+     * CobbleRaids' own balance.
      */
     private static int points(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();

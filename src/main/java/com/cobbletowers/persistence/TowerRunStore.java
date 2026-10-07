@@ -10,52 +10,25 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * Disk storage for tower runs, attached to the overworld's data storage so one file covers the
- * server rather than one per dimension.
- *
- * <p>Two write paths, and the difference between them is TDS #5C:
- * <ul>
- *   <li>{@link #put} marks the data dirty and lets Minecraft write it at the next autosave;</li>
- *   <li>{@link #checkpoint} writes it to disk <b>now</b>.</li>
- * </ul>
- * A forced checkpoint is what makes a crash lose nothing after an important transition. CobbleRaids
- * proved the same mechanism live: with only a dirty flag, a hard kill lost a granted reward; with
- * the synchronous save, it survived.
- *
- * <p>A record that cannot be read is dropped with a warning, never thrown. A dedicated server that
- * fails its data load refuses to start, and one unreadable run must not be able to do that.
+ * Disk storage for tower runs. {@link #put} marks the data dirty for the next autosave; {@link #checkpoint} writes it
+ * now (TDS #5C). An unreadable record is dropped with a warning so one bad run cannot stop a server starting.
  */
-public final class TowerRunStore extends SavedData {
+public final class TowerRunStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_runs";
     private static final String RUNS = "runs";
 
-    /**
-     * How long a finished run is kept. The whole file is rewritten on every save, so runs that
-     * nothing will ever read again are retired rather than carried forever -- CobbleRaids' player
-     * record file grows without bound and is a known "deal with it if it ever hurts", which is
-     * cheaper to simply not repeat.
-     *
-     * <p>A constant rather than config: this mod has no config system yet, and inventing one for a
-     * single number is worse than one named constant with one caller.
-     */
+    /** How long a finished run is kept; the whole file is rewritten on every save, so old runs are retired. */
     public static final long TERMINAL_RETENTION_MILLIS = 7L * 24 * 60 * 60 * 1000;
 
     private final Map<UUID, PersistedRun> runs = new LinkedHashMap<>();
 
-    public static SavedData.Factory<TowerRunStore> factory() {
-        return new SavedData.Factory<>(TowerRunStore::new, TowerRunStore::load, DataFixTypes.LEVEL);
-    }
-
     /** The store for this server. Created empty on a world that has never had a run. */
     public static TowerRunStore get(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerRunStore::new, TowerRunStore::load, FILE_ID);
     }
 
     /** Every stored run, in insertion order. A copy: callers must not mutate the store's map. */
@@ -77,23 +50,15 @@ public final class TowerRunStore extends SavedData {
         if (runs.remove(runId) != null) setDirty();
     }
 
-    /**
-     * Stores a run and writes the file to disk immediately.
-     *
-     * <p>{@link SavedData#save} returns early for a file that is not dirty and
-     * {@code NbtIo.writeCompressed} streams gzip without an fsync, so this costs one small write --
-     * a handful of times per floor, never per tick.
-     */
+    /** Stores a run and writes the file immediately. One small write, a handful of times per floor. */
     public void checkpoint(MinecraftServer server, PersistedRun run) {
         put(run);
-        server.overworld().getDataStorage().save();
+        checkpoint(server);
     }
 
     /**
-     * Drops finished runs older than {@link #TERMINAL_RETENTION_MILLIS}. Returns how many went.
-     *
-     * <p>Takes the time rather than reading the clock, so a test can age a run without waiting a
-     * week for it.
+     * Drops finished runs older than {@link #TERMINAL_RETENTION_MILLIS} and returns how many. Takes the time so a
+     * test can age a run.
      */
     public int retireOldRuns(long now) {
         int before = runs.size();

@@ -8,9 +8,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One thing the player did on the play screen. {@code argument} is a tower id for {@code SELECT_TOWER}, a
- * player name for {@code INVITE}, a host name for {@code ACCEPT}/{@code DECLINE}, and unused otherwise.
- * The server re-checks everything; nothing here is trusted, the same posture as every other C2S payload.
+ * One thing the player did on the play screen. {@code argument} is a tower id for {@code SELECT_TOWER}, a player name
+ * for {@code INVITE}, a host name for {@code ACCEPT}/{@code DECLINE}, else unused. Re-checked by the server.
  */
 public record PlayActionPayload(Action action, String argument) implements CustomPacketPayload {
 

@@ -3,15 +3,9 @@ package com.cobbletowers.encounter;
 import java.util.UUID;
 
 /**
- * The seed one encounter is drawn from (TDS #29).
- *
- * <p>An opponent is <b>derived</b>, never stored. A run keeps the seed it started with; everything
- * about who it meets on floor 3 comes from arithmetic over that seed, the floor and the opponent's
- * ordinal. So a crash cannot reroll an encounter -- there is no roll to lose -- and recovering one
- * costs nothing to read.
- *
- * <p>Mixed rather than added. Adding the parts would make floor 2 opponent 3 and floor 3 opponent 2
- * the same encounter, which is exactly the pattern a player would notice.
+ * The seed one encounter is drawn from (TDS #29). An opponent is derived from the run seed, floor and ordinal, never
+ * stored, so a crash cannot reroll it. The parts are mixed, not added, so floor 2 opponent 3 differs from floor 3
+ * opponent 2.
  */
 public final class EncounterSeed {
 

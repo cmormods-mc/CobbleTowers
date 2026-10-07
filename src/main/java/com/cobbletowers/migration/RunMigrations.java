@@ -7,23 +7,8 @@ import java.util.function.UnaryOperator;
 import net.minecraft.nbt.CompoundTag;
 
 /**
- * Moves a stored run forward to the shape this build reads (TDS #40).
- *
- * <p>{@link PersistedRun#fromTag} deliberately understands exactly one shape. Everything about
- * versions lives here instead, so the reader stays simple and each migration is one entry that can
- * be read, tested and argued about on its own.
- *
- * <p>Three answers, and only three:
- * <ul>
- *   <li>the current version: returned untouched;</li>
- *   <li>a known older version: each step applied in order until it is current;</li>
- *   <li>anything else -- a version from a newer build, or one so old no step remains -- is
- *       <b>refused</b>. Reading an unknown shape with today's rules would put the run back together
- *       wrongly and then save it that way, which is worse than declining to load it.</li>
- * </ul>
- *
- * <p>Shipped empty in P2 and first used in P3, which is the test of whether that was worth doing:
- * adding version 2 was one entry here and one test, with no change to the reader at all.
+ * Moves a stored run to the shape this build reads (TDS #40). The current version is returned as is, an older one is
+ * stepped up in order, and anything else (newer or unreachable) is refused.
  */
 public final class RunMigrations {
 
@@ -31,33 +16,24 @@ public final class RunMigrations {
     public static final int OLDEST_SUPPORTED = 1;
 
     /**
-     * A step keyed by the version it reads: {@code STEPS.get(n)} turns a version {@code n} tag into
-     * a version {@code n + 1} tag, and must set {@code schema_version} itself.
+     * A step keyed by the version it reads: {@code STEPS.get(n)} turns version n into n + 1 and sets {@code
+     * schema_version} itself.
      */
     private static final Map<Integer, UnaryOperator<CompoundTag>> STEPS = new LinkedHashMap<>();
 
     static {
-        // 1 -> 2 added the instance cell. Nothing needs rewriting: the field is optional and its
-        // absence already means "no cell leased", which is true of every version 1 run, none of
-        // which could have had one. So the step stamps the version and stops -- and that is worth
-        // having rather than skipping, because without it a version 1 file would simply be refused.
+        // 1 -> 2: instance cell (optional field; the step only stamps the version).
         STEPS.put(1, tag -> {
             tag.putInt("schema_version", 2);
             return tag;
         });
-        // 2 -> 3 added the unclaimed ledger. An older run earned nothing that was ever recorded, so
-        // an absent list is the honest answer rather than an invented one -- and an empty ListTag is
-        // written explicitly so the shape on disk matches what this build produces.
+        // 2 -> 3: unclaimed ledger; written empty explicitly.
         STEPS.put(2, tag -> {
             if (!tag.contains("ledger")) tag.put("ledger", new net.minecraft.nbt.ListTag());
             tag.putInt("schema_version", 3);
             return tag;
         });
-        // 3 -> 4 added the drafted modifiers. An older run drafted nothing, and PersistedRun.fromTag
-        // already reads an absent block as RunModifierState.EMPTY -- but the block is written here
-        // anyway, so a migrated file has the same shape on disk as one this build wrote. A migration
-        // whose output differs from a fresh write is a difference that shows up later, somewhere
-        // less obvious.
+        // 3 -> 4: drafted modifiers; written explicitly so a migrated file matches a fresh write.
         STEPS.put(3, tag -> {
             if (!tag.contains("modifiers")) {
                 tag.put("modifiers", com.cobbletowers.persistence.RunModifierState.EMPTY.toTag());
@@ -65,25 +41,19 @@ public final class RunMigrations {
             tag.putInt("schema_version", 4);
             return tag;
         });
-        // 4 -> 5 added how much of the ledger has been banked. An older run has priced nothing, which
-        // is exactly what 0 means, and every run written before this build banked nothing by
-        // definition -- P9 is the first code that ever prices a ledger entry.
+        // 4 -> 5: banked ledger count; an older run banked nothing, so 0.
         STEPS.put(4, tag -> {
             if (!tag.contains("last_banked_floor")) tag.putInt("last_banked_floor", 0);
             tag.putInt("schema_version", 5);
             return tag;
         });
-        // 5 -> 6 added vendor purchase counts. An older run bought nothing -- the vendor did not
-        // exist yet -- and an absent list already reads as an empty map, but it is written here
-        // anyway so a migrated file matches what this build writes fresh.
+        // 5 -> 6: vendor purchase counts; written explicitly like step 3 -> 4.
         STEPS.put(5, tag -> {
             if (!tag.contains("vendor_purchases")) tag.put("vendor_purchases", new net.minecraft.nbt.ListTag());
             tag.putInt("schema_version", 6);
             return tag;
         });
-        // 6 -> 7 added the run's options (playlist and trial). An older run was an ordinary one, and an
-        // absent block already reads as RunOptions.NONE; it is written here anyway so a migrated file matches
-        // what this build writes fresh.
+        // 6 -> 7: run options (playlist and trial); written explicitly like step 3 -> 4.
         STEPS.put(6, tag -> {
             if (!tag.contains("options")) tag.put("options", com.cobbletowers.persistence.RunOptions.NONE.toTag());
             tag.putInt("schema_version", 7);

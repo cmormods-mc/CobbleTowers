@@ -20,8 +20,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * The safety argument for P18: a permutation of positions can never lose or duplicate a Pokemon, and
- * restoring after planning always puts the collection back.
+ * P18's safety argument: a permutation of positions never loses or duplicates a Pokemon and restoring puts the
+ * collection back.
  */
 class PartyArrangementTest {
 

@@ -4,12 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The daily streak (P32), as pure rules over days numbered by {@code LocalDate.toEpochDay}.
- *
- * <p>A day <b>qualifies</b> when the daily attempt cleared enough floors. Consecutive qualifying days build the streak. A
- * missed day spends an earned <b>freeze</b> if one is held, so a sick day does not erase a hundred; with none, the streak starts
- * again at one. A freeze is earned each time the streak reaches a multiple of seven, and at most two are held.
- * Milestones are paid once, ever.
+ * The daily streak (P32) as pure rules over epoch days. A day qualifies when the daily attempt cleared enough floors.
+ * A missed day spends a freeze if held, otherwise the streak restarts. A freeze is earned at each multiple of seven,
+ * at most two held. Milestones pay once.
  */
 public final class StreakRules {
 
@@ -21,12 +18,11 @@ public final class StreakRules {
 
     /**
      * A player's streak.
-     *
-     * @param lastDay   the last qualifying day (epoch day), or {@link Long#MIN_VALUE} for never
-     * @param streak    consecutive qualifying days ending at {@code lastDay}
-     * @param freezes   streak freezes held
-     * @param best      the longest streak ever
-     * @param rewarded  the highest milestone already paid (0 for none)
+     * @param lastDay last qualifying day (epoch day), or {@link Long#MIN_VALUE} for never
+     * @param streak consecutive qualifying days ending at {@code lastDay}
+     * @param freezes freezes held
+     * @param best longest streak
+     * @param rewarded highest milestone paid (0 for none)
      */
     public record State(long lastDay, int streak, int freezes, int best, int rewarded) {
         public static final State NEW = new State(Long.MIN_VALUE, 0, 0, 0, 0);
@@ -80,7 +76,10 @@ public final class StreakRules {
         return new Outcome(new State(day, streak, freezes, best, rewarded), List.copyOf(reached), spent, earned, false);
     }
 
-    /** What the streak is worth to show on {@code today}: counted already, still to do today, held by a freeze, or gone. */
+    /**
+     * What the streak is worth to show on {@code today}: counted already, still to do today, held by a freeze, or
+     * gone.
+     */
     public static Standing standing(State state, long today) {
         if (state.lastDay() == Long.MIN_VALUE) return Standing.NONE;
         long gap = today - state.lastDay();

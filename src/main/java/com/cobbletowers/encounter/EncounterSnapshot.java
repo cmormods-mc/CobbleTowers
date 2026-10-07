@@ -7,14 +7,10 @@ import java.util.OptionalInt;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One opponent, as decided the moment a floor begins and unchanged afterwards.
- *
- * <p>Immutable on purpose (TDS #45): the level is taken once, so a party that faints, disconnects or
- * sends someone to spectate cannot lower the difficulty of the floor it is standing on.
- *
- * @param ordinal which opponent of the floor this is, from zero
- * @param aspects Cobblemon aspects, e.g. a regional form; empty for the base species
- * @param jerseyNumber the number on this opponent's jersey (TDS #67), empty for a non-jersey opponent
+ * One opponent, decided when a floor begins and unchanged (TDS #45).
+ * @param ordinal which opponent of the floor, from zero
+ * @param aspects Cobblemon aspects, e.g. a regional form
+ * @param jerseyNumber the jersey number (TDS #67), empty for a non-jersey opponent
  */
 public record EncounterSnapshot(int ordinal, ResourceLocation species, List<String> aspects, int level,
                                  OptionalInt jerseyNumber, Optional<String> echoProperties, Optional<String> echoOwner) {
@@ -38,8 +34,8 @@ public record EncounterSnapshot(int ordinal, ResourceLocation species, List<Stri
     }
 
     /**
-     * This slot filled by an Echo's Pokemon (P35): its own moves, ability, nature and item, at this slot's level. The species
-     * stays the drawn one only for the record; what is built is {@code properties}.
+     * This slot filled by an Echo's Pokemon (P35): its own moves, ability, nature and item at this slot's level. What
+     * is built is {@code properties}.
      */
     public EncounterSnapshot withEcho(String properties, String owner) {
         return new EncounterSnapshot(ordinal, species, aspects, level, OptionalInt.empty(),
@@ -57,15 +53,13 @@ public record EncounterSnapshot(int ordinal, ResourceLocation species, List<Stri
     }
 
     /**
-     * The same string, optionally without the aspects.
-     *
-     * <p>The fallback {@code CobblemonBattleAdapter.spawn} retries with when Cobblemon does not
-     * recognize an aspect (TDS #85): the base species is always a valid opponent, only the cosmetic
-     * layer on top of it can fail.
+     * The same string, optionally without aspects: the fallback when Cobblemon does not recognize an aspect (TDS
+     * #85).
      */
     public String toProperties(boolean includeAspects) {
         if (echoProperties.isPresent()) {
-            // The fallback is the Echo's bare species: a held item or move the server no longer knows must not lose the floor.
+            // The fallback is the Echo's bare species: a held item or move the server no longer knows must not lose
+            // the floor.
             String full = com.cobbletowers.echo.EchoPolicy.atLevel(echoProperties.get(), level);
             return includeAspects ? full : com.cobbletowers.echo.EchoPolicy.speciesOf(full) + " level=" + level;
         }

@@ -11,15 +11,9 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One drafted challenge: what it changes, and what it cannot be held with (TDS #56, #58).
- *
- * <p>The effect payload is <b>one flat record with neutral defaults</b> rather than a payload class
- * per {@link ModifierType}. Five payload types, five parsers and a polymorphic dispatch would buy
- * nothing here: the fields are a handful of numbers and flags, and the GATE's simplicity rule warns
- * against exactly this kind of abstraction. What keeps it honest instead is {@link
- * #validateEffectMatchesType}, which refuses a definition whose effect has nothing to do with its
- * declared type -- so a REWARD modifier that quietly set a level offset is a content error at load,
- * not a surprise at floor 6.
+ * One drafted challenge: what it changes and what it cannot be held with (TDS #56, #58). The effect is one flat
+ * record with neutral defaults; {@link #validateEffectMatchesType} refuses a definition whose effect does not match
+ * its type.
  */
 public record ModifierDefinition(
         ResourceLocation id,
@@ -40,28 +34,20 @@ public record ModifierDefinition(
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
 
     /**
-     * What a modifier actually does. Every field's default is "changes nothing".
-     *
-     * <p>Percentages rather than floating-point multipliers: 100 means unchanged, 125 means a
-     * quarter more. Integers because these are persisted, compared and summed, and a stored double
-     * that fails to round-trip would make two runs with identical drafts disagree.
-     *
-     * @param levelOffset       added to every ordinary opponent's level (ENEMY)
-     * @param extraOpponents    additional opponents on the floor (ENCOUNTER)
-     * @param bossLevelOffset   added to the floor boss's level (ENEMY)
-     * @param bossHealthPercent the boss's shared pool, as a percentage of what it would be (ENEMY)
-     * @param rewardPercent     what the floor's earnings are worth, recorded for P9 (REWARD)
-     * @param bannedMoves       Showdown move ids the party may not use (PLAYER_CONSTRAINT, P8b)
-     * @param allowSwitching    whether the party may switch (PLAYER_CONSTRAINT, P8b)
-     * @param allowItems        whether the party may use items (PLAYER_CONSTRAINT, P8b)
-     * @param weather           a Showdown weather id to set at battle start (FIELD, P8b)
-     * @param terrain           a Showdown terrain id to set at battle start (FIELD, P8b)
-     * @param custom            the id of a coded behavior ({@link CustomBehavior}), for the rare modifiers whose
-     *                          effect is not a number or a flag (CUSTOM, P29); everything else about the modifier
-     *                          still goes through the fields above
-     * @param scoutingBonus     floors added to a scouting category's concealment threshold before it
-     *                          hides (SCOUTING, P12) -- pushes concealment deeper, never un-conceals
-     *                          something a profile already decided to hide sooner
+     * What a modifier does; every default changes nothing. Percentages are integers (100 = unchanged) so they persist
+     * and sum exactly.
+     * @param levelOffset ordinary opponents' level (ENEMY)
+     * @param extraOpponents extra opponents (ENCOUNTER)
+     * @param bossLevelOffset boss level (ENEMY)
+     * @param bossHealthPercent boss pool percentage (ENEMY)
+     * @param rewardPercent earnings percentage (REWARD)
+     * @param bannedMoves Showdown move ids (PLAYER_CONSTRAINT)
+     * @param allowSwitching switching allowed (PLAYER_CONSTRAINT)
+     * @param allowItems items allowed (PLAYER_CONSTRAINT)
+     * @param weather Showdown weather id (FIELD)
+     * @param terrain Showdown terrain id (FIELD)
+     * @param custom id of a coded {@link CustomBehavior} (CUSTOM)
+     * @param scoutingBonus floors added to a scouting category's concealment threshold (SCOUTING)
      */
     public record Effect(
             int levelOffset,
@@ -200,11 +186,8 @@ public record ModifierDefinition(
     }
 
     /**
-     * Refuses a definition whose effect does not match what it says it is.
-     *
-     * <p>Cheap to write and it catches the mistake content actually makes: copying a modifier,
-     * changing its type and forgetting to change the payload. Without this the file loads, the
-     * modifier drafts, and it silently does nothing that its type is applied by.
+     * Refuses a definition whose effect does not match its type, e.g. a copied modifier with a changed type but the
+     * old payload.
      */
     private static void validateEffectMatchesType(ResourceLocation id, ModifierType type, Effect effect) {
         boolean matches = switch (type) {
@@ -223,18 +206,8 @@ public record ModifierDefinition(
     }
 
     /**
-     * Whether anything in this build would actually apply this modifier.
-     *
-     * <p>Asked of the <b>effect</b>, not of the type. The type-based version -- "everything except
-     * PLAYER_CONSTRAINT and FIELD" -- read the same while those two were inert, and would have been
-     * wrong for a case content will certainly write: an ENEMY modifier whose only effect is {@code
-     * boss_health_percent}, which had nowhere to go until CobbleRaids grew a way to be asked for a
-     * proportion of a pool it derives itself. A card like that passes a type check, is offered, is
-     * voted on, and does nothing at all.
-     *
-     * <p>Since P8b every field has somewhere to go, so this is currently true of any effect that is
-     * not neutral. It stays written this way regardless: the next field added will arrive before
-     * whatever applies it, and this is the check that keeps it off the table until then.
+     * Whether anything in this build would apply this modifier; asked of the effect, not the type. Currently true for
+     * any non-neutral effect.
      */
     public boolean effectiveNow() {
         return !effect.equals(Effect.NEUTRAL);

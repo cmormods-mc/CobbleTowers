@@ -8,13 +8,8 @@ import java.util.Objects;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Which tactical facts a tower reveals about an upcoming opponent, and at what floor depth each one
- * starts concealing itself (TDS #22, #49).
- *
- * <p>Not a new source of gameplay data: every fact a category names (typing, threat level, field
- * conditions) already exists on {@code EncounterSnapshot} or {@code FloorDefinition} by the time this
- * is read. A profile only decides <em>when</em> a fact already sitting in this codebase is allowed to
- * reach a player -- the same reveal-threshold role P10's own design doc predicted for this phase.
+ * Which facts a tower reveals about an upcoming opponent and the floor depth at which each starts hiding (TDS #22,
+ * #49). Only decides when an existing fact reaches a player.
  */
 public record ScoutingProfileDefinition(
         ResourceLocation id,
@@ -25,11 +20,8 @@ public record ScoutingProfileDefinition(
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
 
     /**
-     * One tactical fact and the floor depth it starts hiding at.
-     *
-     * @param concealedFromFloor the first floor index this category is hidden on; negative means it
-     *                           is never concealed, TDS #49's "observable information reveals
-     *                           naturally" baseline
+     * One fact and the depth it starts hiding at.
+     * @param concealedFromFloor first floor it is hidden on; negative means never (TDS #49)
      */
     public record RevealCategory(String name, int concealedFromFloor) {
         public RevealCategory {

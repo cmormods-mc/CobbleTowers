@@ -10,8 +10,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Puts a player's worn title and club tag in front of their display name (P36d), which is what chat, death messages, {@code /msg} and the
- * like build the sender's name from. Only a {@link ServerPlayer} is touched; any failure leaves the name as it was.
+ * Puts a player's worn title and club tag before their display name (P36d), which chat, death messages and {@code
+ * /msg} build from. Only a {@link ServerPlayer} is touched; a failure leaves the name as it was.
  */
 @Mixin(Player.class)
 public abstract class PlayerDisplayNameMixin {

@@ -1,40 +1,21 @@
 'use strict';
-// CobbleTowers' Showdown extension (P23, docs/design/P23-showdown-battle-effects.md).
-//
-// Installed by CobbleRaids as showdown/ext-cobbletowers-fx.js and require()d by raid-patch.js, which is why the
-// relative require('./sim/battle') below resolves to the simulator. This file never edits any Showdown file.
-//
-// WHAT IT DOES. A tower battle can carry `towerFx`, an array of declarative operations, on the format object of
-// its >start payload (CobbleRaids' ShowdownExtensions API puts it there). At battle start each operation is applied
-// to the battle: weather, terrain, stat stages, HP, a status, a side condition, or a damage multiplier.
-//
-// WHY IT IS STABLE.
-//   * It does nothing unless asked. It wraps exactly one method, Battle.prototype.start, and returns straight
-//     away unless battle.format.towerFx is an array. Every other battle is untouched.
-//   * It is declarative. Operations are data with validated parameters; nothing is evaluated, and no string is
-//     ever interpolated into code.
-//   * A damage multiplier wraps modifyDamage on THIS battle's own `actions` object, not on a prototype, so no
-//     other battle can see it and a simulator mod that overrides the method on the instance is wrapped too.
-//   * Every operation runs in its own try/catch. A bad one is reported into the battle log and skipped, the rest
-//     still apply, and the battle always starts. The damage wrapper itself fails open to the engine's own number.
-//   * Everything is bounded: at most MAX_OPS operations, percentages clamped, stages clamped, ids matched against
-//     fixed patterns and checked against the battle's own dex. An unknown operation is ignored, not guessed at.
-//   * Applying something and then saying what the simulator ACTUALLY holds, never what was asked for.
+// CobbleTowers' Showdown extension (P23, docs/design/P23-showdown-battle-effects.md), installed by CobbleRaids as
+// ext-cobbletowers-fx.js. A battle whose format carries `towerFx` (declarative operations) has each applied at start:
+// weather, terrain, stat stages, HP, status, side condition or damage multiplier. Wraps only Battle.prototype.start
+// and does nothing otherwise; each operation is validated, bounded and isolated in its own try/catch.
 
 const MAX_OPS = 32;
 const STATS = ['atk', 'def', 'spa', 'spd', 'spe', 'accuracy', 'evasion'];
 const STATUSES = ['brn', 'par', 'psn', 'tox', 'slp', 'frz'];
-// Fixed lists rather than asking the dex what kind of condition an id is: terrains carry no effectType in this
-// simulator (only weathers do), so the dex cannot tell us, and a whitelist is the safer answer anyway. The primal
-// weathers are left out on purpose: they cannot be removed by the other side and would make a fight unwinnable.
+// Fixed lists, since the dex cannot tell a terrain from other conditions here and a whitelist is safer. Primal
+// weathers are left out: the other side cannot remove them.
 const WEATHERS = ['raindance', 'sunnyday', 'sandstorm', 'hail', 'snowscape'];
 const TERRAINS = ['electricterrain', 'grassyterrain', 'mistyterrain', 'psychicterrain'];
 const SIDE_CONDITIONS = ['tailwind', 'reflect', 'lightscreen', 'auroraveil', 'safeguard', 'mist'];
 const SIDE_ID = /^p[1-9]$/;
-// Over-the-cap EVs (P30). Cobblemon refuses more than 252 per stat, and Showdown clamps a team member's EVs to 255 when
-// it builds one, but neither limit applies to a Pokemon that already exists in a battle: the stat formula only ever
-// computes floor(ev / 4). So Ascension scaling is applied here, to the battle's own copy, and nothing is ever written
-// back to a player's Pokemon.
+// Over-the-cap EVs (P30): Cobblemon refuses over 252 and Showdown clamps to 255 when building a team, but neither
+// applies to a Pokemon already in a battle (stats use floor(ev / 4)). Scaling is applied to the battle's own copy and
+// never written back.
 const EV_STATS = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
 const MAX_EV_AMOUNT = 2000;   // one operation
 const MAX_EV_TOTAL = 4000;    // per stat, however many operations: already +1000 stat points before level scaling
@@ -152,10 +133,9 @@ function addDamageRule(battle, op, rules, key) {
 }
 
 /**
- * Raises every Pokemon on the named sides (the whole team, not only the leads, so a switch-in is as strong) by `amount`
- * EVs in one stat or in all six, then recomputes its stats the way the simulator itself does. Runs BEFORE the battle
- * starts, so the HP the first switch-in line reports is already the real one; run afterwards, the client would see a
- * max HP change under its feet.
+ * Raises every Pokemon on the named sides (the whole team, so a switch-in is as strong) by `amount` EVs in one stat
+ * or all six, then recomputes stats as the simulator does. Runs before the battle starts so the first switch-in
+ * reports the real HP.
  */
 function applyEvs(battle, op) {
   const amount = clamp(op.amount, 1, MAX_EV_AMOUNT, 0);
@@ -239,9 +219,8 @@ function matches(rule, sideId, type) {
 }
 
 /**
- * Scales damage for this one battle. Wrapped on the battle's own actions object so nothing else can see it; fails
- * open to the engine's number on anything unexpected, because a wrong multiplier is a small bug and a thrown
- * exception inside damage calculation is a hung battle.
+ * Scales damage for this battle only, on its own actions object. Fails open to the engine's number: a wrong
+ * multiplier is a small bug, an exception in damage calculation hangs the battle.
  */
 function wrapDamage(battle, rules) {
   const actions = battle.actions;

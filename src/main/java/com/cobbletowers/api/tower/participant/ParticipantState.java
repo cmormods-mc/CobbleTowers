@@ -3,16 +3,9 @@ package com.cobbletowers.api.tower.participant;
 import java.util.Objects;
 
 /**
- * A participant's state on three independent axes.
- *
- * <p>TDS §8 lists these as one enum, which cannot hold two facts at once -- and they do occur
- * together: a player who is knocked out and then loses connection is both, and a reconnect has to
- * put them back exactly where they were. With separate axes a disconnect touches only
- * {@link ConnectionState}, so the combat axis is still there to return to; with one enum it would
- * have to be guessed.
- *
- * <p>Immutable. Every change returns a new state, and a participant who left is frozen: once
- * membership is {@link MembershipState#VOLUNTARILY_LEFT}, every transition here returns {@code this}.
+ * A participant's state on three independent axes, since one enum cannot hold "knocked out and disconnected". A
+ * disconnect touches only {@link ConnectionState}. Immutable; once membership is {@link
+ * MembershipState#VOLUNTARILY_LEFT}, every transition returns {@code this}.
  */
 public record ParticipantState(ConnectionState connection, CombatState combat, MembershipState membership) {
 

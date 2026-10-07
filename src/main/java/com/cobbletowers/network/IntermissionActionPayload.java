@@ -8,8 +8,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One thing a player did on the intermission screen. {@code argument} is the card index for
- * {@code PICK_CARD} and unused otherwise. Re-checked by the server like every other C2S payload.
+ * One thing a player did on the intermission screen. {@code argument} is the card index for {@code PICK_CARD}, else
+ * unused. Re-checked by the server.
  */
 public record IntermissionActionPayload(Action action, int argument) implements CustomPacketPayload {
 

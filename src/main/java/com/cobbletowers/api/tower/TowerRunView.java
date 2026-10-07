@@ -6,11 +6,8 @@ import java.util.UUID;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A run, as an addon may read it: identifiers, logical state and immutable views.
- *
- * <p>Deliberately no live Minecraft or Cobblemon objects, and no way to change anything. A run is
- * owned by its tower; an addon observes it through {@link com.cobbletowers.api.event.TowerRunListener}
- * and reads it here.
+ * A run as an addon may read it: identifiers, logical state and immutable views; no live objects and no way to change
+ * anything. Observe through {@link com.cobbletowers.api.event.TowerRunListener}.
  */
 public interface TowerRunView {
 

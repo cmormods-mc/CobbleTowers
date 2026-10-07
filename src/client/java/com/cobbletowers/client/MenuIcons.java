@@ -9,9 +9,8 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The menu icons (P37): 16x16 pixel pictures in the mod's own oak, bronze, parchment and burgundy, drawn once into small textures and shown
- * as one quad each. They replace the Cobblemon sprites the menus used as stand-ins; a Pokemon sprite stays only where a Pokemon is the subject.
- * Adding an icon is one entry in {@link #paint}. An unknown key draws a bronze diamond, never nothing.
+ * The menu icons (P37): 16x16 pixel pictures drawn once into small textures, one quad each. Adding one is an entry in
+ * {@link #paint}; an unknown key draws a bronze diamond.
  */
 final class MenuIcons {
     private static final int O = 0xFF211510, B = 0xFFB8935A, BL = 0xFFE3BD7F, W = 0xFF6B4A33, WL = 0xFF9A7448, C = 0xFFF0DFBF,

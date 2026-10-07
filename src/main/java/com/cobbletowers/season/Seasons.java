@@ -8,8 +8,8 @@ import java.util.Optional;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 
 /**
- * What season it is right now (P36a): the configured anchor and master switch, and the calendar read at today's trial day, so the
- * day-pinning seam an operator or a test uses moves seasons too.
+ * What season it is now (P36a): the configured anchor and master switch, read at today's trial day so the day-pinning
+ * seam moves seasons too.
  */
 public final class Seasons {
 
@@ -43,7 +43,10 @@ public final class Seasons {
         return CONFIG.enabled() ? Optional.of(SeasonSchedule.at(CONFIG.anchor(), today())) : Optional.empty();
     }
 
-    /** The id of the season that is running now ({@code s3}), empty before the first, in an off-season, or when seasons are off. */
+    /**
+     * The id of the season that is running now ({@code s3}), empty before the first, in an off-season, or when
+     * seasons are off.
+     */
     public static Optional<String> activeId() {
         return phase().filter(phase -> phase instanceof SeasonSchedule.Active)
                 .map(phase -> SeasonSchedule.idOf(((SeasonSchedule.Active) phase).number()));
@@ -56,8 +59,8 @@ public final class Seasons {
     }
 
     /**
-     * The season a default view shows: the running one, or during the off-season the one that has just ended (its boards are
-     * frozen but still live). Empty before the first season and when seasons are off, so the view falls back to all-time.
+     * The season a default view shows: the running one, or the one just ended during the off-season (frozen but
+     * live). Empty before the first season or with seasons off, so the view falls back to all-time.
      */
     public static Optional<Integer> viewNumber() {
         return phase().flatMap(phase -> {

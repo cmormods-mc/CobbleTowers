@@ -5,10 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The end-of-tower payout bonus for the risk a party took on: every modifier held adds a percentage by its {@link RiskTier}, the
- * percentages add up (they do not compound), and the total scales the rolled rewards of the run's final payout.
- *
- * <p>Pure, so the numbers are a unit test. A milestone's guaranteed items are exact amounts and are never scaled.
+ * The end-of-tower payout bonus for risk taken: each modifier held adds a percentage by {@link RiskTier} (they add,
+ * not compound) and the total scales the final payout's rolled rewards. A milestone's guaranteed items are never
+ * scaled. Pure.
  */
 public final class RiskReward {
 

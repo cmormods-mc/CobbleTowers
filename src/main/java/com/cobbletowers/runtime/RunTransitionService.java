@@ -20,14 +20,8 @@ import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * The only thing that moves a run.
- *
- * <p>Split in two on purpose. {@link #decide} is pure -- a run, an event and a clock reading in, the
- * next record or a refusal out -- so the whole machine is testable without a server. {@link #apply}
- * is the thin part that writes what was decided.
- *
- * <p>Which moves force a checkpoint is not restated here: {@code Transition.checkpoint()} and
- * {@code keyTemplate} already carry that, so the policy has one home and this reads it.
+ * The only thing that moves a run. {@link #decide} is pure; {@link #apply} writes the result. Checkpoint policy lives
+ * in {@code Transition}.
  */
 public final class RunTransitionService {
 
@@ -36,7 +30,6 @@ public final class RunTransitionService {
 
     /**
      * The run as it will be, and how it must be written.
-     *
      * @param key the idempotency key when this move checkpoints, otherwise empty
      */
     public record Move(PersistedRun next, RunState from, boolean checkpoint, String key) implements Outcome {}
@@ -60,13 +53,8 @@ public final class RunTransitionService {
     private RunTransitionService() {}
 
     /**
-     * What {@code event} does to {@code run}, without touching anything.
-     *
-     * <p>Note what is <b>not</b> here: a "this move was already applied" success. A state machine
-     * cannot apply the same move twice, because applying it moved the state -- a replay therefore
-     * finds no transition and is refused as {@link Reason#ILLEGAL_EVENT}. The committed-key ledger
-     * exists for the economic commits of P9 (TDS #30) and, until then, as the detector below: two
-     * different outcomes under one key is the failure the key is meant to prevent.
+     * What {@code event} does to {@code run}, without touching anything. A replayed move finds no transition and is
+     * refused as {@link Reason#ILLEGAL_EVENT}; the key ledger detects two outcomes under one key.
      */
     public static Outcome decide(PersistedRun run, RunEvent event, long now) {
         Optional<RunTransitions.Transition> found = RunTransitions.lookup(run.state(), event);
@@ -78,9 +66,7 @@ public final class RunTransitionService {
         if (transition.resumeFromCheckpoint()) {
             return resume(run, now);
         }
-        // A run does not leave an intermission with a draft still on the table. Decided here, in the
-        // pure half, because it is a fact about the run rather than about the world -- and because
-        // the refusal is then testable without a server, like every other one.
+        // Pure-half rule: no leaving an intermission with a draft still open.
         if (event == RunEvent.INTERMISSION_COMPLETE && run.modifiers().hasOpenDraft()) {
             return new Refusal(Reason.DRAFT_OPEN, "run " + run.runId() + " is still choosing a modifier;"
                     + " vote with /cobbletowers runs draft vote, or settle it with draft force");
@@ -96,10 +82,8 @@ public final class RunTransitionService {
         int floor = event == RunEvent.NEXT_FLOOR_CONFIRMED ? run.floorIndex() + 1 : run.floorIndex();
         List<String> committed = new ArrayList<>(run.committedTransactions());
         if (!key.isEmpty()) committed.add(key);
-        // Only a KEYED move moves the checkpoint. A keyless checkpointing move -- parking a broken
-        // run, abandoning it, resuming it -- forces a write but must leave the checkpoint where it
-        // was: recording "committed at RECOVERY_REQUIRED" would make a later resume return the run
-        // to the state it was trying to escape.
+        // Only a keyed move moves the checkpoint; keyless ones (park, abandon, resume) force a write but leave it
+        // where it was.
         Optional<RunCheckpoint> checkpoint = key.isEmpty()
                 ? run.lastCheckpoint()
                 : Optional.of(new RunCheckpoint(key, transition.next()));
@@ -111,14 +95,7 @@ public final class RunTransitionService {
         return new Move(next, run.state(), transition.checkpoint(), key);
     }
 
-    /**
-     * Puts a parked run back where its checkpoint says it was.
-     *
-     * <p>The table cannot name the state, because it depends on the run rather than on the move --
-     * which is what {@code resumeFromCheckpoint} means. A run with nothing committed has no state to
-     * return to and is refused: that only happens when it was parked before its instance was
-     * allocated, and such a run is abandoned rather than resumed.
-     */
+    /** Puts a parked run back at its checkpoint state. A run with nothing committed is refused. */
     private static Outcome resume(PersistedRun run, long now) {
         Optional<RunCheckpoint> checkpoint = run.lastCheckpoint();
         if (checkpoint.isEmpty()) {
@@ -136,10 +113,8 @@ public final class RunTransitionService {
     }
 
     /**
-     * Applies {@code event} to the run with this id, writing the result to the index and the store.
-     *
-     * <p>A checkpointing move is flushed to disk before this returns, so a crash immediately
-     * afterwards finds the run where it was left rather than where it was minutes ago.
+     * Applies {@code event} to the run with this id and writes the result. A checkpointing move is flushed before
+     * returning.
      */
     public static Outcome apply(MinecraftServer server, UUID runId, RunEvent event, long now) {
         long started = System.nanoTime();
@@ -164,10 +139,7 @@ public final class RunTransitionService {
                 com.cobbletowers.vendor.VendorNpc.despawn(server, run);
                 com.cobbletowers.echo.EchoDuels.cancel(server, runId);
             }
-            // Everybody who is out comes back here, and only here. Tied to arriving at the state
-            // rather than to the event that got there, so every road into an intermission revives
-            // the same people -- which is what makes "until the next intermission" a promise a
-            // knocked-out or reconnected player can rely on.
+            // Everybody who is out comes back on arriving at an intermission, whatever road got there.
             if (move.next().state() == RunState.INTERMISSION) {
                 ParticipantService.reviveAtIntermission(server, runId, now);
                 DraftService.open(server, runId, now);
@@ -175,16 +147,14 @@ public final class RunTransitionService {
                 // intermission screen rather than under it.
                 IntermissionService.onArrival(server, runId);
             }
-            // Tied to arrival for the same reason as above: REWARDS_BANKED always fires on a floor
-            // clear, but bank() itself decides whether this particular arrival is a real payout point
-            // (docs/design/P9-economy.md §4a). Calling it unconditionally here, including on an
-            // ordinary floor's INTERMISSION, is what makes a resume after a crash re-attempt banking
-            // for free -- the same idempotent-arrival idiom DraftService.open already relies on.
+            // Tied to arrival so a resume after a crash re-attempts banking; bank() decides whether it is a payout
+            // point (docs/design/P9-economy.md section 4a).
             if (move.next().state() == RunState.INTERMISSION || move.next().state() == RunState.COMPLETED
                     || move.next().state() == RunState.CASHED_OUT) {
                 RewardBankService.bank(server, runId, now);
             }
-            // A rental run that completed earns real cards (P33b), read from the party journal before the player is given their own
+            // A rental run that completed earns real cards (P33b), read from the party journal before the player is
+            // given their own
             // Pokemon back. Banked above, granted here, each once.
             if (move.next().state() == RunState.COMPLETED) {
                 try {
@@ -198,11 +168,8 @@ public final class RunTransitionService {
             if (move.next().state() == RunState.NEXT_FLOOR_READY) {
                 DraftService.clearIfSettled(server, runId, now);
             }
-            // Re-fetched rather than trusting move.next(): RewardBankService.bank() above may have
-            // already written a newer record (a grant's own commit key, a bumped lastBankedFloor).
-            // releaseInstance ends with its own save, and saving the stale move.next() would silently
-            // overwrite whatever bank() just committed -- found live, by a cash-out whose grant key
-            // vanished the instant the run's cell was released.
+            // Re-fetched: bank() may have written a newer record, and saving the stale move.next() would overwrite
+            // it.
             if (move.next().state().isTerminal()) {
                 releaseInstance(server, TowerRuns.get(runId).orElse(move.next()), now);
             }
@@ -210,7 +177,8 @@ public final class RunTransitionService {
             if (event == RunEvent.NEXT_FLOOR_CONFIRMED) {
                 com.cobbletowers.ascension.AscensionService.onFloorConfirmed(server, runId, now);
             }
-            // Mastery (P31): floor timing, cycle clears, run endings. Never allowed to disturb the run it is watching.
+            // Mastery (P31): floor timing, cycle clears, run endings. Never allowed to disturb the run it is
+            // watching.
             // A trial attempt is judged first: it reads the run stats that mastery drops when a run ends.
             com.cobbletowers.trial.TrialService.onTransition(server, runId, move.from(), move.next().state(), now);
             com.cobbletowers.mastery.MasteryService.onTransition(server, runId, move.from(), move.next().state(), now);
@@ -222,17 +190,11 @@ public final class RunTransitionService {
     }
 
     /**
-     * Gives a finished run's cell back, and drops the lease from the run.
-     *
-     * <p>Tied to reaching a terminal state rather than to any particular event, so every way a run
-     * can end -- completed, cashed out, wiped, abandoned -- returns its cell by the same path. A cell
-     * that does not verify is quarantined by the allocator; either way the run stops holding it,
-     * because a finished run holding a lease is a cell nothing will ever release.
+     * Gives a finished run's cell back and drops the lease, for every way a run can end. A cell that fails
+     * verification is quarantined.
      */
     private static void releaseInstance(MinecraftServer server, PersistedRun run, long now) {
-        // Whatever the run was fighting stops first. An opponent left standing would be found by the
-        // cell's cleanup sweep a moment later and quarantine the cell -- a poor way to discover that
-        // a battle was not tidied up.
+        // Stop the run's battles first so a leftover opponent cannot quarantine the cell.
         TowerEncounters.abandon(server, run.runId());
 
         if (run.cell().isEmpty()) return;
@@ -242,7 +204,8 @@ public final class RunTransitionService {
             RunExitService.announce(server, run);
             return;
         }
-        // Clearing a cell is heavy work. When the tower is busy the run keeps its lease for a beat and the once-a-second exit sweep
+        // Clearing a cell is heavy work. When the tower is busy the run keeps its lease for a beat and the once-a-
+        // second exit sweep
         // releases it (nobody is inside, so it is due at once); nothing is lost by waiting.
         if (!com.cobbletowers.instance.HeavyWork.tryAcquire(now)) {
             TowerLog.info("Run {} ended; its cell {} will be released by the exit sweep (the tower is busy)", run.runId(), run.cell().getAsInt());
@@ -251,10 +214,7 @@ public final class RunTransitionService {
         releaseCell(server, run, now);
     }
 
-    /**
-     * The release itself: reset, verify, give the lease back and drop it from the run. Public so the exit sweep
-     * can finish one that was deferred while players were still inside.
-     */
+    /** The release itself: reset, verify, give the lease back. Public so the exit sweep can finish a deferred one. */
     public static void releaseCell(MinecraftServer server, PersistedRun run, long now) {
         OptionalInt cell = run.cell();
         if (cell.isEmpty()) return;
@@ -269,14 +229,7 @@ public final class RunTransitionService {
         TowerRuns.save(server, run.withCell(OptionalInt.empty(), now), true);
     }
 
-    /**
-     * Whether the run's instance is fit to go back to.
-     *
-     * <p>A run that reached a checkpoint was allocated a cell at the same moment, so a missing lease
-     * here means the save was edited or the cell was taken away. Either way, resuming into a cell
-     * that is gone or quarantined would put players somewhere nobody has verified, which is the
-     * thing quarantine exists to prevent.
-     */
+    /** Whether the run's instance is fit to go back to; a missing or quarantined cell is refused. */
     private static Optional<Refusal> cellUnusable(MinecraftServer server, PersistedRun run) {
         OptionalInt cell = run.cell();
         if (cell.isEmpty()) {

@@ -8,14 +8,16 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The Progress tab's battle tracks (P37): the mastery lane of one tower (with the list of towers to switch between) and, while a season
- * runs, the season lane. Sent on opening the tab and after every claim, never per frame. {@code endsInMillis} is a duration from now, not a
- * clock time, so a client whose clock is off still counts down correctly.
+ * The Progress tab's battle tracks (P37): one tower's mastery lane (plus the list of towers) and, in a season, the
+ * season lane. Sent on opening the tab and after every claim. {@code endsInMillis} is a duration, not a clock time.
  */
 public record TrackStatePayload(boolean autoClaim, List<Tower> towers, String selectedTower, Lane mastery, Lane season,
                                 String message) implements CustomPacketPayload {
 
-    /** Every text field is cut to what its codec writes ({@code writeUtf} throws past the limit and would break the packet). */
+    /**
+     * Every text field is cut to what its codec writes ({@code writeUtf} throws past the limit and would break the
+     * packet).
+     */
     private static String clip(String text, int max) {
         return text == null ? "" : text.length() <= max ? text : text.substring(0, Math.max(0, max - 1)) + "…";
     }
@@ -40,8 +42,8 @@ public record TrackStatePayload(boolean autoClaim, List<Tower> towers, String se
     public static final int LOCKED = 0, CLAIMABLE = 1, CLAIMED = 2, INFO = 3, UNAVAILABLE = 4;
 
     /**
-     * One node. {@code icon} is an item id (or empty); {@code reward} says what claiming gives; {@code note} is a perk or rank change shown
-     * even when there is nothing to claim.
+     * One node. {@code icon} is an item id or empty; {@code reward} says what claiming gives; {@code note} is a perk
+     * or rank change shown even with nothing to claim.
      */
     public record Node(int number, int state, String icon, String reward, String note) {
         public Node {
@@ -56,8 +58,8 @@ public record TrackStatePayload(boolean autoClaim, List<Tower> towers, String se
     }
 
     /**
-     * A lane. {@code current} is the level (mastery) or the step reached (season); {@code into}/{@code need} are the progress toward the next
-     * node (0/0 when there is no next one); {@code endsInMillis} is the time left in a season lane, 0 for the mastery lane.
+     * A lane. {@code current} is the level (mastery) or step (season); {@code into}/{@code need} are progress to the
+     * next node (0/0 if none); {@code endsInMillis} is a season lane's time left, 0 for mastery.
      */
     public record Lane(boolean present, String title, String subtitle, int current, int into, int need, long endsInMillis,
                        String timerLabel, List<Node> nodes) {

@@ -16,25 +16,19 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * The Hall of Fame (P36a): every finished season's frozen top ten, kept forever. Append-only: a season already here is never
- * replaced, so finalising twice (a crash and a resume) cannot change what was recorded.
+ * The Hall of Fame (P36a): every finished season's frozen top ten, append-only, so finalising twice (crash and
+ * resume) changes nothing.
  */
-public final class TowerHallStore extends SavedData {
+public final class TowerHallStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_hall";
 
     private final TreeMap<Integer, HallSeason> seasons = new TreeMap<>();
 
-    public static SavedData.Factory<TowerHallStore> factory() {
-        return new SavedData.Factory<>(TowerHallStore::new, TowerHallStore::load, DataFixTypes.LEVEL);
-    }
-
     public static TowerHallStore get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerHallStore::new, TowerHallStore::load, FILE_ID);
     }
 
     public boolean has(int number) {
@@ -67,10 +61,6 @@ public final class TowerHallStore extends SavedData {
             seasons.clear();
             setDirty();
         }
-    }
-
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     @Override

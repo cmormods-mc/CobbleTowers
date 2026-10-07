@@ -6,11 +6,9 @@ import java.util.UUID;
 import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * The 777 Unique's loot bonus: asks AscensionLib how many of an item a player's reward should be (+20% while a Pokemon holding 777 is
- * in their party). Reached by reflection like {@link AscensionLibRewards}, because the library is optional here; the contract is the
- * single static method {@code com.ascensionlib.AscensionRewards.scaleItemQuantity(UUID, int, String)}. If the mod is absent, the contract
- * does not match or anything throws, the original quantity is used: a bonus is never worth a lost reward. Plain item rewards only;
- * currencies and cards are not scaled.
+ * The 777 Unique's loot bonus: asks AscensionLib how many of an item a reward should be (+20% while a Pokemon holding
+ * 777 is in the party), by reflection ({@code com.ascensionlib.AscensionRewards.scaleItemQuantity}). On any failure
+ * the original quantity is used. Plain item rewards only.
  */
 public final class AscensionLibItemBonus {
     private static boolean resolved;

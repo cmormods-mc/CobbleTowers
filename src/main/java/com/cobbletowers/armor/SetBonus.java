@@ -4,8 +4,8 @@ import com.google.gson.JsonArray;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One thing an armor set does once enough of its pieces are worn (P24). A closed set of kinds, each a plain
- * record: nothing here knows how a bonus is applied, which is what keeps resolving them a pure function.
+ * One thing an armor set does once enough pieces are worn (P24). A closed set of plain records; nothing here applies
+ * a bonus.
  */
 public sealed interface SetBonus {
 
@@ -13,8 +13,8 @@ public sealed interface SetBonus {
     int pieces();
 
     /**
-     * A vanilla attribute modifier on the wearer. {@code operation} is {@code add_value},
-     * {@code add_multiplied_base} or {@code add_multiplied_total}.
+     * A vanilla attribute modifier on the wearer. {@code operation} is {@code add_value}, {@code add_multiplied_base}
+     * or {@code add_multiplied_total}.
      */
     record PlayerAttribute(int pieces, ResourceLocation attribute, String operation, double amount) implements SetBonus {}
 

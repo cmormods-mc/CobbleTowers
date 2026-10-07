@@ -8,20 +8,19 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The collectible card each rental set makes (P33b): a pure function of the set, so the server and the client agree on it and the card
- * a player saw in a pack is the card they can win.
- *
- * <p>It speaks CobblemonCards' own data (the item {@code cobblemon-cards:card} and its component {@code cobblemon-cards:card_data}) as
- * plain names and numbers, never through that mod's classes, so nothing here needs the mod to be installed. The numbers follow the mod's
- * own balance: a card of a given rarity carries the middle of the range the mod itself rolls for that rarity, so granting one does not
- * move the mod's economy.
+ * The collectible card each rental set makes (P33b): a pure function of the set, so server and client agree. Speaks
+ * CobblemonCards' data ({@code cobblemon-cards:card}, component {@code cobblemon-cards:card_data}) as plain names and
+ * numbers, so the mod need not be installed.
  */
 public final class RentalCards {
 
     public static final ResourceLocation ITEM = ResourceLocation.fromNamespaceAndPath("cobblemon-cards", "card");
     public static final ResourceLocation COMPONENT = ResourceLocation.fromNamespaceAndPath("cobblemon-cards", "card_data");
 
-    /** What a card of one rarity carries: the middle of the stat range the mod rolls for it (its own packs, before its shiny bonus). */
+    /**
+     * What a card of one rarity carries: the middle of the stat range the mod rolls for it (its own packs, before its
+     * shiny bonus).
+     */
     private static final Map<Rarity, Float> STAT_VALUE = Map.of(
             Rarity.COMMON, 0.0075f, Rarity.UNCOMMON, 0.0225f, Rarity.RARE, 0.055f,
             Rarity.EPIC, 0.10f, Rarity.LEGENDARY, 0.15f, Rarity.MYTHIC, 0.225f);
@@ -43,9 +42,8 @@ public final class RentalCards {
     private RentalCards() {}
 
     /**
-     * One card, as CobblemonCards stores it.
-     *
-     * @param stat the stat the card gives when it is in a binder: the Pokemon's own type's spawn boost, such as {@code dragon_spawn}
+     * One card as CobblemonCards stores it.
+     * @param stat the binder stat, the Pokemon's type spawn boost such as {@code dragon_spawn}
      */
     public record Spec(String pokemonId, boolean shiny, String rarity, String stat, float statValue, int grade,
                        Optional<String> background, Optional<String> effect) {
@@ -82,9 +80,8 @@ public final class RentalCards {
 
     /**
      * The card for a set.
-     *
-     * @param godPack whether the player drew it from a God Pack, which makes it shiny, as the mod's own God Pack does
-     * @param cap     the rarest card to make: a legendary set makes an epic card when the cap is epic
+     * @param godPack whether it came from a God Pack (makes it shiny)
+     * @param cap the rarest card to make
      */
     public static Spec of(RentalSetDefinition set, boolean godPack, Rarity cap) {
         Rarity rarity = set.rarity().compareTo(cap) <= 0 ? set.rarity() : cap;

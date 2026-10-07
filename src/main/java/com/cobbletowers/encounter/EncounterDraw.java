@@ -10,24 +10,14 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 /**
- * Which opponents a floor puts up, drawn from its pool.
- *
- * <p>Deterministic: the same run on the same floor always meets the same opponents in the same
- * order, because every choice comes from {@link EncounterSeed} rather than from a random source
- * (TDS #29). That is what lets a crashed run be resumed without anybody being able to reroll a floor
- * they did not like.
- *
- * <p>Pure -- no server, no world -- so the whole draw is tested without Minecraft.
+ * Which opponents a floor puts up. Deterministic from {@link EncounterSeed} (TDS #29), so a resumed run cannot
+ * reroll; pure, so tested without Minecraft.
  */
 public final class EncounterDraw {
 
     private EncounterDraw() {}
 
-    /**
-     * One opponent for one player on one floor.
-     *
-     * @param ordinal which opponent of the floor this is; each player on a floor gets their own
-     */
+    /** One opponent for one player on one floor. @param ordinal which opponent of the floor this is */
     public static Optional<EncounterSnapshot> draw(EncounterPoolDefinition pool, long runSeed, int floorIndex,
                                                    int ordinal, Collection<Integer> partyLevels,
                                                    RulesetDefinition ruleset) {
@@ -35,12 +25,8 @@ public final class EncounterDraw {
     }
 
     /**
-     * The same draw, with a run's drafted modifiers folded in.
-     *
-     * <p>{@code modifierLevelOffset} is added to the pool entry's own offset and the sum is handed to
-     * {@link TowerLevelPolicy}, which clamps it. Adding the two here and clamping there keeps every
-     * piece of tower level maths in the one place TDS #45 requires -- this method decides nothing
-     * about what a level may be, it only says what to ask for.
+     * The same draw with a run's modifiers folded in; the level offset is added here and clamped by {@link
+     * TowerLevelPolicy} (TDS #45).
      */
     public static Optional<EncounterSnapshot> draw(EncounterPoolDefinition pool, long runSeed, int floorIndex,
                                                    int ordinal, Collection<Integer> partyLevels,
@@ -49,9 +35,8 @@ public final class EncounterDraw {
     }
 
     /**
-     * The same draw, weighted toward a resolved regional theme's jerseys as the floor deepens (TDS
-     * #73). {@code theme} is what {@code pool.regionalPool()} resolves to, if anything -- empty leaves
-     * every entry's weight exactly as authored.
+     * The same draw, weighted toward a regional theme's jerseys as the floor deepens (TDS #73). An empty theme leaves
+     * weights as authored.
      */
     public static Optional<EncounterSnapshot> draw(EncounterPoolDefinition pool, long runSeed, int floorIndex,
                                                    int ordinal, Collection<Integer> partyLevels,
@@ -72,10 +57,8 @@ public final class EncounterDraw {
     }
 
     /**
-     * The Battle Tower Teams pack's two persistent features, which is how its jersey models are switched on:
-     * {@code league_team=<region>} (the theme's own id: tideforge, rootvale or duskvale) and a two-digit
-     * {@code jersey_number}. They replace the placeholder {@code jersey} aspect P10 reserved. Without the pack
-     * installed Cobblemon ignores them, and {@code CobblemonBattleAdapter} retries without aspects if it does not.
+     * Battle Tower Teams pack features: {@code league_team=<region>} and a two-digit {@code jersey_number}. Ignored
+     * without the pack; the battle adapter retries without aspects.
      */
     static List<String> jerseyProperties(List<String> authored, RegionalThemeDefinition theme, int number) {
         List<String> aspects = new ArrayList<>(authored);
@@ -97,15 +80,8 @@ public final class EncounterDraw {
     }
 
     /**
-     * The weighted pick itself.
-     *
-     * <p>Walks the entries subtracting weights, in the order the pool declares them.
-     *
-     * <p><b>Editing a pool changes what every seed draws.</b> The roll is taken modulo the total
-     * weight, so adding an entry shifts all of them -- and no weighted pick can avoid that, since new
-     * weight has to take probability from somewhere. The protection against a pool edited under an
-     * in-flight run is not here: a run pins the content digest it started with (TDS #40), which makes
-     * the edit visible rather than silent.
+     * The weighted pick: walks entries subtracting weights in declared order. Editing a pool shifts every seed's
+     * draw; runs pin the content digest (TDS #40) to make that visible.
      */
     static EncounterPoolDefinition.Entry pick(EncounterPoolDefinition pool, long seed) {
         return pick(pool, Optional.empty(), 0, seed);

@@ -6,11 +6,9 @@ import java.util.UUID;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Something that happened in a tower run, as a plain value (P32c). The runtime emits these as it already computes them; the
- * things that care about "what the player did" (contracts today, the Run Report next) subscribe, so none of them has to reach
- * into the run machinery. Pure data: no server, no entity.
- *
- * <p>{@link #players()} is everyone the event counts for: a floor cleared counts for the whole team, a purchase for the buyer.
+ * Something that happened in a tower run, as a plain value (P32c). The runtime emits these and subscribers
+ * (contracts, the Run Report) read them without reaching into the run machinery. {@link #players()} is everyone the
+ * event counts for: the whole team for a floor clear, the buyer for a purchase.
  */
 public sealed interface TowerEvent {
 

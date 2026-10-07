@@ -1,11 +1,8 @@
 package com.cobbletowers.trial;
 
 /**
- * A trial attempt's score (P32), one integer, higher is better, and a pure function of what happened.
- *
- * <p>Floors dominate, so a wipe on floor four of five still outranks a clean run that quit on floor two. On top of that: a bonus
- * for finishing, a bonus for speed (against a par of three minutes a floor), a penalty per fainted Pokemon, and ten points per
- * point of difficulty (the playlist, the mutators and the party size are all in the difficulty score).
+ * A trial attempt's score (P32): one integer, higher is better, pure. Floors dominate; then a finish bonus, a speed
+ * bonus (par three minutes a floor), a penalty per fainted Pokemon and ten points per difficulty point.
  */
 public final class TrialScoring {
 
@@ -19,10 +16,10 @@ public final class TrialScoring {
 
     /**
      * @param floorsCleared floors cleared before the run ended
-     * @param floors        the trial's length
-     * @param activeMillis  time spent fighting (intermissions do not count)
-     * @param faints        player Pokemon that fainted
-     * @param difficulty    the run's difficulty score
+     * @param floors the trial's length
+     * @param activeMillis fighting time (intermissions excluded)
+     * @param faints player Pokemon that fainted
+     * @param difficulty the run's difficulty score
      */
     public static int score(int floorsCleared, int floors, long activeMillis, int faints, int difficulty) {
         int cleared = Math.max(0, Math.min(floorsCleared, floors));

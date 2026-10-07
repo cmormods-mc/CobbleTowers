@@ -9,8 +9,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What a scouting profile reveals about a floor's draw, sent alongside the encounter starting rather
- * than gating it (TDS #22, #49). A concealed category is simply absent, not shown-and-blanked.
+ * What a scouting profile reveals about a floor's draw, sent alongside the encounter, never gating it (TDS #22, #49).
+ * A concealed category is absent.
  */
 public record ScoutingRevealPayload(int floorIndex, List<Category> categories) implements CustomPacketPayload {
 

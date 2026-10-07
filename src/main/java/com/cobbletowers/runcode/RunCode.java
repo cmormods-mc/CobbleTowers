@@ -5,16 +5,10 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A run code (P35, roadmap D4): the tower, mode, starting Ascension and seed of a run, as one line of text a player can
- * paste to a friend. Entering it starts the same run: the same opponents, bosses and draft cards, because every draw in a
- * run derives from its seed (TDS #29).
- *
- * <p>Format {@code CT1-<tower>-<mode>-<ascension>-<seed>-<check>}: the tower and mode are the id paths (the namespace is
- * included only when it is not {@code cobbletowers}, written {@code namespace.path}), the mode is {@code std} for Standard,
- * the seed is unsigned base 36, and the check is one base-36 character so a mistyped code is refused rather than quietly
- * becoming a different run.
- *
- * <p>Pure: no server, no registry. Whether the tower and mode exist is the caller's question.
+ * A run code (P35, roadmap D4): tower, mode, starting Ascension and seed as one pasteable line; entering it starts
+ * the same run (TDS #29). Format {@code CT1-<tower>-<mode>-<ascension>-<seed>-<check>}: ids are paths ({@code
+ * namespace.path} if not {@code cobbletowers}), mode {@code std} for Standard, seed in base 36, one base-36 check
+ * character. Pure.
  */
 public final class RunCode {
 
@@ -56,7 +50,8 @@ public final class RunCode {
     }
 
     private static String part(ResourceLocation id) {
-        // A hyphen is legal in an id but is this code's separator, so it is written as a tilde (which no id may contain).
+        // A hyphen is legal in an id but is this code's separator, so it is written as a tilde (which no id may
+        // contain).
         String text = id.getNamespace().equals(DEFAULT_NAMESPACE) ? id.getPath() : id.getNamespace() + "." + id.getPath();
         return text.replace('-', '~');
     }

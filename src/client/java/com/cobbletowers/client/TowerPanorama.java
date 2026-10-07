@@ -10,14 +10,9 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The regional tower landscapes from the approved preview, painted with integer-aligned fills and clipped to their
- * box: sea walls for Tideforge, forest canopy for Rootvale, a moonlit sky for Duskvale and plain stone otherwise.
- * No shader and no per-frame allocation; the only motion is a two-step window lamp and water glint, both off under
- * reduced motion.
- *
- * <p>A landscape is a couple of hundred fills, so it is painted once into a small texture and drawn as a single quad; the
- * picture only changes when the box, the region or one of the (at most nine) animation steps does. Painting goes through
- * {@link Painter}, so the same code draws into the texture's pixels.
+ * The regional landscapes in integer-aligned fills, clipped to the box (sea walls for Tideforge, canopy for Rootvale,
+ * moonlit sky for Duskvale, stone otherwise). Painted once into a small texture via {@link Painter} and drawn as one
+ * quad; repainted only when the box, region or an animation step changes.
  */
 final class TowerPanorama {
     private TowerPanorama() {}
@@ -38,7 +33,8 @@ final class TowerPanorama {
         return new Palette(0xFF5A5A62, 0xFFAB9F89, 0xFF978B73, 0xFF7C705B, 0xFF6B6455, 0xFFC9BA96, 0xFF8A7B5C, 0xFF3A322A);
     }
 
-    // ---- the cache ---------------------------------------------------------------------------------------------------
+    // ---- the cache
+    // ---------------------------------------------------------------------------------------------------
 
     private static final int MAX_CACHED = 48;
     private static int serial;
@@ -118,7 +114,10 @@ final class TowerPanorama {
             return (argb & 0xFF00FF00) | ((argb >> 16) & 0xFF) | ((argb & 0xFF) << 16);
         }
 
-        /** {@code src} (ARGB) over what is already in the image ({@code dstAbgr}, as NativeImage stores it); returns ARGB. */
+        /**
+         * {@code src} (ARGB) over what is already in the image ({@code dstAbgr}, as NativeImage stores it); returns
+         * ARGB.
+         */
         private static int over(int src, int dstAbgr) {
             int dst = (dstAbgr & 0xFF00FF00) | ((dstAbgr >> 16) & 0xFF) | ((dstAbgr & 0xFF) << 16);
             int a = src >>> 24;
@@ -142,7 +141,8 @@ final class TowerPanorama {
         }
     }
 
-    // ---- the landscape -------------------------------------------------------------------------------------------------
+    // ---- the landscape
+    // -------------------------------------------------------------------------------------------------
 
     private static void paint(Painter g, String region, int w, int h, boolean moving, int glint, int lamp) {
         final int x = 0;
@@ -184,8 +184,10 @@ final class TowerPanorama {
         } else {
             for (int ry = horizon + 3; ry < y + h; ry += 5) g.fill(x, ry, x + w, ry + 1, 0x33000000);
         }
-        // Three stone towers: tall centre, two flanks, with crenellations and lit windows. A wide, short banner keeps them whole
-        // (never cut by the top edge) and puts them right of centre, clear of the title written over the left of the strip.
+        // Three stone towers: tall centre, two flanks, with crenellations and lit windows. A wide, short banner keeps
+        // them whole
+        // (never cut by the top edge) and puts them right of centre, clear of the title written over the left of the
+        // strip.
         int cx = banner ? x + w * 70 / 100 : x + w / 2;
         int room = horizon - y - 4;
         int flankH = Math.min(room, Math.max(14, (horizon - y) * 52 / 100));

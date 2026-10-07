@@ -10,7 +10,8 @@ final class AchievementNode extends Button {
     AchievementNode(int x,int y,int w,String name,String description,boolean earned,Runnable action){super(x,y,w,36,Component.literal(name),b->action.run(),DEFAULT_NARRATION);this.earned=earned;setTooltip(Tooltip.create(Component.literal((earned?"Earned: ":"Not yet earned: ")+name+"\n"+description)));}
     @Override protected void renderWidget(GuiGraphics g,int mx,int my,float dt){
         int x=getX(),y=getY(),w=getWidth(),accent=earned?TowerUi.SAGE:0xFF7A6A55;
-        // A trophy cabinet: every trophy stands on a shelf plank. Earned ones are bronze-and-gold cups with a sage trim; the
+        // A trophy cabinet: every trophy stands on a shelf plank. Earned ones are bronze-and-gold cups with a sage
+        // trim; the
         // rest are a brown padlock on an empty stand.
         PixelUi.plank(g,x-2,y+36,w+4,5);
         PixelUi.panel(g,x,y,w,36,accent,isHoveredOrFocused()?1:earned?.38f:0);

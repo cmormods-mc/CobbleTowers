@@ -15,15 +15,17 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Earning, listing and wearing cosmetics (P36d). {@link #award} is the one door every earned cosmetic goes through (the season track and the
- * club podium both call it), so the rules about a first award live here once: it is recorded, the first title a player earns is worn
- * automatically, the configured console commands run for it, and the tab list is refreshed.
+ * Earning, listing and wearing cosmetics (P36d). {@link #award} is the one door for every earned cosmetic: it records
+ * it, wears the first title automatically, runs the configured console commands and refreshes the tab list.
  */
 public final class CosmeticsService {
 
     private CosmeticsService() {}
 
-    /** Records cosmetics for a player. Only ones they did not already have do anything else: no repeat commands, no repeat messages. */
+    /**
+     * Records cosmetics for a player. Only ones they did not already have do anything else: no repeat commands, no
+     * repeat messages.
+     */
     public static void award(MinecraftServer server, UUID player, Set<String> ids) {
         TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
         Set<String> added = store.addCosmetics(player, ids);

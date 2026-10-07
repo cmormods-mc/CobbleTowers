@@ -6,12 +6,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Season points (P36b): where they come from, how much each is worth, and the caps that keep them from being ground. Pure: no
- * server, no clock; the caller passes the day and week it is awarding on.
- *
- * <p>Points are a tally of play that already exists, never a way to earn anything new. Every source already has its own anti-farm rule
- * (a cycle must be cleared, a trial attempt is once, a contract needs depth); the limits here are a second belt. Only regional
- * towers earn points for clears (owner decision): Neutral and the Test tower earn none.
+ * Season points (P36b): sources, values and caps. Pure; the caller passes the day and week. Points tally existing
+ * play and each source has its own anti-farm rule. Only regional towers earn points for clears (owner decision).
  */
 public final class SeasonPoints {
 
@@ -53,7 +49,10 @@ public final class SeasonPoints {
     /** Points for a regional clear in the spotlight region. */
     public static final int SPOTLIGHT_CLEAR = 30;
 
-    /** Points for reaching a streak milestone of {@code days}: 10, 20, 30, 50 at 3, 7, 14, 30, and 50 for any later one. */
+    /**
+     * Points for reaching a streak milestone of {@code days}: 10, 20, 30, 50 at 3, 7, 14, 30, and 50 for any later
+     * one.
+     */
     public static int streakPoints(int days) {
         return switch (days) {
             case 3 -> 10;
@@ -65,13 +64,12 @@ public final class SeasonPoints {
 
     /**
      * One player's tally for one season.
-     *
-     * @param total       season points so far
-     * @param steps       track steps already granted
-     * @param day         the day {@code dayTotal} and {@code dayCounts} are for ({@code ""} for none yet)
-     * @param dayTotal    points earned from the daily sources on {@code day}
-     * @param dayCounts   how many times each daily source has counted on {@code day}
-     * @param once        what has already counted once in this season, keyed by source and period (a week, a streak milestone)
+     * @param total points so far
+     * @param steps track steps granted
+     * @param day the day {@code dayTotal} and {@code dayCounts} are for ({@code ""} for none)
+     * @param dayTotal points from daily sources that day
+     * @param dayCounts times each daily source counted that day
+     * @param once what has counted once this season, keyed by source and period
      */
     public record Progress(int total, int steps, String day, int dayTotal, Map<Source, Integer> dayCounts, Set<String> once) {
         public Progress {
@@ -91,11 +89,10 @@ public final class SeasonPoints {
 
     /**
      * Awards one source.
-     *
-     * @param param    the streak milestone for {@link Source#STREAK_MILESTONE}; ignored otherwise
-     * @param spotlight whether a {@link Source#REGIONAL_CLEAR} was in the season's spotlight region
-     * @param dayKey   today's trial day, {@code 2026-10-12}
-     * @param weekKey  this trial week, {@code 2026-w42}
+     * @param param the streak milestone for {@link Source#STREAK_MILESTONE}
+     * @param spotlight whether a {@link Source#REGIONAL_CLEAR} was in the spotlight region
+     * @param dayKey today's trial day, {@code 2026-10-12}
+     * @param weekKey this trial week, {@code 2026-w42}
      */
     public static Result award(Progress progress, Source source, int param, boolean spotlight, String dayKey, String weekKey) {
         // A new day starts the daily tally over.

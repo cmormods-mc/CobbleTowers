@@ -12,8 +12,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The few lines a player sees when they log in (P32d): today's daily trial and where their streak stands, and how many contracts
- * are open. Short on purpose, and a player can turn it off with {@code /tower summary off}.
+ * The few lines shown at login (P32d): today's daily trial, the streak and open contracts. Off with {@code /tower
+ * summary off}.
  */
 public final class LoginSummary {
 

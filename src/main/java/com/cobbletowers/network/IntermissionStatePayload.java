@@ -9,21 +9,18 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What the intermission screen shows (P17): the modifier draft with its votes, who on the team is ready
- * or has voted to cash out, and the countdown to the next floor.
- *
- * @param open true when the screen should be opened (arrival at the intermission, or the player asked);
- *             false for a team change pushed to a screen that is already open
+ * What the intermission screen shows (P17): the draft with votes, who is ready or voted to cash out, and the
+ * countdown.
+ * @param open true to open the screen (arrival or request); false for an update to an open one
  */
 public record IntermissionStatePayload(int floor, Draft draft, List<Member> members, int countdown, String message,
                                        boolean open) implements CustomPacketPayload {
 
     /**
      * One card on offer.
-     *
-     * @param risk  0 = minor, 1 = moderate, 2 = severe, -1 when the card is not a modifier (an event or an unknown id)
-     * @param theme which scene the client paints it with ({@code ModifierArt}); never a rule, only a picture key
-     * @param lines the card's authoritative description, one fact per line, as the codex shows it
+     * @param risk 0 minor, 1 moderate, 2 severe, -1 for a non-modifier card
+     * @param theme the picture key the client paints it with ({@code ModifierArt}), never a rule
+     * @param lines the authoritative description, one fact per line
      */
     public record Card(ResourceLocation id, String displayName, int votes, int risk, String theme, List<String> lines) {
         static final StreamCodec<RegistryFriendlyByteBuf, Card> STREAM_CODEC = StreamCodec.composite(
@@ -37,8 +34,8 @@ public record IntermissionStatePayload(int floor, Draft draft, List<Member> memb
     }
 
     /**
-     * @param state  0 = no draft this intermission, 1 = open for votes, 2 = settled
-     * @param chosen the winning card's index once settled, otherwise -1
+     * @param state 0 no draft, 1 open for votes, 2 settled
+     * @param chosen the winning card's index once settled, else -1
      * @param myVote the viewer's own vote, or -1
      */
     public record Draft(int state, List<Card> cards, int chosen, int myVote) {

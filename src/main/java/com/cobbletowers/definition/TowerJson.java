@@ -10,12 +10,8 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Reading definition JSON, in CobbleRaids' style: a default for anything optional, and a message
- * naming the field for anything required or malformed.
- *
- * <p>The messages matter more than they look. A definition that fails to parse is skipped by the
- * registry rather than taking the server down, so the log line is all an operator gets -- it has to
- * say which field, in which file, was wrong.
+ * Reading definition JSON: a default for anything optional and a message naming the field for anything required or
+ * malformed. The log line is all an operator gets when a definition is skipped.
  */
 public final class TowerJson {
 

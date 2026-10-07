@@ -7,15 +7,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One grant a player has not yet been handed, because they were not online to receive it.
- *
- * <p>The item id and amount are stored, never an {@code ItemStack}: the roll already happened
- * ({@link com.cobbletowers.reward.RewardValuation}), so there is nothing left to re-derive from a
- * definition that might have changed underfoot, and nothing here needs the item-component machinery
- * an {@code ItemStack} would drag onto disk.
- *
- * <p>One kind of grant needs more than an id (P33b): a card from CobblemonCards is an item whose identity is its data. It is kept as
- * plain text, the item as the game parses it, and turned into a real stack only at the moment it is handed over.
+ * One grant a player has not been handed because they were offline. The item id and amount are stored, never an
+ * {@code ItemStack}, since the roll already happened. A CobblemonCards card (P33b) is kept as plain item text and
+ * turned into a stack on handover.
  */
 public record PendingTowerReward(UUID runId, int floorIndex, ResourceLocation item, int amount, long grantedAt,
                                  String components, String label) implements PendingRewardView {

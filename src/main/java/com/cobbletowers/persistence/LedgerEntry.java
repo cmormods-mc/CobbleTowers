@@ -7,14 +7,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One thing a run earned, recorded without deciding what it is worth.
- *
- * <p>The unclaimed pool is a list of these: an opponent defeated, a floor cleared. **No value lives
- * here.** The economy is P9's, and a pool that guessed at worth now would have to be rewritten then
- * -- worse, a run banked mid-development would carry numbers from a scheme nobody kept.
- *
- * @param what     the opponent's species, or the tower's floor id for a cleared floor
- * @param byPlayer who earned it; a cleared floor is credited to the run rather than to one player
+ * One thing a run earned, recorded without a value (the economy prices it, P9).
+ * @param what the opponent's species, or the floor id for a cleared floor
+ * @param byPlayer who earned it; a cleared floor is credited to the run
  */
 public record LedgerEntry(Kind kind, int floorIndex, ResourceLocation what, UUID byPlayer, long at) {
 
@@ -23,13 +18,14 @@ public record LedgerEntry(Kind kind, int floorIndex, ResourceLocation what, UUID
         /** The floor's CobbleRaids boss. Separate from an ordinary opponent so P9 can weigh it. */
         BOSS_DEFEATED,
         FLOOR_CLEARED,
-        /** A milestone floor was cleared (P21); {@code what} is the milestone's id. Priced from the table's milestone section. */
+        /**
+         * A milestone floor was cleared (P21); {@code what} is the milestone's id. Priced from the table's milestone
+         * section.
+         */
         MILESTONE_CLEARED,
         /**
-         * The run was lost, so everything above it is void.
-         *
-         * <p>Marked rather than deleted: an operator can still see what the run had earned, and P9
-         * reads this as "grant nothing" rather than having to infer it from the run's state.
+         * The run was lost, so everything above it is void. Marked rather than deleted, so P9 reads "grant nothing"
+         * and an operator can still see what was earned.
          */
         POOL_FORFEITED
     }

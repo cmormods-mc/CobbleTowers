@@ -5,7 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/** Codex and card text, written to be read: what the modifier does to the fight, and what the risk pays at the end. */
+/**
+ * Codex and card text, written to be read: what the modifier does to the fight, and what the risk pays at the end.
+ */
 public final class ModifierMenuText {
     private ModifierMenuText() {}
     private static String fieldName(String id){

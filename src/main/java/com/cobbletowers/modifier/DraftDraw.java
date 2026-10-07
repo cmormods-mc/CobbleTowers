@@ -6,17 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The cards an intermission puts on the table (TDS #2).
- *
- * <p>Deterministic from the run's seed, like the opponents and the boss, so a crash mid-draft cannot
- * reroll the offer (TDS #29). A party that did not like its three cards cannot get three others by
- * pulling the plug.
- *
- * <p><b>Its own ordinal space</b>, for the reason {@link com.cobbletowers.encounter.BossDraw} gives:
- * a shared space would let a party read one draw and predict another. Ordinary opponents use 0..n,
- * the boss uses 1_000_003, and a draft's cards start here.
- *
- * <p>Pure -- no server, no registry -- so the whole draw is tested without Minecraft.
+ * The cards an intermission puts on the table (TDS #2). Deterministic from the run seed (TDS #29), in its own ordinal
+ * space (see {@link com.cobbletowers.encounter.BossDraw}). Pure.
  */
 public final class DraftDraw {
 
@@ -32,13 +23,9 @@ public final class DraftDraw {
     private DraftDraw() {}
 
     /**
-     * The cards offered at one floor's intermission.
-     *
-     * <p>Drawn <b>without replacement</b>: the same modifier twice on one table is not a choice.
-     * A pool with fewer than three eligible entries offers what it has rather than padding with
-     * duplicates, and an empty one offers nothing -- which the caller reads as "no draft here".
-     *
-     * @param pool every modifier this floor may offer, already filtered to what is eligible
+     * The cards offered at one floor's intermission, drawn without replacement. Fewer than three eligible offers what
+     * exists; none means no draft.
+     * @param pool every modifier this floor may offer, already filtered
      */
     public static List<ModifierDefinition> draw(List<ModifierDefinition> pool, long runSeed, int floorIndex) {
         return draw(pool, runSeed, floorIndex, DRAFT_ORDINAL_BASE);
@@ -61,10 +48,8 @@ public final class DraftDraw {
     }
 
     /**
-     * The weighted pick, as an index into {@code candidates}.
-     *
-     * <p>The same walk {@code EncounterDraw.pick} uses. Returning an index rather than an entry is
-     * what lets the caller remove it and draw again without replacement.
+     * The weighted pick as an index into {@code candidates}, so the caller can remove it and draw again. Same walk as
+     * {@code EncounterDraw.pick}.
      */
     static int pick(List<ModifierDefinition> candidates, long seed) {
         int total = 0;

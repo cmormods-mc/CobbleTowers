@@ -8,9 +8,9 @@ import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 
 /**
- * One modifier card (oak frame, bronze fittings, a themed diorama, a parchment nameplate), with the wooden shutters that open
- * over it. The hitbox is the card's fixed rectangle at all times; the shutters are only paint, clipped inside it. Choosing a
- * card only marks it (the screen sends nothing until Confirm), so hover, focus and click are all safe to repeat.
+ * One modifier card with the shutters that open over it. The hitbox is the card's fixed rectangle; the shutters are
+ * paint only. Choosing only marks the card (nothing is sent until Confirm), so hover, focus and click are safe to
+ * repeat.
  */
 final class ModifierCardButton extends Button {
 
@@ -91,7 +91,8 @@ final class ModifierCardButton extends Button {
             PixelUi.brackets(g, x + 2, y + 2, w - 4, h - 4, TowerUi.BRONZE_LIGHT);
             PixelUi.brackets(g, x + 4, y + 4, w - 8, h - 8, TowerUi.BRONZE);
         } else if (hot) {
-            // The same two-step highlight for the pointer and for keyboard focus: dim bronze, then bright after a beat.
+            // The same two-step highlight for the pointer and for keyboard focus: dim bronze, then bright after a
+            // beat.
             boolean second = !TowerUiSettings.motion || (now - hoverAt) > 100_000_000L;
             PixelUi.brackets(g, x + 2, y + 2, w - 4, h - 4, second ? TowerUi.BRONZE_LIGHT : TowerUi.BRONZE);
         }
@@ -117,7 +118,9 @@ final class ModifierCardButton extends Button {
         };
     }
 
-    /** Two oak shutters with bronze bands that slide apart; clipped to the card, so nothing paints outside its box. */
+    /**
+     * Two oak shutters with bronze bands that slide apart; clipped to the card, so nothing paints outside its box.
+     */
     private static void shutters(GuiGraphics g, int x, int y, int w, int h, float reveal) {
         int half = w / 2;
         int slide = (int) (half * ease(reveal));

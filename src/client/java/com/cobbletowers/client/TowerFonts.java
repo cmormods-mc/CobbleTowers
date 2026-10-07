@@ -5,9 +5,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The font every CobbleTowers menu draws with: Pixelify Sans (SIL OFL, licence beside the file), a pixel face that stays legible at
- * small sizes. It is a {@link Font} that always looks glyphs up in {@code cobbletowers:ui}, which falls back to Minecraft's own
- * glyphs for anything the face lacks. Tooltips and chat stay in the vanilla font.
+ * The font every menu draws with: Pixelify Sans (SIL OFL, licence beside the file), looked up in {@code
+ * cobbletowers:ui} with vanilla glyphs as fallback. Tooltips and chat stay vanilla.
  */
 final class TowerFonts {
     private static final ResourceLocation UI = ResourceLocation.fromNamespaceAndPath("cobbletowers", "ui");

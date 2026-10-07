@@ -15,9 +15,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * The decision half of the service, which is all of the behaviour and none of the server.
- */
+/** The decision half of the service: all of the behaviour, none of the server. */
 class RunTransitionServiceTest {
 
     private static final UUID RUN = UUID.fromString("dddddddd-0000-0000-0000-000000000004");
@@ -118,9 +116,8 @@ class RunTransitionServiceTest {
         PersistedRun ready = walkTo(RunState.NEXT_FLOOR_READY);
         PersistedRun opened = move(ready, RunEvent.NEXT_FLOOR_CONFIRMED, TestRuns.NOW);
 
-        // Put the run back a floor while keeping what it has committed: the same key would be built
-        // a second time. Two outcomes under one key is the thing the key exists to prevent, so it is
-        // reported rather than absorbed.
+        // Rewinding a run while keeping its commits builds the same key twice; two outcomes under one key must be
+        // reported, not absorbed.
         PersistedRun rewound = new PersistedRun(opened.runId(), opened.schemaVersion(), opened.towerId(),
                 opened.towerRevision(), opened.towerDigest(), opened.rulesetRevision(), opened.structureRevision(),
                 opened.seed(), opened.floorIndex() - 1, RunState.NEXT_FLOOR_READY, opened.participants(),
@@ -172,9 +169,8 @@ class RunTransitionServiceTest {
     @Test
     @DisplayName("a run can be parked, resumed and parked again")
     void parkResumePark() {
-        // The reason the wildcards carry no idempotency key. They are the two moves that can happen
-        // to one run more than once, and a repeated key is indistinguishable from a double commit --
-        // so a second crash used to be refused, leaving the run live and unparked.
+        // The wildcards carry no key because they can happen more than once to a run; a repeated key looks like a
+        // double commit and a second crash used to go unparked.
         PersistedRun parked = move(walkTo(RunState.ENCOUNTER_ACTIVE), RunEvent.TECHNICAL_FAILURE, TestRuns.NOW);
         PersistedRun resumed = move(parked, RunEvent.RECOVERY_COMPLETED, TestRuns.NOW + 1);
 

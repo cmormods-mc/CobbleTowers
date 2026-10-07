@@ -8,33 +8,20 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * Which cells are out of circulation, and why.
- *
- * <p>A separate file from the runs on purpose: a quarantine outlives the run that caused it. That is
- * the whole point of TDS #35 -- the run ends either way, and the cell must not come back into use
- * until someone has established it is clean. Storing it on the run would lose it exactly when the run
- * is retired.
- *
- * <p>Leases are not stored here. A lease belongs to its run and is written with it, so there is one
- * place a cell's tenancy can be read from and no way for two files to disagree about who holds what.
+ * Which cells are out of circulation and why. Separate from the runs because a quarantine outlives the run that
+ * caused it (TDS #35). Leases are stored with their run, not here.
  */
-public final class CellStateStore extends SavedData {
+public final class CellStateStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_cells";
     private static final String QUARANTINED = "quarantined";
 
     private final Map<Integer, CellQuarantine> quarantined = new LinkedHashMap<>();
 
-    public static SavedData.Factory<CellStateStore> factory() {
-        return new SavedData.Factory<>(CellStateStore::new, CellStateStore::load, DataFixTypes.LEVEL);
-    }
-
     public static CellStateStore get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, CellStateStore::new, CellStateStore::load, FILE_ID);
     }
 
     /** Every quarantined cell, by index. */
@@ -47,11 +34,8 @@ public final class CellStateStore extends SavedData {
     }
 
     /**
-     * Puts a cell out of circulation, writing it to disk immediately.
-     *
-     * <p>Flushed rather than left dirty for the same reason a run checkpoint is: the failure that
-     * caused the quarantine is exactly the kind of event a crash tends to follow, and a quarantine
-     * lost in that crash hands a dirty cell to the next run.
+     * Puts a cell out of circulation, flushing at once: a quarantine lost in a crash would hand a dirty cell to the
+     * next run.
      */
     public void quarantine(MinecraftServer server, CellQuarantine entry) {
         quarantined.put(entry.cell(), entry);

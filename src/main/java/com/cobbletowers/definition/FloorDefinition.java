@@ -10,18 +10,12 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One floor: which opponents it draws from, and any rules that differ from the tower's.
- *
- * <p>Implements {@link FloorView} directly rather than being copied into one: the record is already
- * immutable and its accessors are the view's methods, so a second type would only be a chance for
- * the two to disagree.
- *
+ * One floor: its opponent pool and any rules that differ from the tower's. Implements {@link FloorView} directly.
  * @param rulesetOverride optional, for a floor that bends the tower's rules
- * @param modifierIds     reserved for P8; parsed and carried, never resolved here
- * @param layout          what to paste and where the anchors are; absent on content written before
- *                        the arenas existed, which loads but cannot be prepared
- * @param bossPoolId      the bosses this floor may finish with; absent on a milestone floor, which
- *                        uses the milestone's handpicked definition instead
+ * @param modifierIds reserved for P8; carried, not resolved here
+ * @param layout what to paste and where the anchors are; absent on old content, which loads but cannot be prepared
+ * @param bossPoolId the bosses this floor may finish with; absent on a milestone floor, which uses the milestone's
+ *     handpicked definition
  */
 public record FloorDefinition(
         ResourceLocation id,

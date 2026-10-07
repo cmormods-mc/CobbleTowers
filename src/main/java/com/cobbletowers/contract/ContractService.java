@@ -22,9 +22,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Contracts at run time (P32c): hands every player the day's and week's contracts, moves their progress as tower events arrive,
- * and pays the small reward once on completion. The draw ({@link ContractSchedule}) and the progress rules
- * ({@link ContractRules}) are pure; this part knows a server.
+ * Contracts at run time (P32c): hands out the day's and week's contracts, moves progress on tower events and pays the
+ * reward once. The draw ({@link ContractSchedule}) and progress rules ({@link ContractRules}) are pure.
  */
 public final class ContractService {
 
@@ -123,9 +122,12 @@ public final class ContractService {
         return false;
     }
 
-    // ---- rerolling ---------------------------------------------------------------------------------------------------
+    // ---- rerolling
+    // ---------------------------------------------------------------------------------------------------
 
-    /** Rerolls one slot of one period for this player; one reroll per period, and a finished slot cannot be rerolled. */
+    /**
+     * Rerolls one slot of one period for this player; one reroll per period, and a finished slot cannot be rerolled.
+     */
     public static String reroll(MinecraftServer server, UUID player, Period period, int slot) {
         LocalDate today = TrialService.today();
         TowerContractStore store = TowerContractStore.get(server);
@@ -144,7 +146,8 @@ public final class ContractService {
                 .orElse("a new contract") + ". Progress on the old one is gone.";
     }
 
-    // ---- words -------------------------------------------------------------------------------------------------------
+    // ---- words
+    // -------------------------------------------------------------------------------------------------------
 
     /** The lines of {@code /tower contracts}. */
     public static List<String> describe(MinecraftServer server, UUID player) {

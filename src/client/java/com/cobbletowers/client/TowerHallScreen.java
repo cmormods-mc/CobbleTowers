@@ -26,7 +26,8 @@ public final class TowerHallScreen extends TowerMenuScreen {
     private int page, detailPage;
     private long requested;
     private String notice="";
-    // The Progress tab's battle tracks (P37): arrive from the server after opening the tab; without them the old cards show.
+    // The Progress tab's battle tracks (P37): arrive from the server after opening the tab; without them the old
+    // cards show.
     private TrackStatePayload tracks;
     private long tracksAt;
     private boolean records;
@@ -165,7 +166,10 @@ public final class TowerHallScreen extends TowerMenuScreen {
         return Math.max(1,millis/60_000L)+" min";
     }
 
-    /** The lane's header (title, subtitle, progress, and the season's days-left box) and the selected tile's detail panel. */
+    /**
+     * The lane's header (title, subtitle, progress, and the season's days-left box) and the selected tile's detail
+     * panel.
+     */
     private void drawTracks(GuiGraphics g,int x,int y,int w){
         var data=laneData();boolean season=laneKind().equals("season");
         TowerUi.panel(g,x,y,w,28,theme.accent);

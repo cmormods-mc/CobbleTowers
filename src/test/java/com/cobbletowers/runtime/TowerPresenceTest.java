@@ -11,12 +11,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * The watchdog's verdict, decided from a clock rather than from a sleep.
- *
- * <p>This is the whole of TDS #59's rule. A test that had to wait ten minutes to see it would never
- * be run, which is why the judgement was written as a function of readings in the first place.
- */
+/** The watchdog's verdict (TDS #59), decided from a clock rather than a sleep. */
 class TowerPresenceTest {
 
     private static final long NOW = 1_726_000_000_000L;

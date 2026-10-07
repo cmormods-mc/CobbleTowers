@@ -34,13 +34,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The daily and weekly trials at run time (P32): which trial it is today, who has attempted it, and what a finished attempt is
- * worth. The rules it applies ({@link TrialSchedule}, {@link TrialScoring}, {@link StreakRules}) are pure; this part knows a
- * server.
- *
- * <p>A trial is an ordinary run on a real tower with a fixed seed, playlist, mutators and enemy level, limited to the trial's
- * floors. The first run a player <b>starts</b> at a trial is their one scored attempt; any later run is practice and does not
- * post. {@link #onTransition} judges a trial run when it ends.
+ * The daily and weekly trials at run time (P32): which trial it is, who attempted it and what an attempt is worth. A
+ * trial is an ordinary run with a fixed seed, playlist, mutators and enemy level. The first run a player starts is
+ * the scored attempt; later ones are practice. {@link #onTransition} judges a trial run when it ends.
  */
 public final class TrialService {
 
@@ -56,9 +52,12 @@ public final class TrialService {
         ServerLifecycleEvents.SERVER_STARTING.register(server -> RHYTHM = TrialConfig.load());
     }
 
-    // ---- what day it is ----------------------------------------------------------------------------------------------
+    // ---- what day it is
+    // ----------------------------------------------------------------------------------------------
 
-    /** The trial day: the real one, unless an operator pinned it (a test seam, since a test cannot wait for tomorrow). */
+    /**
+     * The trial day: the real one, unless an operator pinned it (a test seam, since a test cannot wait for tomorrow).
+     */
     public static LocalDate today() {
         return DAY_OVERRIDE.orElseGet(() -> TrialClock.dayOf(System.currentTimeMillis(), RHYTHM));
     }
@@ -76,7 +75,8 @@ public final class TrialService {
         return TrialPoolRegistry.ofKind(kind).map(pool -> TrialSchedule.of(pool, today()));
     }
 
-    // ---- attempts ----------------------------------------------------------------------------------------------------
+    // ---- attempts
+    // ----------------------------------------------------------------------------------------------------
 
     /** Whether a run of these players would be a scored attempt: none of them has used this trial's attempt. */
     public static boolean wouldBeScored(MinecraftServer server, List<UUID> players, String instanceId) {
@@ -97,9 +97,13 @@ public final class TrialService {
         store.checkpoint(server);
     }
 
-    // ---- an attempt ends ---------------------------------------------------------------------------------------------
+    // ---- an attempt ends
+    // ---------------------------------------------------------------------------------------------
 
-    /** The transition a run just made; a trial run reaching an end state is judged here, before mastery drops its stats. */
+    /**
+     * The transition a run just made; a trial run reaching an end state is judged here, before mastery drops its
+     * stats.
+     */
     public static void onTransition(MinecraftServer server, UUID runId, RunState from, RunState to, long now) {
         try {
             if (!to.isTerminal()) return;
@@ -187,7 +191,10 @@ public final class TrialService {
                 score, rank, total);
     }
 
-    /** Records a qualifying day for one player: the streak, a freeze earned or spent, and any milestone's one-time reward. */
+    /**
+     * Records a qualifying day for one player: the streak, a freeze earned or spent, and any milestone's one-time
+     * reward.
+     */
     private static List<String> advanceStreak(MinecraftServer server, TowerTrialStore store, UUID player, long epochDay) {
         StreakRules.Outcome outcome = StreakRules.qualify(store.streakOf(player), epochDay);
         if (outcome.alreadyCounted()) return List.of();
@@ -225,7 +232,8 @@ public final class TrialService {
         }
     }
 
-    // ---- boards ------------------------------------------------------------------------------------------------------
+    // ---- boards
+    // ------------------------------------------------------------------------------------------------------
 
     /** Daily boards are kept for a week and weekly ones for eight; older ones are dropped. */
     private static void pruneOldBoards(TowerLeaderboardStore boards) {
@@ -250,7 +258,8 @@ public final class TrialService {
         return false;
     }
 
-    // ---- words -------------------------------------------------------------------------------------------------------
+    // ---- words
+    // -------------------------------------------------------------------------------------------------------
 
     /** What a player sees for a trial: what it is, their attempt, and for the daily their streak. */
     public static List<String> describe(MinecraftServer server, UUID player, Kind kind) {
@@ -292,7 +301,10 @@ public final class TrialService {
         return lines;
     }
 
-    /** One line for the login summary: today's daily trial, whether it is done, and the streak. Empty when there is no daily trial. */
+    /**
+     * One line for the login summary: today's daily trial, whether it is done, and the streak. Empty when there is no
+     * daily trial.
+     */
     public static Optional<String> summaryLine(MinecraftServer server, UUID player) {
         Optional<Instance> found = current(Kind.DAILY);
         if (found.isEmpty()) return Optional.empty();

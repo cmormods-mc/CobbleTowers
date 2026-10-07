@@ -7,12 +7,8 @@ import java.util.UUID;
 import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * Tells AscensionLib about the enemies a floor puts up, so its players can spend a Scouter on them. Reached by
- * reflection like {@link AscensionLibRewards}: the library is optional, and the contract is two static methods on
- * {@code com.ascensionlib.AscensionEncounters} taking only {@code java.*} types.
- *
- * <p>Fire and forget. Scouting is a convenience, so a failure is logged and never touches a floor, and nothing is
- * queued or retried: an enemy that was not declared simply cannot be scouted.
+ * Tells AscensionLib about a floor's enemies so its players can spend a Scouter on them. Reached by reflection
+ * ({@code com.ascensionlib.AscensionEncounters}). Fire and forget: a failure is logged and never touches a floor.
  */
 public final class AscensionLibScouting {
 
@@ -57,8 +53,8 @@ public final class AscensionLibScouting {
     }
 
     /**
-     * Arms these players' next battle to fight with an encounter's declared enemies (their ascension effects then act), or
-     * with no enemy effects at all when {@code encounterId} is null. Always pair with {@link #disarm}; see {@link #armed}.
+     * Arms these players' next battle to fight an encounter's declared enemies (their ascension effects then act), or
+     * no enemy effects when {@code encounterId} is null. Pair with {@link #disarm}; see {@link #armed}.
      */
     public static void arm(Collection<UUID> players, String encounterId) {
         if (!resolve() || arm == null) return;
@@ -78,7 +74,10 @@ public final class AscensionLibScouting {
         }
     }
 
-    /** Runs {@code start} with these players armed for {@code encounterId} (null: explicitly native), always disarming. */
+    /**
+     * Runs {@code start} with these players armed for {@code encounterId} (null: explicitly native), always
+     * disarming.
+     */
     public static <T> T armed(Collection<UUID> players, String encounterId, java.util.function.Supplier<T> start) {
         arm(players, encounterId);
         try {

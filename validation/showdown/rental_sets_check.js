@@ -1,11 +1,7 @@
 #!/usr/bin/env node
-// Checks every rental set (P33) against the real data it will meet:
-//
-//   node validation/showdown/rental_sets_check.js --showdown-dir <rig>/showdown --cobblemon-jar <Cobblemon.jar>
-//
-// For each set: the species exists in Cobblemon's own species files, Showdown knows the species, the ability is one the species can
-// have, every move exists and the species (or something it evolves from) can learn it, the held item is a Cobblemon item, and the
-// EVs are legal. A set that fails here would build wrongly (or not at all) in game, which is a bad way to find out.
+// Checks every rental set (P33) against real data: node validation/showdown/rental_sets_check.js --showdown-dir
+// <rig>/showdown --cobblemon-jar <Cobblemon.jar>. Per set: species, ability, moves, held item and EVs must all be
+// legal.
 
 const fs = require('fs');
 const path = require('path');

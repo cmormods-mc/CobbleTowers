@@ -159,9 +159,7 @@ class RunMigrationsTest {
     @Test
     @DisplayName("every version the build claims to support has a complete path to the current one")
     void theChainHasNoGaps() {
-        // The invariant that matters when version 2 arrives: claiming to read a version and having
-        // no step for it is the failure this catches, on the day the step is forgotten rather than
-        // on the day a player's run will not load.
+        // Claiming to read a version with no step for it is caught the day the step is forgotten.
         for (int version = RunMigrations.OLDEST_SUPPORTED; version <= PersistedRun.SCHEMA_VERSION; version++) {
             assertTrue(RunMigrations.canRead(version), "no migration path from schema_version " + version);
         }

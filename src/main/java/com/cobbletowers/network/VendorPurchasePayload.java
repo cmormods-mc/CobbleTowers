@@ -9,10 +9,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A request to buy one vendor service for {@code targetPlayerId} (TDS #18: "may pay for recovery
- * targeted at teammates" -- the payer and the target are independent, not assumed to be the same
- * player). The server re-validates everything: affordability, eligibility and the run's own state are
- * never trusted from the client, the same posture {@link CycleTeammatePayload} already takes.
+ * A request to buy one vendor service for {@code targetPlayerId} (TDS #18: payer and target are independent). The
+ * server re-validates affordability, eligibility and run state.
  */
 public record VendorPurchasePayload(ResourceLocation serviceId, UUID targetPlayerId) implements CustomPacketPayload {
 

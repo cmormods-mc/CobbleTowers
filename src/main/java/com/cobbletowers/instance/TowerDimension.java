@@ -9,15 +9,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 
 /**
- * The one controlled dimension every cell lives in (TDS #6).
- *
- * <p>Declared as datapack data in this mod's own jar --
- * {@code data/cobbletowers/dimension_type/tower.json} and {@code data/cobbletowers/dimension/tower.json}
- * -- rather than registered in code, which is how Minecraft has taken dimensions since 1.19.
- *
- * <p><b>The id is effectively permanent.</b> Adding a datapack dimension to an existing world is
- * supported; removing one from a world that has used it is not clean, because the world keeps
- * references to a level that no longer exists. So this string is not something to rename later.
+ * The one dimension every cell lives in (TDS #6), declared as datapack data in this jar ({@code
+ * data/cobbletowers/dimension_type/tower.json}, {@code dimension/tower.json}). The id is effectively permanent:
+ * removing a used dimension from a world is not clean.
  */
 public final class TowerDimension {
 
@@ -27,11 +21,8 @@ public final class TowerDimension {
     private TowerDimension() {}
 
     /**
-     * The tower level, or null when it is missing.
-     *
-     * <p>Null is possible in exactly one situation worth handling: someone removed or broke the
-     * datapack entry. Everything here treats that as "no instances can be allocated" rather than
-     * throwing, so a server with a damaged datapack still starts and still says why.
+     * The tower level, or null if the datapack entry is missing or broken; callers treat that as "no instances can be
+     * allocated".
      */
     public static ServerLevel level(MinecraftServer server) {
         ServerLevel level = server.getLevel(LEVEL);

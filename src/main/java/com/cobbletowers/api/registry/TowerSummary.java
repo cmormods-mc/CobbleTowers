@@ -5,14 +5,10 @@ import java.util.Objects;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What a loaded tower is, without exposing how it is stored.
- *
- * <p>{@code revision} is the author's number and {@code contentDigest} is derived from the file, so a
- * run can pin both: the digest tells "edited since this run started" apart from "the same content,
- * renumbered" (TDS #40).
- *
- * @param floorIds        every floor in order
- * @param milestoneFloors the 1-based indices of milestone floors, ascending
+ * What a loaded tower is, without how it is stored. {@code revision} is the author's number and {@code contentDigest}
+ * is derived from the file, so a run can pin both (TDS #40).
+ * @param floorIds every floor in order
+ * @param milestoneFloors 1-based indices of milestone floors, ascending
  */
 public record TowerSummary(
         ResourceLocation id,

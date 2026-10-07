@@ -8,8 +8,8 @@ import java.time.temporal.IsoFields;
 import java.util.Locale;
 
 /**
- * What day it is for the trials (P32): a configured time zone and a reset hour, so "today" starts at a quiet hour for the
- * community rather than at midnight UTC. Pure: the instant is passed in, never read, so every rule here is testable.
+ * What day it is for the trials (P32): a configured zone and reset hour, so "today" starts at a quiet hour. Pure; the
+ * instant is passed in.
  */
 public final class TrialClock {
 
@@ -37,7 +37,10 @@ public final class TrialClock {
         return day.toString();
     }
 
-    /** The ISO week of a trial day, as {@code 2026-w41}: lower case so it is a legal id path. The week turns over on Monday's reset. */
+    /**
+     * The ISO week of a trial day, as {@code 2026-w41}: lower case so it is a legal id path. The week turns over on
+     * Monday's reset.
+     */
     public static String weekKey(LocalDate day) {
         return String.format(Locale.ROOT, "%04d-w%02d", day.get(IsoFields.WEEK_BASED_YEAR), day.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR));
     }

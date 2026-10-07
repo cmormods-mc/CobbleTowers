@@ -17,8 +17,8 @@ import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 /**
- * Loads trial pools (P32) from {@code data/<namespace>/cobbletowers/trial_pools/*.json}. The same rule as every registry here:
- * a malformed file is skipped with a message that names it, never thrown.
+ * Loads trial pools (P32) from {@code data/<namespace>/cobbletowers/trial_pools/*.json}. A malformed file is skipped
+ * with a message naming it.
  */
 public final class TrialPoolRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, TrialPoolDefinition>>
@@ -33,7 +33,10 @@ public final class TrialPoolRegistry
         return List.copyOf(LOADED.values());
     }
 
-    /** The pool for a kind: the first loaded one of that kind (a server with several should name one; the default pack ships one each). */
+    /**
+     * The pool for a kind: the first loaded one of that kind (a server with several should name one; the default pack
+     * ships one each).
+     */
     public static Optional<TrialPoolDefinition> ofKind(TrialPoolDefinition.Kind kind) {
         return LOADED.values().stream().filter(pool -> pool.kind() == kind).findFirst();
     }

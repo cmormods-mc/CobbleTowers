@@ -7,16 +7,9 @@ import java.util.OptionalInt;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * What happens to runs that were in flight when the server stopped.
- *
- * <p>A run that was live has no instance any more -- the world came back without one -- so it is
- * parked in RECOVERY_REQUIRED, keeping the checkpoint it last committed. That is the deterministic
- * legal outcome TDS #28 asks for, and it is never reported as a player loss: the run was not lost,
- * it is waiting.
- *
- * <p>Parking goes through the ordinary transition service rather than assigning a state directly,
- * so recovery obeys the same table, the same key rules and the same write policy as every other
- * move. Runs already terminal or already parked are left alone.
+ * What happens to runs in flight when the server stopped: they have no instance any more, so they are parked in
+ * RECOVERY_REQUIRED keeping their last checkpoint (TDS #28). That is waiting, not a loss. Parking goes through the
+ * transition service; terminal and already-parked runs are left alone.
  */
 public final class RunRecovery {
 
@@ -32,9 +25,8 @@ public final class RunRecovery {
                     RunTransitionService.apply(server, run.runId(), RunEvent.TECHNICAL_FAILURE, now);
             if (outcome instanceof RunTransitionService.Move) {
                 parked++;
-                // Whatever was fighting when the server went down is still standing in the cell.
-                // Left there, it is found when the run finally releases the cell, and the cell is
-                // quarantined for contents this run put there and nobody cleaned up.
+                // Whatever was fighting is still standing in the cell; sweep it now or the cell is quarantined at
+                // release.
                 if (cell.isPresent()) RecoverySweep.schedule(server, run.runId(), cell.getAsInt());
             } else if (outcome instanceof RunTransitionService.Refusal refusal) {
                 // Reported rather than retried: a run the machine will not park is one a person

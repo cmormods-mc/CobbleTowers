@@ -30,12 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Development tooling, inert unless the environment variable {@code COBBLETOWERS_SCREENSHOTS} names a directory: opens each of this
- * mod's screens with sample data and saves a picture of it, then quits. It exists because the screens cannot otherwise be seen
- * without a person at a client: run the dev client with the variable set ({@code validation/client_screens.py}) and read the pictures.
- *
- * <p>It draws what the screens draw and presses what a player would press (a click on a pack, on two cards), and decides
- * nothing about the game. A production client never sets the variable, so none of this runs there.
+ * Development tooling, inert unless {@code COBBLETOWERS_SCREENSHOTS} names a directory: opens each screen with sample
+ * data, saves a picture and quits ({@code validation/client_screens.py}). It presses what a player would and decides
+ * nothing.
  */
 public final class ScreenshotHarness {
 
@@ -107,7 +104,8 @@ public final class ScreenshotHarness {
         STEPS.add(new Step(waitMs, label, action));
     }
 
-    // ---- the script --------------------------------------------------------------------------------------------------
+    // ---- the script
+    // --------------------------------------------------------------------------------------------------
 
     private static void featureScript() {
         var parent=new TowerHallScreen(new com.cobbletowers.network.TowerHallStatePayload(List.of(),List.of(),
@@ -180,7 +178,9 @@ public final class ScreenshotHarness {
     }
 
 
-    /** Stand-in battle tracks for pictures: a mastery lane at level 8 (35 levels) and a season lane at step 4 of 12. */
+    /**
+     * Stand-in battle tracks for pictures: a mastery lane at level 8 (35 levels) and a season lane at step 4 of 12.
+     */
     private static com.cobbletowers.network.TrackStatePayload sampleTracks() {
         var tide = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge");
         var root = ResourceLocation.fromNamespaceAndPath("cobbletowers", "rootvale");
@@ -214,7 +214,8 @@ public final class ScreenshotHarness {
                 new com.cobbletowers.network.TrackStatePayload.Lane(true, "Season 1: The Rising Tide", "300 points", 4, 40, 75, endsIn, "ENDS IN", season), "");
     }
 
-    // ---- modifier selection stages (the approved oak treatment) -----------------------------------------------------------
+    // ---- modifier selection stages (the approved oak treatment)
+    // -----------------------------------------------------------
 
     private static IntermissionStatePayload.Card sampleCard(String id, String name, int votes, int risk, String theme, String... lines) {
         return new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", id), name, votes, risk, theme, List.of(lines));
@@ -247,7 +248,10 @@ public final class ScreenshotHarness {
         throw new IllegalStateException("no button " + label);
     }
 
-    /** Stand-in move data for pictures (the title screen has none loaded): a type and a category from the id, so every gem appears. */
+    /**
+     * Stand-in move data for pictures (the title screen has none loaded): a type and a category from the id, so every
+     * gem appears.
+     */
     private static RentalDraftPayload.Move sampleMove(String id) {
         int h = Math.abs(id.hashCode());
         return new RentalDraftPayload.Move(id, ByzantineCardFace.TYPES.get(h % ByzantineCardFace.TYPES.size()),
@@ -393,7 +397,8 @@ public final class ScreenshotHarness {
         });
         add(300, "message", () -> featureShot("rental_11_message"));
 
-        // The play screen as a host in Rental mode, then as a plain host; and the mastery screen with the real achievements.
+        // The play screen as a host in Rental mode, then as a plain host; and the mastery screen with the real
+        // achievements.
         ResourceLocation tower = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge");
         List<PlayStatePayload.Tower> towers = List.of(
                 new PlayStatePayload.Tower(ResourceLocation.fromNamespaceAndPath("cobbletowers", "neutral"), "Challenger Tower"),
@@ -450,7 +455,8 @@ public final class ScreenshotHarness {
                 new ScoutingRevealPayload.Category("Boss", "Gyarados"),
                 new ScoutingRevealPayload.Category("Modifier", "Downpour"))))));
         add(600, "scouting shot", () -> featureShot("scouting_01_report"));
-        // The armor set tooltip (P25), over a piece of the set, as the server would describe it. The viewer wears nothing, so the
+        // The armor set tooltip (P25), over a piece of the set, as the server would describe it. The viewer wears
+        // nothing, so the
         // tiers show as locked; Shift (the checklist) cannot be held from here.
         add(0, "armor tooltip", () -> {
             ResourceLocation helmet = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge_helmet");

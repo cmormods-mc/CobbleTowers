@@ -8,10 +8,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What a spectator's HUD panel shows: the teammate they are currently following (TDS #25).
- *
- * <p>Sent whenever who they follow changes and whenever that followed teammate's own fight resolves,
- * so the panel never shows a stale fight.
+ * What a spectator's HUD panel shows: the teammate they follow (TDS #25). Sent when the followed player changes and
+ * when that teammate's fight resolves.
  */
 public record SpectatorPanelPayload(String teammateName, int remainingCount, int totalCount, int floorIndex,
                                      String runStateLabel) implements CustomPacketPayload {

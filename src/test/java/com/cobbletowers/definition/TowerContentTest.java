@@ -83,12 +83,8 @@ class TowerContentTest {
     @Test
     @DisplayName("a ruleset named after its tower does not take over the tower's digest")
     void digestsAreScopedToTheirFolder() {
-        // One reload loads all five folders into one digest map, towers first and rulesets after. A
-        // definition's id is its path below its folder, so towers/neutral.json and
-        // rulesets/neutral.json are both cobbletowers:neutral -- and a pack naming a ruleset after
-        // its tower is the obvious thing to do. Keyed by id alone the ruleset would win, and the
-        // tower would report a digest that does not change when the tower is edited, which is the
-        // one question the digest exists to answer.
+        // One reload puts all five folders in one digest map. Ids are paths below the folder, so towers/neutral.json
+        // and rulesets/neutral.json collide unless keyed by folder too.
         FloorDefinition one = floor(1, Optional.empty());
         Map<DefinitionKey, String> digests = new LinkedHashMap<>();
         digests.put(DefinitionKey.tower(id("neutral")), "tower-digest");

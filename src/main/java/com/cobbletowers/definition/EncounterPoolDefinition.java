@@ -9,13 +9,9 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The opponents a floor can draw, with weights.
- *
- * <p>Weighted rather than uniform so a themed tower can make its signature Pokemon common without
- * making everything else impossible (TDS #73). Nothing here draws from the pool: P5 owns that, and
- * it will draw from the run's seed so a restart cannot reroll an encounter (TDS #29).
- *
- * @param regionalPool reserved for P10; parsed and carried, never resolved here
+ * The opponents a floor can draw, weighted so a themed tower can make its signature Pokemon common (TDS #73). Drawing
+ * is {@code EncounterDraw}'s job, from the run seed (TDS #29).
+ * @param regionalPool a regional theme id; parsed and carried, resolved elsewhere
  */
 public record EncounterPoolDefinition(
         ResourceLocation id,
@@ -28,9 +24,8 @@ public record EncounterPoolDefinition(
 
     /**
      * One possible opponent.
-     *
-     * @param aspects     Cobblemon aspects, e.g. a regional form; empty for the base species
-     * @param levelOffset added to the encounter's level snapshot, so a pool can hold a tougher entry
+     * @param aspects Cobblemon aspects, e.g. a regional form; empty for the base species
+     * @param levelOffset added to the level snapshot
      */
     public record Entry(ResourceLocation species, List<String> aspects, int weight, int levelOffset) {
         public Entry {

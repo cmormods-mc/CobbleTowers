@@ -4,23 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The card shown at the end of a run (P32d), built from plain values so it can be read, tested and later drawn on a screen without
- * a server. {@link #lines} is the chat version; {@link #shareLine} is the single line a player can paste.
- *
- * @param tower          the tower's name
- * @param mode           the playlist or trial in words, empty for an ordinary run
- * @param outcome        how it ended: {@code completed}, {@code cashed out}, {@code wiped}, {@code abandoned}
- * @param floorsCleared  floors cleared in the run
- * @param ascension      the Ascension reached (0 for the base cycle)
- * @param activeMillis   time spent fighting
- * @param faints         player Pokemon that fainted
- * @param bestFlawlessRun the most floors cleared in a row with no faint
- * @param modifiers      the modifiers the run held, by name
- * @param purchases      vendor purchases made
- * @param score          the difficulty score, or the trial score when {@code trial} is set
- * @param trial          whether {@code score} is a trial score
- * @param achievements   achievements unlocked during the run, by name
- * @param streakLine     the daily streak line, empty if none
+ * The card shown at the end of a run (P32d), from plain values. {@link #lines} is the chat version and {@link
+ * #shareLine} the pasteable line.
+ * @param mode the playlist or trial in words, empty for ordinary
+ * @param outcome {@code completed}, {@code cashed out}, {@code wiped} or {@code abandoned}
+ * @param ascension reached (0 for base)
+ * @param activeMillis fighting time
+ * @param faints player Pokemon fainted
+ * @param bestFlawlessRun most floors in a row with no faint
+ * @param modifiers held, by name
+ * @param purchases vendor purchases
+ * @param score the difficulty score, or the trial score when {@code trial} is set
+ * @param achievements unlocked during the run, by name
+ * @param streakLine the daily streak line, empty if none
  */
 public record RunReport(String tower, String mode, String outcome, int floorsCleared, int ascension, long activeMillis, int faints,
                         int bestFlawlessRun, List<String> modifiers, int purchases, int score, boolean trial,

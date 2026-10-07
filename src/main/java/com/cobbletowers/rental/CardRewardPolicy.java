@@ -9,12 +9,9 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Whether a finished rental run earns real cards, and which (P33b). Pure: everything it needs is passed in, so every rule is a test.
- *
- * <p>The rules, in the order they are judged: the playlist must grant cards at all; the run must have <b>completed</b> (a cash-out, a
- * wipe and an abandon earn none); a trial run must be the scored attempt (a practice run cannot be farmed); the player must not have
- * used up the playlist's cards-per-day allowance; and the player must have run with Pokemon whose sets are still known. A card is made
- * for each of those Pokemon, never above the playlist's rarity cap.
+ * Whether a finished rental run earns real cards, and which (P33b). Pure. The playlist must grant cards, the run must
+ * have completed, a trial run must be the scored attempt, the daily allowance must remain and the sets must still be
+ * known. One card per Pokemon, up to the rarity cap.
  */
 public final class CardRewardPolicy {
 
@@ -36,11 +33,11 @@ public final class CardRewardPolicy {
     private CardRewardPolicy() {}
 
     /**
-     * @param completed     whether the run reached {@code COMPLETED}
-     * @param practiceTrial whether the run was a trial run that was not the player's scored attempt
-     * @param runsToday     how many completed runs have already earned this player cards today
-     * @param team          the Pokemon the player ran with, as the party journal recorded them
-     * @param sets          looks a set up by id, empty if it is no longer loaded
+     * @param completed the run reached {@code COMPLETED}
+     * @param practiceTrial a trial run that was not the scored attempt
+     * @param runsToday completed runs already rewarded today
+     * @param team the Pokemon the player ran with, per the party journal
+     * @param sets looks a set up by id, empty if no longer loaded
      */
     public static Decision decide(CardRewards config, boolean completed, boolean practiceTrial, int runsToday, List<LentCard> team,
                                   Function<String, Optional<RentalSetDefinition>> sets) {

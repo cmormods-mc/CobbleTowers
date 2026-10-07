@@ -8,10 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * The reason a participant's state is three axes rather than one enum: the facts occur together, and
- * a reconnect has to restore exactly what was left behind.
- */
+/** Why participant state is three axes: the facts occur together and a reconnect must restore what was left. */
 class ParticipantStateTest {
 
     @Test

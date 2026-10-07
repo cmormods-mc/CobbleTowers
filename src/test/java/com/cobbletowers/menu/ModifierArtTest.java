@@ -7,7 +7,10 @@ import com.cobbletowers.TestRuns;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/** A modifier card's scene key says only what the modifier does: art never implies an effect the definition does not have. */
+/**
+ * A modifier card's scene key says only what the modifier does: art never implies an effect the definition does not
+ * have.
+ */
 class ModifierArtTest {
 
     @Test

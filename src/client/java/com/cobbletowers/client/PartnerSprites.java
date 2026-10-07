@@ -11,10 +11,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 /**
- * The bundled Pokemon icons (48x32, CC0, from Cobblemon Cards; see {@code textures/gui/partners/SOURCES.md}), one per species.
- *
- * <p>An icon's canvas is not its picture: most have empty margins, and they differ. So a sprite is centred by the box of pixels it
- * actually draws, measured once when it is first needed, which is what keeps every Pokemon in the middle of its nimbus.
+ * The bundled Pokemon icons (48x32, CC0, from Cobblemon Cards; see {@code textures/gui/partners/SOURCES.md}).
+ * Canvases have uneven empty margins, so a sprite is centred by the box of pixels it draws, measured once on first
+ * use.
  */
 final class PartnerSprites {
     private PartnerSprites() {}
@@ -25,7 +24,10 @@ final class PartnerSprites {
     private static final Map<String, Optional<Info>> CACHE = new HashMap<>();
     private static ResourceManager cachedFor;
 
-    /** The species id a file is named by: letters and digits only, lower case ({@code mr_mime} and {@code mrmime} are one file). */
+    /**
+     * The species id a file is named by: letters and digits only, lower case ({@code mr_mime} and {@code mrmime} are
+     * one file).
+     */
     static String key(String species) {
         int colon = species.indexOf(':');
         String path = colon >= 0 ? species.substring(colon + 1) : species;
@@ -68,7 +70,10 @@ final class PartnerSprites {
         }
     }
 
-    /** Draws the species so that its pixels are centred on ({@code cx}, {@code cy}); a bronze crest if there is no icon for it. */
+    /**
+     * Draws the species so that its pixels are centred on ({@code cx}, {@code cy}); a bronze crest if there is no
+     * icon for it.
+     */
     static void draw(GuiGraphics g, String species, int cx, int cy) {
         Optional<Info> found = info(species);
         if (found.isEmpty()) {

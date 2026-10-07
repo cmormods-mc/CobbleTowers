@@ -9,11 +9,8 @@ import java.util.Map;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What a set bonus means, in words a player reads on a tooltip (P25).
- *
- * <p>The one place that turns a {@link SetBonus} into text, run on the server from the real bonus records and sent to
- * clients, so the tooltip is built from what the server will actually apply and a datapack's retuned numbers are
- * described correctly with no client change. Pure: no Minecraft registries, so every phrasing is a unit test.
+ * What a set bonus means in words, for tooltips (P25). The one place that turns a {@link SetBonus} into text, run
+ * server-side from the real records so datapack retunes are described correctly. Pure.
  */
 public final class SetBonusDescriber {
 
@@ -74,7 +71,8 @@ public final class SetBonusDescriber {
         return lines;
     }
 
-    // ---- player attributes ------------------------------------------------------------------------------------------
+    // ---- player attributes
+    // ------------------------------------------------------------------------------------------
 
     static String attributeLine(SetBonus.PlayerAttribute bonus) {
         String name = attributeName(bonus.attribute());
@@ -92,7 +90,8 @@ public final class SetBonusDescriber {
         return known != null ? known : titleCase(leaf.replace('_', ' '));
     }
 
-    // ---- battle effects ---------------------------------------------------------------------------------------------
+    // ---- battle effects
+    // ---------------------------------------------------------------------------------------------
 
     static String effectLine(JsonObject op) {
         String name = string(op, "op");
@@ -173,7 +172,8 @@ public final class SetBonusDescriber {
         return turns > 0 ? " " + lead + turns + (turns == 1 ? " turn" : " turns") : "";
     }
 
-    // ---- small helpers ------------------------------------------------------------------------------------------------
+    // ---- small helpers
+    // ------------------------------------------------------------------------------------------------
 
     private static String string(JsonObject op, String key) {
         JsonElement value = op.get(key);

@@ -8,8 +8,8 @@ import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 
 /**
- * A wooden/bronze button. Primary is burgundy, dark() is the chocolate secondary (navigation), and a selected button
- * shows the active tab face. Pressing draws one GUI pixel lower; the hitbox does not move.
+ * A wooden/bronze button: primary is burgundy, dark() the chocolate secondary, selected shows the tab face. Pressing
+ * draws one GUI pixel lower; the hitbox does not move.
  */
 public final class TowerButton extends Button {
     private boolean dark;
@@ -44,7 +44,8 @@ public final class TowerButton extends Button {
         if (hover && dark) PixelUi.brackets(g, x + 2, y + 2, w - 4, h - 4, TowerUi.BRONZE_LIGHT);
         int color = selected || (active && !dark) || hover ? TowerUi.TEXT : active ? TowerUi.MUTED : 0xFF8F7A5E;
         if (iconOnly && icon != null) {
-            // A square control with a picture and no words (the track's tower arrows): the picture is centred and nudged down when pressed.
+            // A square control with a picture and no words (the track's tower arrows): the picture is centred and
+            // nudged down when pressed.
             MenuIcons.draw(g, icon, x + (w - 16) / 2, y + (h - 16) / 2 + (pressed ? 1 : 0), 16);
             return;
         }

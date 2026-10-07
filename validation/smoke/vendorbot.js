@@ -1,7 +1,6 @@
-// A player that joins and right-clicks the nearest villager whenever stdin says "use".
-//
-// Used by vendor_npc_test.py (P28). Reach is the server's normal 6 blocks, so the test teleports this bot
-// next to the vendor first. mineflayer comes from the rig's node_modules via NODE_PATH.
+// A player that joins and right-clicks the nearest villager when stdin says "use" (vendor_npc_test.py, P28). Reach is
+// 6 blocks, so the test teleports the bot next to the vendor first. mineflayer comes from the rig's node_modules via
+// NODE_PATH.
 const mineflayer = require('mineflayer');
 
 const [, , username, port] = process.argv;

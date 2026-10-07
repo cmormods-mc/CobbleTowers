@@ -21,8 +21,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * The season trims (P36b), read from the real resource files: every authored season has a complete trim, so the step-30 finale can never
- * hand out a template whose pattern is missing, and the tower armor and the templates are wired into the smithing table's tags.
+ * The season trims (P36b), read from the real resources: every authored season has a complete trim, and the armor and
+ * templates are in the smithing table's tags.
  */
 class SeasonTrimAssetsTest {
 

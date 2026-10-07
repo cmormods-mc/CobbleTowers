@@ -20,27 +20,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Development tooling, inert unless the environment variable {@code COBBLETOWERS_REMOTE} names a directory: lets a test script drive a
- * real client that is connected to a real server (see {@code validation/client_e2e.py}). The script appends one command per line to
- * {@code commands.txt} in that directory; this runs them in order, one per client tick at most, and appends the line number to
- * {@code ack.txt} when each is done.
- *
- * <pre>
- * cmd tower draft        sends /tower draft as the player
- * press Keep these two   presses the button of the open screen whose label contains the text
- * click 213 120          clicks the open screen at a GUI position
- * center                 clicks the middle of the open screen
- * card 3                 clicks card 3 (0-based) of the open rental pack screen
- * inventory              opens the player's inventory screen; close closes the open screen
- * uncap                 removes vsync and the frame limit (frame-time runs)
- * hover card|button|none makes a widget of the open screen draw as hovered
- * sample begin NAME      records frame times under NAME until sample end; report writes frametime.txt
- * shot name              saves a picture of the frame as name.png
- * wait 800               waits that many milliseconds before the next command
- * quit                   closes the client
- * </pre>
- *
- * <p>It presses what a player would press and decides nothing. A production client never sets the variable, so none of it runs.
+ * Development tooling, inert unless {@code COBBLETOWERS_REMOTE} names a directory: runs commands a test script
+ * ({@code validation/client_e2e.py}) appends to {@code commands.txt}, one per tick, and appends each line number to
+ * {@code ack.txt}. It presses what a player would and decides nothing.
  */
 public final class ClientRemote {
 
@@ -146,7 +128,8 @@ public final class ClientRemote {
                         minecraft.screen == null ? 0 : minecraft.screen.width, minecraft.screen == null ? 0 : minecraft.screen.height);
             }
             case "widget" -> {
-                // widget <class name fragment>: clicks the centre of the first widget whose class name contains the text.
+                // widget <class name fragment>: clicks the centre of the first widget whose class name contains the
+                // text.
                 if (minecraft.screen != null) for (GuiEventListener child : minecraft.screen.children()) {
                     if (child instanceof AbstractWidget w && w.getClass().getName().contains(rest.trim())) {
                         double x = w.getX() + w.getWidth() / 2.0, y = w.getY() + w.getHeight() / 2.0;
@@ -160,7 +143,8 @@ public final class ClientRemote {
             case "uncap" -> FrameSampler.uncap();
             case "hover" -> FrameSampler.hoverKind(rest.trim());
             case "sample" -> {
-                // sample begin <phase> / sample end: frame-time recording (FrameSampler); report writes frametime.txt.
+                // sample begin <phase> / sample end: frame-time recording (FrameSampler); report writes
+                // frametime.txt.
                 if (rest.startsWith("begin ")) FrameSampler.begin(rest.substring(6).trim());
                 else FrameSampler.end();
             }

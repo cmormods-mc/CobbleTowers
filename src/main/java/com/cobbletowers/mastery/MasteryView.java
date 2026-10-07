@@ -7,10 +7,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
-/**
- * Words for mastery and leaderboards (P31), pure so the chat commands and the screens say the same thing and a test can read
- * them. Nothing here touches a server.
- */
+/** Words for mastery and leaderboards (P31), pure so chat and screens say the same thing. */
 public final class MasteryView {
 
     private MasteryView() {}

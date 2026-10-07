@@ -8,20 +8,14 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One tower: which floors, in which order, under which rules.
- *
- * <p>Validated in the constructor, so an invalid tower cannot exist as an object -- the registry
- * catches the exception and skips the file. {@code schemaVersion} is the shape of this JSON and
- * {@code revision} is the author's own number for the content; a run records both, plus the digest
- * the registry computes, so "edited since this run started" is distinguishable from "renumbered"
- * (TDS #40).
- *
- * @param floorIds     every floor, in play order
- * @param milestoneIds milestone definitions this tower uses; their floor indices must exist
- * @param regionalTheme reserved for P10; parsed and carried, never resolved here
- * @param ascension    whether the tower continues past its last floor into harder cycles (P30) instead of ending there
- * @param scoutingProfile which reveal-threshold profile (P12) gates opponent info for this tower;
- *                        empty means everything reveals naturally (TDS #49's baseline)
+ * One tower: floors in order under a ruleset. Validated in the constructor, so an invalid tower cannot exist. A run
+ * records {@code schemaVersion}, {@code revision} and the registry's digest, so an edit is distinguishable from a
+ * renumber (TDS #40).
+ * @param floorIds every floor, in play order
+ * @param milestoneIds milestone definitions used; their floor indices must exist
+ * @param regionalTheme a regional theme id; carried, resolved elsewhere
+ * @param ascension whether the tower continues past its last floor into harder cycles (P30)
+ * @param scoutingProfile the reveal-threshold profile (P12); empty means everything reveals (TDS #49)
  */
 public record TowerDefinition(
         ResourceLocation id,
@@ -78,8 +72,8 @@ public record TowerDefinition(
     }
 
     /**
-     * The floor of the tower a run floor is, for looking content up. Run floors past the last one are later cycles of an
-     * ascending tower; for any other tower there is nothing past the last floor, so the number is returned as it is.
+     * The tower floor a run floor is, for content lookups. Run floors past the last are later cycles of an ascending
+     * tower; otherwise returned as is.
      */
     public int contentFloor(int runFloor) {
         return ascension ? com.cobbletowers.ascension.AscensionPolicy.towerFloorOf(runFloor, floorCount()) : runFloor;

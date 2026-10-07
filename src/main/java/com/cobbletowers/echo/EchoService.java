@@ -22,8 +22,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Echoes at run time (P35): records a top-ten regional team as an Echo, drops Echoes that fall out of the top ten, and fills
- * an opponent slot with one of an Echo's Pokemon. The rules are {@link EchoPolicy}; this is the part that knows a server.
+ * Echoes at run time (P35): records a top-ten regional team as an Echo, drops Echoes that leave the top ten and fills
+ * an opponent slot with an Echo's Pokemon. Rules are in {@link EchoPolicy}.
  */
 public final class EchoService {
 
@@ -36,14 +36,15 @@ public final class EchoService {
     }
 
     /**
-     * Called after a run's boards change: records an Echo for each online, not-opted-out player of a run that is in the top
-     * ten of its tower, then drops Echoes whose run is no longer there.
+     * Called after a run's boards change: records an Echo for each online, non-opted-out player of a top-ten run,
+     * then drops Echoes whose run is gone.
      */
     public static void refresh(MinecraftServer server, PersistedRun run) {
         boolean trial = run.options().trial().isPresent();
         if (!EchoPolicy.applies(regional(run.towerId()), trial)) return;
         TowerEchoStore echoes = TowerEchoStore.get(server);
-        // The season on view (P36c): the running one, or the one just ended in an off-season; 0 with seasons off or not yet begun.
+        // The season on view (P36c): the running one, or the one just ended in an off-season; 0 with seasons off or
+        // not yet begun.
         int season = com.cobbletowers.season.Seasons.viewNumber().orElse(0);
         Set<UUID> top = EchoPolicy.topRuns(TowerLeaderboardStore.get(server).all(), run.towerId(),
                 season > 0 ? com.cobbletowers.season.SeasonSchedule.idOf(season) : "");
@@ -88,7 +89,9 @@ public final class EchoService {
                 floorIndex, ordinal);
     }
 
-    /** Whether an Echo Duel room can be offered now: a regional run outside a trial, with someone else's Echo to meet. */
+    /**
+     * Whether an Echo Duel room can be offered now: a regional run outside a trial, with someone else's Echo to meet.
+     */
     public static boolean duelAvailable(MinecraftServer server, PersistedRun run, int floorIndex) {
         return duelOpponent(server, run, floorIndex, 0).isPresent();
     }

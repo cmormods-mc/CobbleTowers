@@ -6,15 +6,10 @@ import java.util.Objects;
 import net.minecraft.nbt.CompoundTag;
 
 /**
- * The last point a run was committed at: the idempotency key it was committed under, and the state
- * it was in.
- *
- * <p>Both or neither. A key alone says a commit happened but not what to come back to, which is the
- * one thing recovery needs; a state alone cannot be recognised as already applied when the same move
- * arrives twice. Keeping them in one record means they cannot be written apart.
- *
- * @param key   from {@code Transition.keyTemplate}, with the run and floor filled in
- * @param state the run's state once that move had been applied -- where a resume returns to
+ * The last point a run was committed at: its idempotency key and the state it was in. Both or neither: a key alone
+ * does not say what to return to, a state alone cannot be recognised as already applied.
+ * @param key from {@code Transition.keyTemplate} with run and floor filled in
+ * @param state the run's state once that move applied; where a resume returns to
  */
 public record RunCheckpoint(String key, RunState state) {
 

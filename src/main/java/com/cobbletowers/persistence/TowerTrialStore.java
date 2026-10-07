@@ -12,16 +12,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * Each player's trial history (P32): which trials they have attempted and how it went, and their daily streak. Per player,
- * never per run, so it outlives every run. An attempt is recorded when a scored run <b>starts</b>, so abandoning it does not
- * give the player another go.
+ * Each player's trial history (P32): attempts and outcomes, and the daily streak. Per player, outliving any run. An
+ * attempt is recorded when a scored run starts, so abandoning gives no second go.
  */
-public final class TowerTrialStore extends SavedData {
+public final class TowerTrialStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_trials";
     /** Attempts older than the most recent this many are dropped; a trial's board is long gone by then. */
@@ -39,13 +35,8 @@ public final class TowerTrialStore extends SavedData {
 
     private final Map<UUID, Player> players = new LinkedHashMap<>();
 
-    public static SavedData.Factory<TowerTrialStore> factory() {
-        return new SavedData.Factory<>(TowerTrialStore::new, TowerTrialStore::load, DataFixTypes.LEVEL);
-    }
-
     public static TowerTrialStore get(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerTrialStore::new, TowerTrialStore::load, FILE_ID);
     }
 
     public Optional<Attempt> attemptOf(UUID player, String instanceId) {
@@ -103,10 +94,6 @@ public final class TowerTrialStore extends SavedData {
     /** An operator's tool: forgets a player's whole trial history. */
     public void reset(UUID player) {
         if (players.remove(player) != null) setDirty();
-    }
-
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     static TowerTrialStore load(CompoundTag tag, HolderLookup.Provider registries) {

@@ -11,12 +11,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * The reward reveal the design doc replaces P9's chat-only stopgap with (TDS #9's grants shown, not
- * chosen).
- *
- * <p>Read-only: a grant is never a player choice ("No player choice in what is granted",
- * {@code docs/design/P9-economy.md}), so there is nothing here to drag, click or confirm beyond
- * dismissing the screen once it has been read.
+ * The reward reveal (TDS #9): read-only, since a grant is never a player choice ({@code docs/design/P9-economy.md}).
  */
 public final class RewardRevealScreen extends TowerScreen {
 
@@ -40,7 +35,8 @@ public final class RewardRevealScreen extends TowerScreen {
     @Override public void render(GuiGraphics g,int mx,int my,float dt){
         super.render(g,mx,my,dt);int w=Math.min(250,width-40),h=Math.min(145,height-84),x=(width-w)/2,y=(height-h)/2-8;
         float t=TowerUiSettings.motion?Math.min(1,(System.nanoTime()-revealStart)/1_000_000_000f):1;
-        // The grant label: parchment inside a wooden coffer. The grant is already made server-side; this only shows it.
+        // The grant label: parchment inside a wooden coffer. The grant is already made server-side; this only shows
+        // it.
         PixelUi.frame(g,PixelUi.Frame.DARK,x-6,y-6,w+12,h+12);
         PixelUi.sheet(g,x,y,w,h);
         g.drawString(font,"REWARDS SECURED",width/2-font.width("REWARDS SECURED")/2,y+12,TowerUi.BURGUNDY,false);
@@ -80,9 +76,8 @@ public final class RewardRevealScreen extends TowerScreen {
     @Override
     public void onClose() {
         Minecraft.getInstance().setScreen(null);
-        // A floor that banks sends this on top of the intermission screen; ask for that one back so
-        // closing the reveal returns the player to the menu rather than to an empty arena. The server
-        // answers only if the player is actually at an intermission.
+        // A floor that banks sends this over the intermission screen; ask for that one back so closing returns the
+        // player to the menu. The server answers only at an intermission.
         if (ClientPlayNetworking.canSend(IntermissionActionPayload.TYPE)) {
             ClientPlayNetworking.send(new IntermissionActionPayload(IntermissionActionPayload.Action.REFRESH, 0));
         }

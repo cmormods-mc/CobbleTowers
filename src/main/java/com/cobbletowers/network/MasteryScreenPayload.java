@@ -9,11 +9,11 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Everything the mastery screen shows (P31): the towers with the player's level in each, and for the chosen tower either their
- * achievements or one leaderboard. The words come from {@code MasteryView}, so the screen and the chat commands agree.
- *
- * @param tab  {@code "mastery"} or a board name ({@code "speed"}, {@code "ascension"}, {@code "difficulty"}, {@code "clears"})
- * @param open true only when the player asked for the screen; a refresh must update an open screen, never open one
+ * Everything the mastery screen shows (P31): towers with the player's level and, for the chosen tower, achievements
+ * or one leaderboard, worded by {@code MasteryView}.
+ * @param tab {@code "mastery"} or a board name ({@code "speed"}, {@code "ascension"}, {@code "difficulty"}, {@code
+ *     "clears"})
+ * @param open true only when the player asked for the screen; a refresh never opens one
  */
 public record MasteryScreenPayload(List<Tower> towers, String selected, String tab, Mastery mastery, Board board,
                                    boolean open) implements CustomPacketPayload {
@@ -48,7 +48,9 @@ public record MasteryScreenPayload(List<Tower> towers, String selected, String t
         }
     }
 
-    /** One board's rows, already worded. {@code split} boards list solo and team apart; others use {@code solo} only. */
+    /**
+     * One board's rows, already worded. {@code split} boards list solo and team apart; others use {@code solo} only.
+     */
     public record Board(String title, boolean split, List<String> solo, List<String> team) {
         static final StreamCodec<RegistryFriendlyByteBuf, Board> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.STRING_UTF8, Board::title,

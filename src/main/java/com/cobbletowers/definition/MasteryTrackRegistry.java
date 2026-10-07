@@ -16,8 +16,8 @@ import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 /**
- * Loads the mastery tracks (P37) from {@code data/<namespace>/cobbletowers/mastery_tracks/*.json} on every datapack reload. A malformed file
- * is skipped with a message that names it, never thrown, like every registry here; what the files add up to is {@link MasteryTracks}.
+ * Loads mastery tracks (P37) from {@code data/<namespace>/cobbletowers/mastery_tracks/*.json} on every reload. A
+ * malformed file is skipped with a message naming it; the merge is {@link MasteryTracks}.
  */
 public final class MasteryTrackRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, MasteryTrackDefinition>>

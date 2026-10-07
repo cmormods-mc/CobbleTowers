@@ -40,7 +40,8 @@ public final class PartnerInspectionScreen extends TowerScreen {
         PixelUi.tag(g,font,font.plainSubstrByWidth(plate,vw-44),22,66,false);
         g.enableScissor(16,80,right-16,wellBottom);g.flush();
         if(gear.isEmpty()&&PokemonSpecies.getByName(species)==null){
-            // No species data or model yet (not in a world): show the bundled icon, at twice its size, on the pedestal.
+            // No species data or model yet (not in a world): show the bundled icon, at twice its size, on the
+            // pedestal.
             g.pose().pushPose();g.pose().translate(12+vw/2f,60+vh*.4f,0);g.pose().scale(2,2,1);PartnerSprites.draw(g,species,0,0);g.pose().popPose();
         }else if(gear.isEmpty()&&!modelFailed){
             g.pose().pushPose();
@@ -80,8 +81,8 @@ public final class PartnerInspectionScreen extends TowerScreen {
         if(modelFailed)TowerUi.label(g,font,"Model unavailable",20,height-85,vw-16,TowerUi.MUTED);
     }
     /**
-     * The display case: an oak frame with a bronze rim and rivets, a dark well with a faint floor grid, and a bronze pedestal for the
-     * specimen to stand on. Drawn behind the model, inside the area the model is clipped to.
+     * The display case: oak frame with bronze rim and rivets, dark well with a faint grid and a bronze pedestal,
+     * drawn behind the clipped model.
      */
     private static void labDisplay(GuiGraphics g,int x,int y,int w,int h){
         PixelUi.frame(g,PixelUi.Frame.DARK,x,y,w,h);

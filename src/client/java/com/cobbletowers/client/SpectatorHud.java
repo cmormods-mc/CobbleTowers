@@ -8,12 +8,8 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * The spectator information panel TDS #25 asks for (P11): a small dark framed slip with cream text.
- *
- * <p>Shown only while the client's camera is riding a teammate rather than the local player -- the
- * same fact {@code SpectatorPresentation} tracks server-side to know a player is spectating, read back
- * here from the one place the client already has it, with no packet of its own needed to say so. It draws the same
- * nine-slice frame as every other panel and never captures a framebuffer.
+ * The spectator panel TDS #25 asks for (P11): a small framed slip with cream text, shown only while the camera rides
+ * a teammate (read from the client, no packet). Same nine-slice frame as other panels.
  */
 public final class SpectatorHud implements HudRenderCallback {
 

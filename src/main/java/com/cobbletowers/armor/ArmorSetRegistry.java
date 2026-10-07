@@ -17,10 +17,8 @@ import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 /**
- * Loads armor sets from {@code data/<namespace>/cobbletowers/armor_sets/*.json} on every datapack reload (P24).
- *
- * <p>The same rule as {@code TowerDefinitionRegistry}: a malformed file is skipped with a message that names it and
- * never thrown, because a dedicated server that cannot finish its reload refuses to start.
+ * Loads armor sets from {@code data/<namespace>/cobbletowers/armor_sets/*.json} on every reload (P24). A malformed
+ * file is skipped with a message naming it, never thrown, so the server can still start.
  */
 public final class ArmorSetRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, ArmorSetDefinition>>

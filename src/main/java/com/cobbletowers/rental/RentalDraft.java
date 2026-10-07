@@ -10,10 +10,8 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * One player's draft in progress (P33): three packs opened in order, two cards kept from each, six Pokemon in the end.
- *
- * <p>Pure. The server holds one per drafting player, in memory, like the lobby: a restart costs the draft and never a Pokemon,
- * because nothing exists until the run launches. The client sends only pick indices, and every one is checked here.
+ * One player's draft in progress (P33): three packs opened in order, two cards kept from each, six Pokemon in the
+ * end. Pure and in memory; the client sends only pick indices, each checked here.
  */
 public final class RentalDraft {
 
@@ -84,8 +82,7 @@ public final class RentalDraft {
 
     /**
      * Names a finished team's Pokemon with the ids they will have, so registration can be written before they exist.
-     *
-     * @param god for each Pokemon, whether it was drawn from a God Pack
+     * @param god per Pokemon, whether it came from a God Pack
      */
     public record Team(List<RentalSetDefinition> sets, List<UUID> ids, List<Boolean> god) {
         public Team {

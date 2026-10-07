@@ -12,13 +12,9 @@ import java.util.UUID;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What the numbers a server actually collected say about the numbers we guessed (P31, P32): how many players hold each achievement,
- * where mastery levels and Ascension depths sit, how a trial's attempts and scores spread, and how far apart a board's entries are.
- *
- * <p>The thresholds (the speed an achievement asks for, the trial score weights, the Ascension constants) were first guesses made
- * before anyone had played. This turns what players have since done into a short, plain report, with the cases that most want a
- * second look called out, so tuning is a conversation with data rather than another guess. It changes nothing; pure and
- * unit-tested like the rules it comments on.
+ * What collected data says about the guessed numbers (P31, P32): who holds each achievement, where mastery levels and
+ * Ascension depths sit, how trial attempts and scores spread and how far apart a board's entries are. Calls out the
+ * cases that most want a second look. Changes nothing; pure.
  */
 public final class TuningReport {
 

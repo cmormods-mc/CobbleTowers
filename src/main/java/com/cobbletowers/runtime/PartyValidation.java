@@ -8,20 +8,17 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * What a ruleset asks of a party before a run may take an instance (TDS #41, #46), and which Pokemon
- * of a party a run reads its levels from afterwards (TDS #45).
- *
- * <p>Pure: Cobblemon is read by the caller into {@link PartyMember}s, the same split
- * {@link RunFactory} keeps. Duplicate species and held items are legal by default (TDS #43, #44), so
- * nothing here looks at either.
+ * What a ruleset asks of a party before a run takes an instance (TDS #41, #46), and which Pokemon a run reads levels
+ * from (TDS #45). Pure: the caller reads Cobblemon into {@link PartyMember}s. Duplicate species and held items are
+ * legal (TDS #43, #44).
  */
 public final class PartyValidation {
 
     private PartyValidation() {}
 
     /**
-     * One Pokemon as validation sees it: identity, level, and whether it can fight right now, plus what a playlist's
-     * clauses ask about (P32): species name, types, whether it can evolve further, and Cobblemon's labels (legendary...).
+     * One Pokemon as validation sees it: identity, level, whether it can fight, and what a playlist's clauses ask
+     * (P32): species, types, whether it can evolve, labels.
      */
     public record PartyMember(UUID id, int level, boolean fainted, String species, List<String> types,
                               boolean fullyEvolved, Set<String> labels) {
@@ -39,10 +36,8 @@ public final class PartyValidation {
 
     /**
      * The outcome for one player.
-     *
-     * @param registered the Pokemon this player registers: the first {@code registeredPartySize} of
-     *                   their party, in party order, whether or not the party was valid
-     * @param problems   why the party is not acceptable; empty when it is
+     * @param registered the first {@code registeredPartySize} Pokemon in party order, valid or not
+     * @param problems why the party is not acceptable; empty when it is
      */
     public record Result(List<UUID> registered, List<String> problems) {
         public Result {
@@ -72,10 +67,8 @@ public final class PartyValidation {
     }
 
     /**
-     * The levels a floor is drawn against for one player: those of their registered Pokemon that are
-     * still in {@code live}. A registered Pokemon that has since been released or boxed is skipped
-     * rather than failing the floor, and if none of them can be found the whole live party is used --
-     * "locked" must never become a new way to stall a run.
+     * The levels a floor is drawn against: those of the registered Pokemon still in {@code live}. Released or boxed
+     * ones are skipped; if none are found the whole live party is used.
      */
     public static List<Integer> levels(List<PartyMember> live, List<UUID> registered) {
         if (!registered.isEmpty()) {

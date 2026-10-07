@@ -5,16 +5,9 @@ import com.cobbletowers.encounter.EncounterSeed;
 import java.util.List;
 
 /**
- * The weighted item and the amount one grant rolls.
- *
- * <p><b>Its own ordinal space</b>, for the same reason {@link com.cobbletowers.encounter.BossDraw}
- * and {@code DraftDraw} give theirs: ordinary opponents use 0..n, the boss uses 1_000_003, a draft's
- * cards start at 2_000_029, and a reward's item picks start here. The amount roll for the same grant
- * uses a further, disjoint offset, so the two are independent draws rather than the same seed read
- * twice.
- *
- * <p>Deterministic from the run's seed, like every other draw, so a crash cannot reroll a grant
- * already priced (TDS #29).
+ * The weighted item and amount one grant rolls, in its own ordinal space (opponents 0..n, the boss 1_000_003, draft
+ * cards 2_000_029, then reward picks); the amount uses a further disjoint offset. Deterministic from the run seed
+ * (TDS #29).
  */
 public final class RewardDraw {
 
@@ -33,8 +26,8 @@ public final class RewardDraw {
     }
 
     /**
-     * As above, with each entry's weight scaled by {@code weightPercent} (P36c: the season's spotlight region drops its armor more often).
-     * 100 changes nothing; the same seed walks the same way, only over different widths.
+     * As above, scaling each entry's weight by {@code weightPercent} (P36c, the spotlight region drops its armor more
+     * often). 100 changes nothing.
      */
     public static RewardTableDefinition.Entry pickItem(long runSeed, int floorIndex, int n, List<RewardTableDefinition.Entry> pool,
                                                         java.util.function.ToIntFunction<RewardTableDefinition.Entry> weightPercent) {
@@ -52,7 +45,9 @@ public final class RewardDraw {
         return pick(pool, seed, entry -> 100);
     }
 
-    /** The scaled width of an entry: its weight times the percent, never below 1 (a weighted entry stays possible). */
+    /**
+     * The scaled width of an entry: its weight times the percent, never below 1 (a weighted entry stays possible).
+     */
     public static int scaled(RewardTableDefinition.Entry entry, java.util.function.ToIntFunction<RewardTableDefinition.Entry> weightPercent) {
         return Math.max(1, entry.weight() * Math.max(0, weightPercent.applyAsInt(entry)) / 100);
     }

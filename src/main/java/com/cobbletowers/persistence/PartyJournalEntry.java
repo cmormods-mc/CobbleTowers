@@ -12,19 +12,14 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 
 /**
- * Where a player's Pokemon were before a run moved them (P18): the run that moved them, and the original
- * slot of every Pokemon that moved.
- *
- * <p>Identifiers and numbers only -- never a live Pokemon (TDS section 10). It is written to disk
- * <em>before</em> any move, which is the whole of the feature's safety argument: a crash at any later point
- * leaves a record that describes where everything started.
+ * Where a player's Pokemon were before a run moved them (P18): the run and each moved Pokemon's original slot.
+ * Identifiers and numbers only (TDS section 10), written to disk before any move.
  */
 public record PartyJournalEntry(UUID player, UUID runId, List<Original> originals, List<UUID> rentals, List<LentCard> cards) {
 
     /**
-     * Which set a rental was made from and whether it came from a God Pack (P33b): enough to make the player the card of every
-     * Pokemon they ran with when the run completes, even if they are offline then and the Pokemon are long deleted.
-     *
+     * Which set a rental came from and whether from a God Pack (P33b): enough to make the player each Pokemon's card
+     * at completion even when offline.
      * @param set a rental set id, such as {@code cobbletowers:garchomp}
      */
     public record LentCard(UUID pokemon, String set, boolean god) {
@@ -66,7 +61,8 @@ public record PartyJournalEntry(UUID player, UUID runId, List<Original> original
             list.add(entry);
         }
         tag.put("originals", list);
-        // The rentals the run was lent (P33): written with the rest, before anything moves, so a crash at any point can
+        // The rentals the run was lent (P33): written with the rest, before anything moves, so a crash at any point
+        // can
         // delete them again. Ids only, never a live Pokemon.
         ListTag lent = new ListTag();
         for (UUID rental : rentals) {

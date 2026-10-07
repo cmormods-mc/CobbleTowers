@@ -1,11 +1,9 @@
 package com.cobbletowers.storage;
 
 /**
- * A place a Pokemon can sit: a party position, or a position in one of the PC's boxes.
- *
- * <p>Plain numbers on purpose -- this is what the party journal writes to disk, and it must never hold a
- * Cobblemon object. For a party slot {@code index} is the slot and {@code sub} is 0; for a box slot
- * {@code index} is the box and {@code sub} is the position in it.
+ * A place a Pokemon can sit: a party position or a position in a PC box. Plain numbers, since the party journal
+ * writes it to disk. For a party slot {@code index} is the slot and {@code sub} 0; for a box slot {@code index} is
+ * the box and {@code sub} the position.
  */
 public record Slot(Kind kind, int index, int sub) {
 

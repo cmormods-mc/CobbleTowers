@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * What a season's end writes into the Hall (P36a), as a pure function: the boards in, the Hall season out. No server, so it is
- * fully tested, and it is exactly what the operator's dry run prints.
+ * What a season's end writes into the Hall (P36a): boards in, Hall season out. Pure, and exactly what the operator's
+ * dry run prints.
  */
 public final class SeasonFinalizer {
 
@@ -22,8 +22,8 @@ public final class SeasonFinalizer {
     private SeasonFinalizer() {}
 
     /**
-     * The Hall season for season {@code definition.number()}: the top {@value #HALL_DEPTH} of every seasonal board of that season
-     * that has entries, in a stable order (board, tower, mode, playlist), solo and team apart as the boards are.
+     * The Hall season for {@code definition.number()}: the top {@value #HALL_DEPTH} of every seasonal board with
+     * entries, in stable order (board, tower, mode, playlist), solo and team apart.
      */
     public static HallSeason plan(SeasonDefinition definition, LocalDate endedOn, Map<Key, List<Entry>> boards) {
         return plan(definition, endedOn, boards, List.of());

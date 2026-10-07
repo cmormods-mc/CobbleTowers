@@ -9,15 +9,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The modifier an Ascension forces on a run (P30): one per Ascension, not refusable.
- *
- * <p>Only a modifier that makes the run harder is ever forced. That is every ENEMY, ENCOUNTER, FIELD and
- * PLAYER_CONSTRAINT modifier above the minor tier: no reward modifier, no scouting aid, no custom boon, and nothing like
- * Fragile Champion that would soften the very thing Ascension is meant to harden. A draw is deterministic from the run's
- * seed and the Ascension, so a crash cannot reroll it, and it respects the same exclusions, requirements and stack limits
- * as a drafted one; when nothing is eligible it forces nothing.
- *
- * <p>Pure, like {@link DraftDraw}.
+ * The modifier an Ascension forces on a run (P30): one per Ascension, not refusable, and only ones that make the run
+ * harder. Deterministic from the run seed and Ascension, respects exclusions, requirements and stack limits, and
+ * forces nothing if none is eligible. Pure.
  */
 public final class ForcedModifiers {
 
@@ -46,8 +40,8 @@ public final class ForcedModifiers {
     }
 
     /**
-     * Every modifier Ascensions 1 through {@code ascension} force, in order, for a run that starts there: each draw sees
-     * what the earlier ones took. Stops early, quietly, when the pool runs dry.
+     * Every modifier Ascensions 1 through {@code ascension} force, in order; each draw sees what earlier ones took.
+     * Stops quietly when the pool runs dry.
      */
     public static List<ModifierDefinition> drawAll(List<ModifierDefinition> pool, List<ModifierDefinition> held,
                                                    long runSeed, int ascension) {

@@ -5,11 +5,9 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * The timing and feel of a pack opening (P33), as numbers: how long things take, which card turns over when, how hard the table
- * shakes for a given rarity. Pure, so it is unit-tested without a client; the screen only asks and draws.
- *
- * <p>The rarity vocabulary and its colours follow CobblemonCards' (common, uncommon, rare, epic, legendary, mythic), so a card means
- * the same thing to a player who knows that mod.
+ * The timing and feel of a pack opening (P33) as numbers: durations, which card turns when, shake strength per
+ * rarity. Pure; the screen only asks and draws. Rarity names and colours follow CobblemonCards (common, uncommon,
+ * rare, epic, legendary, mythic).
  */
 public final class PackReveal {
 
@@ -24,7 +22,9 @@ public final class PackReveal {
 
     private PackReveal() {}
 
-    /** 0 (common) to 5 (mythic); anything unknown counts as common, so a newer server never breaks an older client. */
+    /**
+     * 0 (common) to 5 (mythic); anything unknown counts as common, so a newer server never breaks an older client.
+     */
     public static int rank(String rarity) {
         int index = ORDER.indexOf(rarity == null ? "" : rarity);
         return Math.max(index, 0);
@@ -42,7 +42,9 @@ public final class PackReveal {
         };
     }
 
-    /** The colour of a mythic card cycles through the hues, as a holographic card would; every other rarity is steady. */
+    /**
+     * The colour of a mythic card cycles through the hues, as a holographic card would; every other rarity is steady.
+     */
     public static int colorAt(String rarity, long ms) {
         if (rank(rarity) < 5) return color(rarity);
         float hue = (ms % 3000) / 3000f;
@@ -57,12 +59,17 @@ public final class PackReveal {
         return order;
     }
 
-    /** When the card in {@code position} of {@link #revealOrder} starts to turn, counted from the moment the pack finished tearing. */
+    /**
+     * When the card in {@code position} of {@link #revealOrder} starts to turn, counted from the moment the pack
+     * finished tearing.
+     */
     public static long flipStart(int position) {
         return position * CARD_GAP_MS;
     }
 
-    /** How far a card has turned over {@code ms} after it started: 0 is face down, 1 is face up, eased at both ends. */
+    /**
+     * How far a card has turned over {@code ms} after it started: 0 is face down, 1 is face up, eased at both ends.
+     */
     public static float flip(long ms) {
         if (ms <= 0) return 0f;
         if (ms >= FLIP_MS) return 1f;

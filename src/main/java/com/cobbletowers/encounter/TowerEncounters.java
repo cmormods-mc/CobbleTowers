@@ -61,41 +61,19 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * A floor's prerequisite round: who is still fighting, who has cleared, who is out (TDS #31).
- *
- * <p>This owns what is <b>true</b> about a floor. How a battle is actually run belongs to
- * {@link CobblemonBattleAdapter}, and the split is the point: the rules of a floor should read the
- * same whoever is executing the combat, which is what lets P6 put a CobbleRaids boss after this
- * round without rewriting either side.
- *
- * <p>One opponent per player, all at once. The last player clearing resolves the floor; everyone
- * being out loses the run. Both events have been in the transition table since P1 -- this is the
- * first code to raise them.
+ * A floor's prerequisite round: one opponent per player, all at once. The last player to clear resolves the floor;
+ * everyone out loses the run.
  */
 public final class TowerEncounters {
 
     public enum Status { FIGHTING, CLEARED, OUT }
 
-    /**
-     * Which half of the floor is being fought.
-     *
-     * <p>The phase lives here, in runtime state, and deliberately not in P1's transition table. The
-     * table already has an event for a resolved encounter and one for a wipe, and both still mean
-     * exactly what they meant; a table that grew a state every time gameplay gained a step would stop
-     * being a contract worth having.
-     */
+    /** Which half of the floor is being fought. Kept here, not in the run transition table. */
     public enum Phase { PREREQUISITE, BOSS }
 
     /**
-     * How many more opponents one player owes this floor, and where the next one is drawn from.
-     *
-     * <p>An ENCOUNTER modifier's {@code extra_opponents} is what puts anything but zero here: the
-     * floor's prerequisite becomes several battles in a row rather than one.
-     *
-     * <p>The stride is carried rather than recomputed. The next opponent's ordinal has to stay clear
-     * of every other player's, so it steps by the number of fighters -- and by the time a battle
-     * ends, the list of fighters it was calculated from is gone. Carrying it is three bytes against
-     * re-deriving a number that must not change mid-floor.
+     * Opponents one player still owes this floor. The stride is carried because the fighter list is gone by the time
+     * a battle ends.
      */
     public record Wave(int nextOrdinal, int stride, int remaining) {
         public Wave taken() {
@@ -127,10 +105,7 @@ public final class TowerEncounters {
 
     private static final Map<UUID, Round> ROUNDS = new LinkedHashMap<>();
 
-    /**
-     * The AscensionLib scouting encounter of each player's current opponent, keyed {@code run/player}. One per player:
-     * a floor's opponents are separate battles, so each is its own encounter, ended when that battle is.
-     */
+    /** Each player's current AscensionLib scouting encounter, keyed {@code run/player}; ended with that battle. */
     private static final Map<String, String> OPPONENT_SCOUTING = new LinkedHashMap<>();
 
     private TowerEncounters() {}
@@ -148,11 +123,8 @@ public final class TowerEncounters {
     }
 
     /**
-     * Starts the floor's opponents, one per player who can fight.
-     *
-     * <p>Returns empty when the floor cannot be run at all -- unknown content, nobody able to fight,
-     * no cell. The caller turns that into a technical fault rather than a loss, because none of those
-     * are a party's doing.
+     * Starts one opponent per player who can fight. Empty means the floor cannot run at all (a technical fault, not a
+     * loss).
      */
     public static Optional<Round> begin(MinecraftServer server, UUID runId) {
         Optional<PersistedRun> found = TowerRuns.get(runId);
@@ -181,9 +153,7 @@ public final class TowerEncounters {
             TowerLog.error("Run {} has no built floor to fight on", runId);
             return Optional.empty();
         }
-        // Asked of the preparer, not recomputed: the origin depends on the structure's size, and a
-        // second calculation here put the entry anchor 25 blocks from the arena and dropped the
-        // party into the void beside it.
+        // Asked of the preparer, never recomputed: a second calculation put the entry anchor in the void.
         Optional<BlockPos> maybeOrigin =
                 CellPreparer.originFor(server, cell.getAsInt(), floor.get().layout().get());
         if (maybeOrigin.isEmpty()) {
@@ -208,19 +178,13 @@ public final class TowerEncounters {
         // disconnects during the floor cannot make the rest of it easier.
         List<Integer> partyLevels = levelsOf(run, fighters);
         if (partyLevels.isEmpty()) {
-            // Said out loud, because the alternative was found the hard way: every opponent draw
-            // silently returned empty, the round ended up with nobody in it, and `begin` returned
-            // an empty Optional with nothing logged. The operator got "the floor could not be
-            // started" and the log had not one word about why.
+            // Logged because an empty draw otherwise returned empty with no explanation.
             TowerLog.error("Run {} cannot start floor {}: none of its {} fighter(s) has a Pokemon to"
                     + " fight with, so no opponent can be levelled", runId, run.floorIndex(), fighters.size());
             return Optional.empty();
         }
 
-        // Put the party in the arena before anything is fought in it. P4 built the entry anchor and
-        // checked a player can stand on it; this is what it was for. Without it the players stay
-        // wherever they were -- in the overworld -- while their Pokemon fight in another dimension,
-        // which is not a floor so much as a rumour of one.
+        // Put the party in the arena before anything is fought.
         FloorAnchor entry = floor.get().layout().get().entry();
         BlockPos arrival = entry.in(origin);
         for (int ordinal = 0; ordinal < fighters.size(); ordinal++) {
@@ -250,7 +214,8 @@ public final class TowerEncounters {
 
             // Spread out, so four opponents do not stand inside one another.
             BlockPos where = floor.get().layout().get().presentation().in(origin).offset(ordinal * 4, 0, 0);
-            // Declared and armed BEFORE the battle starts: the enemy's ascension effects ride its >start, so the enemy
+            // Declared and armed BEFORE the battle starts: the enemy's ascension effects ride its >start, so the
+            // enemy
             // a Scouter reveals has to exist by then.
             String scoutId = declareOpponent(runId, player.getUUID(), run.floorIndex(), snapshot.get());
             Optional<UUID> battle = AscensionLibScouting.armed(List.of(player.getUUID()), scoutId,
@@ -258,9 +223,7 @@ public final class TowerEncounters {
             if (battle.isEmpty()) endOpponentScouting(runId, player.getUUID());
             byPlayer.put(player.getUUID(), battle.isPresent() ? Status.FIGHTING : Status.OUT);
             if (battle.isPresent()) {
-                // TDS #60/section 11: the floor's first opponent per player is drawn here, not in
-                // sendNextOpponent -- the same span, measured the same way, just a different call site
-                // for the same fact (every player's own first battle of the floor).
+                // First opponent per player is timed here; later ones in sendNextOpponent.
                 TowerMetrics.recordEncounterConstruction(server, runId, (System.nanoTime() - started) / 1_000_000);
             }
         }
@@ -279,9 +242,8 @@ public final class TowerEncounters {
     }
 
     /**
-     * The levels of every fighter's registered Pokemon, fainted ones included (TDS #45). A run with
-     * nothing registered, or whose registered Pokemon can no longer be found, reads the live party
-     * instead -- see {@link PartyValidation#levels}.
+     * Levels of every fighter's registered Pokemon, fainted ones included (TDS #45); falls back to the live party if
+     * none registered.
      */
     private static List<Integer> levelsOf(PersistedRun run, List<ServerPlayer> fighters) {
         List<Integer> levels = new ArrayList<>();
@@ -296,7 +258,8 @@ public final class TowerEncounters {
 
     /** The adapter calls this when one player's battle ends. */
     private static void onResolved(MinecraftServer server, CobblemonBattleAdapter.Binding binding, boolean playerWon) {
-        // An Echo Duel (P35) is a bonus exhibition at an intermission: it is not the floor's, and no round is waiting on it.
+        // An Echo Duel (P35) is a bonus exhibition at an intermission: it is not the floor's, and no round is waiting
+        // on it.
         if (binding.exhibition()) {
             com.cobbletowers.echo.EchoDuels.onResolved(server, binding, playerWon);
             return;
@@ -311,9 +274,8 @@ public final class TowerEncounters {
                     LedgerEntry.opponentDefeated(binding.floorIndex(), binding.species(), binding.playerId(), now));
         }
 
-        // A winner who still owes opponents goes straight into the next one and stays FIGHTING, so
-        // the floor does not settle underneath them. Recorded before the status is, because starting
-        // it can fail and a player with nothing left to fight has simply cleared.
+        // A winner who still owes opponents starts the next one and stays FIGHTING. Recorded first because starting
+        // can fail.
         Wave wave = round.waves().get(binding.playerId());
         Map<UUID, Wave> waves = new LinkedHashMap<>(round.waves());
         boolean stillFighting = false;
@@ -340,13 +302,7 @@ public final class TowerEncounters {
         settle(server, updated, now);
     }
 
-    /**
-     * What happens once nobody on the floor is still fighting.
-     *
-     * <p>Reached from a battle ending and from a player being dropped, which is why it is not
-     * written into either: a floor whose last fighter walks away has to finish the same way as one
-     * whose last fighter loses, or it hangs holding the run, the cell and its tickets.
-     */
+    /** Runs once nobody is still fighting, whether the last one lost, won or was dropped. */
     private static void settle(MinecraftServer server, Round round, long now) {
         if (!round.settled()) return;
 
@@ -368,9 +324,7 @@ public final class TowerEncounters {
     }
 
     /**
-     * Starts an Echo Duel for one player (P35): one Pokemon of an Echo, at the level this floor's rules would give an opponent,
-     * fought as an exhibition on a cloned, healed party.
-     *
+     * Starts an Echo Duel: one Pokemon of an Echo against a cloned, healed party.
      * @return whether the battle started
      */
     public static boolean startEchoDuel(MinecraftServer server, PersistedRun run, ServerPlayer player, int ordinal,
@@ -398,15 +352,9 @@ public final class TowerEncounters {
     }
 
     /**
-     * Puts the next opponent of a multi-opponent floor in front of one player.
-     *
-     * <p>Re-resolves the floor's content rather than carrying it on the round. It is a handful of
-     * map lookups, it happens once per won battle rather than per tick, and the alternative is a
-     * round holding definitions that a datapack reload could make stale underneath it -- the thing
-     * TDS §10 keeps out of persisted state, for the same reason.
-     *
-     * @return whether a battle actually started; false leaves the player cleared, which is the safe
-     *         way to fail -- a floor that cannot put up the next opponent must not hang waiting
+     * Starts the next opponent of a multi-opponent floor. Content is re-resolved each time so a datapack reload
+     * cannot leave it stale.
+     * @return false leaves the player cleared
      */
     private static boolean sendNextOpponent(MinecraftServer server, Round round, UUID playerId, Wave wave) {
         Optional<PersistedRun> found = TowerRuns.get(round.runId());
@@ -431,9 +379,7 @@ public final class TowerEncounters {
         long started = System.nanoTime();
         ModifierEffects effects = DraftService.effects(run);
         Optional<RegionalThemeDefinition> theme = pool.regionalPool().flatMap(content::regionalTheme);
-        // The level snapshot is taken from this player's own party, as the first draw was from the
-        // whole party's. It cannot be lowered by the floor's progress: TowerLevelPolicy reads the
-        // registered Pokemon, and a fainted one still counts (TDS #45).
+        // Levels come from this player's own party; fainted Pokemon still count (TDS #45).
         Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(pool, run.seed(), run.floorIndex(),
                 wave.nextOrdinal(), levelsOf(run, List.of(player)), ruleset, effects.levelOffset(), theme);
         if (snapshot.isEmpty()) return false;
@@ -457,10 +403,7 @@ public final class TowerEncounters {
         return true;
     }
 
-    /**
-     * TDS #22/#49: sent alongside the encounter starting, never gating it -- a slow or absent
-     * scouting screen must not delay a floor.
-     */
+    /** Sent alongside the encounter; never gates it. */
     private static void sendScoutingReveal(ServerPlayer player, TowerContent content, TowerDefinition tower,
                                            FloorDefinition floor, PersistedRun run, ModifierEffects effects,
                                            EncounterSnapshot snapshot) {
@@ -475,12 +418,7 @@ public final class TowerEncounters {
         TowerNetworking.sendScoutingReveal(player, new ScoutingRevealPayload(run.floorIndex(), List.copyOf(revealed)));
     }
 
-    /**
-     * A category's own display text, read from facts that already exist -- nothing here is a new
-     * source of gameplay data (P10's own prediction for this phase). An unrecognized category name is
-     * shown as revealed without a value rather than dropped, so a content author's typo is visible
-     * rather than silently swallowed.
-     */
+    /** Display text for a scouting category. An unknown category is shown revealed without a value. */
     private static String scoutingValue(String category, FloorDefinition floor, EncounterSnapshot snapshot) {
         return switch (category) {
             case "typing" -> typingOf(snapshot.species());
@@ -499,11 +437,7 @@ public final class TowerEncounters {
         return types.toString();
     }
 
-    /**
-     * TDS #68's "concise regional entrance/title presentation" -- plain vanilla title packets, not a
-     * custom screen. A two-line title card is exactly what these already do, and every client already
-     * understands them without needing the CobbleTowers mod installed.
-     */
+    /** Plain vanilla title packets, so no client mod is needed. */
     private static void announceJersey(ServerPlayer player, RegionalThemeDefinition theme, EncounterSnapshot snapshot) {
         if (snapshot.jerseyNumber().isEmpty()) return;
         player.connection.send(new ClientboundSetTitleTextPacket(
@@ -513,14 +447,8 @@ public final class TowerEncounters {
     }
 
     /**
-     * Takes one player out of the floor they are on, and lets the floor carry on without them.
-     *
-     * <p>A disconnect past its grace window, a stalled player the watchdog gave up on, somebody who
-     * chose to leave. Their battle ends and their opponent goes with it -- an opponent left standing
-     * is what P3's sweep quarantines a cell for -- and if they were the last one fighting, the floor
-     * settles exactly as it would have if they had lost.
-     *
-     * @return true when a floor actually had them
+     * Takes one player out of the floor and lets it carry on; settles the floor if they were the last fighter.
+     * @return true when a floor had them
      */
     public static boolean dropPlayer(MinecraftServer server, UUID runId, UUID playerId, String why, long now) {
         CobblemonBattleAdapter.endPlayer(server, runId, playerId);
@@ -541,12 +469,8 @@ public final class TowerEncounters {
     }
 
     /**
-     * A player whose battle is lost: out of the fight, and watching the rest of the floor (TDS #25).
-     *
-     * <p>Two states rather than one, because they are two different facts. KNOCKED_OUT is true the
-     * moment they lose, whether or not they are online to be put anywhere; SPECTATING_TEAM is true
-     * only once they are actually standing somewhere watching. Someone who lost while disconnected
-     * gets the first and not the second, and comes back to exactly that.
+     * Marks a player knocked out. KNOCKED_OUT is true at once; SPECTATING_TEAM only once they stand somewhere
+     * watching.
      */
     private static void knockOut(MinecraftServer server, UUID runId, UUID playerId, long now) {
         ParticipantService.update(server, runId, playerId, ParticipantState::knockedOut, now);
@@ -565,15 +489,7 @@ public final class TowerEncounters {
         return List.copyOf(ROUNDS.values());
     }
 
-    /**
-     * Stands a player on their floor's spectator anchor.
-     *
-     * <p>P4 built that anchor and checked somebody could stand on it; this is what it was for. The
-     * alternative is leaving a knocked-out player in the middle of an arena they are no longer in,
-     * or -- worse, for somebody reconnecting -- wherever they logged out.
-     *
-     * @return false when the floor cannot say where that is, so the caller can leave them be
-     */
+    /** Stands a player on the floor's spectator anchor. @return false when the floor has none */
     public static boolean sendToSpectatorAnchor(MinecraftServer server, PersistedRun run, ServerPlayer player) {
         Optional<FloorDefinition> floor = TowerDefinitionRegistry.content().floorAt(run.towerId(), run.floorIndex());
         ServerLevel level = TowerDimension.level(server);
@@ -588,12 +504,7 @@ public final class TowerEncounters {
         return true;
     }
 
-    /**
-     * Puts this floor's boss up against everyone still standing.
-     *
-     * <p>Everyone, not only those who cleared their own opponent: the boss is the shared fight, which
-     * is the whole reason it runs through CobbleRaids rather than as another set of solo battles.
-     */
+    /** Puts the boss up against everyone still standing, not just those who cleared. */
     private static boolean startBoss(MinecraftServer server, Round round, long now) {
         Optional<PersistedRun> found = TowerRuns.get(round.runId());
         if (found.isEmpty()) return false;
@@ -690,9 +601,7 @@ public final class TowerEncounters {
                         .flatMap(run -> TowerDefinitionRegistry.content().milestoneAt(run.towerId(), binding.floorIndex()))
                         .ifPresent(milestone -> earn(server, binding.runId(),
                                 LedgerEntry.milestoneCleared(binding.floorIndex(), milestone.id(), now)));
-                // Said plainly, because completing a floor is the thing an operator reading a log is
-                // looking for. It moved here when the boss became the end of a floor, and stopped
-                // being logged at all for a run -- which the live test noticed before anyone else.
+                // Logged so an operator can see floors completing.
                 TowerLog.info("Floor {} of run {} cleared", binding.floorIndex(), binding.runId());
                 payAscensionLib(server, binding, result, now);
                 // Everyone watching is now owed the intermission, which is where they come back.
@@ -702,10 +611,7 @@ public final class TowerEncounters {
                 recallParties(server, binding.runId());
                 RunTransitionService.Outcome resolved =
                         RunTransitionService.apply(server, binding.runId(), RunEvent.ENCOUNTER_RESOLVED_CLEARED, now);
-                // FLOOR_RESOLVING has two ways out and this is the only place that knows which floor
-                // just cleared. RewardBankService, not this event, decides whether the clear actually
-                // pays out anything (docs/design/P9-economy.md §4a) -- this only chooses which of the
-                // two transitions applies.
+                // Only picks the transition; RewardBankService decides whether the clear pays out.
                 if (resolved instanceof RunTransitionService.Move) {
                     RunEvent next = isFinalFloor(binding.runId(), binding.floorIndex())
                             ? RunEvent.FINAL_FLOOR_CLEARED : RunEvent.REWARDS_BANKED;
@@ -727,11 +633,8 @@ public final class TowerEncounters {
     }
 
     /**
-     * Pays a cleared floor in AscensionLib's wallet, outside the run's unclaimed pool: a Scouter roll for every floor,
-     * and the milestone bands (dust, facets, cores, Unique Fragments) on a milestone floor, covering the floors since
-     * the previous one. Paid to every member of the run, knocked out or offline included: the boss is a team fight, and
-     * a player who left the run is the only one excluded. A Trial (a floor-limited run) pays only its own small band, once,
-     * on its last floor. The payout is durable and retried by {@link AscensionLibRewards}.
+     * Pays a cleared floor in AscensionLib: a Scouter roll per floor, milestone bands on milestone floors, a small
+     * band for a Trial's last floor. Paid to every run member; retried by {@link AscensionLibRewards}.
      */
     private static void payAscensionLib(MinecraftServer server, TowerBossAdapter.Binding binding,
                                         EncounterResult result, long now) {
@@ -748,7 +651,8 @@ public final class TowerEncounters {
 
         int floorLimit = run.options().floorLimit();
         if (floorLimit > 0) {
-            // A Trial pays once, when its last floor is cleared, at the rank its length implies. No Scouter rolls and no
+            // A Trial pays once, when its last floor is cleared, at the rank its length implies. No Scouter rolls and
+            // no
             // milestone bands: it is repeatable practice and must not out-earn or bypass the tower.
             if (binding.floorIndex() >= floorLimit) {
                 AscensionLibRewards.settleTrial(server, result.encounterId(), outcome,
@@ -767,17 +671,15 @@ public final class TowerEncounters {
                 members, now);
     }
 
-    /** A trial's rank (1-3) follows its length like the scouting tiers: 1-4 floors rank 1, 5-9 rank 2, 10 and more rank 3. */
+    /**
+     * A trial's rank (1-3) follows its length like the scouting tiers: 1-4 floors rank 1, 5-9 rank 2, 10 and more
+     * rank 3.
+     */
     static int trialRank(int floorLimit) {
         return floorLimit < 5 ? 1 : floorLimit < 10 ? 2 : 3;
     }
 
-    /**
-     * The run is lost, so the unclaimed pool goes with it.
-     *
-     * <p>Marked rather than deleted, so what was earned can still be read afterwards -- and so
-     * cashing out at an intermission stays a real decision, which is the point of the rule.
-     */
+    /** The run is lost. The unclaimed pool is marked, not deleted, so it can still be read. */
     private static void lose(MinecraftServer server, UUID runId, int floorIndex, long now) {
         TowerLog.info("Floor {} of run {} wiped the party; the unclaimed pool is forfeited",
                 floorIndex, runId);
@@ -787,11 +689,7 @@ public final class TowerEncounters {
     }
 
 
-    /**
-     * Lets AscensionLib's players scout this opponent with a Scouter, and fixes the enemy its ascension effects will use. A
-     * reveal is personal: only the player facing the opponent can spend a Scouter on it. The id is unique per opponent (run,
-     * floor, ordinal) and never reused. Returns that id, for arming the battle with it.
-     */
+    /** Lets players scout this opponent; the id is unique per opponent and arms the battle. */
     private static String declareOpponent(UUID runId, UUID playerId, int floorIndex, EncounterSnapshot snapshot) {
         String id = runId + "-f" + floorIndex + "-o" + snapshot.ordinal();
         String previous = OPPONENT_SCOUTING.put(runId + "/" + playerId, id);
@@ -813,11 +711,7 @@ public final class TowerEncounters {
         }
     }
 
-    /**
-     * Lets the party scout the floor's boss. The encounter is CobbleRaids' own (its id is the boss encounter's), the
-     * reveal is shared with every player still standing, and a milestone boss uses the {@code boss} tier. A boss whose
-     * definition does not say what species it is cannot be scouted.
-     */
+    /** Lets the party scout the floor's boss; a boss with no species cannot be scouted. */
     private static void declareBoss(MinecraftServer server, PersistedRun run, TowerContent content, int floorIndex,
                                     BossDraw.Boss boss, List<ServerPlayer> standing, UUID encounterId) {
         Optional<String> species = com.cobbletowers.battle.cobbleraids.RaidSpecies.of(server, boss.definition());
@@ -863,20 +757,7 @@ public final class TowerEncounters {
         });
     }
 
-    /**
-     * Puts the party's own Pokemon back in their balls before the cell is handed back.
-     *
-     * <p>Opponents were never the only thing left standing in a cell. A player's own lead is still
-     * out when a floor ends, and the cleanup sweep does not care whose it is: a non-player entity in
-     * the cell is a quarantine, so every completed run would have cost the tower a cell.
-     *
-     * <p>Recalled rather than discarded. The entity is only how a Pokemon is shown; throwing it away
-     * would leave the Pokemon marked as sent out with nothing to send back.
-     *
-     * <p>Found by the live test only after its probe was fixed -- the old one used
-     * {@code execute ... run say}, which returns nothing over RCON, so it had been reporting an
-     * empty cell whatever was in it.
-     */
+    /** Recalls the party's Pokemon before the cell is handed back; a leftover entity would quarantine the cell. */
     private static void recallParties(MinecraftServer server, UUID runId) {
         TowerRuns.get(runId).ifPresent(run -> {
             for (PersistedParticipant participant : run.participants()) {

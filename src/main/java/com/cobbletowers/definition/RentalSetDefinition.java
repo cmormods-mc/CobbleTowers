@@ -11,18 +11,13 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One Pokemon the tower can lend (P33): a complete, fixed set, so everyone who drafts it has exactly the same Pokemon.
- *
- * <p>The fields are exactly what Cobblemon's own {@code PokemonProperties} understands (species, level, nature, ability, four
- * moves, a held item, IVs and EVs), so a set means what the game means by it. The rarity is the card's: it decides the excitement of
- * the reveal and where the draw places it, nothing else.
- *
+ * One Pokemon the tower can lend (P33): a complete, fixed set, in the fields of Cobblemon's {@code
+ * PokemonProperties}. The rarity is the card's: it shapes the reveal and the draw.
  * @param species the Cobblemon species name, such as {@code garchomp}
- * @param evs     hp, atk, def, spa, spd, spe
- * @param item    a held item, if any, such as {@code cobblemon:life_orb}
- * @param role    a short description of what it does ("fast sweeper", "defensive pivot")
- * @param types   the species' types, first the primary one, as lower-case names ({@code dragon}, {@code ground}); the card a set
- *                makes (P33b) takes its stat and background from the first
+ * @param evs hp, atk, def, spa, spd, spe
+ * @param item a held item, if any, such as {@code cobblemon:life_orb}
+ * @param role a short description ("fast sweeper")
+ * @param types lower-case type names, primary first; the card (P33b) takes its stat and background from the first
  */
 public record RentalSetDefinition(
         ResourceLocation id,
@@ -107,7 +102,10 @@ public record RentalSetDefinition(
         return species.isEmpty() ? species : Character.toUpperCase(species.charAt(0)) + species.substring(1);
     }
 
-    /** The property string Cobblemon parses to build this Pokemon, for example {@code garchomp level=50 nature=jolly ...}. */
+    /**
+     * The property string Cobblemon parses to build this Pokemon, for example {@code garchomp level=50 nature=jolly
+     * ...}.
+     */
     public String properties() {
         StringBuilder out = new StringBuilder(species).append(" level=").append(level).append(" nature=").append(nature)
                 .append(" ability=").append(ability);

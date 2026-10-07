@@ -19,11 +19,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * What happens when a run crosses into a new Ascension (P30): the team's records move up, one modifier is forced on the
- * run, and everybody is told. Called once, right after the transition that confirms the first floor of a cycle.
- *
- * <p>A direct start does not come through here: {@code RunFactory} gives that run its forced modifiers at creation, and the
- * players already hold the record that let them start.
+ * What happens when a run crosses into a new Ascension (P30): the team's records move up, one modifier is forced on
+ * the run and everybody is told. Called once after the transition confirming the first floor of a cycle. A direct
+ * start skips it ({@code RunFactory} forces the modifiers at creation).
  */
 public final class AscensionService {
 

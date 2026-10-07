@@ -11,20 +11,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * Disk storage for rewards a player earned but was not online to receive, attached to the overworld's
- * data storage so one file covers the server rather than one per dimension.
- *
- * <p>Copies {@link TowerRunStore}'s exact shape, which itself follows CobbleRaids'
- * {@code PendingRewardStore} (P2). No separate in-memory mirror: {@link CellStateStore} is this
- * codebase's own precedent for reading a {@code SavedData} directly, and nothing here needs the
- * reverse player-to-run index {@link com.cobbletowers.runtime.TowerRuns} keeps for a different reason.
+ * Disk storage for rewards a player earned while offline, one file for the server. Same shape as {@link
+ * TowerRunStore}, read directly like {@link CellStateStore} with no in-memory mirror.
  */
-public final class TowerPendingRewardStore extends SavedData {
+public final class TowerPendingRewardStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_pending_rewards";
     private static final String PLAYERS = "players";
@@ -33,14 +26,9 @@ public final class TowerPendingRewardStore extends SavedData {
 
     private final Map<UUID, List<PendingTowerReward>> pending = new LinkedHashMap<>();
 
-    public static SavedData.Factory<TowerPendingRewardStore> factory() {
-        return new SavedData.Factory<>(TowerPendingRewardStore::new, TowerPendingRewardStore::load, DataFixTypes.LEVEL);
-    }
-
     /** The store for this server. Created empty on a world that has never granted a reward. */
     public static TowerPendingRewardStore get(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerPendingRewardStore::new, TowerPendingRewardStore::load, FILE_ID);
     }
 
     /** One player's queue, front of queue first. A copy: callers must not mutate the store's list. */
@@ -55,8 +43,8 @@ public final class TowerPendingRewardStore extends SavedData {
     }
 
     /**
-     * Queues a reward unless the same grant is already waiting (the same run or grant id, item and components), so a grant that is replayed after a
-     * crash is not paid twice. Rewards that have been handed over are no longer here, which is why callers queue before they record.
+     * Queues a reward unless the same grant is already waiting (same run or grant id, item and components), so a
+     * replay after a crash is not paid twice. Handed-over rewards are gone, so callers queue before they record.
      */
     public void addIfAbsent(UUID playerId, PendingTowerReward reward) {
         List<PendingTowerReward> queue = pending.computeIfAbsent(playerId, ignored -> new ArrayList<>());
@@ -73,15 +61,6 @@ public final class TowerPendingRewardStore extends SavedData {
         List<PendingTowerReward> queue = pending.remove(playerId);
         if (queue != null && !queue.isEmpty()) setDirty();
         return queue == null ? List.of() : List.copyOf(queue);
-    }
-
-    /**
-     * Writes the file to disk immediately, the same "flush now" reasoning {@link TowerRunStore}'s own
-     * {@code checkpoint} gives: a reward queued and then lost to a crash before the next autosave is a
-     * reward a player was already told they earned.
-     */
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     /** Package-private rather than private so a test can round-trip the file without a server. */

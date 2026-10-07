@@ -13,23 +13,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 
 /**
- * Whether a cell is fit to hand to the next run (TDS #35).
- *
- * <p>Staged, and every stage that fails is reported rather than the first one: an operator reading a
- * quarantine wants to know everything that was left behind, not the first thing noticed.
- *
- * <p>Three stages: no players, no entities, and -- once the cell has been let go of -- no chunk
- * ticket still held for it. The third was left out in P3 rather than stubbed, because a stage that
- * always passes reads as verified and verifies nothing; P4 gives it something real to check.
- *
- * <p>The sweep reaches well below the cell, because the tower is a void: anything left behind is
- * falling by the time anyone looks. A sweep bounded by the cell's own floor reported clean with a pig
- * plainly inside it, which is how that was found.
- *
- * <p>P3's known limit is closed for the normal path: a cell in use holds its chunks, so the sweep
- * runs against loaded chunks and sees what is really there. It still holds for a cell nobody has
- * held recently -- an unloaded chunk reports empty -- which is why {@link #verifyReleased} is run
- * while the tickets are still in place and the ticket stage is checked after they are dropped.
+ * Whether a cell is fit to hand to the next run (TDS #35). Staged, with every failing stage reported: no players, no
+ * entities, and no chunk ticket still held. The sweep reaches well below the cell because the tower is a void. Run
+ * {@link #verifyReleased} while tickets are still in place.
  */
 public final class CellCleanup {
 
@@ -53,17 +39,9 @@ public final class CellCleanup {
     private CellCleanup() {}
 
     /**
-     * The full check a cell must pass before it can be handed to anyone else.
-     *
-     * <p>Call this <b>after</b> dropping the cell's tickets, and sweep the contents before that: the
-     * contents stage needs loaded chunks to see anything, and the ownership stage needs the tickets
-     * to be gone. Doing both at one moment would make one of them a lie.
-     *
-     * <p>What it really asks is whether anything in this mod still claims the cell -- a ticket that
-     * was not dropped, or a warm-pool entry that outlived the cell it names. Written first as "are
-     * the tickets gone" alone, it was almost a tautology, because release drops them on the line
-     * above; asking who still claims the cell is a question that a bug can actually answer wrongly,
-     * which is the only kind of check worth running.
+     * The full check before a cell can be reused. Call after dropping the cell's tickets, with contents swept before
+     * that: the contents stage needs loaded chunks, the ownership stage needs the tickets gone. Asks whether anything
+     * in this mod still claims the cell.
      */
     public static Report verifyReleased(int cell, Report contents) {
         List<String> problems = new ArrayList<>(contents.problems());
@@ -77,26 +55,16 @@ public final class CellCleanup {
     }
 
     /**
-     * Removes whatever is loose in a cell, and says how many things that was.
-     *
-     * <p>Exactly the class of thing {@link #verify} calls a problem -- every entity in the sweep
-     * volume that is not a player -- so a cell this has swept is a cell that verifies, and the two
-     * cannot drift into disagreeing about what "clean" means.
-     *
-     * <p>Only as honest as the chunks are loaded, which is why the one caller holds the cell's
-     * tickets and waits for them before asking.
+     * Removes whatever is loose in a cell and returns how many things; the same class of thing {@link #verify} calls
+     * a problem.
      */
     public static int sweepEntities(MinecraftServer server, int cell) {
         return sweepEntities(server, cell, entity -> false);
     }
 
     /**
-     * The same, except for entities {@code spare} says to keep.
-     *
-     * <p>The post-crash sweep waits for a cell's chunks to load, which can be later than the party takes to rejoin and
-     * start the next floor in that very cell. Without a way to spare what is live, it deleted the new floor's
-     * opponents and the players' own Pokemon mid-battle and the floor sat there forever (found as a one-in-three
-     * flake of the draft test). What it exists to remove is what the CRASH left, and none of that is in a battle.
+     * The same, sparing entities {@code spare} accepts. The post-crash sweep can run after the next floor has
+     * started, so live battle entities must survive.
      */
     public static int sweepEntities(MinecraftServer server, int cell, java.util.function.Predicate<Entity> spare) {
         CellGrid.requireValid(cell);
@@ -110,18 +78,9 @@ public final class CellCleanup {
     }
 
     /**
-     * Removes the debris a fought-over cell expects to hold -- dropped items, experience orbs and falling blocks -- and says
-     * how many there were. Narrower than {@link #sweepEntities} on purpose.
-     *
-     * <p>Falling blocks are the building's own physics, not a stray: the Battle Tower is made of thousands of concrete powder and sand
-     * blocks, some of which fall for a while after the building is pasted or reset. A run that ended within seconds of entering (a
-     * player dropping at once) had its cell verified with a couple of hundred of them still in the air and lost the cell for it.
-     *
-     * <p>A Pokemon that faints drops what Cobblemon's own drop rules give it, and nothing in a tower picks those
-     * items up (rewards come from the reward table, not from the floor). Left lying there they are "entities still
-     * inside", so the cell was quarantined: one cell lost per run that happened to drop anything. Anything else
-     * found in a cell at release -- a stray Pokemon, a mob -- is still a surprise, and still quarantines it,
-     * which is the point of the check.
+     * Removes the debris a fought-over cell expects: dropped items, experience orbs and falling blocks (the
+     * building's own sand and concrete physics). Narrower than {@link #sweepEntities}; anything else found is still a
+     * quarantine.
      */
     public static int sweepDebris(MinecraftServer server, int cell) {
         CellGrid.requireValid(cell);

@@ -5,8 +5,8 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Which ruleset a run is actually played under (P32): a floor's own override, else the tower's, then narrowed by the run's
- * playlist. The one place that answers it, so the level ceiling and party cap of a playlist reach every consumer the same way.
+ * Which ruleset a run is played under (P32): a floor's override, else the tower's, then narrowed by the playlist. The
+ * one place that answers it.
  */
 public final class RulesetResolver {
 

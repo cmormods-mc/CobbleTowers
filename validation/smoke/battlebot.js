@@ -1,26 +1,8 @@
-// A player that fights Cobblemon battles properly: it reads each battle request, picks a move the
-// battle will accept, and answers a forced switch itself.
-//
-// It replaces the CobbleRaids rig's raidbot.js for CobbleTowers' smoke tests, for three reasons that all
-// came out of P17-P20 (and are why a fought floor stalled on some opponent draws):
-//
-//   * raidbot.js casts one named move. A real battle takes moves away -- Blizzard has five PP, Haunter
-//     knows Disable -- and the bot then answers "Invalid action choice" for ever and never re-prompts.
-//   * Its DEFAULT mode asks Showdown to choose, which cannot be refused, but Showdown's own "default" for a
-//     forced switch goes through CobbleRaids' patched chooseSwitch and throws ("Cannot read property
-//     'length' of undefined"), hanging the battle. A real client never sends DEFAULT for a switch; it names
-//     the Pokemon, which is what this does.
-//   * raidbot.js lives outside the repo, where it has vanished between sessions.
-//
-// The request is decoded from Cobblemon's own wire format (BattleQueueRequestPacket -> ShowdownActionRequest:
-// wait, the active movesets, the forced-switch flags, then the side with every party Pokemon). Singles
-// battles only. Anything that does not decode falls back to DEFAULT, which is what the old bot did for
-// everything.
-//
-// Usage: node battlebot.js <username> [port] [move-preference,comma,separated]
-// mineflayer comes from the rig's node_modules via NODE_PATH, like joinbot.js. It takes one command: a line
-// `SAY <text>` appended to cmd_<username>.txt in the working directory is sent as chat, so a test can type a
-// /command as a real player. The harness's FIGHT / MOVE lines are ignored, which does no harm.
+// A player that fights Cobblemon battles properly, replacing the CobbleRaids rig's raidbot.js: reads each battle
+// request, picks a move the battle accepts and answers a forced switch itself (DEFAULT breaks CobbleRaids' patched
+// chooseSwitch). Singles only; anything undecodable falls back to DEFAULT. Usage: node battlebot.js <username> [port]
+// [move-preference,comma,separated]. A line `SAY <text>` appended to cmd_<username>.txt is sent as chat. mineflayer
+// comes from the rig's node_modules via NODE_PATH.
 const mineflayer = require('mineflayer');
 
 const username = process.argv[2];
@@ -162,8 +144,10 @@ function choose() {
       return;
     }
   } else if (request && request.active.length > 0) {
-    // BOT_TRY_SWITCH=1: on its second turn of a battle the bot tries to swap a healthy Pokemon out by choice. Where the
-    // rules allow it that is harmless; under a no-switching rule the server must refuse it (see forced_switch_test.py).
+    // BOT_TRY_SWITCH=1: on its second turn of a battle the bot tries to swap a healthy Pokemon out by choice. Where
+    // the
+    // rules allow it that is harmless; under a no-switching rule the server must refuse it (see
+    // forced_switch_test.py).
     turnsInBattle += 1;
     if (process.env.BOT_TRY_SWITCH && turnsInBattle === 2) {
       const bench = request.pokemon.find((p) => !p.fainted && !p.active && p.uuid);
@@ -243,7 +227,8 @@ setInterval(() => {
 bot.on('messagestr', (text) => {
   if (text.includes('turned off inside the tower')) console.log(`${tag} BLOCKED ${text}`);
   if (text.includes('Switching is not allowed')) console.log(`${tag} SWITCH_REFUSED ${text}`);
-  // A refusal is followed at once by a fresh request and "choose now"; the duplicate guard in choose() must not eat it.
+  // A refusal is followed at once by a fresh request and "choose now"; the duplicate guard in choose() must not eat
+  // it.
   if (text.includes('is not allowed in this battle') || text.includes('Switching is not allowed')) lastChoice = 0;
 });
 

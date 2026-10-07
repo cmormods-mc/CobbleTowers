@@ -9,13 +9,8 @@ import java.util.UUID;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A team forming before a run exists: a host, a tower, and up to three invitees.
- *
- * <p>Pure and in-memory. It is never persisted on purpose -- a half-formed team that outlived a restart
- * would need every invitee's consent asked again, and is worth nothing after a crash. The first thing
- * written to disk is the run itself, created when the host starts.
- *
- * <p>Time is passed in, never read, so expiry and the start countdown are testable without waiting.
+ * A team forming before a run exists: a host, a tower and up to three invitees. Pure and in memory; the first thing
+ * persisted is the run. Time is passed in so expiry and the countdown are testable.
  */
 public final class TowerLobby {
 
@@ -46,7 +41,10 @@ public final class TowerLobby {
     private long countdownEndsAt = -1;
     /** The Ascension the team will start at (P30); 0 is the ordinary start. */
     private int ascension;
-    /** The trial (P32) the team will attempt, empty for an ordinary run. It fixes the tower, playlist, seed and floor limit. */
+    /**
+     * The trial (P32) the team will attempt, empty for an ordinary run. It fixes the tower, playlist, seed and floor
+     * limit.
+     */
     private java.util.Optional<com.cobbletowers.trial.TrialSchedule.Instance> trial = java.util.Optional.empty();
     /** The playlist (P32) the team will play, empty for Standard. */
     private java.util.Optional<ResourceLocation> playlist = java.util.Optional.empty();
@@ -55,10 +53,7 @@ public final class TowerLobby {
     /** Who has readied up (P33): a rental team starts only when every member is, and only a finished draft can be. */
     private final java.util.Set<UUID> ready = new java.util.HashSet<>();
 
-    /**
-     * Whether the host has confirmed the mode (P33). A rental lobby opens nobody's draft, and takes no ready-up, until they do;
-     * changing the mode, trial or tower takes the confirmation back.
-     */
+    /** Whether the host has confirmed the mode (P33); changing mode, trial or tower withdraws it. */
     private boolean modeConfirmed;
 
     public boolean modeConfirmed() {
@@ -84,7 +79,10 @@ public final class TowerLobby {
         ready.clear();
     }
 
-    /** The seed from a run code (P35), empty for a fresh random one. A different tower is a different offer, so it clears it. */
+    /**
+     * The seed from a run code (P35), empty for a fresh random one. A different tower is a different offer, so it
+     * clears it.
+     */
     private java.util.Optional<Long> seed = java.util.Optional.empty();
 
     public java.util.Optional<Long> seed() {
@@ -241,7 +239,9 @@ public final class TowerLobby {
 
     private int lastAnnounced = -1;
 
-    /** True the first time a given whole-second figure is seen, so a countdown shows once per second, not per tick. */
+    /**
+     * True the first time a given whole-second figure is seen, so a countdown shows once per second, not per tick.
+     */
     public boolean announce(int secondsLeft) {
         if (secondsLeft == lastAnnounced) return false;
         lastAnnounced = secondsLeft;

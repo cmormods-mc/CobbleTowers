@@ -1,20 +1,8 @@
 #!/usr/bin/env node
-// A tuning aid for Ascension (P30): how hard is one floor at each Ascension, for a given kind of party?
-//
-//   node validation/showdown/ascension_sim.js --showdown-dir L:/claude-cobbleraids-work/testserver-181/showdown
-//
-// It plays real Showdown battles through BattleStream, with the real tower-fx.js installed, so the over-the-cap EVs
-// are applied by the very `evs` operation the game uses. One floor is modelled as ONE battle: the player's six against
-// 1 + extra enemy Pokemon in a row (health carries over, which is exactly what the waves of a real floor do). The
-// enemy is built like Cobblemon builds a wild one (the last four level-up moves it knows, no EVs, middling IVs) and
-// picks moves at random; the player's AI is a greedy damage picker, a stand-in for a competent human who never
-// switches voluntarily and never sets up. So the numbers are a RELATIVE yardstick for how growth compares between
-// Ascensions, not a prediction of a particular player's run.
-//
-// What it does not model: bosses (CobbleRaids' shared pool), forced modifiers, items, healing between floors.
-//
-// The growth constants mirror ascension/AscensionPolicy.java; change them there and here together (or override with
-// --ev-per and --boon).
+// Tuning aid for Ascension (P30): how hard is one floor at each Ascension for a given party? Run `node
+// validation/showdown/ascension_sim.js --showdown-dir <rig>/showdown`. Plays real Showdown battles with the real
+// tower-fx.js; a floor is one battle against 1 + extra enemies. A relative yardstick, not a prediction (no bosses,
+// modifiers, items or healing). Constants mirror ascension/AscensionPolicy.java; override with --ev-per and --boon.
 
 const fs = require('fs');
 const path = require('path');
@@ -45,9 +33,13 @@ const {Battle} = require(path.join(SHOWDOWN, 'sim/battle'));
 const {Dex} = require(path.join(SHOWDOWN, 'sim/dex'));
 require(FX_FILE).install({Battle});
 
-// ---- teams ---------------------------------------------------------------------------------------------------------
+// ---- teams
+// ---------------------------------------------------------------------------------------------------------
 
-/** Cobblemon's packed set: name|species|uuid|hp|status|statusDuration|item|ability|moves|pp|nature|evs|gender|ivs|?|level| */
+/**
+ * Cobblemon's packed set:
+ * name|species|uuid|hp|status|statusDuration|item|ability|moves|pp|nature|evs|gender|ivs|?|level|
+ */
 function pack(m, n) {
   const evs = m.evs.join(',');
   return [m.species, m.species, `00000000-0000-0000-0000-${String(n).padStart(12, '0')}`, '', '', '', 'none', m.ability,
@@ -97,7 +89,8 @@ function enemyOf(entry, level) {
     nature: 'Hardy', moves, evs: [0, 0, 0, 0, 0, 0], ivs: [15, 15, 15, 15, 15, 15], level: Math.min(100, level + (entry.level_offset || 0))};
 }
 
-// ---- play ----------------------------------------------------------------------------------------------------------
+// ---- play
+// ----------------------------------------------------------------------------------------------------------
 
 function hpOf(condition) {
   const [hp, max] = String(condition).split(' ')[0].split('/').map(Number);
@@ -113,7 +106,10 @@ function effectiveness(moveType, targetTypes) {
   return mod;
 }
 
-/** The player's choice: forced switch to the healthy Pokemon with the best matchup, else the highest expected-damage move. */
+/**
+ * The player's choice: forced switch to the healthy Pokemon with the best matchup, else the highest expected-damage
+ * move.
+ */
 function playerChoice(request, enemyTypes) {
   const side = request.side.pokemon;
   const scoreMon = (mon) => {

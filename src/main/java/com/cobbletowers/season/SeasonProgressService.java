@@ -32,18 +32,17 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Season points and the free track at run time (P36b): awards points for the play that already exists, and grants each track step
- * the moment its points are reached, through the pending-reward store (delivered at once to an online player and at login to an
- * offline one). The rules are {@link SeasonPoints} and {@link SeasonTrackDefinition}; this is the part that knows a server.
- *
- * <p>Idempotent by construction: a step is granted only when the player's stored step count is below the step reached, and the count
- * is saved with the grant, so a replay or a crash cannot pay a step twice.
+ * Season points and the free track at run time (P36b): awards points and grants each step as it is reached through
+ * the pending-reward store. Rules are in {@link SeasonPoints} and {@link SeasonTrackDefinition}. Idempotent: a step
+ * is granted only when the stored step count is below the step reached.
  */
 public final class SeasonProgressService {
 
     private SeasonProgressService() {}
 
-    /** A regional tower is one with a regional theme; Neutral and the Test tower never earn season points for a clear. */
+    /**
+     * A regional tower is one with a regional theme; Neutral and the Test tower never earn season points for a clear.
+     */
     public static boolean regional(ResourceLocation towerId) {
         TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(towerId);
         return tower != null && tower.regionalTheme().isPresent();
@@ -51,7 +50,10 @@ public final class SeasonProgressService {
 
     // ---- earning ----------------------------------------------------------------------------------
 
-    /** A regional cycle clear by these players (spotlight if it was the season's featured region). Ignored for any other tower. */
+    /**
+     * A regional cycle clear by these players (spotlight if it was the season's featured region). Ignored for any
+     * other tower.
+     */
     public static void regionalCleared(MinecraftServer server, ResourceLocation tower, List<UUID> players) {
         if (!regional(tower)) return;
         boolean spotlight = Seasons.activeNumber().map(Seasons::definition).flatMap(SeasonDefinition::spotlight)
@@ -59,7 +61,10 @@ public final class SeasonProgressService {
         for (UUID player : players) award(server, player, Source.REGIONAL_CLEAR, 0, spotlight);
     }
 
-    /** Awards one source to a player; returns the points added (0 when no season is running, or a cap or an earlier count applies). */
+    /**
+     * Awards one source to a player; returns the points added (0 when no season is running, or a cap or an earlier
+     * count applies).
+     */
     public static int award(MinecraftServer server, UUID player, Source source, int param, boolean spotlight) {
         Optional<Integer> season = Seasons.activeNumber();
         if (season.isEmpty()) return 0;
@@ -111,8 +116,10 @@ public final class SeasonProgressService {
         if (track.isPresent()) {
             int reached = track.get().stepsFor(next.total());
             if (reached > next.steps()) {
-                // Queue first (flushed, and deduplicated by grant, so a replay adds nothing twice), then record the steps, then tell and deliver.
-                // A crash after queueing and before the step count is saved replays the grant harmlessly; the other order lost a prize.
+                // Queue first (flushed, and deduplicated by grant, so a replay adds nothing twice), then record the
+                // steps, then tell and deliver.
+                // A crash after queueing and before the step count is saved replays the grant harmlessly; the other
+                // order lost a prize.
                 List<Runnable> afterwards = new ArrayList<>();
                 for (int step = next.steps() + 1; step <= reached; step++) {
                     // A step already claimed by hand (auto_claim was off earlier) is not granted again.
@@ -130,7 +137,10 @@ public final class SeasonProgressService {
         store.checkpoint(server);
     }
 
-    /** Queues a step's rewards and cosmetics and returns what is left to do once the step is recorded: the message and the delivery. */
+    /**
+     * Queues a step's rewards and cosmetics and returns what is left to do once the step is recorded: the message and
+     * the delivery.
+     */
     private static Runnable grantStep(MinecraftServer server, UUID player, int season, SeasonTrackDefinition track, int number) {
         SeasonTrackDefinition.Step step = track.steps().get(number - 1);
         TowerPendingRewardStore pending = TowerPendingRewardStore.get(server);
@@ -147,8 +157,10 @@ public final class SeasonProgressService {
             }
             String components = Cosmetics.expand(grant.components(), tokens);
             String label = Cosmetics.expand(grant.label(), tokens);
-            // One id per grant, not per step: the queue deduplicates on (id, item, components), so two grants of the same item in a step
-            // (an addon adding diamonds to a step that already has diamonds) would otherwise collapse into the first one.
+            // One id per grant, not per step: the queue deduplicates on (id, item, components), so two grants of the
+            // same item in a step
+            // (an addon adding diamonds to a step that already has diamonds) would otherwise collapse into the first
+            // one.
             UUID grantOf = index == 0 ? grantId : UUID.nameUUIDFromBytes(("season:" + season + ":" + number + ":" + player + ":" + index)
                     .getBytes(StandardCharsets.UTF_8));
             index++;
@@ -158,7 +170,8 @@ public final class SeasonProgressService {
         Set<String> cosmetics = new HashSet<>();
         for (String name : step.cosmetics()) cosmetics.add("s" + season + ":" + name);
         pending.checkpoint(server);
-        // The cosmetics go through the one door (P36d): recorded, the first title worn, the earn commands run, the tab list refreshed.
+        // The cosmetics go through the one door (P36d): recorded, the first title worn, the earn commands run, the
+        // tab list refreshed.
         CosmeticsService.award(server, player, cosmetics);
         TowerLog.info("{} reached season {} track step {}: {}{}", player, season, number, given,
                 cosmetics.isEmpty() ? "" : " and cosmetics " + cosmetics);
@@ -179,14 +192,17 @@ public final class SeasonProgressService {
         return "s" + season + ":" + step;
     }
 
-    /** Whether a step has been claimed: recorded as a claim, or granted before claiming existed (a step within {@code Progress.steps}). */
+    /**
+     * Whether a step has been claimed: recorded as a claim, or granted before claiming existed (a step within {@code
+     * Progress.steps}).
+     */
     public static boolean claimed(TowerSeasonProgressStore store, UUID player, int season, int step) {
         return step <= store.of(player, season).steps() || store.claimed(player, claimKey(season, step));
     }
 
     /**
-     * How many reached steps of the season in view (the running one, or during the off-season the one that just ended) are still unclaimed.
-     * Steps stay claimable through the off-season and lapse when the next season starts.
+     * How many reached steps of the season in view are still unclaimed. Steps stay claimable through the off-season
+     * and lapse when the next season starts.
      */
     public static int unclaimed(MinecraftServer server, UUID player) {
         Optional<Integer> season = Seasons.viewNumber();
@@ -212,8 +228,8 @@ public final class SeasonProgressService {
     }
 
     /**
-     * Claims one reached step: the grants are queued first (deduplicated by the same deterministic grant id the automatic path used, so a
-     * replay or a crash cannot pay twice), then the claim is recorded, then the player is told and delivered to.
+     * Claims one reached step: grants are queued first (deduplicated by a deterministic grant id), then the claim is
+     * recorded, then the player is told.
      * @return the refusal, or empty when claimed
      */
     public static Optional<String> claim(MinecraftServer server, UUID player, int step) {
@@ -238,7 +254,10 @@ public final class SeasonProgressService {
         return claimed;
     }
 
-    /** The tokens a track grant may use: {@code {season}}, {@code {season_name}} and {@code {color}} (the spotlight region's dye). */
+    /**
+     * The tokens a track grant may use: {@code {season}}, {@code {season_name}} and {@code {color}} (the spotlight
+     * region's dye).
+     */
     static java.util.Map<String, String> tokensOf(int season) {
         SeasonDefinition definition = Seasons.definition(season);
         String color = definition.spotlight().map(region -> switch (region.getPath()) {
@@ -318,7 +337,8 @@ public final class SeasonProgressService {
         if (track.isEmpty()) return Optional.empty();
         int waiting = unclaimed(server, player);
         if (season.isEmpty()) {
-            // Off-season: the ended season's unclaimed steps are the only thing worth saying, and they lapse when the next season starts.
+            // Off-season: the ended season's unclaimed steps are the only thing worth saying, and they lapse when the
+            // next season starts.
             return waiting == 0 || Seasons.viewNumber().isEmpty() ? Optional.empty()
                     : Optional.of("Season " + Seasons.viewNumber().get() + " ended: " + waiting + " track reward(s) to claim before the next season begins "
                             + "(Progress tab in the Tower Hall).");

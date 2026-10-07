@@ -5,15 +5,8 @@ import java.util.Collection;
 import java.util.OptionalInt;
 
 /**
- * The level a tower opponent fights at. The only place that decides one.
- *
- * <p>TDS #45 is explicit that rounding, bounds and floor adjustments are centralised and that level
- * maths is not scattered through encounter code. {@link TowerLevelSnapshot} owns the mean over the
- * registered parties; this adds everything that turns that mean into the number an opponent is
- * spawned at, and nothing else in the mod is allowed to do arithmetic on a level.
- *
- * <p>Taken once per floor. The party it was measured from can faint, disconnect or go and spectate
- * without the floor becoming easier underneath them.
+ * The level a tower opponent fights at, and the only place that decides one (TDS #45). {@link TowerLevelSnapshot}
+ * owns the mean over registered parties; this turns it into the spawn level. Taken once per floor.
  */
 public final class TowerLevelPolicy {
 
@@ -24,11 +17,10 @@ public final class TowerLevelPolicy {
 
     /**
      * The level for one opponent.
-     *
-     * @param partyLevels every registered Pokemon of every participant, fainted ones included
-     * @param floorIndex  1-based, so the first floor adds one step
-     * @param entryOffset the pool entry's own offset, for a tougher opponent inside an ordinary pool
-     * @param ruleset     supplies the bounds; a floor never produces a level outside them
+     * @param partyLevels every registered Pokemon of every participant, fainted included
+     * @param floorIndex 1-based
+     * @param entryOffset the pool entry's own offset
+     * @param ruleset supplies the bounds
      */
     public static OptionalInt levelFor(Collection<Integer> partyLevels, int floorIndex, int entryOffset,
                                        RulesetDefinition ruleset) {
@@ -39,12 +31,7 @@ public final class TowerLevelPolicy {
         return OptionalInt.of(clamp(scaled, ruleset));
     }
 
-    /**
-     * Held inside the ruleset's bounds and then inside Cobblemon's.
-     *
-     * <p>Both, in that order: a ruleset asking for level 120 is a content mistake that should not
-     * reach Cobblemon, and one asking for 0 should not reach it either.
-     */
+    /** Held inside the ruleset's bounds, then Cobblemon's. */
     public static int clamp(int level, RulesetDefinition ruleset) {
         int low = Math.max(ruleset.minEnemyLevel(), TowerLevelSnapshot.MIN_LEVEL);
         int high = Math.min(ruleset.maxEnemyLevel(), TowerLevelSnapshot.MAX_LEVEL);

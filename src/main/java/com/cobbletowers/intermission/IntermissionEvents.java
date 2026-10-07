@@ -14,12 +14,9 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Intermission events (P34b): a room that may appear between the draft and the ready-up, with a choice of two options
- * voted on exactly like a draft card.
- *
- * <p>Pure: no server, no world. A room is picked and an option resolved from the run's seed, so a shared seed shares its
- * rooms and a crash cannot re-roll a bad outcome. The one thing that is not state (a party heal) is returned as a flag
- * for the caller to apply.
+ * Intermission events (P34b): a room that may appear between the draft and the ready-up, with two options voted on
+ * like a draft card. Pure: room and outcome come from the run seed. A party heal is returned as a flag for the
+ * caller.
  */
 public final class IntermissionEvents {
 
@@ -82,7 +79,10 @@ public final class IntermissionEvents {
         }
     }
 
-    /** An operator can switch rooms off with {@code -Dcobbletowers.events=off} (also used by tests of the draft alone). */
+    /**
+     * An operator can switch rooms off with {@code -Dcobbletowers.events=off} (also used by tests of the draft
+     * alone).
+     */
     public static boolean enabled() {
         return !"off".equalsIgnoreCase(System.getProperty("cobbletowers.events", "on"));
     }
@@ -94,8 +94,8 @@ public final class IntermissionEvents {
     // ---- choosing a room -------------------------------------------------------------------------
 
     /**
-     * The room this intermission has, if any. A milestone floor never has an ordinary room (it pays a relic) but may have
-     * the Echo Duel, when {@code echoAvailable}; any other floor has a room about half the time.
+     * The room this intermission has, if any. A milestone floor has no ordinary room (it pays a relic) but may have
+     * the Echo Duel; other floors have a room about half the time.
      */
     public static Optional<Room> roomFor(TowerContent content, PersistedRun run, int floorIndex, boolean echoAvailable) {
         if (!enabled()) return Optional.empty();

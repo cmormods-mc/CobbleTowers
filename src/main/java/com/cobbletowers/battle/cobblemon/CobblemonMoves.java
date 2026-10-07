@@ -5,8 +5,8 @@ import com.cobblemon.mod.common.api.moves.Moves;
 import java.util.Locale;
 
 /**
- * Where a rental card's move gets its type and damage category: Cobblemon's own move data, so a card can never disagree with the
- * battle. A move Cobblemon does not know (a typo in a set, or data not loaded) comes back with no type, and the client draws a plain gem.
+ * A rental card move's type and damage category from Cobblemon's own data, so a card cannot disagree with the battle.
+ * An unknown move has no type and draws a plain gem.
  */
 public final class CobblemonMoves {
 

@@ -10,9 +10,9 @@ import java.time.LocalDate;
 import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * The season calendar's anchor and master switch (P36a), read from {@code config/cobbletowers-seasons.json}:
- * {@code {"anchor": "2026-10-05", "enabled": true}}. The anchor should be a Monday so seasons and the weekly trial turn over
- * together. A missing file or a bad value falls back to the default and says so in the log.
+ * The season calendar's anchor and master switch (P36a), from {@code config/cobbletowers-seasons.json}: {@code
+ * {"anchor": "2026-10-05", "enabled": true}}. The anchor should be a Monday. A missing file or bad value falls back
+ * to the default and says so.
  */
 public record SeasonConfig(LocalDate anchor, boolean enabled) {
 

@@ -17,25 +17,19 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A run as it is written to disk: identifiers, revisions, a seed and logical state.
- *
- * <p>P1 defines the shape and proves it round-trips; P2 attaches it to a world. Nothing here stores a
- * live entity, a battle or a player object (TDS §10) -- a restart rebuilds those from the seed and the
- * pinned revisions.
- *
- * @param towerRevision     the author's revision of the tower when the run started
- * @param towerDigest       the content digest then, so an edit is distinguishable from a renumber
- * @param structureRevision the tower structure's revision, versioned independently (TDS #40)
- * @param lastCheckpoint    where the run was last committed, or empty before its first checkpoint
- * @param committedTransactions keys of mutations already applied, so replaying is safe (TDS #30)
- * @param updatedAt         epoch millis of the last write, used to retire finished runs
- * @param cell              the instance cell leased to this run, or empty before one is allocated
- * @param ledger            what the run has earned so far, with no worth attached to it yet
- * @param modifiers         what the run has drafted, and the draft it is sitting at (TDS #2)
- * @param lastBankedFloor   the floor index through which the ledger has already been priced and
- *                          granted (TDS #24, #30); 0 means nothing has been banked yet
- * @param vendorPurchases   how many times this run has bought each vendor service (TDS #19); a
- *                          service absent from this map has never been bought
+ * A run as written to disk: identifiers, revisions, a seed and logical state; no live entity, battle or player object
+ * (TDS section 10).
+ * @param towerRevision the tower's revision when the run started
+ * @param towerDigest the content digest then, so an edit is distinguishable from a renumber
+ * @param structureRevision the structure's own revision (TDS #40)
+ * @param lastCheckpoint where the run was last committed, or empty
+ * @param committedTransactions keys of applied mutations, so replay is safe (TDS #30)
+ * @param updatedAt epoch millis of the last write
+ * @param cell the leased instance cell, or empty
+ * @param ledger what the run has earned, unpriced
+ * @param modifiers what the run has drafted and its open draft (TDS #2)
+ * @param lastBankedFloor the floor through which the ledger is priced and granted (TDS #24, #30); 0 means none
+ * @param vendorPurchases purchases per vendor service (TDS #19)
  */
 public record PersistedRun(
         UUID runId,
@@ -71,11 +65,8 @@ public record PersistedRun(
     }
 
     /**
-     * The only shape this build writes or reads.
-     *
-     * <p>2 added the instance cell; 3 added the unclaimed ledger; 4 added the drafted modifiers; 5
-     * added how much of the ledger has been banked; 6 added vendor purchase counts; 7 added the run's options (playlist and trial). Older files are
-     * migrated forward by {@code RunMigrations}, which is what that framework was shipped empty for.
+     * The only shape this build writes or reads. Older files are migrated forward by {@code RunMigrations}; see it
+     * for what each version added.
      */
     public static final int SCHEMA_VERSION = 7;
 
@@ -259,14 +250,8 @@ public record PersistedRun(
     }
 
     /**
-     * The same run with its ledger priced through {@code throughFloor} and {@code grantKey} committed.
-     *
-     * <p>{@code grantKey} is deliberately distinct from any transition's own checkpoint key: by the
-     * time a grant runs, the run's state has already moved, so the state machine's own replay guard
-     * (a move cannot be applied twice because applying it moves the state) cannot cover it. This is
-     * the economic commit TDS #30 was left unused for -- its own key, checked before granting, so a
-     * retry after a crash between the transition and the grant is a safe no-op rather than a second
-     * payout.
+     * The same run with its ledger priced through {@code throughFloor} and {@code grantKey} committed. The key is
+     * distinct from any transition key so a retry after a crash between transition and grant is a no-op (TDS #30).
      */
     public PersistedRun banked(int throughFloor, String grantKey, long at) {
         List<String> transactions = new ArrayList<>(committedTransactions);
@@ -276,7 +261,10 @@ public record PersistedRun(
                 at, cell, ledger, modifiers, throughFloor, vendorPurchases, options);
     }
 
-    /** The same run with one more transaction key recorded, for a side effect (the card rewards, P33b) that must happen once. */
+    /**
+     * The same run with one more transaction key recorded, for a side effect (the card rewards, P33b) that must
+     * happen once.
+     */
     public PersistedRun committed(String key, long at) {
         List<String> transactions = new ArrayList<>(committedTransactions);
         transactions.add(key);

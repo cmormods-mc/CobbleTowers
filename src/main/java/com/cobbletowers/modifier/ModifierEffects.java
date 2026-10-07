@@ -6,14 +6,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * What a run's accumulated modifiers add up to.
- *
- * <p>This is the whole of the "typed, not monolithic" promise in TDS #56: modifiers are summed once,
- * here, into the parameters the draw functions already take. Nothing downstream asks which modifiers
- * a run is carrying, and no encounter code contains a conditional naming one.
- *
- * <p><b>No level arithmetic lives here.</b> An offset is carried to {@code TowerLevelPolicy}, which
- * is the one place tower level maths exists (TDS #45). Adding a clamp here would make two.
+ * What a run's modifiers add up to (TDS #56). Summed once here; nothing downstream asks which modifiers a run
+ * carries. No level arithmetic lives here: offsets go to {@code TowerLevelPolicy} (TDS #45).
  */
 public record ModifierEffects(
         int levelOffset,
@@ -37,15 +31,8 @@ public record ModifierEffects(
     }
 
     /**
-     * Sums a run's modifiers.
-     *
-     * <p>Offsets add; percentages <b>compound</b>, because two modifiers that each say "a quarter
-     * more health" should give more than one of them does, and adding percentages would make three
-     * of them mean something quite different from what each one claims.
-     *
-     * <p>Integer arithmetic throughout, so the same list always gives the same numbers. The rounding
-     * is order-sensitive in the last digit, which is why the caller passes the list in draft order
-     * -- a stable order the run itself records -- rather than anything derived from a map.
+     * Sums a run's modifiers. Offsets add; percentages compound. Integer arithmetic, and the caller passes the list
+     * in draft order because rounding is order-sensitive.
      */
     public static ModifierEffects of(List<ModifierDefinition> modifiers) {
         int level = 0;
@@ -71,14 +58,10 @@ public record ModifierEffects(
             for (String move : effect.bannedMoves()) {
                 if (!banned.contains(move)) banned.add(move);
             }
-            // A permission, once withdrawn, stays withdrawn. Two modifiers cannot disagree about
-            // whether switching is allowed in a way that lets the party keep it -- the restrictive
-            // answer is the one the party drafted.
+            // A withdrawn permission stays withdrawn.
             switching = switching && effect.allowSwitching();
             items = items && effect.allowItems();
-            // A field is one condition, so the LAST drafted wins rather than the first. A party that
-            // drafts rain and later drafts sun has chosen sun; the alternative silently ignores the
-            // card they just voted for. Groups are how content stops the two being held at once.
+            // A field is one condition, so the last drafted wins.
             if (effect.weather().isPresent()) weather = effect.weather();
             if (effect.terrain().isPresent()) terrain = effect.terrain();
         }
@@ -90,7 +73,7 @@ public record ModifierEffects(
 
     /**
      * These effects with Ascension {@code ascension}'s growth on top (P30): extra opponents, a bigger boss pool and a
-     * better reward factor, each from {@link com.cobbletowers.ascension.AscensionPolicy}. The base cycle changes nothing.
+     * better reward factor from {@link com.cobbletowers.ascension.AscensionPolicy}.
      */
     public ModifierEffects withAscension(int ascension) {
         if (ascension <= 0) return this;

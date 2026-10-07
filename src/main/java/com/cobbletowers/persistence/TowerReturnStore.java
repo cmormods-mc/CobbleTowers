@@ -10,29 +10,20 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * Disk storage for where each player was before a run took them into the tower (P20). Copies
- * {@link TowerPendingRewardStore}'s exact shape. Written, and flushed, before the first teleport in, so a
- * crash while a player is inside still leaves a way home.
+ * Disk storage for where each player was before a run took them into the tower (P20). Flushed before the first
+ * teleport in, so a crash inside still leaves a way home.
  */
-public final class TowerReturnStore extends SavedData {
+public final class TowerReturnStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_return_points";
     private static final String ENTRIES = "entries";
 
     private final Map<UUID, ReturnPoint> points = new LinkedHashMap<>();
 
-    public static SavedData.Factory<TowerReturnStore> factory() {
-        return new SavedData.Factory<>(TowerReturnStore::new, TowerReturnStore::load, DataFixTypes.LEVEL);
-    }
-
     public static TowerReturnStore get(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerReturnStore::new, TowerReturnStore::load, FILE_ID);
     }
 
     public Optional<ReturnPoint> pointFor(UUID player) {
@@ -51,10 +42,6 @@ public final class TowerReturnStore extends SavedData {
 
     public int size() {
         return points.size();
-    }
-
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     static TowerReturnStore load(CompoundTag tag, HolderLookup.Provider registries) {

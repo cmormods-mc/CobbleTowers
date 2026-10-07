@@ -14,15 +14,12 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A player's rental draft for the pack-opening screen (P33): the three packs, which cards were kept from each, and the sentence for
- * the message line. Display data only, resolved on the server: the client has no rental sets of its own and never decides anything.
+ * A player's rental draft for the pack-opening screen (P33): the three packs, cards kept from each and the message
+ * line. Display data resolved on the server.
  */
 public record RentalDraftPayload(List<Pack> packs, int current, boolean complete, String message) implements CustomPacketPayload {
 
-    /**
-     * One move on a card: its id, and the type and damage category the card's gem is cut from (the colour is the type, the shape the
-     * category). Both are empty when they could not be resolved, which the client draws as a plain gem.
-     */
+    /** One move on a card: id, and the type and damage category its gem is cut from (empty draws a plain gem). */
     public record Move(String id, String type, String category) {
         static final StreamCodec<RegistryFriendlyByteBuf, Move> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.STRING_UTF8, Move::id,
@@ -31,7 +28,10 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
                 Move::new);
     }
 
-    /** Where a move's type and category come from. The server passes Cobblemon's own data; tests and previews pass {@link #UNKNOWN}. */
+    /**
+     * Where a move's type and category come from. The server passes Cobblemon's own data; tests and previews pass
+     * {@link #UNKNOWN}.
+     */
     @FunctionalInterface
     public interface MoveSource {
         Move resolve(String id);
@@ -52,8 +52,8 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
     }
 
     /**
-     * What the collectible card of a set looks like (P33b), for a client that has CobblemonCards: whether it is shiny (it came from a
-     * God Pack), its rarity, and the background and holographic effect the card carries (empty for none).
+     * What a set's collectible card looks like (P33b) for a client with CobblemonCards: shiny, rarity, background and
+     * holographic effect (empty for none).
      */
     public record Look(boolean shiny, String rarity, String background, String effect) {
         static final StreamCodec<RegistryFriendlyByteBuf, Look> STREAM_CODEC = StreamCodec.composite(
@@ -64,7 +64,10 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
                 Look::new);
     }
 
-    /** One card: the set's id, its species (for the model and the name), its rarity ({@code common} ... {@code mythic}) and its look. */
+    /**
+     * One card: the set's id, its species (for the model and the name), its rarity ({@code common} ... {@code
+     * mythic}) and its look.
+     */
     public record Card(ResourceLocation set, String species, String name, String rarity, Details details, Look look) {
         static final StreamCodec<RegistryFriendlyByteBuf, Card> STREAM_CODEC = StreamCodec.composite(
                 ResourceLocation.STREAM_CODEC, Card::set,
@@ -76,7 +79,10 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
                 Card::new);
     }
 
-    /** One pack: its five cards in the order they are revealed, whether it is the God Pack, and the two indices kept (empty if not yet). */
+    /**
+     * One pack: its five cards in the order they are revealed, whether it is the God Pack, and the two indices kept
+     * (empty if not yet).
+     */
     public record Pack(boolean god, List<Card> cards, List<Integer> kept) {
         static final StreamCodec<RegistryFriendlyByteBuf, Pack> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.BOOL, Pack::god,
@@ -85,7 +91,10 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
                 Pack::new);
     }
 
-    /** A draft as the screen shows it, with moves of unknown type. Pure: it only reads the draft and the sets it holds. */
+    /**
+     * A draft as the screen shows it, with moves of unknown type. Pure: it only reads the draft and the sets it
+     * holds.
+     */
     public static RentalDraftPayload of(RentalDraft draft, String message) {
         return of(draft, message, UNKNOWN);
     }

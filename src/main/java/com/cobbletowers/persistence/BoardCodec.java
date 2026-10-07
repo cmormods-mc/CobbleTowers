@@ -9,7 +9,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 
-/** How one leaderboard entry is written to NBT, shared by the live boards and the Hall of Fame (P36a) so there is one encoding. */
+/**
+ * How one leaderboard entry is written to NBT, shared by the live boards and the Hall of Fame (P36a) so there is one
+ * encoding.
+ */
 public final class BoardCodec {
 
     private BoardCodec() {}

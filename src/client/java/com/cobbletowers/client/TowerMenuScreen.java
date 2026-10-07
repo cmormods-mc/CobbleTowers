@@ -4,8 +4,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
 /**
- * Shared Hall chrome: a dark oak header and tab rail around a parchment canvas. Controls never move independently of
- * their hitboxes. Text drawn straight onto the canvas is {@link TowerUi#INK}; cards and panels on it are dark and use cream.
+ * Shared Hall chrome: dark oak header and tab rail around a parchment canvas. Text on the canvas is {@link
+ * TowerUi#INK}; cards and panels on it use cream.
  */
 public abstract class TowerMenuScreen extends TowerScreen {
     protected int contentX, contentY, contentWidth, contentHeight;

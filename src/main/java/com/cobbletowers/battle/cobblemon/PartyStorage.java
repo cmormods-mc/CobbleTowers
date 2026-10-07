@@ -24,13 +24,9 @@ import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Reads and rearranges a player's party and boxes (P18). The one place Cobblemon's storage is touched for
- * registration; everything it decides comes from {@link PartyArrangement}, which is pure and tested.
- *
- * <p>Moves are applied in two phases -- take every affected Pokemon out of its store, then set each at its
- * target -- so a target is never overwritten and a Pokemon is never in two places. If a set fails the
- * Pokemon that did not land are put straight back where they were, and as a last resort into any free
- * slot: a Pokemon is never left outside every store.
+ * Reads and rearranges a player's party and boxes (P18); the only place Cobblemon's storage is touched for
+ * registration. Decisions come from the pure {@link PartyArrangement}. Moves are two-phase and failures are put back,
+ * as a last resort into any free slot, so a Pokemon is never left outside every store.
  */
 public final class PartyStorage {
 
@@ -41,10 +37,9 @@ public final class PartyStorage {
 
     /**
      * Everything a player owns that registration can see.
-     *
-     * @param contents who is where, party and boxes together
-     * @param pcSlots  every box slot that exists, in order
-     * @param entries  the same Pokemon with their display details, in party-then-box order
+     * @param contents who is where
+     * @param pcSlots every box slot, in order
+     * @param entries the same Pokemon with display details, party then box
      */
     public record Snapshot(Map<Slot, UUID> contents, List<Slot> pcSlots, Map<UUID, Entry> entries) {
 
@@ -94,10 +89,9 @@ public final class PartyStorage {
     }
 
     /**
-     * Applies placements decided by {@link PartyArrangement}. {@code originals} is where each of those
-     * Pokemon is now, so a failure can put it back.
-     *
-     * @return true when every Pokemon landed; false when a rollback was needed (and was carried out)
+     * Applies placements decided by {@link PartyArrangement}. {@code originals} is where each Pokemon is now, for
+     * rollback.
+     * @return true when every Pokemon landed; false when a rollback was needed
      */
     public static boolean apply(ServerPlayer player, Map<UUID, Slot> placements, Map<UUID, Slot> originals) {
         if (placements.isEmpty()) return true;

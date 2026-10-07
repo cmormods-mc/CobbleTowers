@@ -3,10 +3,7 @@ package com.cobbletowers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * The one logger. Everything in CobbleTowers logs through here so every line carries the same name
- * and a server operator can filter the mod's output in one place.
- */
+/** The one logger: every line carries the same name so an operator can filter the mod's output. */
 public final class TowerLog {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("CobbleTowers");

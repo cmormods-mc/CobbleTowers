@@ -15,9 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The mastery tracks in force (P37): the datapack files, then the server owner's config, merged per tower. With no datapack loaded
- * (a plain unit test, or a server whose datapacks were all removed) the shipped default file is read straight from the jar, so the ranks and
- * perks never go missing.
+ * The mastery tracks in force (P37): datapack files, then the owner's config, merged per tower. With no datapack
+ * loaded, the shipped default is read from the jar so ranks and perks never go missing.
  */
 public final class MasteryTracks {
 

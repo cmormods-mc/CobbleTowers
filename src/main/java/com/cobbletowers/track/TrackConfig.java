@@ -15,10 +15,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * The server owner's say over the tracks (P37), read from {@code config/cobbletowers-tracks.json}:
- * <pre>{"auto_claim": false, "mastery": {...one mastery track file...}, "season": {"add_steps": [...]}}</pre>
- * {@code auto_claim} grants a reached node at once; the {@code mastery} and {@code season} blocks are merged after every datapack file, so an
- * owner can add rewards or override a perk. A missing file changes nothing; a bad one is logged and ignored.
+ * The server owner's say over the tracks (P37), from {@code config/cobbletowers-tracks.json}: {@code auto_claim}
+ * grants a reached node at once; {@code mastery} and {@code season} blocks merge after every datapack file. A missing
+ * file changes nothing; a bad one is logged and ignored.
  */
 public record TrackConfig(boolean autoClaim, Optional<MasteryTrackDefinition> mastery, List<SeasonTrackDefinition.AddStep> seasonSteps) {
 

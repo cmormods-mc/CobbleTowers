@@ -6,15 +6,9 @@ import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * The one place every other package reports a timing (TDS #33, #60, section 11).
- *
- * <p>Five categories, matching section 11's own list exactly: allocation, encounter construction,
- * transition, cleanup and tick cost. Persistence backlog is a count, not a timing -- there is nothing
- * to time about a queue depth.
- *
- * <p>Every method here is a thin call into {@link TowerDiagnosticsStore} plus one budget comparison;
- * nothing computes, blocks or does I/O. Called from the server thread everywhere it is called, the
- * same way the timings it records already are.
+ * The one place other packages report a timing (TDS #33, #60, section 11): allocation, encounter construction,
+ * transition, cleanup and tick cost. Each method is a thin call into {@link TowerDiagnosticsStore} plus one budget
+ * comparison, on the server thread.
  */
 public final class TowerMetrics {
 

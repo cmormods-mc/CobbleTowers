@@ -30,12 +30,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Everything a team does between floors (P17): vote on the modifier, buy from the vendor, say they are
- * ready, and vote on cashing out. Once everybody is ready a short countdown runs and the next floor opens.
- *
- * <p>Both the commands and the intermission screen call the same methods, and each returns the sentence
- * to show. Rounds live only in memory (see {@link IntermissionRound}); a restart costs a click, never
- * progress.
+ * Everything a team does between floors (P17): vote on the modifier, use the vendor, ready up, vote to cash out; a
+ * countdown then opens the next floor. Commands and the screen share these methods. Rounds live in memory ({@link
+ * IntermissionRound}).
  */
 public final class IntermissionService {
 
@@ -59,9 +56,8 @@ public final class IntermissionService {
     }
 
     /**
-     * Arrival at INTERMISSION. Called from the same place the transition service revives people and opens
-     * the draft, so every road in behaves alike, and <b>before</b> banking so that a reward reveal sent
-     * when a floor banks lands on top of this screen rather than under it.
+     * Arrival at INTERMISSION, from the same place the transition service revives people and opens the draft. Runs
+     * before banking so the reward reveal lands on top of this screen.
      */
     public static void onArrival(MinecraftServer server, UUID runId) {
         ROUNDS.put(runId, new IntermissionRound());
@@ -123,7 +119,9 @@ public final class IntermissionService {
         intermissionRunOf(player).ifPresent(run -> send(server, run, player, message, true));
     }
 
-    /** One line for {@code runs show}: who is ready, who is cashing out, and whether the next floor is counting down. */
+    /**
+     * One line for {@code runs show}: who is ready, who is cashing out, and whether the next floor is counting down.
+     */
     public static String describe(PersistedRun run) {
         IntermissionRound round = ROUNDS.get(run.runId());
         if (round == null) return "no intermission round";
@@ -209,7 +207,8 @@ public final class IntermissionService {
             }
             round.cancelCountdown();
             if (com.cobbletowers.echo.EchoDuels.active(server, runId)) continue;   // an Echo Duel holds the floor
-            // A playlist's party clauses (P32) hold every floor, not only the first: a party that stopped complying waits.
+            // A playlist's party clauses (P32) hold every floor, not only the first: a party that stopped complying
+            // waits.
             List<String> problems = PlaylistGuard.problems(server, found.get());
             if (!problems.isEmpty()) {
                 TowerLog.info("Run {} cannot open its next floor: {}", runId, String.join("; ", problems));
@@ -242,8 +241,7 @@ public final class IntermissionService {
     }
 
     /**
-     * At the end of an Ascension cycle (P30) the intermission is the decision point: say so, once, on arrival. Empty at
-     * every other intermission, and for a tower that does not ascend.
+     * At the end of an Ascension cycle (P30) the intermission is the decision point; says so once. Empty elsewhere.
      */
     static String cycleEndMessage(PersistedRun run) {
         var tower = com.cobbletowers.definition.TowerDefinitionRegistry.content().towers().get(run.towerId());

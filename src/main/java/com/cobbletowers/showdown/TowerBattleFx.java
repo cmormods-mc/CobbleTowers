@@ -13,21 +13,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The battle effects waiting for a player's tower battle, and how they reach Showdown (P23).
- *
- * <p>The effects are <b>queued</b> by whoever decides them (an operator seam today, a worn armor set in P24) and
- * only <b>armed</b> by the code that is about to start a tower battle, immediately before it does and disarmed
- * immediately after. The format-field provider hands out nothing but armed effects, once. That two-step shape is
- * the guarantee: an effect can never leak into a battle that was not a tower battle (a wild battle the player
- * wanders into next), into a later battle, or into someone else's.
- *
- * <p>Operations use <b>logical</b> sides here -- {@code self}, {@code foe}, {@code both} -- and are resolved to
- * Showdown's concrete side ids ({@code p1}, {@code p2}...) when armed, because only the code starting the battle
- * knows who is who (a floor battle is p1 against p2; a boss raid is p1..pN against p(N+1)). The JavaScript never
- * has to guess. Every operation is validated here as well as in {@code tower-fx.js}: a bad one is dropped and
- * logged, never forwarded.
- *
- * <p>Pure apart from the maps: no Minecraft or Cobblemon types, so every rule is a unit test.
+ * Battle effects waiting for a player's tower battle (P23). Effects are queued by whoever decides them and armed only
+ * by the code starting a tower battle, so they cannot leak into another battle. Operations use logical sides ({@code
+ * self}, {@code foe}, {@code both}) resolved to Showdown side ids when armed, and are validated here and in {@code
+ * tower-fx.js}. Pure apart from the maps.
  */
 public final class TowerBattleFx {
 
@@ -54,11 +43,7 @@ public final class TowerBattleFx {
 
     // ---- queueing ------------------------------------------------------------------------------------------------
 
-    /**
-     * Replaces whatever is queued for {@code player} with these logical operations.
-     *
-     * @return how many survived validation
-     */
+    /** Replaces whatever is queued for {@code player}. @return how many operations survived validation */
     public static int queue(UUID player, JsonArray logical) {
         JsonArray valid = new JsonArray();
         for (JsonElement element : logical) {
@@ -89,17 +74,14 @@ public final class TowerBattleFx {
     }
 
     /**
-     * The same, with {@code extra} logical operations the caller derived from the live player (a worn armor set,
-     * P24) merged after whatever is queued. The queue is the operator seam; the extras are never stored.
+     * The same, merging {@code extra} operations derived from the live player (a worn armor set, P24); extras are
+     * never stored.
      */
     public static void armFloorBattle(UUID player, JsonArray extra) {
         arm(player, List.of("p1"), List.of("p2"), extra);
     }
 
-    /**
-     * A boss raid is p1..pN (the players, in request order) against p(N+1). Each player's own effects are resolved
-     * against <b>their</b> side, so one player's bonus never lands on a teammate.
-     */
+    /** A boss raid is p1..pN against p(N+1); each player's effects resolve against their own side. */
     public static void armBossBattle(List<UUID> players) {
         armBossBattle(players, player -> new JsonArray());
     }
@@ -131,11 +113,12 @@ public final class TowerBattleFx {
         for (UUID player : players) ARMED.remove(player);
     }
 
-    // ---- handing to Showdown ----------------------------------------------------------------------------------------
+    // ---- handing to Showdown
+    // ----------------------------------------------------------------------------------------
 
     /**
-     * The CobbleRaids format-field provider: the {@code towerFx} field of a battle whose players have armed effects.
-     * Consumes them. Returns nothing for a battle that is not a tower battle, which is every other battle.
+     * The CobbleRaids format-field provider: the {@code towerFx} field for a battle whose players have armed effects.
+     * Consumes them; empty for any other battle.
      */
     public static Map<String, String> fieldsFor(UUID battleId, List<UUID> players) {
         JsonArray all = new JsonArray();
@@ -151,13 +134,10 @@ public final class TowerBattleFx {
         return Map.of("towerFx", all.toString());
     }
 
-    // ---- validation and resolution ------------------------------------------------------------------------------------
+    // ---- validation and resolution
+    // ------------------------------------------------------------------------------------
 
-    /**
-     * Returns the operation as a clean object (only the parameters its kind takes, each in range), or empty if it
-     * is not an operation we will send. Unknown operations are refused here too: the JavaScript ignores them, but
-     * there is no reason to send them.
-     */
+    /** Returns the operation as a clean object, or empty if it is not one we will send. */
     public static Optional<JsonObject> validate(JsonElement element) {
         if (element == null || !element.isJsonObject()) return Optional.empty();
         JsonObject op = element.getAsJsonObject();
@@ -237,7 +217,8 @@ public final class TowerBattleFx {
         return out;
     }
 
-    // ---- small readers ------------------------------------------------------------------------------------------------
+    // ---- small readers
+    // ------------------------------------------------------------------------------------------------
 
     private static String string(JsonObject op, String key) {
         JsonElement value = op.get(key);

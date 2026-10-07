@@ -12,15 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A definition's content, as a stable fingerprint.
- *
- * <p>A run records the digest of the content it started with, so a later load can tell "the tower was
- * edited" apart from "the tower is the same, renumbered" and refuse or migrate deliberately rather
- * than silently running different content (TDS #40).
- *
- * <p>Canonical before hashing -- object keys sorted, no whitespace -- because reformatting a file or
- * reordering its keys does not change what it says. Without that the digest would report an edit
- * every time someone ran a formatter over the datapack.
+ * A definition's content as a stable fingerprint, recorded by a run so a later load can tell an edit from a renumber
+ * (TDS #40). Canonical before hashing (sorted keys, no whitespace), so reformatting does not change it.
  */
 public final class ContentDigest {
 

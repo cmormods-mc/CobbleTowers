@@ -16,7 +16,10 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
-/** Loads rental sets (P33) from {@code data/<namespace>/cobbletowers/rental_sets/*.json}; malformed files are skipped by name. */
+/**
+ * Loads rental sets (P33) from {@code data/<namespace>/cobbletowers/rental_sets/*.json}; malformed files are skipped
+ * by name.
+ */
 public final class RentalSetRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, RentalSetDefinition>>
         implements IdentifiableResourceReloadListener {

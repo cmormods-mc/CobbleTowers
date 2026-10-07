@@ -9,10 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * Worn items to active bonuses (P24). Pure: given what is in the four armor slots and the loaded sets, the answer is
- * the same every time, which is what makes the rules unit tests rather than something to eyeball in game.
- */
+/** Worn items to active bonuses (P24). Pure. */
 public final class SetBonusResolver {
 
     /** The most any summed percent may reach, whatever a datapack stacks. */
@@ -22,7 +19,7 @@ public final class SetBonusResolver {
     private SetBonusResolver() {}
 
     /**
-     * @param worn the item in each slot (head, chest, legs, feet); an empty slot is simply absent
+     * @param worn the item in each slot (head, chest, legs, feet); empty slots are absent
      * @param sets every loaded set, in a stable order
      */
     public static ActiveBonuses resolve(Map<String, ResourceLocation> worn, Collection<ArmorSetDefinition> sets) {
@@ -65,7 +62,10 @@ public final class SetBonusResolver {
                 Math.min(raidPoints, PERCENT_CAP));
     }
 
-    /** How many distinct slots are filled by that slot's piece of {@code set}; a piece in the wrong slot counts for nothing. */
+    /**
+     * How many distinct slots are filled by that slot's piece of {@code set}; a piece in the wrong slot counts for
+     * nothing.
+     */
     static int wornPieces(Map<String, ResourceLocation> worn, ArmorSetDefinition set) {
         Set<String> filled = new HashSet<>();
         for (Map.Entry<String, ResourceLocation> entry : worn.entrySet()) {

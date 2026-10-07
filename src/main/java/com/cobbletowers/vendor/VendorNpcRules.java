@@ -3,10 +3,7 @@ package com.cobbletowers.vendor;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * The pure half of the physical vendor (P28): how a vendor mob is marked with the run it belongs to, and
- * who may use it. No Minecraft types, so it is unit-tested without a server.
- */
+/** The pure half of the physical vendor (P28): how a vendor mob is marked with its run and who may use it. */
 public final class VendorNpcRules {
 
     /** Every vendor mob carries this scoreboard tag. */
@@ -34,10 +31,9 @@ public final class VendorNpcRules {
 
     /**
      * Whether a player may use a vendor.
-     *
-     * @param vendorRun    the run the vendor was spawned for
-     * @param playerRun    the run the player belongs to, if any
-     * @param intermission whether the player's run is at an intermission right now
+     * @param vendorRun the run it was spawned for
+     * @param playerRun the player's run, if any
+     * @param intermission whether that run is at an intermission
      */
     public static Access access(UUID vendorRun, Optional<UUID> playerRun, boolean intermission) {
         if (playerRun.isEmpty() || !playerRun.get().equals(vendorRun)) return Access.NOT_IN_THIS_RUN;

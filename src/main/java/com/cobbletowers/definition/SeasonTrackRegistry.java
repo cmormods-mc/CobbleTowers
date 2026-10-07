@@ -17,12 +17,9 @@ import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 /**
- * Loads the season track (P36b) from {@code data/<namespace>/cobbletowers/season_tracks/*.json} on every datapack reload. The same rule
- * as every registry here: a malformed file is skipped with a message that names it, never thrown. One track serves every season: the
- * first file with steps, in id order, is the base (a server with several names which it wants by how its datapack is ordered).
- *
- * <p>Since P37 any file may also carry {@code add_steps}, extra rewards appended to given steps, and the owner's
- * {@code config/cobbletowers-tracks.json} adds more on top: that is how an addon mod adds to the track without replacing it.
+ * Loads the season track (P36b) from {@code data/<namespace>/cobbletowers/season_tracks/*.json} on every reload. A
+ * malformed file is skipped with a message naming it. The first file with steps, in id order, is the base; files may
+ * add {@code add_steps} and so can the owner's {@code config/cobbletowers-tracks.json}.
  */
 public final class SeasonTrackRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, SeasonTrackRegistry.File>>

@@ -12,14 +12,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Every club and every player's best regional clear (P35, roadmap D2), as plain data with no server in sight.
- *
- * <p>A club is a persistent named crew of up to {@value #MAX_MEMBERS}. Its score is the sum of its members' best regional cycle
- * clear (the same difficulty score the Difficulty board ranks); a weekly goal counts every member's regional cycle clears
- * and pays each member once when it is met. Only regional towers count: the caller decides that, this class only keeps the
- * numbers.
- *
- * <p>A player's best is kept whether or not they are in a club, so joining a crew brings their record with them.
+ * Every club and every player's best regional clear (P35, roadmap D2), as plain data. A club is a named crew of up to
+ * {@value #MAX_MEMBERS}; its score is the sum of its members' bests and a weekly goal pays each member once. The
+ * caller decides which towers count.
  */
 public final class ClubBook {
 
@@ -33,7 +28,9 @@ public final class ClubBook {
     /** CobbleDollars each member may claim once per week after the goal is met. */
     public static final int WEEKLY_REWARD = 300;
 
-    /** Banner colours only a club that has finished a season in the top three can set (P36c): first, second and third. */
+    /**
+     * Banner colours only a club that has finished a season in the top three can set (P36c): first, second and third.
+     */
     public static final List<String> PRESTIGE_BANNERS = List.of("gold", "silver", "bronze");
     /** How many clubs a season's podium has. */
     public static final int PODIUM = 3;
@@ -226,16 +223,16 @@ public final class ClubBook {
     }
 
     /**
-     * A regional cycle clear by {@code player}: raises their best, and, if they are in a club, counts toward its weekly goal.
-     * Returns whether this clear met the goal (true only on the clear that reaches it).
+     * A regional cycle clear: raises the player's best and, in a club, counts toward its weekly goal. Returns true
+     * only on the clear that meets the goal.
      */
     public boolean recordClear(UUID player, int score, String currentWeek) {
         return recordClear(player, score, currentWeek, 0);
     }
 
     /**
-     * As above, in a season ({@code 0} for none): the clear also raises the player's best for that season, which the season's club board
-     * is made of. A clear outside any season (the off-season, or seasons off) counts for the all-time score and the week only.
+     * As above, in a season ({@code 0} for none): also raises the player's season best. A clear outside any season
+     * counts for all-time and the week only.
      */
     public boolean recordClear(UUID player, int score, String currentWeek, int season) {
         if (season > 0 && score > seasonBestOf(season, player)) {
@@ -270,7 +267,9 @@ public final class ClubBook {
         return total;
     }
 
-    /** The season's clubs best first (highest season score, then name), only those that scored, at most {@code limit}. */
+    /**
+     * The season's clubs best first (highest season score, then name), only those that scored, at most {@code limit}.
+     */
     public List<Club> topForSeason(int season, int limit) {
         List<Club> ranked = new ArrayList<>();
         for (Club club : clubs.values()) if (seasonScore(club, season) > 0) ranked.add(club);
@@ -278,12 +277,18 @@ public final class ClubBook {
         return ranked.subList(0, Math.min(limit, ranked.size()));
     }
 
-    /** Forgets the per-player bests of seasons older than {@code keepFrom}; the just-finalised season stays until the next one is. */
+    /**
+     * Forgets the per-player bests of seasons older than {@code keepFrom}; the just-finalised season stays until the
+     * next one is.
+     */
     public void pruneSeasonBests(int keepFrom) {
         seasonBests.keySet().removeIf(season -> season < keepFrom);
     }
 
-    /** Gives a club a prestige banner colour and a line of honour (both idempotent, so a replayed finalisation changes nothing). */
+    /**
+     * Gives a club a prestige banner colour and a line of honour (both idempotent, so a replayed finalisation changes
+     * nothing).
+     */
     public void honor(Club club, String prestigeBanner, String honor) {
         if (prestigeBanner != null && PRESTIGE_BANNERS.contains(prestigeBanner)) club.unlockedBanners.add(prestigeBanner);
         if (honor != null && !club.honors.contains(honor)) club.honors.add(honor);

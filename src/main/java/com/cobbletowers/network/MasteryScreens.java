@@ -34,8 +34,8 @@ public final class MasteryScreens {
     }
 
     /**
-     * The payload for a tower and a tab; an unknown tower falls back to the first loaded one and an unknown tab to the
-     * mastery tab, so a modified client can only ever see something valid.
+     * The payload for a tower and tab; an unknown tower falls back to the first loaded one and an unknown tab to
+     * mastery.
      */
     public static MasteryScreenPayload build(MinecraftServer server, ServerPlayer player, String towerRaw, String tabRaw,
                                              boolean open) {

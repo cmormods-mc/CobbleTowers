@@ -9,11 +9,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * What a run's CUSTOM modifiers add up to (P29): the typed parameters their coded behaviors reduce to, so that the
- * engine's consumers read a number or a flag and never ask which modifier is held.
- *
- * <p>Pure: no server, no registry. The consumers are the battle adapters (battle operations), the intermission
- * (healing), reward valuation (the gamble) and the vendor (price).
+ * What a run's CUSTOM modifiers add up to (P29): typed parameters their coded behaviors reduce to. Consumers read a
+ * number or flag: battle adapters, intermission healing, reward valuation, vendor price. Pure.
  */
 public record CustomEffects(Set<CustomBehavior> behaviors) {
 
@@ -52,8 +49,8 @@ public record CustomEffects(Set<CustomBehavior> behaviors) {
     }
 
     /**
-     * What one reward grant is multiplied by, in percent. Deterministic from the run's seed and the grant's place in
-     * the ledger, like every other draw: a crash and a re-bank cannot turn a bad spin into a good one.
+     * What one reward grant is multiplied by, in percent. Deterministic from the run seed and the grant's ledger
+     * place, so a re-bank cannot change it.
      */
     public int rewardPercent(long runSeed, int floorIndex, int ordinal) {
         if (!has(CustomBehavior.FORTUNES_WHEEL)) return 100;

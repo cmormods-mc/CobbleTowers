@@ -4,8 +4,8 @@ import com.cobbletowers.TowerLog;
 import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * Installs the optional chat integrations (P36d). Kept apart from the class that talks to Placeholder API so that a server without it never
- * loads that class: the mod check happens here, and the link to it is only made when the mod is there.
+ * Installs the optional chat integrations (P36d). Kept apart from the Placeholder API class so a server without it
+ * never loads that class.
  */
 public final class ChatIntegration {
 

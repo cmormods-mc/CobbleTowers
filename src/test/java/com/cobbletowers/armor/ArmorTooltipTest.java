@@ -62,7 +62,8 @@ class ArmorTooltipTest {
         return ArmorTooltipBuilder.build(view, worn, item -> Component.literal(item.getPath()), expanded);
     }
 
-    // ---- describing bonuses ---------------------------------------------------------------------------------------------
+    // ---- describing bonuses
+    // ---------------------------------------------------------------------------------------------
 
     @Test
     void everyShippedBonusReadsAsPlainEnglish() throws IOException {
@@ -119,7 +120,8 @@ class ArmorTooltipTest {
         assertEquals("0.07", SetBonusDescriber.number(0.07));
     }
 
-    // ---- views ----------------------------------------------------------------------------------------------------------
+    // ---- views
+    // ----------------------------------------------------------------------------------------------------------
 
     @Test
     void aViewGroupsBonusesIntoAscendingTiersAndKeepsSlotOrder() throws IOException {
@@ -142,7 +144,8 @@ class ArmorTooltipTest {
         }
     }
 
-    // ---- the tooltip ----------------------------------------------------------------------------------------------------
+    // ---- the tooltip
+    // ----------------------------------------------------------------------------------------------------
 
     @Test
     void nothingWornShowsEverythingLocked() throws IOException {
@@ -201,7 +204,8 @@ class ArmorTooltipTest {
         assertEquals(0xC08CEB, title.getColor().getValue());
     }
 
-    // ---- the wire -------------------------------------------------------------------------------------------------------
+    // ---- the wire
+    // -------------------------------------------------------------------------------------------------------
 
     @Test
     void thePayloadSurvivesTheWire() throws IOException {
@@ -217,9 +221,12 @@ class ArmorTooltipTest {
         assertEquals(0, buffer.readableBytes(), "nothing left over");
     }
 
-    // ---- for a human ---------------------------------------------------------------------------------------------------
+    // ---- for a human
+    // ---------------------------------------------------------------------------------------------------
 
-    /** Writes every shipped set's tooltips (nothing worn, two worn, full set, expanded) for tools/render_tooltips.py. */
+    /**
+     * Writes every shipped set's tooltips (nothing worn, two worn, full set, expanded) for tools/render_tooltips.py.
+     */
     @Test
     void writesTheTooltipsForTheRenderer() throws IOException {
         JsonArray out = new JsonArray();

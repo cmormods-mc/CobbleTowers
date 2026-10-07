@@ -4,12 +4,9 @@ import com.cobbletowers.definition.ModifierDefinition;
 import java.util.Locale;
 
 /**
- * Which scene a modifier card is painted with. A short, stable key the client maps to a diorama; the client knows nothing about
- * modifier rules, so the key is chosen here from the definition and says only what the definition does.
- *
- * <p>The art must not imply an effect the modifier does not have: a modifier that pays less is never given the open-coffer scene
- * of one that pays more, so a reward modifier is keyed by the direction of its direct reward factor. Anything unrecognised is
- * {@code unknown}, which the client paints with a neutral scene and no sprite.
+ * Which scene a modifier card is painted with: a short stable key the client maps to a diorama. A reward modifier is
+ * keyed by the direction of its direct reward factor, so art never implies an effect it lacks. Unrecognised is {@code
+ * unknown}: a neutral scene.
  */
 public final class ModifierArt {
 

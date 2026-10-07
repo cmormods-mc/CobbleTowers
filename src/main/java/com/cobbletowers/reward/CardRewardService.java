@@ -24,12 +24,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Hands the real CobblemonCards cards a completed rental run has earned (P33b), through the same pending-reward queue everything
- * else uses: delivered at once to a player who is online, and at their next login to one who is not.
- *
- * <p>It reads the team from the party journal, which names every rental and the set it was made from before anything moves, so it
- * works even if the Pokemon are already gone and the player is offline. It is idempotent: the run records that it has been done, and
- * the recovery sweep re-attempts a run that completed in a crash window. A server without the card mod grants nothing and says so.
+ * Hands out the CobblemonCards cards a completed rental run earned (P33b) through the pending-reward queue. The team
+ * is read from the party journal, so it works when the Pokemon are gone or the player is offline. Idempotent; without
+ * the card mod it grants nothing and says so.
  */
 public final class CardRewardService {
 
@@ -45,7 +42,9 @@ public final class CardRewardService {
                 .filter(PlaylistDefinition.CardRewards::enabled);
     }
 
-    /** Called when a run arrives at {@code COMPLETED}; does nothing for a run that earns no cards, and nothing twice. */
+    /**
+     * Called when a run arrives at {@code COMPLETED}; does nothing for a run that earns no cards, and nothing twice.
+     */
     public static void onCompleted(MinecraftServer server, UUID runId, long now) {
         Optional<PersistedRun> found = TowerRuns.get(runId);
         if (found.isEmpty()) return;
@@ -91,7 +90,10 @@ public final class CardRewardService {
         }
     }
 
-    /** Re-attempts every completed run that never got its cards, once, at server start (a crash between completing and granting). */
+    /**
+     * Re-attempts every completed run that never got its cards, once, at server start (a crash between completing and
+     * granting).
+     */
     public static int sweep(MinecraftServer server, long now) {
         int done = 0;
         for (PersistedRun run : TowerRuns.all()) {

@@ -5,12 +5,9 @@ import com.cobbletowers.TowerLog;
 import java.io.InputStream;
 
 /**
- * Registers CobbleTowers' Showdown extension with CobbleRaids (P23).
- *
- * <p>Called from the mod initializer, before the server starts: the simulator is unbundled and its context built
- * during server start-up, and a module registered later is only installed on the next boot. CobbleRaids does the
- * installing, at the same moments and with the same repairs as its own patch -- CobbleTowers never edits Showdown's
- * files, which is the whole reason this does not become a third party racing for them.
+ * Registers CobbleTowers' Showdown extension with CobbleRaids (P23) from the mod initializer, before the server
+ * starts: a module registered later only installs on the next boot. CobbleRaids does the installing; CobbleTowers
+ * never edits Showdown's files.
  */
 public final class TowerShowdownFx {
 

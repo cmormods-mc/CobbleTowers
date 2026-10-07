@@ -15,7 +15,10 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 
-/** Seasons (P36a): {@code /tower season} and {@code /tower hall [season]} for players, {@code /cobbletowers seasonadmin} for operators. */
+/**
+ * Seasons (P36a): {@code /tower season} and {@code /tower hall [season]} for players, {@code /cobbletowers
+ * seasonadmin} for operators.
+ */
 public final class SeasonCommand {
 
     private SeasonCommand() {}

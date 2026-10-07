@@ -8,11 +8,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Where a team stands at one intermission: who is ready, how each player voted on cashing out, and when
- * the next floor opens.
- *
- * <p>Pure and in memory (P17). The electorate is passed in on every question and never stored, so a
- * player who drops out of the run simply stops being counted. Time is passed in as well.
+ * Where a team stands at one intermission (P17): who is ready, cash-out votes and when the next floor opens. Pure and
+ * in memory; the electorate and time are passed in.
  */
 public final class IntermissionRound {
 
@@ -47,11 +44,7 @@ public final class IntermissionRound {
         return !electorate.isEmpty() && ready.containsAll(electorate);
     }
 
-    /**
-     * A strict majority of the electorate voted to cash out. A tie, or a vote that is short of one,
-     * does not: a run has no leader to break a tie once it has started, so "keep playing" is what a
-     * tie falls back to.
-     */
+    /** A strict majority of the electorate voted to cash out; a tie keeps playing. */
     public boolean cashOutPasses(Collection<UUID> electorate) {
         if (electorate.isEmpty()) return false;
         long yes = electorate.stream().filter(this::votedCashOut).count();
@@ -60,7 +53,9 @@ public final class IntermissionRound {
 
     private int lastAnnounced = -1;
 
-    /** True the first time a given whole-second figure is seen, so a countdown shows once per second, not per tick. */
+    /**
+     * True the first time a given whole-second figure is seen, so a countdown shows once per second, not per tick.
+     */
     public boolean announce(int secondsLeft) {
         if (secondsLeft == lastAnnounced) return false;
         lastAnnounced = secondsLeft;

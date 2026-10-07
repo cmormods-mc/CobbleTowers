@@ -21,11 +21,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The drafts in progress in lobbies (P33): one per player of a lobby playing the Rental playlist. In memory only, like the lobby:
- * nothing exists until the run launches, so a restart costs a draft and never a Pokemon.
- *
- * <p>Every player's draft is drawn when they first open it. In a trial the seed is the trial's, so everyone sees the same packs and
- * no God Pack is rolled; otherwise it is random and a God Pack can appear.
+ * Drafts in progress in lobbies (P33), one per player of a Rental lobby. In memory only. Each draft is drawn on first
+ * open; a trial's seed is shared and rolls no God Pack, otherwise random.
  */
 public final class RentalDraftService {
 
@@ -74,8 +71,8 @@ public final class RentalDraftService {
     }
 
     /**
-     * Puts a member's draft in front of them without being asked: the pack screen, or the chat lines for a client that
-     * cannot show it. Used when they join a rental lobby and when the lobby switches to a rental mode.
+     * Puts a member's draft in front of them unasked (pack screen, or chat for a client that cannot show it), on
+     * joining a rental lobby or when it switches to a rental mode.
      */
     public static void prompt(MinecraftServer server, TowerLobby lobby, ServerPlayer player) {
         if (!isOpen(lobby) || RentalSetRegistry.all().isEmpty()) return;
@@ -95,7 +92,8 @@ public final class RentalDraftService {
         }
     }
 
-    // ---- the chat flow -----------------------------------------------------------------------------------------------
+    // ---- the chat flow
+    // -----------------------------------------------------------------------------------------------
 
     /** What {@code /tower draft} says: the current pack, or the finished team. */
     public static List<String> view(MinecraftServer server, ServerPlayer player) {
@@ -121,7 +119,8 @@ public final class RentalDraftService {
         return describe(open(server, lobby.get(), player.getUUID()));
     }
 
-    // ---- the pack-opening screen ---------------------------------------------------------------------------------------
+    // ---- the pack-opening screen
+    // ---------------------------------------------------------------------------------------
 
     public static void sendScreen(ServerPlayer player, RentalDraft draft, String message) {
         if (ServerPlayNetworking.canSend(player, RentalDraftPayload.TYPE)) {
@@ -134,7 +133,8 @@ public final class RentalDraftService {
         Optional<TowerLobby> lobby = LobbyService.lobbyOf(player.getUUID());
         if (lobby.isEmpty() || !isOpen(lobby.get()) || RentalSetRegistry.all().isEmpty()) return;
         if (action.action() == RentalDraftActionPayload.Action.READY) {
-            // The draft is done: ready up and go back to the lobby, where the host starts (the pack screen is not left open over it).
+            // The draft is done: ready up and go back to the lobby, where the host starts (the pack screen is not
+            // left open over it).
             LobbyService.openScreenWithMessage(server, player, LobbyService.ready(server, player, true));
             return;
         }

@@ -8,12 +8,8 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Which trial a day or week holds (P32): a pure function of the pool and the date, so every server computes the same trial with
- * no coordination, and so does a player's client or a test years later. The same input always gives the same trial, the seed
- * included, which is what makes everybody's run identical.
- *
- * <p>The pick walks the pool in seeded shuffled cycles ({@link #indexFor}), so every trial comes up once per cycle and none repeats
- * on consecutive periods.
+ * Which trial a day or week holds (P32): a pure function of the pool and date, so every server computes the same
+ * trial, seed included. The pick walks the pool in seeded shuffled cycles ({@link #indexFor}).
  */
 public final class TrialSchedule {
 
@@ -21,10 +17,9 @@ public final class TrialSchedule {
 
     /**
      * One trial.
-     *
-     * @param id         {@code daily:2026-10-05} or {@code weekly:2026-w41}: stored on a run and used as a board key
-     * @param periodKey  the date or week
-     * @param seed       the run seed every attempt shares
+     * @param id {@code daily:2026-10-05} or {@code weekly:2026-w41}, stored on a run and used as a board key
+     * @param periodKey the date or week
+     * @param seed the run seed every attempt shares
      */
     public record Instance(String id, Kind kind, String periodKey, ResourceLocation pool, TrialPoolDefinition.Entry entry,
                            int floors, int streakMinFloors, long seed) {
@@ -51,9 +46,8 @@ public final class TrialSchedule {
     }
 
     /**
-     * Which entry period number {@code number} holds. The numbers are cut into cycles as long as the pool, each cycle is a
-     * seeded shuffle of the entries, and a cycle never begins with the entry the last one ended on. So every entry comes up
-     * once per cycle, nothing repeats on consecutive periods, and the answer depends only on the number, never on a lookback.
+     * Which entry period {@code number} holds: cycles as long as the pool, each a seeded shuffle that never begins
+     * with the previous cycle's last entry. Depends only on the number.
      */
     public static int indexFor(String poolKey, int count, long number) {
         if (count <= 1) return 0;
@@ -61,7 +55,8 @@ public final class TrialSchedule {
         long cycle = Math.floorDiv(number, (long) count);
         int position = (int) Math.floorMod(number, (long) count);
         int[] order = shuffled(poolKey, count, cycle);
-        // The shuffle may open with what the previous cycle closed with; swapping the first two never touches the last place.
+        // The shuffle may open with what the previous cycle closed with; swapping the first two never touches the
+        // last place.
         if (order[0] == shuffled(poolKey, count, cycle - 1)[count - 1]) {
             int swap = order[0];
             order[0] = order[1];
@@ -86,7 +81,10 @@ public final class TrialSchedule {
         return kind == Kind.DAILY ? TrialClock.dayKey(day) : TrialClock.weekKey(day);
     }
 
-    /** The board a trial's results live on, from its instance id: {@code daily:2026-10-05} is {@code cobbletowers:daily/2026-10-05}. */
+    /**
+     * The board a trial's results live on, from its instance id: {@code daily:2026-10-05} is {@code
+     * cobbletowers:daily/2026-10-05}.
+     */
     public static Optional<ResourceLocation> boardIdOf(String instanceId) {
         int colon = instanceId.indexOf(':');
         if (colon < 0 || kindOf(instanceId).isEmpty()) return Optional.empty();

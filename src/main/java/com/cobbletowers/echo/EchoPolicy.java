@@ -15,11 +15,9 @@ import java.util.UUID;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * When an Echo is made and when one is met (P35), with no server in sight.
- *
- * <p>An Echo is made from a top-{@value #TOP_N} regional run and met in an optional Echo Duel room at a regional milestone
- * intermission: an exhibition battle on a cloned, healed party, so it costs nothing and the run's own path (and so a run code)
- * is untouched. It never replaces a boss, never appears in a trial, and never shows a player their own team.
+ * When an Echo is made and met (P35). Made from a top-{@value #TOP_N} regional run; met in an optional Echo Duel room
+ * at a regional milestone intermission, as an exhibition on a cloned, healed party. Never replaces a boss, appears in
+ * a trial or shows a player their own team.
  */
 public final class EchoPolicy {
 
@@ -43,7 +41,10 @@ public final class EchoPolicy {
         return topRuns(boards, tower, "");
     }
 
-    /** Every run in the top {@value #TOP_N} of any counting board of {@code tower} in {@code seasonId} ({@code ""} for all-time). */
+    /**
+     * Every run in the top {@value #TOP_N} of any counting board of {@code tower} in {@code seasonId} ({@code ""} for
+     * all-time).
+     */
     public static Set<UUID> topRuns(Map<Key, List<Entry>> boards, ResourceLocation tower, String seasonId) {
         Set<UUID> runs = new HashSet<>();
         for (Map.Entry<Key, List<Entry>> board : boards.entrySet()) {
@@ -59,16 +60,12 @@ public final class EchoPolicy {
     /** One Pokemon of an Echo. */
     public record Pick(Echo echo, String properties) {}
 
-    /**
-     * How many Echoes of the current season a tower needs before the previous season's stop serving (P36c). Until then the previous
-     * season's Hall teams fill the pool, so a new season does not start with nobody to duel.
-     */
+    /** How many current-season Echoes a tower needs before the previous season's stop serving (P36c). */
     public static final int HALL_ECHOES_UNTIL = 5;
 
     /**
-     * The Echoes a tower serves in the season on view ({@code current}, 0 for seasons off or not yet begun): this season's, plus the
-     * previous season's while this one has fewer than {@value #HALL_ECHOES_UNTIL}. With {@code current} at 0 that previous season is 0 too,
-     * so a server with seasons off serves only its all-time Echoes, and the first season is served by the Echoes made before it began.
+     * The Echoes a tower serves in the season on view ({@code current}; 0 for seasons off): this season's plus the
+     * previous season's while fewer than {@value #HALL_ECHOES_UNTIL} exist.
      */
     public static List<Echo> pool(List<Echo> towerEchoes, int current) {
         List<Echo> now = new ArrayList<>();
@@ -83,13 +80,18 @@ public final class EchoPolicy {
         return List.copyOf(serving);
     }
 
-    /** Whether an Echo stays through a prune: this season's while its run is still in the top ten, the previous season's always. */
+    /**
+     * Whether an Echo stays through a prune: this season's while its run is still in the top ten, the previous
+     * season's always.
+     */
     public static boolean keeps(Echo echo, int current, Set<UUID> currentTopRuns) {
         if (echo.season() == current) return currentTopRuns.contains(echo.runId());
         return current > 0 && echo.season() == current - 1;
     }
 
-    /** The Echo and Pokemon for this slot, from a pool sorted by id, never one owned by someone in {@code present}. */
+    /**
+     * The Echo and Pokemon for this slot, from a pool sorted by id, never one owned by someone in {@code present}.
+     */
     public static Optional<Pick> pick(List<Echo> pool, Set<UUID> present, long runSeed, int floorIndex, int ordinal) {
         List<Echo> eligible = new ArrayList<>();
         for (Echo echo : pool) {

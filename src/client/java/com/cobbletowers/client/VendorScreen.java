@@ -13,13 +13,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The Tower Supply Vendor's shop (TDS #16), reached by {@code /cobbletowers runs vendor} or the
- * intermission screen's Vendor button rather than a physical NPC (see the design doc's scope decision).
- *
- * <p>P19: a row of teammate buttons chooses who a purchase is for (TDS #18: "may pay for recovery
- * targeted at teammates"). The default is the buyer; the choice survives the refresh that follows every
- * purchase, so buying two services for the same teammate takes no re-selecting. The server re-checks the
- * target (in the run, online) and answers with a message that is shown at the bottom.
+ * The Tower Supply Vendor's shop (TDS #16), reached by {@code /cobbletowers runs vendor} or the intermission screen.
+ * A row of teammate buttons chooses who a purchase is for (TDS #18, P19); the choice survives refreshes. The server
+ * re-checks the target and answers with a message shown at the bottom.
  */
 public final class VendorScreen extends TowerScreen {
 

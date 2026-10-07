@@ -8,27 +8,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * TDS #60's "structured developer diagnostics keyed by run/encounter": one rolling aggregate per
- * timing category (allocation, encounter construction, transition, cleanup, tick cost), and one
- * snapshot per run that answers "what did this run actually cost" long after the run itself ended.
- *
- * <p>Copies {@link TowerPendingRewardStore}'s exact shape. A timing sample is operational telemetry
- * about how the mod behaved, not "logical state" about what a run is (TDS §10) -- the same distinction
- * that keeps a spectator's camera target out of {@link PersistedRun}, and the reason this is its own
- * store rather than one more field grown onto that one.
- *
- * <p>{@link #runs} is bounded ({@link #MAX_RUN_ENTRIES}), evicting the least-recently-updated entry
- * past that cap. Nothing else in this store's lifecycle retires an entry when its run does -- a run
- * store elsewhere may eventually retire an old run, this one does not hear about it -- so an unbounded
- * map here would be exactly the kind of leak the diagnostics this phase adds exist to catch, in the
- * one place this phase itself could quietly become one.
+ * TDS #60's structured diagnostics: a rolling aggregate per timing category and one snapshot per run. Telemetry, not
+ * logical state (TDS section 10). {@link #runs} is capped at {@link #MAX_RUN_ENTRIES}, evicting the least recently
+ * updated.
  */
-public final class TowerDiagnosticsStore extends SavedData {
+public final class TowerDiagnosticsStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_diagnostics";
     private static final String CATEGORIES = "categories";
@@ -64,14 +50,9 @@ public final class TowerDiagnosticsStore extends SavedData {
         public static final RunDiagnostics EMPTY = new RunDiagnostics(0, 0, 0);
     }
 
-    public static SavedData.Factory<TowerDiagnosticsStore> factory() {
-        return new SavedData.Factory<>(TowerDiagnosticsStore::new, TowerDiagnosticsStore::load, DataFixTypes.LEVEL);
-    }
-
     /** The store for this server. Created empty on a world that has never recorded a sample. */
     public static TowerDiagnosticsStore get(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerDiagnosticsStore::new, TowerDiagnosticsStore::load, FILE_ID);
     }
 
     public CategoryStats categoryStats(String category) {
@@ -97,7 +78,9 @@ public final class TowerDiagnosticsStore extends SavedData {
         setDirty();
     }
 
-    /** Updates one run's transition timing, evicting the oldest entry first if this run is new and the map is full. */
+    /**
+     * Updates one run's transition timing, evicting the oldest entry first if this run is new and the map is full.
+     */
     public void recordTransition(UUID runId, long millis, long now) {
         updateRun(runId, existing -> new RunDiagnostics(millis, existing.lastEncounterConstructionMillis(), now));
     }

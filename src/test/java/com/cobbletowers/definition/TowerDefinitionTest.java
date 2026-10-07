@@ -138,10 +138,8 @@ class TowerDefinitionTest {
     @Test
     @DisplayName("every milestone must name the raid definition its floor is finished by")
     void milestoneValidation() {
-        // Both kinds now, not only BOSS. Every floor ends in a CobbleRaids boss, and a milestone floor
-        // takes the one named here instead of drawing from a pool -- so a milestone without a
-        // definition is a floor nobody can complete. The shipped champion on floor 10 was in exactly
-        // that state, and the new definition check caught it the first time it ran.
+        // Both kinds need a definition: every floor ends in a CobbleRaids boss, so a milestone without one cannot be
+        // completed.
         assertThrows(IllegalArgumentException.class, () -> MilestoneDefinition.fromJson(ID, json("""
                 {"floor": 10, "kind": "champion"}""")));
 

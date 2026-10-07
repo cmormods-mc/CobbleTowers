@@ -12,19 +12,8 @@ import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The lines an armor piece adds to its tooltip (P25). Pure over {@link Component}: the client supplies what the viewer is
- * wearing and how to name an item, so the layout, wording and lit/locked state are unit-testable.
- *
- * <pre>
- * ◈ Tideforged Plate  2/4
- * ✔ 2 pieces
- *    » +1 Breath
- * ◇ ★ Full Set
- *    » Starts the battle in Rain
- * Hold Shift for pieces
- * </pre>
- *
- * Only glyphs the stock Minecraft font draws are used.
+ * The lines an armor piece adds to its tooltip (P25): set header, piece checklist, bonus lines and a Shift hint. Pure
+ * over {@link Component}; only glyphs the stock font draws.
  */
 public final class ArmorTooltipBuilder {
 
@@ -38,9 +27,9 @@ public final class ArmorTooltipBuilder {
     private ArmorTooltipBuilder() {}
 
     /**
-     * @param worn what the viewer wears, by slot name (a slot with nothing in it is absent)
-     * @param itemName how to name a piece for the checklist
-     * @param expanded whether to list the individual pieces (the viewer is holding Shift)
+     * @param worn what the viewer wears, by slot name
+     * @param itemName how to name a piece
+     * @param expanded whether to list the pieces (Shift held)
      */
     public static List<Component> build(ArmorSetView set, Map<String, ResourceLocation> worn,
                                         Function<ResourceLocation, Component> itemName, boolean expanded) {

@@ -23,9 +23,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Claiming a mastery level's reward (P37). The level itself is earned by achievements; the prize is claimed from the track, any time after
- * it is reached (it never lapses). Replay-safe the way the season track is: the grants are queued first under a deterministic id that
- * {@code addIfAbsent} deduplicates, then the claim is recorded, then the player is told and delivered to.
+ * Claiming a mastery level's reward (P37). The prize is claimed any time after the level is reached and never lapses.
+ * Replay-safe: grants are queued first under a deterministic id that {@code addIfAbsent} deduplicates, then the claim
+ * is recorded.
  */
 public final class MasteryClaims {
 
@@ -66,7 +66,8 @@ public final class MasteryClaims {
                 continue;
             }
             String label = Cosmetics.expand(grant.label(), tokens);
-            // One id per grant (the queue deduplicates on id, item and components, so merged grants of one item must not share an id).
+            // One id per grant (the queue deduplicates on id, item and components, so merged grants of one item must
+            // not share an id).
             UUID grantOf = index == 0 ? grantId : UUID.nameUUIDFromBytes(("mastery:" + tower + ":" + level + ":" + player + ":" + index)
                     .getBytes(StandardCharsets.UTF_8));
             index++;

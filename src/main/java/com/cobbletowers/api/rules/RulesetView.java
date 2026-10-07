@@ -1,11 +1,8 @@
 package com.cobbletowers.api.rules;
 
 /**
- * The rules a run is played under, as an addon may read them.
- *
- * <p>Level bounds live here and nowhere else (TDS #45: do not scatter level formulas through
- * encounter code). The enemy level is computed once per encounter from the registered parties and
- * then clamped by {@link #minEnemyLevel()} and {@link #maxEnemyLevel()}.
+ * The rules a run is played under. Level bounds live here only (TDS #45): the enemy level is computed once per
+ * encounter from the registered parties, then clamped by {@link #minEnemyLevel()} and {@link #maxEnemyLevel()}.
  */
 public interface RulesetView {
 

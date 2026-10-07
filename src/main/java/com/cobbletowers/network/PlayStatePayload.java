@@ -9,12 +9,10 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Everything the play screen shows: the towers on offer, the lobby the player is in (if any), their own
- * party's levels, and the last thing the server wanted to say. Sent on {@code /cobbletowers play} and
- * again whenever the lobby changes, so the open screen redraws rather than being replaced.
- *
- * @param open true only when the player asked for the screen: a lobby change pushed to someone mid-game
- *             must update a screen they already have open, never open one over what they are doing
+ * Everything the play screen shows: towers on offer, the player's lobby, their party levels and the last server
+ * message.
+ * @param open true only when the player asked for the screen; a lobby change updates an open screen but never opens
+ *     one
  */
 public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> partyLevels, String message,
                                boolean open) implements CustomPacketPayload {
@@ -37,15 +35,13 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
 
     /**
      * The player's lobby.
-     *
-     * @param role      0 = not in a lobby, 1 = host, 2 = invited and not yet answered, 3 = on the team
-     * @param selected  the lobby's tower id, or empty when there is no lobby
+     * @param role 0 none, 1 host, 2 invited, 3 on the team
+     * @param selected the lobby's tower id, empty if none
      * @param countdown whole seconds until the run starts, or -1
      */
     /**
-     * The Ascension (P30) the lobby will start at, and the deepest the whole team may choose.
-     *
-     * @param offered whether the selected tower ascends at all; when false the picker is not shown
+     * The Ascension (P30) the lobby will start at and the deepest the team may choose.
+     * @param offered whether the tower ascends; when false the picker is hidden
      */
     public record Depth(int chosen, int max, boolean offered) {
         static final StreamCodec<RegistryFriendlyByteBuf, Depth> STREAM_CODEC = StreamCodec.composite(
@@ -59,10 +55,13 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
         }
     }
 
-    /** The playlists (P32) on offer and the one chosen ({@code ""} is Standard); {@code rental} when that one lends a drafted team (P33). */
     /**
-     * The rental ready-up (P33): whether the host has confirmed the mode (nothing else happens before), whether this player has a finished draft (only then may they ready up), whether they are
-     * ready, and whether the host is.
+     * The playlists (P32) on offer and the one chosen ({@code ""} is Standard); {@code rental} when that one lends a
+     * drafted team (P33).
+     */
+    /**
+     * The rental ready-up (P33): whether the host confirmed the mode, whether this player has a finished draft,
+     * whether they are ready, and whether the host is.
      */
     public record Readiness(boolean confirmed, boolean drafted, boolean mine, boolean host) {
         static final StreamCodec<RegistryFriendlyByteBuf, Readiness> STREAM_CODEC = StreamCodec.composite(
@@ -91,7 +90,10 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
         }
     }
 
-    /** What the host can choose before starting: how deep (P30) and which mode (P32). Nested to stay under the codec's field limit. */
+    /**
+     * What the host can choose before starting: how deep (P30) and which mode (P32). Nested to stay under the codec's
+     * field limit.
+     */
     public record Options(Depth depth, Modes modes) {
         static final StreamCodec<RegistryFriendlyByteBuf, Options> STREAM_CODEC = StreamCodec.composite(
                 Depth.STREAM_CODEC, Options::depth,

@@ -31,7 +31,10 @@ import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/** Playlists (P32): the party clauses, the narrowed ruleset, the shipped files, and the run options that carry the choice. */
+/**
+ * Playlists (P32): the party clauses, the narrowed ruleset, the shipped files, and the run options that carry the
+ * choice.
+ */
 class PlaylistRulesTest {
 
     private static PartyMember mon(String species, int level, boolean fullyEvolved, String... types) {
@@ -116,7 +119,8 @@ class PlaylistRulesTest {
         assertFalse(shipped("solo_gauntlet").party().any(), "its rule is a party size and a player count, not a clause");
     }
 
-    // ---- the narrowed ruleset ---------------------------------------------------------------------------------------
+    // ---- the narrowed ruleset
+    // ---------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("Level Cap 50 narrows the ruleset's enemy ceiling, Solo Gauntlet its party size, and neither raises anything")
@@ -162,7 +166,8 @@ class PlaylistRulesTest {
                 JsonParser.parseString("{\"schema_version\":1,\"display_name\":\" \"}").getAsJsonObject()));
     }
 
-    // ---- the run options ---------------------------------------------------------------------------------------------
+    // ---- the run options
+    // ---------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("run options survive the tag, and an absent block reads as an ordinary run")

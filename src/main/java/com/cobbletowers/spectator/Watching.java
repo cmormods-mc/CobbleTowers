@@ -16,12 +16,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
 
 /**
- * {@code /tower watch <player>} (P36e): look in on someone else's live run from outside it.
- *
- * <p>The watcher is taken into the tower in spectator mode and rides the participant's camera, with the same panel a teammate sees. Nothing about a
- * watch is run state: it is held in memory only, and a restart simply ends it -- the exit sweep finds the watcher standing in the tower with no run and
- * sends them home. While it lasts the sweep leaves the watcher alone; once the run is over (or the person they follow goes) {@link #sweep} sends them
- * home before the cell is released, so nobody is ever left standing in an empty cell.
+ * {@code /tower watch <player>} (P36e): look in on someone else's live run from outside it, in spectator mode on the
+ * participant's camera. In memory only; a restart ends it. {@link #sweep} sends the watcher home when the run ends or
+ * the followed player goes, before the cell is released.
  */
 public final class Watching {
 
@@ -74,7 +71,10 @@ public final class Watching {
         return "";
     }
 
-    /** Ends every watch whose run is over or whose subject has gone; called by the exit sweep before it releases anything. */
+    /**
+     * Ends every watch whose run is over or whose subject has gone; called by the exit sweep before it releases
+     * anything.
+     */
     public static void sweep(MinecraftServer server) {
         for (UUID watcherId : new ArrayList<>(WATCHES.keySet())) {
             Watch watch = WATCHES.get(watcherId);
@@ -85,7 +85,8 @@ public final class Watching {
                 continue;
             }
             if (TowerRuns.forPlayer(watcherId).isPresent()) {
-                // They joined a run of their own while watching (a lobby start moved them in): the watch is over, but this is not the end of
+                // They joined a run of their own while watching (a lobby start moved them in): the watch is over, but
+                // this is not the end of
                 // anything that should send them home.
                 WATCHES.remove(watcherId);
                 watcher.setCamera(watcher);
@@ -103,7 +104,10 @@ public final class Watching {
         }
     }
 
-    /** Puts a player who is leaving the tower back in the game mode they had; a spectator with no record of one becomes a survival player. */
+    /**
+     * Puts a player who is leaving the tower back in the game mode they had; a spectator with no record of one
+     * becomes a survival player.
+     */
     public static void restoreMode(ServerPlayer player) {
         Watch watch = WATCHES.remove(player.getUUID());
         if (watch != null) {

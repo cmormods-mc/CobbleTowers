@@ -8,13 +8,9 @@ import java.util.function.ToIntFunction;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What the season's spotlight region does (P36c): the featured region drops its own armor more often.
- *
- * <p>Drops only, by the owner's decision: the spotlight never changes which opponents a seed produces, so run codes and trials keep their
- * guarantee. It also does not touch amounts, guaranteed milestone items or any other table. The only effect is a wider slice for the
- * region's own armor pieces in the entries a run rolls, and only in a run of that region's tower while its season is active.
- *
- * <p>Pure apart from {@link #weights}, which reads the calendar: {@link #weightPercent} takes everything it needs as arguments.
+ * What the season's spotlight does (P36c): the featured region drops its own armor more often. Drops only (owner
+ * decision): opponents, run codes and trials are unaffected. Applies to that region's tower while its season is
+ * active. Pure apart from {@link #weights}.
  */
 public final class SeasonSpotlight {
 
@@ -25,7 +21,10 @@ public final class SeasonSpotlight {
 
     private SeasonSpotlight() {}
 
-    /** Whether {@code item} is a piece of the armor set that belongs to {@code tower} (Tideforge's tower, the tideforge set). */
+    /**
+     * Whether {@code item} is a piece of the armor set that belongs to {@code tower} (Tideforge's tower, the
+     * tideforge set).
+     */
     public static boolean isRegionArmor(ResourceLocation tower, ResourceLocation item) {
         if (!ArmorSetItems.NAMESPACE.equals(item.getNamespace()) || !ArmorSetItems.SETS.contains(tower.getPath())) return false;
         for (String slot : SLOTS) {
@@ -34,12 +33,18 @@ public final class SeasonSpotlight {
         return false;
     }
 
-    /** The percent to scale one entry's weight by: {@value #ARMOR_PERCENT} for the spotlight region's own armor in its own tower, else 100. */
+    /**
+     * The percent to scale one entry's weight by: {@value #ARMOR_PERCENT} for the spotlight region's own armor in its
+     * own tower, else 100.
+     */
     public static int weightPercent(Optional<ResourceLocation> spotlight, ResourceLocation tower, ResourceLocation item) {
         return spotlight.isPresent() && spotlight.get().equals(tower) && isRegionArmor(tower, item) ? ARMOR_PERCENT : 100;
     }
 
-    /** The weights for a run of {@code tower} now: the identity unless a season is running with this tower in the spotlight. */
+    /**
+     * The weights for a run of {@code tower} now: the identity unless a season is running with this tower in the
+     * spotlight.
+     */
     public static ToIntFunction<RewardTableDefinition.Entry> weights(ResourceLocation tower) {
         Optional<ResourceLocation> spotlight = Seasons.activeNumber().map(Seasons::definition).flatMap(definition -> definition.spotlight());
         return entry -> weightPercent(spotlight, tower, entry.item());

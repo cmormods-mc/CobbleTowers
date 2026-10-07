@@ -9,9 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Which contracts a day or week holds (P32c): a pure function of the templates and the date, so every player is handed the same
- * ones with no coordination (and so the day's contracts are something the community can talk about). Three daily and two weekly,
- * never the same template twice at once. A reroll moves one slot to another template for that player alone.
+ * Which contracts a day or week holds (P32c): a pure function of the templates and date, so every player gets the
+ * same ones. Three daily and two weekly, never the same template twice at once. A reroll moves one slot to another
+ * template for that player alone.
  */
 public final class ContractSchedule {
 
@@ -38,9 +38,8 @@ public final class ContractSchedule {
 
     /**
      * The contracts for a period, one per slot.
-     *
-     * @param templates the templates of this period in a stable order
-     * @param rerolls   for each slot, how many times it was rerolled (0 or 1), so a reroll gives a different pick
+     * @param templates this period's templates in stable order
+     * @param rerolls per slot, 0 or 1, so a reroll gives a different pick
      */
     public static List<ContractTemplateDefinition> pick(List<ContractTemplateDefinition> templates, Period period, long number,
                                                         int[] rerolls) {

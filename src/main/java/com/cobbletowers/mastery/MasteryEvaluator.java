@@ -8,10 +8,7 @@ import java.util.List;
 import java.util.Set;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * Which achievements a cycle clear unlocks (P31). Pure: definitions, what the player already has, the clear, and their
- * lifetime figures after counting it.
- */
+/** Which achievements a cycle clear unlocks (P31). Pure. */
 public final class MasteryEvaluator {
 
     private MasteryEvaluator() {}
@@ -30,8 +27,8 @@ public final class MasteryEvaluator {
     }
 
     /**
-     * The achievements newly unlocked, in a stable order (by id), so a crash and a replay announce them identically. A player
-     * keeps what they already hold: nothing is ever taken away or granted twice.
+     * The achievements newly unlocked, in id order so a replay announces them identically. Nothing is taken away or
+     * granted twice.
      */
     public static List<AchievementDefinition> unlocked(Collection<AchievementDefinition> definitions,
                                                        Set<ResourceLocation> alreadyHeld, CycleResult clear,
@@ -52,8 +49,8 @@ public final class MasteryEvaluator {
     }
 
     /**
-     * As above, for a moment when no cycle was cleared but depth was reached (entering an Ascension): only the lifetime
-     * achievements can unlock.
+     * As above for reaching depth without a cycle clear (entering an Ascension): only lifetime achievements can
+     * unlock.
      */
     public static List<AchievementDefinition> unlockedByDepth(Collection<AchievementDefinition> definitions,
                                                               Set<ResourceLocation> alreadyHeld, Lifetime lifetime) {

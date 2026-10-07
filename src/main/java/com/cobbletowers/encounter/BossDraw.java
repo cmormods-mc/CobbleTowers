@@ -8,22 +8,12 @@ import java.util.OptionalInt;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Which CobbleRaids boss finishes a floor, and at what level.
- *
- * <p>Deterministic from the run's seed, like the ordinary opponents, so a crash cannot reroll the
- * boss either (TDS #29).
- *
- * <p><b>Drawn from a separate ordinal space.</b> If the boss were simply "opponent zero" of the same
- * sequence, a party could read the first ordinary encounter and know what was waiting at the end of
- * the floor -- the tower would leak its own surprise. The offset below is what keeps the two draws
- * independent while still coming from one seed.
+ * Which CobbleRaids boss finishes a floor and at what level. Deterministic from the run seed (TDS #29), drawn from a
+ * separate ordinal space so the first opponent does not reveal the boss.
  */
 public final class BossDraw {
 
-    /**
-     * Far outside the ordinal range a floor's opponents ever use, so the two draws never collide.
-     * A floor has at most four ordinary opponents; this is not a number that will be reached.
-     */
+    /** Far outside any ordinal a floor's opponents use (at most four). */
     private static final int BOSS_ORDINAL = 1_000_003;
 
     private BossDraw() {}
@@ -31,11 +21,7 @@ public final class BossDraw {
     /** What this floor's boss is, and the level it fights at. */
     public record Boss(ResourceLocation definition, int level) {}
 
-    /**
-     * The boss for one floor of one run.
-     *
-     * @param handpicked a milestone's own definition; when present it is used and nothing is drawn
-     */
+    /** The boss for one floor of one run. @param handpicked a milestone's own definition; used as is when present */
     public static Optional<Boss> draw(Optional<BossPoolDefinition> pool, Optional<ResourceLocation> handpicked,
                                       long runSeed, int floorIndex, Collection<Integer> partyLevels,
                                       RulesetDefinition ruleset) {

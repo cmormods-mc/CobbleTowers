@@ -15,19 +15,9 @@ import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * The live index of tower runs: by run id, and by the player in one.
- *
- * <p>Indexed rather than searched. TDS §11 forbids per-tick scans of tower players, so "which run is
- * this player in" is a map hit and never a walk over every run.
- *
- * <p>A run here <b>is</b> its {@link PersistedRun} record. A separate mutable run object beside it
- * would be a second source of truth and somewhere for the two to disagree; a mutation replaces the
- * record instead. When P3 gives a run an instance handle that must never be written to disk, that is
- * the point at which a wrapper earns its place.
- *
- * <p>The maps are static and the class is not per-server, so they are cleared on SERVER_STOPPED: an
- * integrated client keeps this JVM across worlds, and anything left here would be read back against
- * the next one.
+ * The live index of tower runs by run id and by player. Indexed because TDS section 11 forbids per-tick scans. A run
+ * is its {@link PersistedRun}; a mutation replaces the record. Maps are static, so they are cleared on SERVER_STOPPED
+ * (an integrated client keeps the JVM across worlds).
  */
 public final class TowerRuns {
 
@@ -37,10 +27,8 @@ public final class TowerRuns {
     private TowerRuns() {}
 
     /**
-     * Loads every stored run into the index, retiring the ones nothing will read again.
-     *
-     * <p>Returns how many runs are now indexed. Recovery runs separately, after this, so that
-     * loading and classifying are not one step that half-fails.
+     * Loads every stored run into the index, retiring old ones, and returns how many are indexed. Recovery runs
+     * separately so loading and classifying do not half-fail together.
      */
     public static int load(MinecraftServer server, long now) {
         BY_ID.clear();
@@ -70,13 +58,8 @@ public final class TowerRuns {
     }
 
     /**
-     * Writes a run to the index and to the store together, so the two cannot disagree.
-     *
-     * <p>Order matters: the store's in-memory map is updated before the disk write is attempted, so
-     * a failing flush leaves a consistent index and store that are merely not yet on disk -- rather
-     * than an index holding a state nothing else has. The flush failure is reported and not
-     * swallowed, because a checkpoint that did not reach disk is exactly what the caller thought it
-     * was buying.
+     * Writes a run to the index and the store together. The store's memory is updated before the disk write, so a
+     * failed flush leaves a consistent pair. A flush failure is reported, not swallowed.
      */
     public static void save(MinecraftServer server, PersistedRun run, boolean forceCheckpoint) {
         index(run);

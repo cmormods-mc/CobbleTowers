@@ -3,16 +3,10 @@ package com.cobbletowers.mastery;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What a mastery level is called and what it gives (P31). One level per achievement unlocked in a tower. Perks are small, permanent,
- * cumulative, and apply only in runs of the tower they were earned in; each is read per player at the point of use (a vendor price, a wallet
- * credit, a Raid Points grant), so a team's mix of masteries never has to be averaged.
- *
- * <p>Since P37 the ranks and perks are data ({@link MasteryTracks}: the shipped {@code mastery_tracks/default.json}, which reproduces the
- * original table, plus any datapack or config additions) and a level can be any number, so a tower with more than 30 achievements keeps
- * climbing. The overloads without a tower use the track every tower shares.
- *
- * <p>Deliberately nothing repeatable on run start (a stipend could be farmed by starting and abandoning), and never a jersey
- * aspect (TDS #89).
+ * What a mastery level is called and gives (P31): one level per achievement unlocked in a tower. Perks are small,
+ * permanent, cumulative and apply only in that tower's runs. Ranks and perks are data ({@link MasteryTracks});
+ * overloads without a tower use the shared track. Nothing repeatable on run start and never a jersey aspect (TDS
+ * #89).
  */
 public final class MasteryPerks {
 

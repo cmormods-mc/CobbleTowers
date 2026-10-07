@@ -7,18 +7,13 @@ import java.util.Objects;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What a floor is built from, and where the places that matter are inside it (TDS section 12).
- *
- * <p>The schematics the arenas came from carry no marker blocks -- their palettes are plain building
- * blocks -- so the anchors are declared here rather than discovered. Declared is not trusted: each one
- * is checked against the structure's real size offline, and against the pasted result at runtime, so
- * an anchor inside a wall or over a hole is a loud failure rather than a player stuck in stone.
- *
- * @param structure     the template to paste, from data/&lt;namespace&gt;/structure/&lt;name&gt;.nbt
- * @param entry         where the party arrives
- * @param presentation  where the opposing Cobblemon is shown
- * @param spectator     where a knocked-out player watches from (TDS #25)
- * @param exit          where the way to the next floor is
+ * What a floor is built from and where its anchors are (TDS section 12). The schematics carry no markers, so anchors
+ * are declared here and checked against the structure's real size offline and the pasted result at runtime.
+ * @param structure the template, from data/&lt;namespace&gt;/structure/&lt;name&gt;.nbt
+ * @param entry where the party arrives
+ * @param presentation where the opposing Cobblemon is shown
+ * @param spectator where a knocked-out player watches from (TDS #25)
+ * @param exit the way to the next floor
  */
 public record FloorLayout(
         ResourceLocation structure,

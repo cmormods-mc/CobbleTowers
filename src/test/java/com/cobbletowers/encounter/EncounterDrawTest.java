@@ -19,10 +19,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * What TDS #29 actually claims: a crash cannot reroll an encounter.
- *
- * <p>Which means the draw has to be a function of the run, the floor and the ordinal, and of nothing
- * else -- no clock, no random source, no stored roll to lose.
+ * TDS #29: a crash cannot reroll an encounter, so the draw is a function of run, floor and ordinal only (no clock,
+ * random source or stored roll).
  */
 class EncounterDrawTest {
 
@@ -122,13 +120,8 @@ class EncounterDrawTest {
     @Test
     @DisplayName("editing a pool changes what a floor draws, which is what the pinned digest is for")
     void editingAPoolChangesDraws() {
-        // Written first as "appending an entry leaves earlier draws alone", which is not achievable:
-        // the roll is taken modulo the pool's total weight, so new weight shifts every roll, and any
-        // weighted pick must take probability from somewhere to give it to a new entry.
-        //
-        // The real protection is elsewhere and already built: a run pins the content digest it
-        // started with (TDS #40), so a pool edited under an in-flight run is detectable rather than
-        // silent. This pins the actual behaviour so nobody re-derives the wrong expectation.
+        // Appending a pool entry necessarily shifts earlier draws (the roll is modulo total weight). The protection
+        // is the pinned content digest (TDS #40), not draw stability; this pins the real behaviour.
         EncounterPoolDefinition before = pool("""
                 [{"species":"cobblemon:machoke","weight":100},
                  {"species":"cobblemon:haunter","weight":100}]""");

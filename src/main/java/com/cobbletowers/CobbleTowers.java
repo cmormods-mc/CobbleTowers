@@ -37,7 +37,8 @@ public final class CobbleTowers implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("unknown");
 
-        // The Showdown extension is registered in TowerPreLaunch, not here: by the time this runs Cobblemon's Showdown
+        // The Showdown extension is registered in TowerPreLaunch, not here: by the time this runs Cobblemon's
+        // Showdown
         // thread has already unbundled the simulator and CobbleRaids has already written its extension list.
 
         // Guarded: a failure to register a command must not take the rest of the server's command
@@ -61,9 +62,8 @@ public final class CobbleTowers implements ModInitializer {
                 TowerLog.error("Could not register the CobbleTowers commands", ex);
             }
         });
-        // Loading and recovery are separate steps, and separately guarded: a failure to park an
-        // interrupted run must not also cost the index of the runs that loaded fine.
-        // P21: say, once, which reward items cannot be given, before a player earns one.
+        // Loading and recovery are separately guarded so one failure cannot cost the index of the runs that loaded.
+        // Also says once which reward items cannot be given (P21).
         ServerLifecycleEvents.SERVER_STARTED.register(server -> com.cobbletowers.reward.RewardCatalogCheck.report());
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             long now = System.currentTimeMillis();
@@ -84,9 +84,8 @@ public final class CobbleTowers implements ModInitializer {
             } catch (RuntimeException ex) {
                 TowerLog.error("Could not recover interrupted tower runs", ex);
             }
-            // A separate, later step: COMPLETED and CASHED_OUT are terminal, so RunRecovery above
-            // never touches them, and this is the only path back for a run that crashed between its
-            // final checkpoint and its grant (docs/design/P9-economy.md §4a).
+            // A later step: COMPLETED and CASHED_OUT are terminal so RunRecovery never touches them; this recovers a
+            // run that crashed between its final checkpoint and its grant (docs/design/P9-economy.md section 4a).
             try {
                 RewardBankService.sweepUnbanked(server, now);
             } catch (RuntimeException ex) {
@@ -154,9 +153,8 @@ public final class CobbleTowers implements ModInitializer {
         RecoverySweep.install();
         // Hands a player whatever the tower owes them the moment they are somewhere to receive it.
         RewardDelivery.install();
-        // Registered on every physical side that runs "main" -- a payload must be registered wherever
-        // it is encoded or decoded, and Fabric Loader calls this entrypoint on a dedicated server and
-        // on an integrated client's own server alike.
+        // Registered on every side that runs "main": a payload must be registered wherever it is encoded or decoded,
+        // including an integrated client's server.
         TowerNetworking.registerPayloadTypes();
         TowerNetworking.installServerReceivers();
 

@@ -4,11 +4,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 /**
- * Whether starting a run costs the tower key, and for which runs. Pure, so the rules read without a server.
- *
- * <p>Only an <b>ordinary</b> run costs a key: a new run, a run code or an Ascension start. A trial has its own
- * gating (an attempt a day), a rental run is a draft the player has already invested in, and resuming a parked run
- * is not a start at all.
+ * Whether starting a run costs the tower key. Only an ordinary run does (new run, run code, Ascension start); trials
+ * have their own gating, rental runs are already an investment and resuming is not a start. Pure.
  */
 public final class TowerKeyPolicy {
 
@@ -20,9 +17,8 @@ public final class TowerKeyPolicy {
     }
 
     /**
-     * Reads {@code {"required": true}} from {@code config/cobbletowers-keys.json}. Absent or empty text means not
-     * required; unreadable text throws, and the caller treats that as not required too and says so: a typo must never
-     * lock every player out of the towers.
+     * Reads {@code {"required": true}} from {@code config/cobbletowers-keys.json}. Absent or empty means not
+     * required; unreadable text throws and the caller treats it as not required, so a typo cannot lock players out.
      */
     public static boolean parseRequired(String json) {
         if (json == null || json.isBlank()) return false;

@@ -24,22 +24,14 @@ import net.minecraft.resources.ResourceLocation;
 /** Builds a run in its opening state, pinning the content it will be played against. */
 public final class RunFactory {
 
-    /**
-     * Floors are numbered from 1, the way {@code FloorDefinition.index} and the tower's own
-     * floor-numbering check are, so a run starts on floor 1 rather than on a zeroth floor that no
-     * tower has.
-     */
+    /** Floors are numbered from 1, matching {@code FloorDefinition.index}. */
     public static final int FIRST_FLOOR = 1;
 
     private RunFactory() {}
 
     /**
-     * A new run against {@code towerId}, or empty when no such tower is loaded.
-     *
-     * <p>The tower's revision and content digest are pinned here and never re-read: that is what
-     * lets a later load tell "the tower was edited under this run" from "the tower is gone" (TDS
-     * #40). The seed is stored for the same reason -- an interrupted encounter is rebuilt from it
-     * rather than rerolled (TDS #29).
+     * A new run against {@code towerId}, or empty if it is not loaded. The tower's revision and digest are pinned
+     * (TDS #40) and the seed stored (TDS #29).
      */
     public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
                                                 List<UUID> players, long seed, long now) {
@@ -47,10 +39,8 @@ public final class RunFactory {
     }
 
     /**
-     * As {@link #create(TowerContent, ResourceLocation, List, long, long)}, registering each player's
-     * Pokemon from {@code parties} (player id to Cobblemon Pokemon uuids, in party order). A player
-     * with no entry registers nothing. The caller reads the live party, so this stays free of
-     * Cobblemon.
+     * As {@link #create(TowerContent, ResourceLocation, List, long, long)}, registering each player's Pokemon from
+     * {@code parties} (player id to Pokemon uuids, in party order).
      */
     public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
                                                 List<UUID> players, Map<UUID, List<UUID>> parties,
@@ -59,9 +49,8 @@ public final class RunFactory {
     }
 
     /**
-     * As above, starting directly at Ascension {@code ascension} (P30): the run begins on that Ascension's first floor with
-     * the modifiers Ascensions 1 through {@code ascension} would have forced already in force. Ignored (0) for a tower
-     * that does not ascend. Who may start where is the lobby's decision, not this factory's.
+     * As above, starting at Ascension {@code ascension} (P30) with its forced modifiers in force. Ignored (0) for a
+     * tower that does not ascend.
      */
     public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
                                                 List<UUID> players, Map<UUID, List<UUID>> parties,
@@ -69,19 +58,14 @@ public final class RunFactory {
         return create(content, towerId, players, parties, ascension, RunOptions.NONE, seed, now);
     }
 
-    /**
-     * As above, under {@code options} (P32): a playlist whose forced modifiers the run starts holding, and whether it is an
-     * attempt at a trial. The options are written once and never change.
-     */
+    /** As above, under {@code options} (P32): playlist and trial flag, written once. */
     public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
                                                 List<UUID> players, Map<UUID, List<UUID>> parties,
                                                 int ascension, RunOptions options, long seed, long now) {
         return create(content, towerId, players, parties, ascension, options, List.of(), seed, now);
     }
 
-    /**
-     * As above, also starting with {@code extraModifiers} in force: a trial's mutators (P32). Unknown ids are skipped.
-     */
+    /** As above, also starting with a trial's {@code extraModifiers} (P32). Unknown ids are skipped. */
     public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
                                                 List<UUID> players, Map<UUID, List<UUID>> parties,
                                                 int ascension, RunOptions options, List<ResourceLocation> extraModifiers,

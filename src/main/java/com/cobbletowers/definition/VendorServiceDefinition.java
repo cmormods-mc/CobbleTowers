@@ -6,15 +6,9 @@ import java.util.Objects;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One thing the Tower Supply Vendor sells for CobbleDollars (TDS #16, #19, #20).
- *
- * <p>{@link VendorEffect} is a closed set of what a purchase actually does to a target's live party --
- * never an item stack handed over. TDS #20 C rules out "exportable temporary items" outright, so there
- * is nothing here to export: a purchase changes a party's state and ends, the same way a battle item
- * would, but without ever existing as a possession.
- *
- * @param maxPurchasesPerRun how many times one run may buy this before it refuses (TDS #19); 0 means
- *                           unlimited
+ * One thing the Tower Supply Vendor sells for CobbleDollars (TDS #16, #19, #20). {@link VendorEffect} is a closed set
+ * of effects on a target's live party, never an item stack (TDS #20 C).
+ * @param maxPurchasesPerRun how often one run may buy it (TDS #19); 0 means unlimited
  */
 public record VendorServiceDefinition(
         ResourceLocation id,

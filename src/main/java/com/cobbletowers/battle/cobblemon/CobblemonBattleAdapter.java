@@ -35,21 +35,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The only place in this mod that names a Cobblemon battle (TDS #31).
- *
- * <p>A tower floor's prerequisite is one battle per player, run at the same time. Cobblemon's
- * {@code BattleBuilder.pve} takes a single player, and several players against one opponent is what
- * forced CobbleRaids into custom actors and mixins -- so the shared fight is the boss, which
- * CobbleRaids' own API already runs, and the ordinary opponents are simply one battle each. Nothing
- * here touches Cobblemon internals, and no single battle ever holds four players, which is the shape
- * that stalled Showdown for CobbleRaids.
- *
- * <p>Two rules this keeps that a tower depends on:
- * <ul>
- *   <li><b>Parties are not cloned and not healed first</b>, so damage and PP carry between floors
- *       (TDS #16: no free healing). The battle is fought with the real party.</li>
- *   <li><b>Opponents are uncatchable</b> (TDS #78). A tower Pokemon is never captured.</li>
- * </ul>
+ * The only place that names a Cobblemon battle: one battle per player. Parties are fought as-is (no clone, no heal;
+ * TDS #16) and opponents are uncatchable (TDS #78).
  */
 public final class CobblemonBattleAdapter {
 
@@ -65,13 +52,7 @@ public final class CobblemonBattleAdapter {
 
     private static final Map<UUID, Binding> BY_BATTLE = new LinkedHashMap<>();
     private static final Map<UUID, List<UUID>> BATTLES_BY_RUN = new HashMap<>();
-    /**
-     * When each battle last did something, for the watchdog to read.
-     *
-     * <p>Cobblemon raises no per-turn event, so the honest signals are the two it does raise: the
-     * battle starting, and something fainting in it. A battle that has produced neither for a long
-     * time is what "stopped" can be said to mean from out here without reaching into Showdown.
-     */
+    /** When each battle last did something, for the watchdog (a start or a faint). */
     private static final Map<UUID, Long> LAST_ACTIVITY = new HashMap<>();
     private static boolean installed;
 
@@ -85,11 +66,8 @@ public final class CobblemonBattleAdapter {
     private static Listener listener = (server, binding, won) -> {};
 
     /**
-     * Subscribes to Cobblemon's battle events, once.
-     *
-     * <p>The events are global -- every battle on the server raises them, ours and everybody else's.
-     * Routing by battle id is therefore the whole correctness of this class: miss the filter and one
-     * floor ends another's battle, or a wild encounter in the overworld clears a tower floor.
+     * Subscribes to Cobblemon's global battle events once. Routing by battle id keeps other battles from ending a
+     * floor.
      */
     public static void install(Listener encounterListener) {
         listener = encounterListener;
@@ -100,20 +78,13 @@ public final class CobblemonBattleAdapter {
         TowerLog.info("Cobblemon battle adapter installed");
     }
 
-    /**
-     * Spawns an opponent and starts one player's battle with it.
-     *
-     * @return the battle's id, or empty when the opponent could not be made or the battle refused
-     */
+    /** Spawns an opponent and starts one player's battle. @return the battle id, empty if it could not start */
     public static Optional<UUID> start(ServerLevel level, ServerPlayer player, EncounterSnapshot snapshot,
                                        BlockPos where, UUID runId, int floorIndex) {
         return start(level, player, snapshot, where, runId, floorIndex, false);
     }
 
-    /**
-     * An exhibition (P35, the Echo Duel): the player's party is cloned and healed first, so nothing about the battle touches
-     * the real party, and no floor effects are armed. It is bound like a floor's battle, marked so the encounter ignores it.
-     */
+    /** An exhibition (Echo Duel): a cloned, healed party, no floor effects, marked so the encounter ignores it. */
     public static Optional<UUID> startExhibition(ServerLevel level, ServerPlayer player, EncounterSnapshot snapshot,
                                                  BlockPos where, UUID runId, int floorIndex) {
         return start(level, player, snapshot, where, runId, floorIndex, true);
@@ -166,24 +137,16 @@ public final class CobblemonBattleAdapter {
                 // same choice a wild encounter makes.
                 null,
                 BattleFormat.Companion.getGEN_9_SINGLES(),
-                // Do not clone the party, and do not heal it first: a tower floor is fought with what
-                // the party has left, which is the whole of TDS #16. An exhibition is the opposite on purpose: a
-                // healed clone, so the real party is never touched.
+                // Real party, not healed: a floor is fought with what is left (TDS #16). An exhibition uses a healed
+                // clone.
                 exhibition,
                 exhibition,
                 Float.MAX_VALUE,
-                // The player's real party, not null: the full-arity method is Kotlin non-null, and
-                // only the generated pve$default overload fills this in. Passing null threw
-                // "Parameter specified as non-null is null" the first time a floor was played, and
-                // no unit test could have seen it -- there is no Cobblemon runtime in one.
+                // The real party, not null: the Kotlin method rejects null.
                 Cobblemon.INSTANCE.getStorage().getParty(player));
     }
 
-    /**
-     * Whether {@code entity} is a Pokemon currently in a battle. What the post-crash cell sweep must never remove:
-     * a crash leaves Pokemon standing around, but never in a battle, so this separates the leftovers from a floor that
-     * has started since.
-     */
+    /** Whether {@code entity} is a Pokemon in a live battle; the post-crash sweep must not remove those. */
     public static boolean inLiveBattle(net.minecraft.world.entity.Entity entity) {
         return entity instanceof PokemonEntity pokemon && pokemon.isBattling();
     }
@@ -232,16 +195,7 @@ public final class CobblemonBattleAdapter {
     }
 
     /**
-     * Parses a snapshot into a Pokemon, falling back to the base species if its aspects are the
-     * problem (TDS #85).
-     *
-     * <p>The property string is what Cobblemon's own {@code /pokegive} parses, so species, level and
-     * any aspect all take one path rather than three setters that drift apart. A regional theme (P10)
-     * is the first thing that gives {@code aspects} real content, and a resource pack not installed, an
-     * aspect renamed upstream, or Cobblemon version drift can all make one Cobblemon does not
-     * recognize -- which must not fail the whole floor over what is only a cosmetic layer. Only a
-     * species Cobblemon itself does not know (possible before this phase too) still fails the
-     * encounter, on the retry's own exception.
+     * Parses a snapshot into a Pokemon, falling back to the base species if its aspects are unrecognized (TDS #85).
      */
     private static Pokemon build(EncounterSnapshot snapshot) {
         try {
@@ -263,14 +217,7 @@ public final class CobblemonBattleAdapter {
         }
     }
 
-    /**
-     * Contained, because of where this is called from.
-     *
-     * <p>Cobblemon raises these from its own battle loop on the server thread, so an exception
-     * thrown back into it does not merely lose one floor -- it unwinds through Cobblemon's event
-     * dispatch and onto the tick, taking every other battle on the server with it. One broken tower
-     * floor is the better failure.
-     */
+    /** Contained: an exception here would unwind into Cobblemon's battle loop and the server tick. */
     private static void onVictorySafely(BattleVictoryEvent event) {
         try {
             onVictory(event);
@@ -279,12 +226,7 @@ public final class CobblemonBattleAdapter {
         }
     }
 
-    /**
-     * A faint in one of our battles: proof the battle is still moving.
-     *
-     * <p>Guarded like the victory handler, and for the same reason -- this runs inside Cobblemon's
-     * own battle loop, where an exception unwinds onto the tick and takes every other battle with it.
-     */
+    /** A faint proves the battle is still moving. Contained like the victory handler. */
     private static void onFaintedSafely(BattleFaintedEvent event) {
         try {
             UUID battleId = event.getBattle().getBattleId();
@@ -315,13 +257,7 @@ public final class CobblemonBattleAdapter {
         }
     }
 
-    /**
-     * Removes a run's opponents and forgets its battles.
-     *
-     * <p>Called on every way out that is not a won battle -- abandoning, parking, shutting down. An
-     * entity left standing in a cell is exactly what P3's cleanup quarantines the cell for, and
-     * quarantining a cell because this phase forgot to tidy up would be a poor way to find out.
-     */
+    /** Removes a run's opponents and forgets its battles, on every way out that is not a won battle. */
     public static int endRun(MinecraftServer server, UUID runId) {
         List<UUID> battles = BATTLES_BY_RUN.remove(runId);
         if (battles == null) return 0;
@@ -337,16 +273,7 @@ public final class CobblemonBattleAdapter {
         return ended;
     }
 
-    /**
-     * Ends whatever Cobblemon battle a player is still in, whoever started it.
-     *
-     * <p>{@link #endRun} only knows the battles this adapter started. A floor's boss is started by CobbleRaids,
-     * and aborting that removes the boss but leaves the player's Pokemon battle open, so the player was still
-     * "in battle" when the next one tried to start (Cobblemon's AlreadyInBattleError) for as long as it took the
-     * orphan to time out. Found by the stress test, which abandons a run the moment its boss appears.
-     *
-     * @return true if a battle was ended
-     */
+    /** Ends whatever battle a player is in, including one CobbleRaids started. @return true if one was ended */
     public static boolean endBattleOf(ServerPlayer player) {
         try {
             PokemonBattle battle = BattleRegistry.getBattleByParticipatingPlayer(player);
@@ -379,13 +306,7 @@ public final class CobblemonBattleAdapter {
         }
     }
 
-    /**
-     * Ends one player's battle and removes their opponent, leaving the rest of the floor alone.
-     *
-     * <p>What a disconnect and the watchdog both need: {@link #endRun} would take the whole floor
-     * down with it, which is precisely what the user asked not to happen when one player stops
-     * answering.
-     */
+    /** Ends one player's battle and removes their opponent, leaving the floor alone. */
     public static boolean endPlayer(MinecraftServer server, UUID runId, UUID playerId) {
         for (Map.Entry<UUID, Binding> entry : Map.copyOf(BY_BATTLE).entrySet()) {
             Binding binding = entry.getValue();
@@ -405,15 +326,8 @@ public final class CobblemonBattleAdapter {
     }
 
     /**
-     * Ends the Cobblemon battle itself, not merely this mod's memory of it.
-     *
-     * <p>Forgetting a battle and discarding its opponent leaves the player sitting in a battle UI
-     * they cannot leave, with Showdown still holding their actors. {@code end()} sends the end
-     * packet, lets entity actors clear their battle id, and closes the registry entry -- the same
-     * call CobbleRaids makes on every path where no win packet is coming.
-     *
-     * <p>The index entry is removed before this is called, so a victory event raised on the way out
-     * finds nothing to resolve and cannot score a battle that was cancelled.
+     * Ends the Cobblemon battle itself. The index entry is removed first so the victory event cannot score a
+     * cancelled battle.
      */
     private static void closeBattle(MinecraftServer server, UUID battleId) {
         onServerThread(server, () -> {
@@ -427,24 +341,14 @@ public final class CobblemonBattleAdapter {
     }
 
     /**
-     * Runs {@code task} on the server thread: now if this already is it, otherwise queued, in order.
-     *
-     * <p>A disconnect is delivered on a Netty network thread, and ending a battle there reaches Cobblemon's Showdown
-     * service, whose GraalJS context may only be touched by the thread that owns it ("Multi threaded access requested
-     * ... but is not allowed for language(s) js", found on Cobblemon 1.8.1). Discarding the opponent entity from there
-     * is just as unsafe for the world. Queued tasks run in submission order, so ending a battle and then discarding
-     * its opponent still happen in that order.
+     * Runs {@code task} on the server thread: now if already there, else queued in order. Disconnects arrive on Netty
+     * threads, which must not touch Showdown's GraalJS context.
      */
     private static void onServerThread(MinecraftServer server, Runnable task) {
         com.cobbletowers.runtime.ServerThread.run(server, task);
     }
 
-    /**
-     * When each of a run's players last saw their battle do something.
-     *
-     * <p>Exactly what the watchdog needs and nothing more: an id and a clock reading, so the verdict
-     * itself can be decided without a server.
-     */
+    /** When each of a run's players last saw their battle do something. */
     public static Map<UUID, Long> lastActivityByPlayer(UUID runId) {
         Map<UUID, Long> activity = new LinkedHashMap<>();
         for (UUID battleId : BATTLES_BY_RUN.getOrDefault(runId, List.of())) {

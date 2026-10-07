@@ -22,24 +22,17 @@ import java.util.function.Function;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * The steps that are more than one transition: taking an instance, building it, and giving up when
- * there is none to be had.
- *
- * <p>Kept apart from {@link RunTransitionService}, which knows only about the table. This is where a
- * move needs something from the world before the state can change.
+ * The steps that are more than one transition: taking an instance, building it, and giving up when there is none.
+ * {@link RunTransitionService} knows only the table.
  */
 public final class RunLifecycle {
 
     private RunLifecycle() {}
 
     /**
-     * Submits a run's parties and settles them (TDS #41, #46): every participant's party is read,
-     * registered and checked against the ruleset, then the run moves on to instance allocation, or is
-     * abandoned with the reasons logged.
-     *
-     * <p>The registration is written <b>before</b> the verdict event, so the checkpoint that reaches
-     * disk already names what was registered. {@code partyOf} is how the party is read -- empty for a
-     * player who is not online, which rejects the run, since an absent party cannot be checked.
+     * Submits a run's parties and settles them (TDS #41, #46): read, register, check against the ruleset, then
+     * allocate an instance or abandon with reasons logged. Registration is written before the verdict event. {@code
+     * partyOf} is empty for an offline player, which rejects the run.
      */
     public static RunTransitionService.Outcome validateParty(MinecraftServer server, UUID runId, long now,
                                                              Function<UUID, Optional<List<PartyMember>>> partyOf) {
@@ -99,8 +92,8 @@ public final class RunLifecycle {
     }
 
     /**
-     * ENCOUNTER_STARTED and the floor's first round, for a run already at FLOOR_READY. Parks the run with
-     * TECHNICAL_FAILURE if either step fails. Shared by a lobby's first floor and every later one.
+     * ENCOUNTER_STARTED and the floor's first round for a run at FLOOR_READY; parks the run with TECHNICAL_FAILURE if
+     * either fails.
      */
     public static boolean beginFloor(MinecraftServer server, UUID runId, long now) {
         if (!(RunTransitionService.apply(server, runId, RunEvent.ENCOUNTER_STARTED, now)
@@ -118,11 +111,8 @@ public final class RunLifecycle {
     }
 
     /**
-     * Leaves an intermission for the next floor: INTERMISSION_COMPLETE, NEXT_FLOOR_CONFIRMED, a rebuilt
-     * cell when the next floor is a different structure (a milestone arena, say), then the floor itself.
-     *
-     * <p>The cell is rebuilt in place on the lease the run already holds. Nothing did this before P17:
-     * a run's floor was pasted once at allocation, so floor 5 would have been fought in floor 4's arena.
+     * Leaves an intermission for the next floor, rebuilding the cell in place if the next floor is a different
+     * structure, then begins the floor.
      */
     public static Opened openNextFloor(MinecraftServer server, UUID runId, long now) {
         if (!(RunTransitionService.apply(server, runId, RunEvent.INTERMISSION_COMPLETE, now)
@@ -153,9 +143,11 @@ public final class RunLifecycle {
         if (previous.isPresent() && previous.get().structure().equals(next.get().structure())) return true;
 
         int cell = run.cell().getAsInt();
-        // prepare() clears the previous floor itself (the cell is dirty), so there is no separate reset: one scan, not two.
+        // prepare() clears the previous floor itself (the cell is dirty), so there is no separate reset: one scan,
+        // not two.
         Optional<CellPreparer.Prepared> prepared = CellPreparer.prepare(server, cell, next.get());
-        // This cannot wait for a slot (the party is between floors), so it is noted: everything else backs off around it.
+        // This cannot wait for a slot (the party is between floors), so it is noted: everything else backs off around
+        // it.
         com.cobbletowers.instance.HeavyWork.note(System.currentTimeMillis());
         if (prepared.isEmpty() || !prepared.get().isPlayable()) {
             TowerLog.error("Cell {} could not be rebuilt as {} for run {}: {}", cell, next.get().structure(), runId,
@@ -166,19 +158,9 @@ public final class RunLifecycle {
     }
 
     /**
-     * Finds the run a cell, builds its floor, and moves it on -- or parks it when it cannot.
-     *
-     * <p>Three orderings are load-bearing:
-     * <ul>
-     *   <li>the warm pool is asked first, because a cell that is already built is the difference
-     *       between a party waiting and not;</li>
-     *   <li>the lease is written onto the run <b>before</b> the INSTANCE_ALLOCATED checkpoint, so the
-     *       checkpoint that reaches disk already names the cell -- otherwise a crash in between
-     *       leaves a run past allocation holding nothing, and no later event fixes it;</li>
-     *   <li>anything that goes wrong becomes ALLOCATION_FAILED, which the table maps to
-     *       RECOVERY_REQUIRED: no cells, no structure, a broken floor -- all technical faults, and
-     *       none of them a player's loss.</li>
-     * </ul>
+     * Gives a run a cell, builds its floor and moves it on, or parks it. Order matters: warm pool first; lease
+     * written onto the run before the INSTANCE_ALLOCATED checkpoint; any failure becomes ALLOCATION_FAILED (a
+     * technical fault, not a loss).
      */
     public static RunTransitionService.Outcome allocateInstance(MinecraftServer server, UUID runId, long now) {
         Optional<PersistedRun> found = TowerRuns.get(runId);
@@ -215,7 +197,8 @@ public final class RunLifecycle {
         }
 
         // Only now, once a run has actually taken one, is there evidence the pool should hold more.
-        // The pool is told what to keep ready and builds it from its own tick, not here: a cell built in this tick would stall the run start again.
+        // The pool is told what to keep ready and builds it from its own tick, not here: a cell built in this tick
+        // would stall the run start again.
         CellWarmPool.want(layout.get());
         return outcome;
     }
@@ -234,9 +217,8 @@ public final class RunLifecycle {
         int cell = ((InstanceAllocator.Leased) allocation).cell();
         Optional<CellPreparer.Prepared> prepared = CellPreparer.prepare(server, cell, layout);
         if (prepared.isEmpty() || !prepared.get().isPlayable()) {
-            // A floor that builds wrong is broken content, not a bad cell, so the cell goes back
-            // rather than into quarantine -- the next run would fail the same way wherever it was
-            // put, and quarantining would slowly eat the tower over a typo.
+            // A floor that builds wrong is broken content, not a bad cell, so the cell goes back rather than into
+            // quarantine.
             TowerLog.error("Cell {} could not be made playable for {}: {}", cell, layout.structure(),
                     prepared.map(CellPreparer.Prepared::summary).orElse("the structure did not place"));
             InstanceAllocator.release(server, runId, cell);

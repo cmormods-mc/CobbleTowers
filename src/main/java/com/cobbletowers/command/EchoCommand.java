@@ -18,8 +18,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Echoes (P35): what a player can see and switch ({@code /tower echo [off|on]}), and operator tools to record and clear them
- * (a live test has no top-ten run to earn one with).
+ * Echoes (P35): what a player can see and switch ({@code /tower echo [off|on]}), plus operator tools to record and
+ * clear them.
  */
 public final class EchoCommand {
 
@@ -98,7 +98,10 @@ public final class EchoCommand {
         return 1;
     }
 
-    /** Records an Echo of an invented owner from one property string: the seam a live test uses to have someone else's team to meet. */
+    /**
+     * Records an Echo of an invented owner from one property string: the seam a live test uses to have someone else's
+     * team to meet.
+     */
     private static int add(CommandContext<CommandSourceStack> context) {
         String name = com.mojang.brigadier.arguments.StringArgumentType.getString(context, "name");
         var tower = ResourceLocationArgument.getId(context, "tower");

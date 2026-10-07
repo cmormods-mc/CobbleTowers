@@ -5,12 +5,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 /**
- * Which season a day falls in (P36a), a pure function of the anchor and the date, so every server computes the same answer with no
- * coordination, and so does a test years later.
- *
- * <p>One cycle is {@value #CYCLE_DAYS} days: {@value #ACTIVE_DAYS} of season (six Monday-to-Sunday weeks when the anchor is a
- * Monday) then {@value #OFF_DAYS} of off-season. Seasons are numbered from 1 at the anchor. "Day" is a trial day (the configured
- * zone and reset hour), so a season turns over at the reset, not at midnight; this class only ever sees dates.
+ * Which season a day falls in (P36a), a pure function of anchor and date. A cycle is {@value #CYCLE_DAYS} days:
+ * {@value #ACTIVE_DAYS} of season then {@value #OFF_DAYS} off. Seasons are numbered from 1 at the anchor; days are
+ * trial days, so a season turns over at the reset hour.
  */
 public final class SeasonSchedule {
 
@@ -30,7 +27,10 @@ public final class SeasonSchedule {
     /** Season {@code number} is running; {@code week} is 1..6; {@code daysLeft} counts today (1 on the last day). */
     public record Active(int number, int week, LocalDate startDay, LocalDate lastDay, long daysLeft) implements Phase {}
 
-    /** Between seasons: {@code endedNumber} has finished, {@code nextNumber} starts on {@code nextStartDay}; {@code daysLeft} counts today. */
+    /**
+     * Between seasons: {@code endedNumber} has finished, {@code nextNumber} starts on {@code nextStartDay}; {@code
+     * daysLeft} counts today.
+     */
     public record OffSeason(int endedNumber, int nextNumber, LocalDate nextStartDay, long daysLeft) implements Phase {}
 
     public static Phase at(LocalDate anchor, LocalDate day) {

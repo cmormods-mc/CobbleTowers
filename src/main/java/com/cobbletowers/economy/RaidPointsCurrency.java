@@ -3,11 +3,8 @@ package com.cobbletowers.economy;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The reserved id a reward table can name to grant CobbleRaids' Raid Points instead of an item (P21).
- *
- * <p>The same arrangement as {@link CobbleDollars}: never a registered {@code Item}, priced and banked like any
- * other entry, and recognised in exactly one place -- {@code RewardDelivery} -- which credits the player's balance
- * through CobbleRaids' public {@code CobbleRaidsPoints} API rather than inserting a stack.
+ * The reserved id a reward table names to grant CobbleRaids' Raid Points (P21). Like {@link CobbleDollars}:
+ * recognised only in {@code RewardDelivery}, which credits through CobbleRaids' {@code CobbleRaidsPoints} API.
  */
 public final class RaidPointsCurrency {
 

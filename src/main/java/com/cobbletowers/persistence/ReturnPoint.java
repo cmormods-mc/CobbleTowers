@@ -4,8 +4,8 @@ import java.util.Objects;
 import net.minecraft.nbt.CompoundTag;
 
 /**
- * Where a player was standing before a run took them into the tower (P20): the dimension's id and a
- * position and facing. Plain values only -- never a live level or player (TDS section 10).
+ * Where a player stood before a run took them into the tower (P20): dimension id, position and facing. Plain values
+ * only (TDS section 10).
  */
 public record ReturnPoint(String dimension, double x, double y, double z, float yaw, float pitch) {
 

@@ -8,7 +8,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** The tab-list counterpart of {@link PlayerDisplayNameMixin} (P36d): the same decoration in front of the name in the player list. */
+/**
+ * The tab-list counterpart of {@link PlayerDisplayNameMixin} (P36d): the same decoration in front of the name in the
+ * player list.
+ */
 @Mixin(ServerPlayer.class)
 public abstract class ServerPlayerTabNameMixin {
 

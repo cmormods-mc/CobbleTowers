@@ -12,9 +12,9 @@ import net.minecraft.world.item.ItemStack;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * One battle-track lane (P37): a row of reward tiles that scrolls sideways (wheel, drag, Left/Right, or {@link #jumpToCurrent}), opens centred on
- * the player's current node, and marks claimable, claimed and locked tiles. Only the tiles in view are drawn, each is one batched frame, and
- * nothing here allocates per frame.
+ * One battle-track lane (P37): a row of reward tiles that scrolls sideways (wheel, drag, Left/Right, {@link
+ * #jumpToCurrent}), opens on the current node and marks claimable, claimed and locked tiles. Only visible tiles are
+ * drawn, each one batched frame.
  */
 final class TrackStrip extends AbstractWidget {
     static final int TILE_W = 38, TILE_H = 46, GAP = 4, PITCH = TILE_W + GAP;
@@ -149,7 +149,10 @@ final class TrackStrip extends AbstractWidget {
         else if (hover) PixelUi.brackets(g, x + 1, y + 1, TILE_W - 2, TILE_H - 2, TowerUi.BRONZE_LIGHT);
     }
 
-    /** An item's own icon, or the mod's coin or gift picture when the item is a currency or this client does not have it. */
+    /**
+     * An item's own icon, or the mod's coin or gift picture when the item is a currency or this client does not have
+     * it.
+     */
     private static void drawItem(GuiGraphics g, String id, int x, int y) {
         ResourceLocation location = ResourceLocation.tryParse(id);
         var item = location == null ? java.util.Optional.<net.minecraft.world.item.Item>empty() : BuiltInRegistries.ITEM.getOptional(location);

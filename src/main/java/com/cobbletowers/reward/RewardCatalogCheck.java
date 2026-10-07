@@ -18,19 +18,9 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Checks, at startup, that every item a reward table names can actually be given (P21).
- *
- * <p>Before this nothing did. {@code RewardDelivery.give} skips an item that is not registered and logs it, but by
- * then the pending reward has already been drained from the queue, so a typo in a table -- or an optional mod that
- * is not installed -- silently cost players the drop. Two different situations, reported differently:
- *
- * <ul>
- *   <li>an item in a namespace whose mod <b>is</b> loaded but which does not exist: a typo, an {@code ERROR};</li>
- *   <li>an item in a namespace whose mod is <b>not</b> loaded: an optional dependency (CobbleCards, say), a
- *       {@code NOTE} -- those rewards are skipped, which is the intended graceful degradation.</li>
- * </ul>
- *
- * <p>The two reserved currency ids are never checked: they are credited, not given.
+ * Checks at startup that every item a reward table names can be given (P21). An item missing from a loaded mod's
+ * namespace is an {@code ERROR} (typo); one from an unloaded mod is a {@code NOTE} (optional dependency, skipped by
+ * design). The two reserved currency ids are not checked.
  */
 public final class RewardCatalogCheck {
 

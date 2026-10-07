@@ -22,15 +22,9 @@ import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 /**
- * Loads tower content from {@code data/<namespace>/cobbletowers/...} on every datapack reload.
- *
- * <p>A malformed file is skipped with a message naming it, never thrown: a dedicated server that
- * cannot finish its initial reload refuses to start, so one bad JSON in any datapack -- a namespace
- * anyone can write to -- would take the server down rather than take itself out of the pool. That is
- * CobbleRaids' rule, learned there the hard way, and it applies identically here.
- *
- * <p>Cross-reference problems are reported the same way, so a tower with a dangling floor id is
- * unplayable and visible rather than fatal.
+ * Loads tower content from {@code data/<namespace>/cobbletowers/...} on every reload. A malformed file is skipped
+ * with a message naming it, never thrown, since a failed reload stops a dedicated server. Cross-reference problems
+ * are reported the same way.
  */
 public final class TowerDefinitionRegistry
         extends SimplePreparableReloadListener<TowerContent> implements IdentifiableResourceReloadListener {

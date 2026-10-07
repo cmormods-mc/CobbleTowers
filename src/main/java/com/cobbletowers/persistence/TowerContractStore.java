@@ -10,16 +10,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * Each player's contract progress (P32c), keyed by slot ({@code daily:2026-10-05:0}), and which slot of a period they rerolled.
- * The template of a slot is derived from the date, not stored as the source of truth; it is kept beside the progress only so
- * a changed template (a reroll, or an edited pack) starts the slot afresh instead of carrying counts across.
+ * Each player's contract progress (P32c) by slot ({@code daily:2026-10-05:0}) and which slot of a period they
+ * rerolled. The slot's template is kept beside the progress so a changed template (reroll, edited pack) restarts it.
  */
-public final class TowerContractStore extends SavedData {
+public final class TowerContractStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_contracts";
 
@@ -33,13 +29,8 @@ public final class TowerContractStore extends SavedData {
 
     private final Map<UUID, Player> players = new LinkedHashMap<>();
 
-    public static SavedData.Factory<TowerContractStore> factory() {
-        return new SavedData.Factory<>(TowerContractStore::new, TowerContractStore::load, DataFixTypes.LEVEL);
-    }
-
     public static TowerContractStore get(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerContractStore::new, TowerContractStore::load, FILE_ID);
     }
 
     public Optional<Progress> progressOf(UUID player, String slotKey) {
@@ -82,10 +73,6 @@ public final class TowerContractStore extends SavedData {
     /** An operator's tool: forgets a player's contracts. */
     public void reset(UUID player) {
         if (players.remove(player) != null) setDirty();
-    }
-
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     static TowerContractStore load(CompoundTag tag, HolderLookup.Provider registries) {

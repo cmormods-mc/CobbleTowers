@@ -15,16 +15,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Who a spectator is currently following, and the camera that follows them there (TDS #25).
- *
- * <p>A camera choice, not run state -- the same distinction TDS #7 already draws for a battle's own
- * presentation entity ("not authoritative run state"). Held only here, in memory, for the life of a
- * spectator's stay: never written to {@link PersistedRun}, and rebuilt fresh every time a player
- * starts spectating rather than resumed from anything persisted.
- *
- * <p>Knows nothing about {@code ParticipantState} or how a player came to be spectating -- that
- * validation belongs to whoever calls in ({@code TowerEncounters}, {@code TowerNetworking}), the same
- * split every other pure-versus-orchestration boundary in this codebase already draws.
+ * Who a spectator is following and the camera that follows them (TDS #25). A camera choice, not run state (TDS #7):
+ * held in memory for the spectator's stay, never in {@link PersistedRun}. Callers validate how a player came to be
+ * spectating.
  */
 public final class SpectatorPresentation {
 

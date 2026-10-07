@@ -6,12 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * Read-only access to the tower content a server has loaded.
- *
- * <p>Everything here is a snapshot of the last datapack reload, and all of it is immutable. An addon
- * that wants to add content ships a datapack; this interface is for reading what exists.
- */
+/** Read-only access to the tower content last loaded. Immutable; addons add content with a datapack. */
 public interface TowerRegistryView {
 
     /** Every loaded tower id, sorted. */
@@ -25,9 +20,8 @@ public interface TowerRegistryView {
     Optional<RulesetView> ruleset(ResourceLocation rulesetId);
 
     /**
-     * Problems found when the definitions were last loaded: a dangling floor id, a missing pool, a
-     * milestone slot with no definition. Reported rather than thrown, so one broken datapack cannot
-     * stop a server starting; empty means the content is consistent.
+     * Problems found at the last load (dangling ids, missing pools, milestone slots with no definition). Reported,
+     * not thrown; empty means consistent.
      */
     List<String> loadProblems();
 }

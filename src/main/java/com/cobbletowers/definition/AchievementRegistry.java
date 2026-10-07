@@ -17,11 +17,9 @@ import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 /**
- * Loads mastery achievements (P31) from {@code data/<namespace>/cobbletowers/achievements/*.json} on every datapack reload.
- *
- * <p>The same rule as every other registry here: a malformed file is skipped with a message that names it and never
- * thrown, because a dedicated server that cannot finish its reload refuses to start. Achievements reference nothing else,
- * so they are loaded on their own rather than threaded through {@link TowerContent}.
+ * Loads mastery achievements (P31) from {@code data/<namespace>/cobbletowers/achievements/*.json} on every reload. A
+ * malformed file is skipped with a message naming it, never thrown. Loaded on its own since achievements reference
+ * nothing else.
  */
 public final class AchievementRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, AchievementDefinition>>

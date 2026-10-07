@@ -8,15 +8,16 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * One tower's mastery track once every file that applies to it has been merged (P37): rank names, the perk rates by level, and the
- * rewards a level carries. Pure, so every rule here is a unit test with no Minecraft in reach.
- *
- * <p>Merging, in the order the files are given (datapack files by id, then the server owner's config): a level's grants and cosmetics
- * concatenate; its perks and label, and a rank's name, are last-wins.
+ * One tower's mastery track after merging every file that applies (P37): rank names, perk rates by level and level
+ * rewards. Files merge in order (datapack by id, then the owner's config): grants and cosmetics concatenate; perks,
+ * label and rank name are last-wins. Pure.
  */
 public final class MasteryTrack {
 
-    /** What claiming a level gives, and what it sets. Empty grants and cosmetics are a level that only changes a perk or a rank. */
+    /**
+     * What claiming a level gives, and what it sets. Empty grants and cosmetics are a level that only changes a perk
+     * or a rank.
+     */
     public record Node(int level, String label, List<SeasonTrackDefinition.Grant> grants, List<String> cosmetics) {
         public Node {
             grants = List.copyOf(grants);

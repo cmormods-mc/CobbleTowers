@@ -30,9 +30,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The trials in chat (P32): {@code /tower trial} for what today's trials are and where you stand, {@code /tower trial play
- * daily|weekly} to take one into your lobby, {@code /tower trial board daily|weekly [date]} for the results. Operator tools live
- * under {@code /cobbletowers trialadmin}.
+ * Trials in chat (P32): {@code /tower trial} shows today's trials and your standing, {@code /tower trial play
+ * daily|weekly} takes one into your lobby, {@code /tower trial board daily|weekly [date]} shows results. Operator
+ * tools: {@code /cobbletowers trialadmin}.
  */
 public final class TrialCommand {
 
@@ -127,7 +127,8 @@ public final class TrialCommand {
                                 .then(Commands.argument("player", EntityArgument.player()).executes(TrialCommand::reset)))));
     }
 
-    // ---- players ---------------------------------------------------------------------------------------------------
+    // ---- players
+    // ---------------------------------------------------------------------------------------------------
 
     private static int info(CommandContext<CommandSourceStack> context, Kind only) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
@@ -189,7 +190,8 @@ public final class TrialCommand {
         return shown;
     }
 
-    // ---- operators -------------------------------------------------------------------------------------------------
+    // ---- operators
+    // -------------------------------------------------------------------------------------------------
 
     private static int day(CommandContext<CommandSourceStack> context) {
         String raw = StringArgumentType.getString(context, "date");

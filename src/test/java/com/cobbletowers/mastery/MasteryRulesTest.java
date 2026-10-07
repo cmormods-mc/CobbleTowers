@@ -71,7 +71,8 @@ class MasteryRulesTest {
         assertEquals(30, got.size(), "a perfect deep solo clear with lifetime totals met unlocks everything");
     }
 
-    // ---- the evaluator ---------------------------------------------------------------------------------------------
+    // ---- the evaluator
+    // ---------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("a clear unlocks only what it meets; a base-cycle solo clear in ten minutes is not an Ascension achievement")
@@ -111,7 +112,8 @@ class MasteryRulesTest {
         assertEquals(List.of("depth_1", "depth_3"), ids);
     }
 
-    // ---- definitions -----------------------------------------------------------------------------------------------
+    // ---- definitions
+    // -----------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("a bad achievement file is refused: unknown type, missing count, negative number, wrong schema")
@@ -128,7 +130,8 @@ class MasteryRulesTest {
                 "{\"schema_version\":1,\"display_name\":\"X\",\"condition\":{\"type\":\"ascension_reached\",\"level\":0}}"));
     }
 
-    // ---- difficulty, ranks, perks ----------------------------------------------------------------------------------
+    // ---- difficulty, ranks, perks
+    // ----------------------------------------------------------------------------------
 
     @Test
     @DisplayName("difficulty score: risk points, five per Ascension, five per missing player")

@@ -16,14 +16,10 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 
 /**
- * The sixteen armor items and their four materials (P24).
- *
- * <p>Registered in code because items and materials must exist before any datapack loads. What a set <b>does</b> is
- * data ({@link ArmorSetDefinition}); only the existence of the pieces is fixed here, by a naming convention a
- * datapack's {@code pieces} map refers back to: {@code cobbletowers:<set>_<slot>}.
- *
- * <p>Protection is diamond's (3/8/6/3, toughness 2, no knockback resistance, durability factor 33, enchantability 10),
- * decided with the user. Texture layers are {@code textures/models/armor/<set>_layer_1|2.png}, generated placeholders.
+ * The sixteen armor items and four materials (P24), registered in code since they must exist before datapacks. Named
+ * {@code cobbletowers:<set>_<slot>}; what a set does is data ({@link ArmorSetDefinition}). Protection is diamond's
+ * (3/8/6/3, toughness 2, durability factor 33, enchantability 10); textures are generated placeholders in {@code
+ * textures/models/armor}.
  */
 public final class ArmorSetItems {
 

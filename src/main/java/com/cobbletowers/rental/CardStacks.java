@@ -8,9 +8,9 @@ import net.minecraft.nbt.TagParser;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Turns a {@link RentalCards.Spec} into a real item (P33b), through the game's own item parser: the item id and the card data are
- * plain names, so this needs no class from CobblemonCards and works, or declines, by what is registered. If the mod is not installed
- * the item id does not resolve and the answer is empty, never an exception and never air.
+ * Turns a {@link RentalCards.Spec} into a real item (P33b) through the game's item parser, using plain names so no
+ * CobblemonCards class is needed. If the mod is absent the item does not resolve and the answer is empty, never an
+ * exception or air.
  */
 public final class CardStacks {
 

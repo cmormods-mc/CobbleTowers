@@ -8,8 +8,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The mastery screen asking for another view (P31): a tower id and a tab ({@code "mastery"} or a board name). Nothing here is
- * trusted: the server resolves both against what is loaded and answers with a fresh {@link MasteryScreenPayload}.
+ * The mastery screen asking for another view (P31): a tower id and a tab ({@code "mastery"} or a board name). The
+ * server resolves both and answers with a {@link MasteryScreenPayload}.
  */
 public record MasteryRequestPayload(String tower, String tab) implements CustomPacketPayload {
 

@@ -8,19 +8,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * What a run has been doing, for mastery (P31): how many players it started with, and, for the cycle in progress, how long its
- * floors have taken and whether any player Pokemon has fainted. Kept beside the run rather than inside {@code PersistedRun},
- * so recording it changes no run schema; an entry is dropped when its run ends.
- *
- * <p>Persisted so a crash costs at most the floor in progress. Mutations are synchronous and cheap; the file is written with
- * the world's autosave.
+ * What a run has been doing, for mastery (P31): players started with, and for the cycle in progress, floor durations
+ * and whether a player Pokemon fainted. Beside the run, not in {@code PersistedRun}; dropped when the run ends.
+ * Persisted so a crash costs at most the floor in progress.
  */
-public final class TowerRunStatsStore extends SavedData {
+public final class TowerRunStatsStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_run_stats";
 
@@ -33,7 +27,9 @@ public final class TowerRunStatsStore extends SavedData {
         public long floorStartedAt;
         /** Player Pokemon that have fainted in the current cycle. */
         public int faints;
-        /** {@link #faints} when the floor now being fought began, so the floor's own faints are the difference (P32c). */
+        /**
+         * {@link #faints} when the floor now being fought began, so the floor's own faints are the difference (P32c).
+         */
         public int faintsAtFloorStart;
         /** Floors in a row with no faint, and the most there has been in the run (the Run Report, P32d). */
         public int flawlessStreak;
@@ -46,13 +42,8 @@ public final class TowerRunStatsStore extends SavedData {
 
     private final Map<UUID, Stats> byRun = new LinkedHashMap<>();
 
-    public static SavedData.Factory<TowerRunStatsStore> factory() {
-        return new SavedData.Factory<>(TowerRunStatsStore::new, TowerRunStatsStore::load, DataFixTypes.LEVEL);
-    }
-
     public static TowerRunStatsStore get(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerRunStatsStore::new, TowerRunStatsStore::load, FILE_ID);
     }
 
     /** The run's stats, created with {@code partySize} the first time they are asked for. */

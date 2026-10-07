@@ -11,25 +11,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A run's vendor catalog, as it stands right now (TDS #16, #19), plus the caller's own CobbleDollar
- * balance -- the only place a player learns it (no always-on wallet HUD; see the design doc's
- * assumptions). One common catalog for every tower; a per-tower catalog is content this phase does
- * not build.
- *
- * <p>P19 adds the team, so a purchase can be aimed at a teammate (TDS #18), and a message, so a refused
- * purchase says why instead of simply not happening.
- *
- * @param team    everyone in the run, the caller included, with whether they can be bought for right now
+ * A run's vendor catalog now (TDS #16, #19) plus the caller's CobbleDollar balance (no always-on wallet HUD). One
+ * catalog for every tower.
+ * @param team everyone in the run, caller included, with whether they can be bought for now (TDS #18)
  * @param message the outcome of the last purchase attempt, or empty
  */
 public record VendorCatalogPayload(long cobbleDollars, List<Entry> services, List<Teammate> team, String message)
         implements CustomPacketPayload {
 
-    /**
-     * @param remainingPurchases -1 means unlimited -- a wire-level sentinel rather than an
-     *                           {@code OptionalInt} codec, the same way a missing jersey number is a
-     *                           real {@code OptionalInt} in Java but need not be one over the network
-     */
+    /** @param remainingPurchases -1 means unlimited (a wire sentinel) */
     public record Entry(ResourceLocation id, String displayName, int priceCobbleDollars, int remainingPurchases) {
         static final StreamCodec<RegistryFriendlyByteBuf, Entry> STREAM_CODEC = StreamCodec.composite(
                 ResourceLocation.STREAM_CODEC, Entry::id,

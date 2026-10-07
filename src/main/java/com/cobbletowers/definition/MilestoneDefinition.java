@@ -8,13 +8,9 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A bespoke floor: floor 5's boss, floor 10's championship.
- *
- * <p>A {@link MilestoneKind#BOSS} milestone names the CobbleRaids definition its boss is built from,
- * which is how floor 5 reuses raid boss capability instead of duplicating it (TDS #52). Nothing here
- * calls CobbleRaids; the id is carried until P6 hands it to the encounter API.
- *
- * @param banksRewards whether clearing this floor banks the run's rewards (TDS #24)
+ * A bespoke floor such as floor 5's boss or floor 10's championship. A {@link MilestoneKind#BOSS} names the
+ * CobbleRaids definition it is built from (TDS #52).
+ * @param banksRewards whether clearing it banks the run's rewards (TDS #24)
  */
 public record MilestoneDefinition(
         ResourceLocation id,
@@ -29,10 +25,8 @@ public record MilestoneDefinition(
         Objects.requireNonNull(raidDefinitionId, "raidDefinitionId");
         if (floorIndex < 1) throw new IllegalArgumentException("floor must be >= 1, got " + floorIndex);
         if (raidDefinitionId.isEmpty()) {
-            // Both kinds, not only BOSS. Every floor is finished by a CobbleRaids boss, and a
-            // milestone floor takes the one named here rather than drawing from a pool -- so a
-            // milestone without a definition is a floor nobody can complete. The definition
-            // validator caught floor 10 in exactly that state the first time it ran.
+            // Both kinds need a definition: every floor ends with a CobbleRaids boss, so a milestone without one
+            // cannot be completed.
             throw new IllegalArgumentException("a " + kind.name().toLowerCase(java.util.Locale.ROOT)
                     + " milestone must name a raid_definition; a milestone floor is finished by it");
         }

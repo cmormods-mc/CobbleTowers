@@ -3,9 +3,8 @@ package com.cobbletowers.trial;
 import java.nio.charset.StandardCharsets;
 
 /**
- * A stable 64-bit seed from a string (P32). Not {@code String.hashCode} (32 bits, and a different JVM could in principle
- * differ): FNV-1a over the UTF-8 bytes, finished with a SplitMix64 mix, so the same trial id gives the same seed on every server
- * and every Java version, which is the whole point of a shared trial.
+ * A stable 64-bit seed from a string (P32): FNV-1a over UTF-8 finished with SplitMix64, not {@code String.hashCode},
+ * so a trial id gives the same seed on every server and Java version.
  */
 public final class TrialSeed {
 

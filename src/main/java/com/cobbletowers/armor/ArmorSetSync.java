@@ -11,8 +11,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Keeps every client's tooltip data current (P25): the full set list on join, and again after each datapack reload so a
- * retuned or added set is described correctly without anyone relogging. A client without the channel (no mod) is skipped.
+ * Keeps clients' tooltip data current (P25): the set list on join and after each reload. Clients without the channel
+ * are skipped.
  */
 public final class ArmorSetSync {
 

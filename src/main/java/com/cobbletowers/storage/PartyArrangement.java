@@ -11,14 +11,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Rearranging a player's collection so a run can register Pokemon from their boxes, and putting it back
- * (P18). Pure: it works on a map of {@link Slot} to Pokemon id and returns answers, never moves anything.
- *
- * <p>The whole feature is a permutation of positions -- the set of Pokemon a player owns is the same
- * before, during and after -- and a mistake here loses or duplicates someone's Pokemon, so the two
- * functions are kept small, side-effect free and heavily tested. The Cobblemon-facing adapter applies
- * their answers in two phases (take every affected Pokemon out, then set each at its target), which is
- * what stops a target ever being overwritten.
+ * Rearranges a player's collection so a run can register Pokemon from their boxes, and puts it back (P18). Pure over
+ * a map of {@link Slot} to Pokemon id. The adapter applies answers in two phases (take out, then place) so no target
+ * is overwritten.
  */
 public final class PartyArrangement {
 
@@ -40,9 +35,9 @@ public final class PartyArrangement {
     public record Original(UUID pokemon, Slot slot) {}
 
     /**
-     * @param failure   why no plan could be made, or null when there is one
-     * @param originals where every Pokemon that moves started, in the order they will be restored
-     * @param placements where each moving Pokemon goes; empty when the party is already as chosen
+     * @param failure why no plan could be made, or null
+     * @param originals where each moving Pokemon started, in restore order
+     * @param placements where each moving Pokemon goes
      */
     public record Plan(Failure failure, List<Original> originals, Map<UUID, Slot> placements) {
         public Plan {
@@ -60,13 +55,10 @@ public final class PartyArrangement {
     }
 
     /**
-     * What to move so the party is exactly {@code chosen}, in that order.
-     *
-     * <p>A chosen Pokemon from a box moves up; every party member that is not chosen moves to the first
-     * free box slot, because the live party is what fights and an unregistered Pokemon in it could lead.
-     *
-     * @param contents who is where right now, party and boxes together
-     * @param pcSlots  every box slot that exists, in the order displaced Pokemon should fill them
+     * What to move so the party is exactly {@code chosen}, in order. Unchosen party members go to the first free box
+     * slot.
+     * @param contents who is where now
+     * @param pcSlots every box slot, in the order displaced Pokemon fill them
      */
     public static Plan plan(Map<Slot, UUID> contents, List<Slot> pcSlots, List<UUID> chosen) {
         List<UUID> picks = new ArrayList<>(new LinkedHashSet<>(chosen));
@@ -130,10 +122,10 @@ public final class PartyArrangement {
     }
 
     /**
-     * @param placements  where each Pokemon that is not already at its original slot should go
-     * @param missing     journaled Pokemon found nowhere: released, traded or given away. Skipped.
-     * @param relocated   Pokemon placed somewhere other than their original slot because it was taken
-     * @param stranded    Pokemon with nowhere at all to go (the party and every box full); left where they are
+     * @param placements where each displaced Pokemon should go
+     * @param missing journaled Pokemon found nowhere; skipped
+     * @param relocated placed away from its original slot because it was taken
+     * @param stranded no room anywhere; left where they are
      */
     public record Restoration(Map<UUID, Slot> placements, List<UUID> missing, List<UUID> relocated,
                               List<UUID> stranded) {
@@ -146,12 +138,8 @@ public final class PartyArrangement {
     }
 
     /**
-     * Where each journaled Pokemon should go to put the collection back.
-     *
-     * <p>Starts by taking every journaled Pokemon out of a copy of the layout, then places each at its
-     * recorded slot if that is free. A slot that something else has taken in the meantime falls back to
-     * the first free slot of the same kind, then to the boxes. Because it begins from "take them all
-     * out", running it twice -- or on a layout that is already restored -- changes nothing.
+     * Where each journaled Pokemon should go to restore the collection. Idempotent: it starts by taking every
+     * journaled Pokemon out of a copy of the layout.
      */
     public static Restoration restore(Map<Slot, UUID> contents, List<Slot> pcSlots, List<Original> originals) {
         Map<UUID, Slot> where = invert(contents);

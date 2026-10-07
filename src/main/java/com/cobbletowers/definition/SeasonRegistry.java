@@ -17,9 +17,9 @@ import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 /**
- * Loads the authored seasons (P36a) from {@code data/<namespace>/cobbletowers/seasons/*.json} on every datapack reload. The same rule
- * as every registry here: a malformed file is skipped with a message that names it, never thrown. A season with no file is
- * generated, see {@link SeasonDefinition#generated}.
+ * Loads authored seasons (P36a) from {@code data/<namespace>/cobbletowers/seasons/*.json} on every reload. A
+ * malformed file is skipped with a message naming it; a season with no file is generated ({@link
+ * SeasonDefinition#generated}).
  */
 public final class SeasonRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, SeasonDefinition>>

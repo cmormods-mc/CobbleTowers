@@ -21,11 +21,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 
 /**
- * {@code /cobbletowers cells}: which cells exist, who holds them, and which are out of service.
- *
- * <p>{@code list} and {@code show} read. {@code verify}, {@code quarantine} and {@code clear} are the
- * operator's side of TDS #35: a quarantined cell stays out of circulation until a person decides it
- * is clean, and this is how they look and how they say so.
+ * {@code /cobbletowers cells}: which cells exist, who holds them and which are out of service. {@code list} and
+ * {@code show} read; {@code verify}, {@code quarantine} and {@code clear} are the operator's side of TDS #35.
  */
 public final class CellsCommand {
 
@@ -33,9 +30,7 @@ public final class CellsCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("cobbletowers")
-                // Gated here rather than on the root: Brigadier merges a re-registered literal into
-                // the node that is already there and keeps that node's requirement, so a gate on
-                // "cobbletowers" would also gate the one subcommand players are meant to run.
+                // Gated here, not on the root: Brigadier keeps a merged literal's first requirement.
                 .then(Commands.literal("cells")
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.literal("list").executes(CellsCommand::list))

@@ -9,20 +9,11 @@ import java.util.Objects;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What an event tower's regional theme actually is: a doctrine to show and five jersey signatures to
- * weight toward as a themed pool's floors deepen (TDS #73, #76, #80).
- *
- * <p>Deliberately not a second roster. The ~ten core supporting species and the expanded pool TDS #76
- * mentions for Ascension are authored straight into a themed tower's own encounter pools, the same
- * way every non-jersey opponent already is -- a second list here would be two sources of truth for
- * one fact, the mistake P9 avoided by pricing rewards off {@code LedgerEntry.Kind} instead of
- * re-deriving it. Neutral names no theme at all (TDS #75); this record only exists for a tower that
- * does.
- *
- * @param doctrine display-only (TDS #80); nothing in this codebase reads it to change behavior
- * @param jerseyWeightGrowthPercentPerFloor how much a jersey entry's weight in a pool that names this
- *                                          theme rises per floor of depth (TDS #73), the same growth-
- *                                          step shape {@code RewardTableDefinition} already uses
+ * An event tower's regional theme: a doctrine to show and five jersey signatures weighted toward as a themed pool's
+ * floors deepen (TDS #73, #76, #80). Not a second roster: supporting species are authored in the tower's own pools.
+ * Neutral names no theme (TDS #75).
+ * @param doctrine display-only (TDS #80)
+ * @param jerseyWeightGrowthPercentPerFloor how much a jersey entry's weight rises per floor of depth (TDS #73)
  */
 public record RegionalThemeDefinition(
         ResourceLocation id,

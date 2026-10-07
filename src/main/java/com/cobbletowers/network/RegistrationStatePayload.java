@@ -11,11 +11,9 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What the party chooser shows (P18): every Pokemon the player owns in the party and the boxes, which are
- * chosen, and how many may be.
- *
- * @param open true when the screen should be opened (the player asked); false for a change pushed to an
- *             already-open chooser
+ * What the party chooser shows (P18): every Pokemon the player owns in party and boxes, which are chosen and how many
+ * may be.
+ * @param open true when the screen should open (the player asked); false for a push to an open chooser
  */
 public record RegistrationStatePayload(List<Entry> pokemon, List<UUID> chosen, int max, String message, boolean open)
         implements CustomPacketPayload {

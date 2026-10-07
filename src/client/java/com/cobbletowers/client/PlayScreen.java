@@ -12,11 +12,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * The way into a run: pick a tower, invite a team, answer an invite, start.
- *
- * <p>Holds no state of its own beyond what the server last sent. Every button sends a
- * {@link PlayActionPayload} and the server answers with a fresh {@link PlayStatePayload}, so what is on
- * screen is always the server's view of the lobby rather than a guess at it.
+ * The way into a run: pick a tower, invite a team, answer an invite, start. Holds no state beyond what the server
+ * last sent; each button sends a {@link PlayActionPayload} and the server answers with a fresh {@link
+ * PlayStatePayload}.
  */
 public final class PlayScreen extends TowerScreen {
 
@@ -50,10 +48,7 @@ public final class PlayScreen extends TowerScreen {
     private int controlsBottom;
     private int statusWidth(){return Math.max(104,(int)(width*.30));}
 
-    /**
-     * Two columns, so everything fits a short window (a 1080p screen at the automatic GUI scale is only 270 tall): the towers on the
-     * left, and on the right whatever the player can do right now (invite, depth, mode, draft, start, leave), with the team under it.
-     */
+    /** Two columns to fit a short window: towers on the left, the player's actions and the team on the right. */
     private void buildWidgets() {
         PlayStatePayload.Lobby lobby = state.lobby();
         int column = Math.max(96, (width - statusWidth() - 32) / 2);

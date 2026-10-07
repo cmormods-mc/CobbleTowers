@@ -23,8 +23,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * The reward tables this mod actually ships (P21), read from the real resource files: each one parses, each has
- * its regional identity, and a clean run pays about what the design said it would ("modest").
+ * The shipped reward tables (P21), read from the real resources: each parses, has its regional identity and a clean
+ * run pays about what the design said ("modest").
  */
 class ShippedRewardTablesTest {
 

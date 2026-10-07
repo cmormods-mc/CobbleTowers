@@ -21,14 +21,9 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * What each online player's worn armor currently switches on, and the one place that applies it (P24).
- *
- * <p>Every {@value #CHECK_INTERVAL_TICKS} ticks each player's four armor slots are resolved against the loaded sets
- * ({@link SetBonusResolver}). The result is cached; everything that consumes a bonus (Cobblemon events, the battle
- * handoff, vendor prices, Raid Points) reads {@link #of(UUID)} and never re-derives it. When the result changes, the
- * attribute modifiers are brought in line: the ones no longer wanted are removed, the new ones added. They are
- * <b>transient</b> (never saved with the player), so a crash cannot leave a bonus behind on a player who no longer
- * wears the armor, and the cache starts empty on every login.
+ * What each online player's worn armor switches on, and the one place that applies it (P24). Every {@value
+ * #CHECK_INTERVAL_TICKS} ticks the slots are resolved against the loaded sets ({@link SetBonusResolver}) and cached;
+ * consumers read {@link #of(UUID)}. Attribute modifiers are transient, so a crash leaves no bonus behind.
  */
 public final class WornSets {
 
@@ -61,16 +56,18 @@ public final class WornSets {
     }
 
     /**
-     * The player's bonuses right now: re-resolved first, so what a consumer reads is exact rather than up to half a
-     * second old. Resolving four armor slots is cheap, and every consumer is an occasional event (a battle, a purchase,
-     * a delivery), never a per-tick loop.
+     * The player's bonuses now, re-resolved first so a consumer reads an exact value. Cheap, and consumers are
+     * occasional events.
      */
     public static ActiveBonuses current(ServerPlayer player) {
         refresh(player);
         return of(player.getUUID());
     }
 
-    /** The player's active bonuses as of the last check; {@link ActiveBonuses#NONE} for anyone not wearing a set (or not online). */
+    /**
+     * The player's active bonuses as of the last check; {@link ActiveBonuses#NONE} for anyone not wearing a set (or
+     * not online).
+     */
     public static ActiveBonuses of(UUID player) {
         return CACHE.getOrDefault(player, ActiveBonuses.NONE);
     }
@@ -116,7 +113,8 @@ public final class WornSets {
         for (ActiveBonuses.Attribute attribute : wanted.attributes()) {
             AttributeInstance instance = instanceOf(player, attribute.attribute());
             if (instance == null) continue;
-            // Remove first: an amount that changed (a reload) must replace the old modifier, not be refused as a duplicate.
+            // Remove first: an amount that changed (a reload) must replace the old modifier, not be refused as a
+            // duplicate.
             instance.removeModifier(attribute.key());
             instance.addTransientModifier(new AttributeModifier(attribute.key(), attribute.amount(),
                     operationOf(attribute.operation())));

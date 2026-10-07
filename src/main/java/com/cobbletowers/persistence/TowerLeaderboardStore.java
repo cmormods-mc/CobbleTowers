@@ -4,40 +4,30 @@ import com.cobbletowers.mastery.LeaderboardRules;
 import com.cobbletowers.mastery.LeaderboardRules.Board;
 import com.cobbletowers.mastery.LeaderboardRules.Entry;
 import com.cobbletowers.mastery.LeaderboardRules.Key;
-import com.cobbletowers.mastery.LeaderboardRules.Member;
 import com.cobbletowers.mastery.LeaderboardRules.Mode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * The leaderboards (P31, TDS #90): per board, tower and mode, the best entries, each recording the ruleset revision, tower
- * revision and digest it was earned against. Ordering and capping are {@link LeaderboardRules}'; this only stores them.
+ * The leaderboards (P31, TDS #90): best entries per board, tower and mode, each with the revisions it was earned
+ * against. {@link LeaderboardRules} orders and caps them; this only stores.
  */
-public final class TowerLeaderboardStore extends SavedData {
+public final class TowerLeaderboardStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_leaderboards";
 
     private final Map<Key, List<Entry>> boards = new LinkedHashMap<>();
 
-    public static SavedData.Factory<TowerLeaderboardStore> factory() {
-        return new SavedData.Factory<>(TowerLeaderboardStore::new, TowerLeaderboardStore::load, DataFixTypes.LEVEL);
-    }
-
     public static TowerLeaderboardStore get(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerLeaderboardStore::new, TowerLeaderboardStore::load, FILE_ID);
     }
 
     /** Offers an entry to a board; returns its rank (1-based) if it is on the board afterwards, else 0. */
@@ -73,10 +63,6 @@ public final class TowerLeaderboardStore extends SavedData {
             boards.clear();
             setDirty();
         }
-    }
-
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     public static TowerLeaderboardStore load(CompoundTag tag, HolderLookup.Provider registries) {

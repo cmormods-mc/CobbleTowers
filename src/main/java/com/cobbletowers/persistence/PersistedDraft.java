@@ -14,18 +14,9 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A draft as it is written to disk: the cards offered, who voted for what, and what won.
- *
- * <p>Identifiers only, never a definition object (TDS §10). The cards are modifier ids re-resolved
- * against whatever content is loaded when the run is read back, which is the same rule the rest of
- * the run follows -- and the digest the run pinned at creation is what makes an edit to that content
- * visible rather than silent (TDS #40).
- *
- * <p><b>The cards are stored even though they are derivable.</b> Everything else deterministic is
- * re-derived rather than saved, so this deserves its reason: the draw filters the pool by what the
- * run is <i>eligible</i> for, and eligibility depends on what it has already drafted. Re-deriving
- * would be correct only as long as nothing about the accumulation ever changed shape. Storing the
- * offer costs three strings and removes that dependency entirely.
+ * A draft as written to disk: cards offered, votes and what won. Ids only (TDS section 10), re-resolved against
+ * loaded content; the run's pinned digest makes edits visible (TDS #40). The cards are stored although derivable,
+ * because eligibility depends on what the run already drafted.
  */
 public record PersistedDraft(
         int floorIndex,
@@ -68,12 +59,7 @@ public record PersistedDraft(
         return chosen.isPresent();
     }
 
-    /**
-     * The same draft with one player's vote recorded.
-     *
-     * <p>A player who votes twice replaces their own vote rather than adding one -- the map is keyed
-     * by player for exactly that reason.
-     */
+    /** The same draft with one player's vote recorded; a second vote replaces the first. */
     public PersistedDraft withVote(UUID playerId, int cardIndex) {
         if (cardIndex < 0 || cardIndex >= cards.size()) {
             throw new IllegalArgumentException("card " + cardIndex + " is not one of the " + cards.size()

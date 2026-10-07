@@ -5,17 +5,9 @@ import java.util.Objects;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One mastery achievement (P31): a name, a description and a condition. Unlocking it adds one mastery level in the tower it
- * was earned in. The same definitions apply to every tower; each tower tracks its own progress.
- *
- * <p>A condition is one of two shapes, both pure data:
- * <ul>
- *   <li>{@link Kind#CLEAR}: a <b>single cycle clear</b> meeting every constraint that is set
- *       ({@code min_ascension}, {@code flawless}, {@code solo}, {@code max_seconds}, {@code min_severe}, {@code min_score});</li>
- *   <li>{@link Kind#CYCLES_CLEARED} / {@link Kind#ASCENSION_REACHED}: a lifetime figure in the tower, {@code count} or
- *       {@code level} at least.</li>
- * </ul>
- * Unset constraints are neutral, so a file says only what it needs to.
+ * One mastery achievement (P31): name, description and condition; unlocking it adds a mastery level in that tower. A
+ * condition is either {@link Kind#CLEAR} (a single cycle clear meeting every set constraint) or a lifetime figure
+ * ({@link Kind#CYCLES_CLEARED}, {@link Kind#ASCENSION_REACHED}). Unset constraints are neutral.
  */
 public record AchievementDefinition(
         ResourceLocation id,
@@ -29,14 +21,14 @@ public record AchievementDefinition(
     public enum Kind { CLEAR, CYCLES_CLEARED, ASCENSION_REACHED }
 
     /**
-     * @param kind          which shape
-     * @param threshold     for the lifetime kinds, the figure to reach; unused (0) for {@link Kind#CLEAR}
-     * @param minAscension  a clear must be at this Ascension or deeper
-     * @param flawless      a clear must have no fainted player Pokemon
-     * @param solo          a clear must be a run that started with one player
-     * @param maxSeconds    a clear must take no more than this much active time (0 = no limit)
-     * @param minSevere     a clear must hold at least this many severe modifiers
-     * @param minScore      a clear must reach this difficulty score
+     * @param kind which shape
+     * @param threshold the figure to reach for lifetime kinds, 0 for CLEAR
+     * @param minAscension at this Ascension or deeper
+     * @param flawless no fainted player Pokemon
+     * @param solo started with one player
+     * @param maxSeconds at most this much active time (0 = no limit)
+     * @param minSevere at least this many severe modifiers
+     * @param minScore at least this difficulty score
      */
     public record Condition(Kind kind, int threshold, int minAscension, boolean flawless, boolean solo, int maxSeconds,
                             int minSevere, int minScore) {

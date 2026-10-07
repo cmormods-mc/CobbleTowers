@@ -12,17 +12,9 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Everything one datapack reload produced: the five definition maps, each definition's content
- * digest, and the cross-reference problems found while checking them.
- *
- * <p>Digests are keyed by {@link DefinitionKey}, folder included: ids are only unique within a
- * folder, and five folders sharing one key space would let one file's digest replace another's.
- *
- * <p>Immutable, and swapped in whole by {@link TowerDefinitionRegistry} at the end of a reload, so a
- * reader never sees half of one reload and half of the next.
- *
- * <p>Problems are carried rather than thrown. A dangling floor id means one tower cannot be played;
- * it must not stop a server starting, and an operator needs to be told which id, in which tower.
+ * Everything one datapack reload produced: the definition maps, their digests (keyed by {@link DefinitionKey}) and
+ * cross-reference problems. Immutable and swapped in whole by {@link TowerDefinitionRegistry}. Problems are carried,
+ * not thrown, so one bad id cannot stop the server.
  */
 public record TowerContent(
         Map<ResourceLocation, TowerDefinition> towers,
@@ -62,9 +54,8 @@ public record TowerContent(
     }
 
     /**
-     * Builds the loaded content, running every cross-reference check once. Sorted ids are computed
-     * here rather than per lookup, the way CobbleRaids learned to after tab completion was sorting
-     * 130 entries per keystroke.
+     * Builds the loaded content, running every cross-reference check once. Sorted ids are computed here, not per
+     * lookup.
      */
     public static TowerContent of(Map<ResourceLocation, TowerDefinition> towers,
                                   Map<ResourceLocation, FloorDefinition> floors,
@@ -152,12 +143,8 @@ public record TowerContent(
     }
 
     /**
-     * A modifier's own references (TDS #58).
-     *
-     * <p>Self-exclusion and require/exclude contradictions are refused by the record itself, because
-     * they are decidable from one file. These are the checks that need the whole loaded set: a
-     * dangling id, and a prerequisite chain that can never be satisfied because something in it is
-     * missing.
+     * A modifier's own references (TDS #58): dangling ids and prerequisite chains that can never be satisfied.
+     * Single-file contradictions are refused by the record itself.
      */
     private static List<String> modifierProblems(Map<ResourceLocation, ModifierDefinition> modifiers) {
         List<String> problems = new ArrayList<>();
@@ -320,11 +307,7 @@ public record TowerContent(
     }
 
     /**
-     * The modifiers a floor may offer, in a stable order.
-     *
-     * <p>A floor that names none draws from every loaded modifier: a tower is expected to grow
-     * content without every floor file being edited to list it. Naming them is how a floor narrows
-     * the pool, not how it opts in.
+     * The modifiers a floor may offer, in a stable order. A floor that names none draws from every loaded modifier.
      */
     /** Every loaded relic, in a stable order (a draw walks this list subtracting weights). */
     public List<ModifierDefinition> relicPool() {
@@ -351,9 +334,7 @@ public record TowerContent(
         }
         // A relic (P34) is found after a milestone boss, never drafted as an ordinary challenge.
         pool.removeIf(ModifierDefinition::relic);
-        // Sorted, because a draw walks this list subtracting weights and a map's iteration order is
-        // not a contract. Two servers with the same seed and the same content must offer the same
-        // three cards; an unordered pool would make that true only by luck.
+        // Sorted because a map's iteration order is not a contract and a draw walks this list.
         pool.sort(Comparator.comparing(modifier -> modifier.id().toString()));
         return List.copyOf(pool);
     }

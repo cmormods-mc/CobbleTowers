@@ -21,11 +21,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Armor set tooltips, the client half of P25: remembers the sets the server last described and adds the set lines under
- * any piece that belongs to one, lit or locked by what the viewer is wearing right now.
- *
- * <p>Everything here is decoration over data the server owns; with no payload (a server without the mod, or before the
- * join packet arrives) a piece simply has its ordinary tooltip.
+ * Armor set tooltips, the client half of P25: remembers the sets the server last described and adds set lines under
+ * pieces that belong to one, lit or locked by what the viewer wears. With no payload a piece keeps its ordinary
+ * tooltip.
  */
 public final class ArmorTooltips {
 

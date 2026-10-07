@@ -54,12 +54,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * {@code /cobbletowers runs list|show|create|advance}: the run machine, visible and drivable.
- *
- * <p>{@code list} and {@code show} are read-only. {@code create} and {@code advance} are dev tools at
- * the same permission level as the battle spike -- P2 has no floors, no battles and no GUI, so
- * driving the machine by hand is the only way to exercise persistence, checkpoints and recovery
- * against a real server. The crash-durability test drives exactly these over RCON.
+ * {@code /cobbletowers runs list|show|create|advance|...}: the run machine, visible and drivable. {@code create} and
+ * {@code advance} are dev tools.
  */
 public final class RunsCommand {
 
@@ -71,20 +67,15 @@ public final class RunsCommand {
                         // The one thing here a player is meant to do for themselves. Everything else
                         // under "runs" drives the machine by hand and stays at permission 2.
                         .then(Commands.literal("leave").executes(RunsCommand::leave))
-                        // Also player-facing, and also bare of a `.requires(...)` for the same reason:
-                        // cashing out ends the run, which is a decision only the party makes for
-                        // itself. Not blocked by an open draft -- a party that is leaving for good has
-                        // no reason to be forced through a vote on a challenge it will never fight.
+                        // Player-facing, no {@code .requires}: cashing out is the party's decision. Not blocked by an
+                        // open draft.
                         .then(Commands.literal("cashout").executes(RunsCommand::cashout))
                         .then(Commands.literal("reward")
                                 .then(Commands.literal("show").executes(RunsCommand::rewardShow)))
-                        // Player-facing, like leave/cashout: opens the caller's own shop screen
-                        // (P12). INTERMISSION-only is enforced by VendorPurchaseService itself, not
-                        // here -- the catalog can be requested any time; buying cannot.
+                        // Player-facing: opens the caller's shop. INTERMISSION-only is enforced by
+                        // VendorPurchaseService.
                         .then(Commands.literal("vendor").executes(RunsCommand::vendor)
-                                // Operator tools, the same reason "grant" exists: a live test has no
-                                // client to earn CobbleDollars realistically or to send a purchase
-                                // over the wire, so these are the only way to pin either down.
+                                // Operator test tools: a live test cannot earn CobbleDollars or send a purchase.
                                 .then(Commands.literal("credit")
                                         .requires(source -> source.hasPermission(2))
                                         .then(Commands.argument("player", EntityArgument.player())
@@ -97,14 +88,9 @@ public final class RunsCommand {
                                                         .then(Commands.argument("payer", EntityArgument.player())
                                                                 .then(Commands.argument("target", EntityArgument.player())
                                                                         .executes(RunsCommand::vendorBuy)))))))
-                        // Drafting is the other thing a player does for themselves, so `vote` and
-                        // `show` set no permission while `force` does. P7's trap is why each
-                        // subcommand carries its own: Brigadier keeps the FIRST registration's
-                        // `requires` on a merged literal, so one put higher up would silently apply
-                        // to every player-facing thing beneath it.
-                        // Puts a modifier on a run without waiting for the draw to offer it.
-                        // An operator's tool and the only way a live test can pin down which
-                        // modifier a boss is fought under -- the cards are the seed's business.
+                        // Player-facing, so no permission. Each subcommand carries its own {@code requires}:
+                        // Brigadier keeps the first registration's on a merged literal. {@code force} puts a modifier
+                        // on a run without a draw (operator).
                         .then(Commands.literal("grant")
                                 .requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("run", UuidArgument.uuid())
@@ -181,15 +167,8 @@ public final class RunsCommand {
     }
 
     /**
-     * {@code /cobbletowers runs watchdog player|floor}: the real sweep, with the clock wound forward.
-     *
-     * <p>The watchdog's caps are ten and thirty minutes, which is right for a server and impossible
-     * for a test -- and a test nobody runs proves nothing. This runs the sweep that the tick runs,
-     * over the floors that are really open, with {@code now} advanced past one cap. No test-only
-     * threshold, no second code path: the only thing that differs from the real thing is the clock.
-     *
-     * <p>Useful to an operator for the same reason: it answers "what would the watchdog do about
-     * this floor" without waiting out the cap to find out.
+     * {@code /cobbletowers runs watchdog player|floor}: runs the real sweep with the clock wound forward, so the caps
+     * can be tested.
      */
     private static int watchdog(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
@@ -204,13 +183,7 @@ public final class RunsCommand {
         return floors;
     }
 
-    /**
-     * {@code /cobbletowers runs leave}: the player is done, and says so.
-     *
-     * <p>Terminal for them -- {@code ParticipantState} freezes a participant who has left, so no
-     * later transition can quietly put them back in -- and the end of the run if they were the last
-     * one in it (TDS #39).
-     */
+    /** {@code /cobbletowers runs leave}: terminal for the player; ends the run if they were the last (TDS #39). */
     private static int leave(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayerOrException();
@@ -223,14 +196,7 @@ public final class RunsCommand {
         return 1;
     }
 
-    /**
-     * {@code /cobbletowers runs cashout}: casts the caller's vote to cash out (P17).
-     *
-     * <p>No longer cashes out on one player's say-so: the run cashes out when a strict majority of the team
-     * votes to, so a solo player's own vote is enough and a team of three needs two.
-     * {@code RewardBankService} grants everything remaining the moment the run reaches
-     * {@code CASHED_OUT} (docs/design/P9-economy.md section 4a).
-     */
+    /** {@code /cobbletowers runs cashout}: casts a cash-out vote; a strict majority cashes out. */
     private static int cashout(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayerOrException();
@@ -239,11 +205,7 @@ public final class RunsCommand {
         return 1;
     }
 
-    /**
-     * {@code /cobbletowers runs reward show}: what has been banked, what is still at risk, and what
-     * is queued for the caller. Diagnostic (TDS #60), the same role {@code draft show} plays for the
-     * modifier system.
-     */
+    /** {@code /cobbletowers runs reward show}: what is banked, at risk and queued for the caller. */
     private static int rewardShow(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayerOrException();
@@ -271,9 +233,7 @@ public final class RunsCommand {
     }
 
     /**
-     * {@code /cobbletowers runs vendor}: sends the caller {@link VendorCatalogPayload} and, on a
-     * modded client, opens the shop screen -- a client without the channel registered gets a plain
-     * chat listing instead, the same graceful-degradation posture P11's reward reveal already takes.
+     * {@code /cobbletowers runs vendor}: opens the shop screen, or a chat listing on a client without the channel.
      */
     private static int vendor(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
@@ -471,9 +431,8 @@ public final class RunsCommand {
     }
 
     /**
-     * {@code /cobbletowers runs earn <run> opponent|boss|floor|milestone}: puts an entry in a run's unclaimed pool
-     * as if it had just been earned on the run's current floor. A test seam, like {@code vendor credit}: a live
-     * test cannot fight a real boss to earn a milestone, and rewards are paid from the ledger, not from events.
+     * {@code /cobbletowers runs earn <run> opponent|boss|floor|milestone}: puts an entry in the unclaimed pool; a
+     * test seam.
      */
     private static int fx(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
@@ -563,12 +522,7 @@ public final class RunsCommand {
         return 0;
     }
 
-    /**
-     * Starts the floor's prerequisite round, the thing a GUI will do in P11.
-     *
-     * <p>Dev-gated like the rest of these: there is no preparation screen yet, so a floor is begun by
-     * hand. The durability and floor tests drive exactly this over RCON.
-     */
+    /** Starts the floor's prerequisite round by hand; driven by the floor tests over RCON. */
     private static int encounter(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         UUID runId = UuidArgument.getUuid(context, "run");
@@ -585,10 +539,7 @@ public final class RunsCommand {
         try {
             round = TowerEncounters.begin(source.getServer(), runId);
         } catch (RuntimeException ex) {
-            // Minecraft only prints a command's stack trace when it is running in an IDE; on a real
-            // server the throwable is swallowed and the caller gets "An unexpected error occurred".
-            // A dev command whose failures are invisible is worse than no command, so it says so
-            // itself before anything else gets a chance to hide it.
+            // Logged first: Minecraft hides command stack traces outside an IDE.
             TowerLog.error("Starting the floor for run {} threw", runId, ex);
             source.sendFailure(Component.literal("Starting the floor threw: " + ex));
             return 0;
@@ -634,13 +585,7 @@ public final class RunsCommand {
         return 0;
     }
 
-    /**
-     * Grants a modifier straight onto a run, bypassing the draft.
-     *
-     * <p>Refused if the resolver would not allow it, so this cannot be used to build an accumulation
-     * the game itself could never reach -- an operator tool that could produce illegal state would
-     * make every later bug report ambiguous.
-     */
+    /** Grants a modifier onto a run without a draft, refused if the resolver would not allow it. */
     private static int grant(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         UUID runId = UuidArgument.getUuid(context, "run");
@@ -670,12 +615,7 @@ public final class RunsCommand {
         return 1;
     }
 
-    /**
-     * Prints the draft in front of the player, with its cards numbered from 1.
-     *
-     * <p>One-based for the player, zero-based inside: a card list that starts at zero is a thing
-     * only programmers vote on. The conversion happens here, at the edge, exactly once.
-     */
+    /** Prints the draft with cards numbered from 1; converted to zero-based here, once. */
     private static int draftShow(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayerOrException();

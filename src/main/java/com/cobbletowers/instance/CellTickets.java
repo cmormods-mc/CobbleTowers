@@ -11,16 +11,8 @@ import net.minecraft.server.level.TicketType;
 import net.minecraft.world.level.ChunkPos;
 
 /**
- * Keeps a cell's chunks loaded for exactly as long as something is using it (TDS #27).
- *
- * <p>A region ticket, deliberately, and never {@code setChunkForced}: a forceload is written into
- * the world and survives a restart, which is precisely what "no active run implies no tower-owned
- * chunk tickets" forbids. Tickets live in memory, so a server that comes back from a crash holds
- * none at all -- the invariant is true by construction rather than by remembering to clean up.
- *
- * <p>The ticket covers the <b>arena</b>, not the whole cell. A cell's interior is 16 chunks square;
- * an arena is about four. Loading the interior would mean 289 chunks ticking per run to hold a
- * building that fits in 49, which is the kind of cost nobody notices until there are twenty runs.
+ * Keeps a cell's chunks loaded while something uses it (TDS #27). A region ticket, never a forceload (which survives
+ * a restart). Covers the arena (49 chunks), not the whole cell.
  */
 public final class CellTickets {
 
@@ -28,9 +20,8 @@ public final class CellTickets {
             TicketType.create("cobbletowers_cell", Comparator.comparingLong(ChunkPos::toLong));
 
     /**
-     * Chunks either side of the arena centre. Three gives a 7x7 area, 112 blocks square, which holds
-     * the 51-block arena with room to spare. The resulting ticket level is well inside the ticking
-     * threshold, so entities in an arena tick while a run is in it.
+     * Chunks either side of the arena centre: 3 gives a 7x7 area, enough for the 51-block arena, and within the
+     * ticking threshold.
      */
     public static final int RADIUS_CHUNKS = 3;
 
@@ -62,13 +53,7 @@ public final class CellTickets {
         TowerLog.info("Cell {} chunks released", cell);
     }
 
-    /**
-     * Whether this mod is still holding the cell's chunks.
-     *
-     * <p>The third cleanup stage (TDS section 11). A cell nobody has let go of is not reusable, and
-     * before this existed that stage was left out rather than stubbed, because a check that always
-     * passes reads as verified and verifies nothing.
-     */
+    /** Whether this mod still holds the cell's chunks; the third cleanup stage (TDS section 11). */
     public static boolean isHeld(int cell) {
         return HELD.contains(cell);
     }
@@ -90,13 +75,7 @@ public final class CellTickets {
         return new BlockPos(centre.getX() - width / 2, CellGrid.FLOOR_Y, centre.getZ() - length / 2);
     }
 
-    /**
-     * Drops every ticket at shutdown.
-     *
-     * <p>Not strictly needed -- tickets do not survive the server -- but the set is static and this
-     * class is not per-server, so leaving it populated would have an integrated client's next world
-     * believing it holds chunks it does not.
-     */
+    /** Drops every ticket at shutdown so an integrated client's next world does not think it holds chunks. */
     public static int onServerStopped() {
         int held = HELD.size();
         HELD.clear();

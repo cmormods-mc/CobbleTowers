@@ -3,10 +3,9 @@ package com.cobbletowers.spectator;
 import java.util.Optional;
 
 /**
- * Who may watch whom (P36e), as plain values so every refusal can be tested without a server.
- *
- * <p>A watcher is a player outside the run looking in: they ride a participant's camera in spectator mode and are sent home when the run ends.
- * It is not the loss-spectating of {@link SpectatorPresentation}, which belongs to a participant of the same run.
+ * Who may watch whom (P36e), as plain values so refusals are testable. A watcher is a player outside the run who
+ * rides a participant's camera and is sent home when the run ends; not the loss-spectating of {@link
+ * SpectatorPresentation}.
  */
 public final class WatchRules {
 
@@ -26,9 +25,7 @@ public final class WatchRules {
         return Optional.empty();
     }
 
-    /**
-     * Whether an existing watch must end now: the run is over, or the player they were following is gone or has left the tower.
-     */
+    /** Whether a watch must end now: the run is over, or the followed player is gone or left the tower. */
     public static boolean mustEnd(boolean runLive, boolean targetOnline, boolean targetInTower) {
         return !runLive || !targetOnline || !targetInTower;
     }

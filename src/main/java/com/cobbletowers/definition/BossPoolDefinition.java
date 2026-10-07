@@ -8,16 +8,9 @@ import java.util.Objects;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The CobbleRaids bosses a floor may finish with, weighted.
- *
- * <p>The tower has to name these itself. CobbleRaids' encounter API offers {@code start}, {@code
- * abort} and {@code isActive} and nothing else -- there is no listing and no way to ask for "a tier
- * three boss" -- so a floor cannot discover what is available and must be told.
- *
- * <p>Which also means <b>nothing here can be checked against CobbleRaids offline</b>. The definition
- * ids belong to the other mod; this validates that entries parse and weights are positive, and an id
- * CobbleRaids does not know fails when the boss is started, reported as a technical fault. A check
- * that pretended to more would be a check nobody should trust.
+ * The CobbleRaids bosses a floor may finish with, weighted. CobbleRaids offers no listing, so the tower names them.
+ * Ids belong to the other mod and cannot be checked offline: only parsing and positive weights are validated; an
+ * unknown id fails at boss start as a technical fault.
  */
 public record BossPoolDefinition(
         ResourceLocation id,
@@ -29,9 +22,8 @@ public record BossPoolDefinition(
 
     /**
      * One possible boss.
-     *
-     * @param definition  a CobbleRaids raid definition id, e.g. cobbleraids:lucario
-     * @param levelOffset added to the floor's level, for a pool that holds a tougher finisher
+     * @param definition a CobbleRaids raid definition id, e.g. cobbleraids:lucario
+     * @param levelOffset added to the floor's level
      */
     public record Entry(ResourceLocation definition, int weight, int levelOffset) {
         public Entry {

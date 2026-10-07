@@ -59,7 +59,8 @@ class ContractRulesTest {
         return new TowerEvent.FloorCleared(RUN, List.of(players), TOWER, index, millis, flawless, solo);
     }
 
-    // ---- events ----------------------------------------------------------------------------------------------------
+    // ---- events
+    // ----------------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("a cleared floor counts for everyone on the team, and for nobody who was not on it")
@@ -111,7 +112,8 @@ class ContractRulesTest {
         assertEquals(0, ContractRules.delta(soloBoss, new TowerEvent.BossDefeated(RUN, List.of(ME), TOWER, 5, false), ME));
     }
 
-    // ---- the draw --------------------------------------------------------------------------------------------------
+    // ---- the draw
+    // --------------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("a day's contracts are the same for everyone and different the next day; three daily and two weekly, never repeated within a set")
@@ -166,7 +168,8 @@ class ContractRulesTest {
         assertEquals(2, ContractSchedule.pick(two, Period.DAILY, 5, new int[3]).size());
     }
 
-    // ---- the templates ---------------------------------------------------------------------------------------------
+    // ---- the templates
+    // ---------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("the shipped templates parse, have rewards within bounds, and there are enough of each period to draw from")

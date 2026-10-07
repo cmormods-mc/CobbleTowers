@@ -17,8 +17,8 @@ import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 /**
- * Loads playlists (P32) from {@code data/<namespace>/cobbletowers/playlists/*.json} on every datapack reload. The same rule as
- * every registry here: a malformed file is skipped with a message that names it, never thrown.
+ * Loads playlists (P32) from {@code data/<namespace>/cobbletowers/playlists/*.json} on every reload. A malformed file
+ * is skipped with a message naming it.
  */
 public final class PlaylistRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, PlaylistDefinition>>

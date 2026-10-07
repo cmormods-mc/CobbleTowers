@@ -18,11 +18,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * {@code /cobbletowers play}: the way a player gets into a run, with no operator level needed.
- *
- * <p>Bare {@code play} opens the screen; every subcommand is the same action a screen button sends,
- * through the same {@link LobbyService} methods, so a client without the screen can still play and a
- * test can drive it over RCON with {@code execute as}.
+ * {@code /cobbletowers play}: the way a player gets into a run, no operator level needed. Bare {@code play} opens the
+ * screen; each subcommand is the same action a screen button sends, through the same {@link LobbyService} methods.
  */
 public final class PlayCommand {
 
@@ -127,7 +124,8 @@ public final class PlayCommand {
 
     private static int hall(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
-        // A team that is forming (or at an intermission) wants to see that, not the tower picker; /tower menu is the picker.
+        // A team that is forming (or at an intermission) wants to see that, not the tower picker; /tower menu is the
+        // picker.
         if (IntermissionService.isAtIntermission(player)) {
             IntermissionService.openScreen(context.getSource().getServer(), player, "");
         } else if (LobbyService.lobbyOf(player.getUUID()).isPresent()) {

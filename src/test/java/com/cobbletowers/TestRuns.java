@@ -92,9 +92,8 @@ public final class TestRuns {
     }
 
     /**
-     * One modifier, built from JSON so the tests exercise the same parser content does.
-     *
-     * @param extra additional top-level JSON fields, e.g. {@code "\"stack_limit\":2"}
+     * One modifier built from JSON, so tests use the parser content uses.
+     * @param extra extra top-level JSON fields, e.g. {@code "\"stack_limit\":2"}
      */
     public static ModifierDefinition modifier(String path, String type, String effect, String... extra) {
         StringBuilder json = new StringBuilder("{\"schema_version\":1,\"type\":\"" + type

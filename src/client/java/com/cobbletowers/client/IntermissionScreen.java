@@ -16,12 +16,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
 
 /**
- * The between-floors menu (P17): choose the modifier for the next floor, visit the vendor, ready up, and vote on cashing out.
- *
- * <p>Holds nothing of its own that the server decides. Choosing a card only marks it; Confirm sends the vote, and the server
- * answers with a fresh {@link IntermissionStatePayload}, so what is shown is the server's view of the team. The cards open from
- * behind wooden shutters (once per offer, never again on a refresh); reduced motion, or Skip, shows the whole offer at once, and
- * nothing about the reveal ever sends anything.
+ * The between-floors menu (P17): modifier choice, vendor, ready-up and cash-out vote. Holds nothing the server
+ * decides; Confirm sends the vote and the server answers with a fresh {@link IntermissionStatePayload}. Reduced
+ * motion or Skip shows cards at once.
  */
 public final class IntermissionScreen extends TowerScreen implements ModifierCardButton.View {
 
@@ -71,7 +68,10 @@ public final class IntermissionScreen extends TowerScreen implements ModifierCar
         pending = false;
     }
 
-    /** A fresh state arrived while this screen is open. A refresh of the same offer keeps the choice and never replays the reveal. */
+    /**
+     * A fresh state arrived while this screen is open. A refresh of the same offer keeps the choice and never replays
+     * the reveal.
+     */
     public void update(IntermissionStatePayload next) {
         boolean same = sameOffer(state, next);
         this.state = next;
@@ -92,7 +92,8 @@ public final class IntermissionScreen extends TowerScreen implements ModifierCar
         buildWidgets();
     }
 
-    // ---- ModifierCardButton.View ----------------------------------------------------------------------------------------
+    // ---- ModifierCardButton.View
+    // ----------------------------------------------------------------------------------------
 
     private boolean motionOn() {
         return TowerUiSettings.motion && !skipped;
@@ -129,7 +130,8 @@ public final class IntermissionScreen extends TowerScreen implements ModifierCar
         return state.draft().state() == 2;
     }
 
-    // ---- building -----------------------------------------------------------------------------------------------------
+    // ---- building
+    // -----------------------------------------------------------------------------------------------------
 
     private boolean mine(boolean ready) {
         LocalPlayer me = Minecraft.getInstance().player;
@@ -271,7 +273,8 @@ public final class IntermissionScreen extends TowerScreen implements ModifierCar
         }
     }
 
-    // ---- once-per-stage sounds, and the pending timeout: from the tick, never from the render loop ----------------------------
+    // ---- once-per-stage sounds, and the pending timeout: from the tick, never from the render loop
+    // ----------------------------
 
     @Override
     public void tick() {
@@ -310,7 +313,8 @@ public final class IntermissionScreen extends TowerScreen implements ModifierCar
         if (TowerUiSettings.sounds) Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(sound, pitch, volume));
     }
 
-    // ---- drawing ------------------------------------------------------------------------------------------------------
+    // ---- drawing
+    // ------------------------------------------------------------------------------------------------------
 
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float dt) {

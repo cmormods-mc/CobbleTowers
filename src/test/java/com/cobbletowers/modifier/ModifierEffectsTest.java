@@ -77,9 +77,7 @@ class ModifierEffectsTest {
     @Test
     @DisplayName("every type is offerable now that every field has somewhere to go")
     void everyTypeIsOfferable() {
-        // P8a could not offer these: a battle's rules were not the tower's to change, and a boss
-        // pool derived inside CobbleRaids was not the tower's to scale. P8b gave all three a road
-        // across the encounter boundary, so all three are real cards.
+        // P8b gave these three a road across the encounter boundary, so all three are real cards.
         assertTrue(TestRuns.modifier("real", "enemy", "\"level_offset\":1").effectiveNow());
         assertTrue(TestRuns.modifier("paid", "reward", "\"reward_percent\":120").effectiveNow());
         assertTrue(TestRuns.modifier("weather", "field", "\"weather\":\"raindance\"").effectiveNow());
@@ -90,10 +88,7 @@ class ModifierEffectsTest {
     @Test
     @DisplayName("a card that would do nothing cannot be defined at all")
     void inertCardsCannotExist() {
-        // The guarantee that replaced the P8a filter, and it is the stronger one: rather than
-        // loading a do-nothing modifier and declining to offer it, the definition is refused. Every
-        // type now has at least one field that reaches something, so an effect that changes nothing
-        // matches no type and cannot get past the constructor.
+        // A definition whose effect changes nothing matches no type and is refused by the constructor.
         for (String type : new String[] {"enemy", "encounter", "player_constraint", "field", "reward"}) {
             assertThrows(IllegalArgumentException.class,
                     () -> TestRuns.modifier("empty_" + type, type, ""),

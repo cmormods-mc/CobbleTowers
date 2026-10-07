@@ -12,16 +12,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * Cells already built and waiting, so a party does not stand about while an arena is pasted (#26).
- *
- * <p>Kept <b>per structure</b>, because that is the only way warming saves the work that costs
- * anything. Loading a cell's chunks is nearly free in a void dimension; pasting five thousand blocks
- * is not. A pool of "prepared cells" that did not know which floor they were for would have to paste
- * again on handover, which is the whole expense it exists to avoid.
- *
- * <p>Topped up on allocation and release rather than on a tick, and never more than once every
- * {@link #COOLDOWN_MILLIS}: TDS section 11 forbids per-tick sweeps, and an event-driven top-up has
- * no idle cost at all.
+ * Cells already built and waiting so a party does not wait for a paste (#26). Kept per structure, since the paste is
+ * the cost. Topped up on allocation and release, at most once per {@link #COOLDOWN_MILLIS}; no per-tick sweep (TDS
+ * section 11).
  */
 public final class CellWarmPool {
 
@@ -40,10 +33,7 @@ public final class CellWarmPool {
     private CellWarmPool() {}
 
     /**
-     * A cell already built for this layout, if one is waiting.
-     *
-     * <p>The lease moves from the pool to the caller, who is then responsible for releasing it. A
-     * cell handed out here has already been pasted and had its anchors checked.
+     * A cell already built for this layout, if one is waiting. The lease moves to the caller, who must release it.
      */
     public static OptionalInt take(ResourceLocation structure, UUID runId) {
         Deque<Integer> ready = READY.get(structure);
@@ -55,11 +45,8 @@ public final class CellWarmPool {
     }
 
     /**
-     * Builds cells for this layout up to the target, if the cooldown has passed.
-     *
-     * <p>Returns how many were built. A failure to build one stops the round rather than looping:
-     * whatever prevented it -- no free cell, a missing structure -- will prevent the next one too,
-     * and a pool that retries hard on a broken server is worse than a pool that stays empty.
+     * Builds cells for this layout up to the target if the cooldown has passed; returns how many. A failure stops the
+     * round.
      */
     public static int topUp(MinecraftServer server, FloorLayout layout, long now) {
         return topUp(server, layout, now, Integer.MAX_VALUE);
@@ -94,8 +81,8 @@ public final class CellWarmPool {
     }
 
     /**
-     * Layouts a run has used, so the pool knows what to keep ready. Recording one costs nothing; the building happens in {@link #tick}, away
-     * from the tick that started a run (building a cell there stalled the run start by a second paste).
+     * Layouts a run has used, so the pool knows what to keep ready. Building happens in {@link #tick}, not on the
+     * tick that started a run.
      */
     private static final Map<ResourceLocation, FloorLayout> WANTED = new LinkedHashMap<>();
 
@@ -103,7 +90,10 @@ public final class CellWarmPool {
         WANTED.put(layout.structure(), layout);
     }
 
-    /** Once a second: builds ONE missing cell if the tower is not busy with other heavy work. Returns how many were built. */
+    /**
+     * Once a second: builds ONE missing cell if the tower is not busy with other heavy work. Returns how many were
+     * built.
+     */
     public static int tick(MinecraftServer server, long now) {
         for (FloorLayout layout : WANTED.values()) {
             Deque<Integer> ready = READY.get(layout.structure());
@@ -129,13 +119,7 @@ public final class CellWarmPool {
         });
     }
 
-    /**
-     * A distinct tenant per in-flight warm build.
-     *
-     * <p>The allocator refuses to lease twice to the same holder, which is the right rule for a run
-     * and an awkward one for a pool building several cells in a row. Deriving the id from the pool's
-     * own id keeps them distinct and recognisable in a log.
-     */
+    /** A distinct tenant per in-flight warm build; the allocator refuses to lease twice to one holder. */
     private static UUID poolTenant(int index) {
         return new UUID(POOL.getMostSignificantBits(), POOL.getLeastSignificantBits() + index);
     }

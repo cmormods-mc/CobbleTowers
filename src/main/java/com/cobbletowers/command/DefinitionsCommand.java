@@ -17,11 +17,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * {@code /cobbletowers definitions} and {@code /cobbletowers transitions}: what the server loaded,
- * and the state machine it will run.
- *
- * <p>Read-only, and the only way to see a datapack problem in game rather than in the log. P1 has no
- * runtime, so this is also the live proof that the content reached the server.
+ * {@code /cobbletowers definitions} and {@code transitions}: what the server loaded and the state machine it runs.
+ * Read-only; the way to see a datapack problem in game.
  */
 public final class DefinitionsCommand {
 
@@ -29,9 +26,7 @@ public final class DefinitionsCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("cobbletowers")
-                // Gated here rather than on the root: Brigadier merges a re-registered literal into
-                // the node that is already there and keeps that node's requirement, so a gate on
-                // "cobbletowers" would also gate the one subcommand players are meant to run.
+                // Gated here, not on the root: Brigadier keeps a merged literal's first requirement.
                 .then(Commands.literal("definitions")
                         .requires(source -> source.hasPermission(2)).executes(DefinitionsCommand::definitions))
                 .then(Commands.literal("transitions").executes(DefinitionsCommand::transitions)));

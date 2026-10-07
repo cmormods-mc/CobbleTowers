@@ -6,11 +6,9 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One season's identity (P36a): its number, name and spotlight region. Authored in
- * {@code data/<namespace>/cobbletowers/seasons/season_<n>.json}; a season with no file gets a generated one, so the calendar never
- * runs out of definitions.
- *
- * @param spotlight the regional tower featured this season; P36a only names it, P36c gives it an effect (drops and points)
+ * One season's identity (P36a): number, name and spotlight region, authored in {@code
+ * data/<namespace>/cobbletowers/seasons/season_<n>.json}. A season with no file gets a generated one.
+ * @param spotlight the regional tower featured this season
  */
 public record SeasonDefinition(int number, String name, Optional<ResourceLocation> spotlight) {
 

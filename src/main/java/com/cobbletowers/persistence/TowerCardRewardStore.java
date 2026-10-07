@@ -8,15 +8,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * How many completed runs have earned each player real cards today (P33b), so a playlist can cap card rewards per day. Only the
- * current day is kept: a player whose last entry is from an earlier day has simply not earned any today.
+ * How many completed runs earned each player real cards today (P33b), for a playlist's daily cap. Only the current
+ * day is kept.
  */
-public final class TowerCardRewardStore extends SavedData {
+public final class TowerCardRewardStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_card_rewards";
 
@@ -24,13 +21,8 @@ public final class TowerCardRewardStore extends SavedData {
 
     private final Map<UUID, Day> players = new LinkedHashMap<>();
 
-    public static SavedData.Factory<TowerCardRewardStore> factory() {
-        return new SavedData.Factory<>(TowerCardRewardStore::new, TowerCardRewardStore::load, DataFixTypes.LEVEL);
-    }
-
     public static TowerCardRewardStore get(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerCardRewardStore::new, TowerCardRewardStore::load, FILE_ID);
     }
 
     /** How many completed runs have earned this player cards on the day with this key. */
@@ -50,11 +42,6 @@ public final class TowerCardRewardStore extends SavedData {
     /** An operator's tool, and what a test uses to start clean. */
     public void reset(UUID player) {
         if (players.remove(player) != null) setDirty();
-    }
-
-    /** Written at once: a card granted twice because a crash lost the count would be a real duplicate. */
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     static TowerCardRewardStore load(CompoundTag tag, HolderLookup.Provider registries) {

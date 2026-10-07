@@ -4,7 +4,10 @@ import java.nio.file.Files;
 import java.util.Properties;
 import net.fabricmc.loader.api.FabricLoader;
 
-/** Client presentation settings. The old industrial blur/opacity keys are ignored; the old "shaders" key still reads as glow. */
+/**
+ * Client presentation settings. The old industrial blur/opacity keys are ignored; the old "shaders" key still reads
+ * as glow.
+ */
 public final class TowerUiSettings {
     /** The restrained torch glow behind headers. Off leaves the same materials and every control. */
     public static boolean glow = true;

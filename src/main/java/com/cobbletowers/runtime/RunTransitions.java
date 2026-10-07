@@ -12,35 +12,18 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Every legal move a run can make, as data.
- *
- * <p>The TDS gives state names and arrows; this adds what an implementation actually needs -- which
- * event causes each move, where a checkpoint is forced, what idempotency key that checkpoint commits
- * under, and how a run leaves RECOVERY_REQUIRED. Being data rather than a switch statement means the
- * whole machine is testable without a server, and the invariants are checks rather than intentions.
- *
- * <p>Two events are accepted from any live state: ABANDON_REQUESTED, because a party may always stop,
- * and TECHNICAL_FAILURE, because anything can break. Neither is ever reported as a player loss
- * (TDS §8).
+ * Every legal move a run can make, as data, so the machine and its invariants are testable without a server.
+ * ABANDON_REQUESTED and TECHNICAL_FAILURE are accepted from any live state and are never a player loss (TDS section
+ * 8).
  */
 public final class RunTransitions {
 
     /**
-     * One move.
-     *
-     * <p>A checkpoint and a key are two different things, and P3 is where the difference started to
-     * matter. A checkpoint is durability: write this now, because a crash after it must not undo it.
-     * A key is idempotency of a commit that carries value (TDS #30). Every keyed move checkpoints,
-     * but not every checkpointing move needs a key -- and the two that can legitimately happen more
-     * than once to the same run, abandoning and breaking, deliberately carry none. Keyed moves happen
-     * at most once per run and floor, so a repeated key means two outcomes under one identity, which
-     * is what the service refuses.
-     *
-     * @param checkpoint          whether the run must be persisted before the side effect runs
-     * @param keyTemplate         the idempotency key this commits under, with {run}, {floor} and
-     *                            {nextFloor} placeholders; empty when the move commits no value
-     * @param resumeFromCheckpoint true only for recovery, where the next state comes from the
-     *                            checkpoint rather than from this table
+     * One move. A checkpoint is durability (write now); a key is idempotency of a value-carrying commit (TDS #30).
+     * Keyed moves checkpoint; abandoning and breaking checkpoint without a key because they can repeat.
+     * @param checkpoint whether the run is persisted before the side effect
+     * @param keyTemplate the key with {run}, {floor} and {nextFloor} placeholders; empty when no value is committed
+     * @param resumeFromCheckpoint true only for recovery, where the next state comes from the checkpoint
      */
     public record Transition(RunState next, boolean checkpoint, String keyTemplate, boolean resumeFromCheckpoint) {
         public Transition {
@@ -52,12 +35,8 @@ public final class RunTransitions {
         }
 
         /**
-         * The concrete key for one run and floor.
-         *
-         * <p>{@code floorIndex} is the floor the run is on <em>before</em> this move is applied.
-         * NEXT_FLOOR_CONFIRMED is the reason it matters: its key says {@code {nextFloor}}, so a
-         * caller that increments the floor first would commit the floor after next under a key the
-         * previous floor already used.
+         * The concrete key for one run and floor. {@code floorIndex} is the floor before this move is applied, which
+         * matters for {@code {nextFloor}}.
          */
         public String key(UUID runId, int floorIndex) {
             return keyTemplate
@@ -105,12 +84,8 @@ public final class RunTransitions {
     }
 
     /**
-     * Refuses a table entry for an event {@link #lookup} answers before it ever reads the table.
-     *
-     * <p>Package-private so a test can pin it. The two wildcards are checked first so that a party
-     * can always stop and a fault is never a loss, which means a state-specific entry for either
-     * would be written, compile, and never once be read. Failing here -- loudly, while the class
-     * initializes -- is the only way that mistake gets noticed.
+     * Refuses a table entry for an event {@link #lookup} answers before reading the table (the two wildcards),
+     * failing loudly at class init. Package-private so a test can pin it.
      */
     static void requireNotWildcard(RunEvent event) {
         if (event == RunEvent.ABANDON_REQUESTED || event == RunEvent.TECHNICAL_FAILURE) {

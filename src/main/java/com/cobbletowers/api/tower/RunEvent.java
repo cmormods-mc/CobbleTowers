@@ -1,9 +1,6 @@
 package com.cobbletowers.api.tower;
 
-/**
- * What can happen to a tower run. Every state change is one of these applied to a {@link RunState};
- * nothing moves a run by assigning a state directly.
- */
+/** What can happen to a tower run. Every state change is one of these applied to a {@link RunState}. */
 public enum RunEvent {
     PARTY_SUBMITTED,
     PARTY_VALIDATED,

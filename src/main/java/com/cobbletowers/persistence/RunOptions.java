@@ -6,16 +6,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * How a run is being played, beyond which tower (P32): the playlist whose house rules apply, and the trial it is an attempt at.
- * Fixed when the run is created and never changed, so every rule that depends on it reads the same answer for the whole run.
- *
- * <p>An absent block means an ordinary run, which is what every run written before P32 was.
- *
- * @param playlist   the playlist (Monotype, Hardcore...), empty for Standard
- * @param trial      the trial instance this run is an attempt at, such as {@code daily:2026-10-05}, empty for an ordinary run
- * @param floorLimit the floor a trial ends on (0 for no limit): clearing it completes the run
- * @param scored     whether this attempt is the player's one scored attempt at the trial (later ones are practice)
- * @param enemyLevelLock every enemy is exactly this level (0 for no lock): a trial fixes it so results compare
+ * How a run is being played beyond its tower (P32), fixed when it is created. An absent block means an ordinary run.
+ * @param playlist the playlist (Monotype, Hardcore...), empty for Standard
+ * @param trial the trial instance, such as {@code daily:2026-10-05}, empty for ordinary
+ * @param floorLimit the floor a trial ends on (0 for none); clearing it completes the run
+ * @param scored whether this is the player's one scored trial attempt
+ * @param enemyLevelLock every enemy is exactly this level (0 for none)
  */
 public record RunOptions(Optional<ResourceLocation> playlist, Optional<String> trial, int floorLimit, boolean scored,
                          int enemyLevelLock) {

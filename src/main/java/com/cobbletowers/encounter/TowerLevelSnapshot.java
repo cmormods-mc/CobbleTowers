@@ -4,14 +4,9 @@ import java.util.Collection;
 import java.util.OptionalInt;
 
 /**
- * The level a tower encounter's enemies fight at, taken once per encounter (TDS #45).
- *
- * <p>A flat mean over every registered Pokemon of every participant, fainted ones included. Flat
- * rather than per player, so a six-Pokemon party and a one-Pokemon party are weighed by what they
- * bring; fainted ones included, so a party cannot lower the enemy by walking in half dead.
- *
- * <p>The only place tower level maths lives (TDS #45: do not scatter level formulas). Free of
- * Minecraft types so it is tested without a server.
+ * The level a tower encounter's enemies fight at, taken once per encounter (TDS #45): a flat mean over every
+ * registered Pokemon of every participant, fainted included, so a party cannot lower the enemy by walking in half
+ * dead. The only place tower level maths lives. Free of Minecraft types.
  */
 public final class TowerLevelSnapshot {
 

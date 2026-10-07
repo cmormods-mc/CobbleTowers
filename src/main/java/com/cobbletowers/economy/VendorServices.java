@@ -6,10 +6,8 @@ import com.cobbletowers.definition.VendorEffect;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * What a vendor purchase actually does to a target's live party (TDS #20 C).
- *
- * <p>The same live-party read {@code CobblemonBattleAdapter}'s {@code recallParties} and
- * {@code TowerEncounters.levelsOf} already use -- not a new way of reaching a player's Pokemon.
+ * What a vendor purchase does to a target's live party (TDS #20 C), using the same live-party read as {@code
+ * recallParties} and {@code TowerEncounters.levelsOf}.
  */
 public final class VendorServices {
 

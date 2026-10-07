@@ -17,8 +17,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * The scouting profile this mod ships (P22 content): the regional towers hide typing and field conditions from
- * floor 7 and threat level from floor 9, and Neutral hides nothing. Read from the real resource files.
+ * The shipped scouting profile (P22), read from the real resources: regional towers hide typing and field conditions
+ * from floor 7 and threat level from floor 9; Neutral hides nothing.
  */
 class ShippedScoutingTest {
 

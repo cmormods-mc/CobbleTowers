@@ -23,18 +23,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
-/**
- * CobbleTowers' networking channel (P11, extended in P12): registered once for the life of the JVM
- * the way every other one-time install in this mod already is.
- */
+/** CobbleTowers' networking channel (P11, P12), registered once for the life of the JVM. */
 public final class TowerNetworking {
 
     private TowerNetworking() {}
 
     /**
-     * Common to both physical sides. A payload has to be registered wherever it is encoded or
-     * decoded, so this runs from {@code CobbleTowers.onInitialize()}, which Fabric Loader calls on a
-     * dedicated server and on an integrated client's own server alike.
+     * Common to both sides: a payload must be registered wherever it is encoded or decoded, so this runs from {@code
+     * CobbleTowers.onInitialize()}.
      */
     public static void registerPayloadTypes() {
         PayloadTypeRegistry.playS2C().register(TowerFeatureState.TYPE, TowerFeatureState.STREAM_CODEC);
@@ -113,7 +109,8 @@ public final class TowerNetworking {
                     if (host == null) yield "That team no longer exists.";
                     if (payload.action() == PlayActionPayload.Action.ACCEPT) {
                         String joined = LobbyService.accept(server, player, host.getUUID());
-                        // Accepting into a rental lobby opens the draft screen; reopening the play screen would cover it.
+                        // Accepting into a rental lobby opens the draft screen; reopening the play screen would cover
+                        // it.
                         keepScreen = LobbyService.lobbyOf(player.getUUID())
                                 .filter(lobby -> com.cobbletowers.lobby.RentalDraftService.opensScreen(player, lobby)).isPresent();
                         yield joined;
@@ -133,7 +130,8 @@ public final class TowerNetworking {
                 case SET_PLAYLIST -> LobbyService.setPlaylist(server, player, payload.argument());
                 case CONFIRM_MODE -> {
                     String confirmed = LobbyService.confirmMode(server, player);
-                    // Confirming a rental mode opens everyone's draft, the host's included; the play screen must not cover it.
+                    // Confirming a rental mode opens everyone's draft, the host's included; the play screen must not
+                    // cover it.
                     keepScreen = LobbyService.lobbyOf(player.getUUID())
                             .filter(lobby -> com.cobbletowers.lobby.RentalDraftService.opensScreen(player, lobby)).isPresent();
                     yield confirmed;

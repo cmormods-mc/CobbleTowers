@@ -49,9 +49,7 @@ class CellTicketsTest {
     @Test
     @DisplayName("a cell nothing has let go of is not fit to hand on")
     void ownershipStageBites() {
-        // The stage that P3 left out rather than stub. Proven here rather than live, because a live
-        // release drops the ticket on the line before it checks -- the failure this catches is a bug
-        // in the code, not a state a server can be talked into from outside.
+        // The ticket stage is proven here because a live release drops the ticket before checking.
         CellCleanup.Report clean = new CellCleanup.Report(4, java.util.List.of());
         assertTrue(CellCleanup.verifyReleased(4, clean).isClean());
 

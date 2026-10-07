@@ -23,46 +23,24 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Who is actually here, and what to do about the ones who are not (TDS #36, #37, #59).
- *
- * <p>Three things arrive here that a floor cannot notice by itself: a player losing connection, one
- * coming back, and one who is still connected but has stopped playing. The first two are events. The
- * third is the only thing in this mod that has to be looked for, and it is looked for on a slow
- * timer rather than per tick.
+ * Who is actually here: disconnects, reconnects and stalled players (TDS #36, #37, #59). The stall check runs on a
+ * slow timer.
  */
 public final class TowerPresence {
 
     /**
-     * How long one prerequisite battle may go without producing anything before its player is
-     * dropped from the floor.
-     *
-     * <p>Ten minutes, which is far beyond how long a single opponent takes -- the live floors have
-     * run in seconds. It is a cap on a stuck battle, not a turn timer: Cobblemon raises no per-turn
-     * event, so what can honestly be observed from out here is the battle starting and things
-     * fainting in it, and a battle that has produced neither in ten minutes is not being played.
+     * How long one battle may produce nothing before its player is dropped. A cap on a stuck battle, not a turn
+     * timer.
      */
     public static final long PLAYER_STALL_MILLIS = 10L * 60 * 1000;
 
-    /**
-     * How long a whole floor may produce nothing before the run is parked as a technical fault.
-     *
-     * <p>Deliberately much longer than one player's cap, and a different verdict: one player who has
-     * stopped is a player problem and the floor carries on without them, but a floor where nobody is
-     * getting anywhere is the engine, and nothing on it can be trusted to be scored. Parking is not a
-     * loss -- the run resumes from its checkpoint.
-     */
+    /** How long a whole floor may produce nothing before the run is parked as a technical fault (not a loss). */
     public static final long FLOOR_STALL_MILLIS = 30L * 60 * 1000;
 
     /** How often the watchdog looks. Nothing here is urgent; a stalled floor stays stalled. */
     static final long SWEEP_INTERVAL_MILLIS = 30L * 1000;
 
-    /**
-     * When each disconnected player dropped, held in memory only.
-     *
-     * <p>Not persisted, and it does not need to be: a restart parks every interrupted run, so there
-     * is no floor left running for a grace window to expire into. Writing a countdown to disk that
-     * could only ever be read back after it had become meaningless is worse than not writing it.
-     */
+    /** When each disconnected player dropped. In memory only: a restart parks every interrupted run. */
     private static final Map<UUID, Long> DISCONNECTED_AT = new LinkedHashMap<>();
 
     private static long lastSweep;
@@ -70,8 +48,10 @@ public final class TowerPresence {
     private TowerPresence() {}
 
     public static void install() {
-        // Fabric fires this on the Netty thread that saw the socket close -- several at once when a party drops together --
-        // and everything onDisconnect touches is single-threaded state. ServerThread.run moves it onto the server thread.
+        // Fabric fires this on the Netty thread that saw the socket close -- several at once when a party drops
+        // together --
+        // and everything onDisconnect touches is single-threaded state. ServerThread.run moves it onto the server
+        // thread.
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ServerPlayer player = handler.getPlayer();
             ServerThread.run(server, () -> guarded("handle a disconnect", () -> onDisconnect(server, player)));
@@ -90,18 +70,12 @@ public final class TowerPresence {
         });
     }
 
-    /**
-     * A player dropped out.
-     *
-     * <p>The connection axis only, which is the whole reason P1 separated the axes: whatever they
-     * were doing in combat is still recorded, so coming back is a restoration rather than a guess.
-     * Their battle ends all the same -- Cobblemon will not run one for a player who is not there,
-     * and their opponent left standing in the cell is what the sweep quarantines it for.
-     */
+    /** A player dropped out. Only the connection axis changes; their battle ends. */
     static void onDisconnect(MinecraftServer server, ServerPlayer player) {
         if (player == null) return;
         UUID playerId = player.getUUID();
-        // This now runs after the event fired, possibly a tick later. If the same person has already logged back in on a
+        // This now runs after the event fired, possibly a tick later. If the same person has already logged back in
+        // on a
         // new connection, this is the OLD connection's disconnect, and marking them disconnected would be wrong.
         ServerPlayer current = server.getPlayerList().getPlayer(playerId);
         if (current != null && current != player) return;
@@ -118,13 +92,8 @@ public final class TowerPresence {
     }
 
     /**
-     * A player came back.
-     *
-     * <p>Inside the window they return as a spectator until the next intermission (TDS #37): the
-     * floor they left has moved on without them, and slotting a player into a battle already being
-     * fought is not something Cobblemon offers. The intermission is where everybody who is out comes
-     * back at once. Past the window they are out of the floor -- and deliberately not marked as
-     * having left, which is a choice only the player makes (TDS #39).
+     * A player came back. Inside the window they return as a spectator until the next intermission (TDS #37); past it
+     * they are out of the floor but not marked as having left (TDS #39).
      */
     static void onJoin(MinecraftServer server, ServerPlayer player) {
         if (player == null) return;
@@ -136,9 +105,7 @@ public final class TowerPresence {
 
         long now = System.currentTimeMillis();
         boolean late = since != null && now - since > ParticipantService.RECONNECT_WINDOW_MILLIS;
-        // Spectating only if there is something to spectate. A run between floors has moved on
-        // without them in no way at all, and marking them a spectator there would make them sit out
-        // an intermission they are standing in.
+        // Spectating only if a floor is actually in progress.
         boolean floorInProgress = TowerEncounters.of(run.runId()).isPresent();
         ParticipantService.update(server, run.runId(), playerId,
                 state -> floorInProgress ? state.reconnected().spectating() : state.reconnected(), now);
@@ -173,10 +140,9 @@ public final class TowerPresence {
     }
 
     /**
-     * What the watchdog decided about one floor, worked out from nothing but clock readings.
-     *
-     * @param drop players who have stopped answering
-     * @param park the whole floor has stalled, so the run is a technical fault
+     * What the watchdog decided about one floor.
+     * @param drop players who stopped answering
+     * @param park the floor stalled, so the run is a technical fault
      */
     public record Verdict(List<UUID> drop, boolean park) {
 
@@ -189,16 +155,7 @@ public final class TowerPresence {
         }
     }
 
-    /**
-     * The watchdog's judgement, pure: activity readings in, a verdict out.
-     *
-     * <p>Separated from the sweep so both cases can be tested from a clock rather than from a sleep,
-     * and so the rule is written once somewhere it can be read.
-     *
-     * <p>A stalled floor outranks its stalled players. If nothing at all has happened for half an
-     * hour, the answer is not "drop everybody", which would score the floor as a wipe; it is that
-     * the tower cannot be trusted, and the run parks where it can be resumed.
-     */
+    /** The watchdog's judgement, pure: readings in, verdict out. A stalled floor outranks its stalled players. */
     public static Verdict judge(Map<UUID, Long> lastActivityByPlayer, long roundStartedAt, long now) {
         long newest = roundStartedAt;
         for (long last : lastActivityByPlayer.values()) newest = Math.max(newest, last);
@@ -212,18 +169,10 @@ public final class TowerPresence {
     }
 
     /**
-     * Expired grace windows, then stalled floors.
-     *
-     * <p>Public because {@code /cobbletowers runs watchdog} runs exactly this with the clock wound
-     * forward. A test-only threshold would have proved a code path that only tests take.
+     * Expired grace windows, then stalled floors. Public so {@code runs watchdog} can run it with the clock wound
+     * forward.
      */
-    /**
-     * When each run's draft was first seen with nobody able to vote.
-     *
-     * <p>Deliberately not persisted. After a restart the clock starts again, which is what gives a
-     * party the full window to come back -- the alternative would count a server's downtime against
-     * the players who were waiting through it.
-     */
+    /** When each run's draft was first seen with nobody able to vote. In memory, so a restart restarts the window. */
     private static final Map<UUID, Long> DRAFT_EMPTY_SINCE = new ConcurrentHashMap<>();
 
     public static void sweep(MinecraftServer server, long now) {
@@ -255,17 +204,8 @@ public final class TowerPresence {
     }
 
     /**
-     * Drafts nobody is left to answer.
-     *
-     * <p>The gap the untimed draft opened. TDS #21 keeps normal-mode preparation untimed, so a party
-     * may sit at an intermission as long as it likes -- but a party that has <b>gone</b> would sit
-     * there forever, holding a cell and its chunk tickets, because the floor watchdog above sweeps
-     * active floors and an intermission is not one.
-     *
-     * <p>So the condition is emptiness, not time: a draft with nobody connected who could vote is
-     * settled from the seed, exactly as an unvoted one would be when the last player votes. Nothing
-     * is taken from anybody who is still there -- with one player online this does nothing at all,
-     * however long they take.
+     * Settles drafts nobody is left to answer, from the seed. A party that has gone would otherwise hold its cell
+     * forever.
      */
     private static void settleAbandonedDrafts(MinecraftServer server, long now) {
         for (PersistedRun run : TowerRuns.all()) {
@@ -285,21 +225,8 @@ public final class TowerPresence {
                 continue;
             }
 
-            // Empty is not the same as abandoned, and a live test proved it the expensive way: a
-            // restart sweeps before a single player has had time to reconnect, so the first sweep
-            // after every crash settled every open draft on the party's behalf. The party would
-            // come back to a challenge nobody chose.
-            //
-            // So emptiness has to last. The window is the one a disconnected player already gets --
-            // it is the same question, asked about a whole party rather than one person -- and it
-            // starts when the emptiness is first *seen*, which after a restart means the clock
-            // starts at the restart rather than at whenever the run was last written.
-            // Two clocks, on purpose. The stamp is when emptiness was actually OBSERVED, so it is
-            // real time; `now` is the clock the verdict is read against, which `runs watchdog`
-            // winds forward so a five-minute rule can be tested without waiting five minutes. In
-            // production they are the same clock and this is an ordinary elapsed-time check --
-            // stamping with a wound `now` instead would compare a wound clock against itself and
-            // the difference would be zero forever.
+            // Emptiness must last the grace window: a restart sweeps before anyone has reconnected. The stamp is real
+            // time; {@code now} may be wound forward by {@code runs watchdog}.
             long since = DRAFT_EMPTY_SINCE.computeIfAbsent(run.runId(), ignored -> System.currentTimeMillis());
             if (now - since <= ParticipantService.RECONNECT_WINDOW_MILLIS) continue;
 
@@ -312,11 +239,8 @@ public final class TowerPresence {
     }
 
     /**
-     * Disconnected players whose five minutes are up.
-     *
-     * <p>They are out of the floor, not out of the run: {@code KNOCKED_OUT} rather than
-     * {@code VOLUNTARILY_LEFT}, so an intermission can still take them back if they return. When the
-     * last window expires with nobody online, the run ends rather than holding its cell.
+     * Disconnected players whose window is up: KNOCKED_OUT rather than VOLUNTARILY_LEFT, so an intermission can take
+     * them back. The run ends if nobody is online.
      */
     private static void expireGraceWindows(MinecraftServer server, long now) {
         for (Map.Entry<UUID, Long> entry : Map.copyOf(DISCONNECTED_AT).entrySet()) {
@@ -351,10 +275,7 @@ public final class TowerPresence {
         return false;
     }
 
-    /**
-     * Contained: these run from connection handling and from the server tick, where an exception
-     * does not stay local -- it unwinds into the tick and takes the server with it.
-     */
+    /** Contained: exceptions here would unwind into the tick. */
     private static void guarded(String what, Runnable work) {
         try {
             work.run();

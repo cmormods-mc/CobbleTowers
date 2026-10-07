@@ -35,13 +35,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Mastery and leaderboards at run time (P31): times each cycle, counts faints, and when a cycle is cleared judges it, unlocks
- * achievements, announces them and ranks the result. The rules it applies are all pure ({@link MasteryEvaluator},
- * {@link DifficultyScore}, {@link LeaderboardRules}); this is the part that knows a server.
- *
- * <p>Everything here is called from {@code RunTransitionService.apply} after a move is saved, and from
- * {@code AscensionService} when a team enters an Ascension. None of it can fail a transition: each entry point is guarded, and
- * a mastery problem is logged and dropped rather than allowed to disturb a run.
+ * Mastery and leaderboards at run time (P31): times each cycle, counts faints and, on a cleared cycle, judges it,
+ * unlocks achievements and ranks it. Called after a move is saved and by {@code AscensionService}; every entry point
+ * is guarded so it cannot fail a transition.
  */
 public final class MasteryService {
 
@@ -293,7 +289,10 @@ public final class MasteryService {
         TowerRunStatsStore.get(server).remove(run.runId());
     }
 
-    /** The card at the end of a run (P32d): built from the run, its stats, and what the trial judge and the unlocks left behind. */
+    /**
+     * The card at the end of a run (P32d): built from the run, its stats, and what the trial judge and the unlocks
+     * left behind.
+     */
     private static void sendReport(MinecraftServer server, PersistedRun run, RunState from, RunState to) {
         TowerRunStatsStore.Stats stats = TowerRunStatsStore.get(server).peek(run.runId());
         RunSummaries.Gathered gathered = RunSummaries.take(run.runId());

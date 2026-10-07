@@ -20,12 +20,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 
 /**
- * The client half of P11/P12: a HUD panel, a reward reveal screen, a vendor shop, a scouting report,
- * and the keybind that drives spectator cycling.
- *
- * <p>CobbleTowers' first client entrypoint. Payload <em>types</em> are registered from the common
- * {@code main} entrypoint ({@code TowerNetworking.registerPayloadTypes}), which Fabric Loader also
- * runs on the client -- only the client's own receivers, HUD callback and keybinds live here.
+ * The client half of P11/P12: HUD panel, reward reveal, vendor shop, scouting report and the spectator-cycling
+ * keybind. Payload types are registered from the common entrypoint; only receivers, HUD callback and keybinds live
+ * here.
  */
 public final class CobbleTowersClient implements ClientModInitializer {
 
@@ -146,9 +143,7 @@ public final class CobbleTowersClient implements ClientModInitializer {
 
         HudRenderCallback.EVENT.register(SpectatorHud.INSTANCE);
 
-        // Polled once a tick rather than handled from the key-press event itself, the standard Fabric
-        // shape for a held-key-safe binding: consumeClick() only fires once per press, however long
-        // the frame gap, and never double-fires a press the event system already delivered.
+        // Polled once a tick: {@code consumeClick()} fires once per press however long the frame gap.
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (OPEN_MENU.consumeClick()) {
                 if (client.player != null) client.player.connection.sendCommand("tower menu");

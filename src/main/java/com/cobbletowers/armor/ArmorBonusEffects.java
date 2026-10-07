@@ -9,9 +9,8 @@ import com.google.gson.JsonArray;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Where the non-attribute bonuses of a worn set touch the game (P24): the three Cobblemon numbers, plus the small pure
- * helpers the tower mechanics call. Each Cobblemon handler is guarded: it runs inside Cobblemon's own flow, where an
- * exception would unwind into the caller, and the failure mode we want is "Cobblemon's own number, unchanged".
+ * Where a worn set's non-attribute bonuses touch the game (P24): three Cobblemon numbers plus small pure helpers.
+ * Each Cobblemon handler is guarded so a failure leaves Cobblemon's own number unchanged.
  */
 public final class ArmorBonusEffects {
 
@@ -75,7 +74,10 @@ public final class ArmorBonusEffects {
         return (int) Math.min(Integer.MAX_VALUE, Math.round(amount * (1.0 + percent / 100.0)));
     }
 
-    /** The price {@code player} pays for something that costs {@code base}: discounted, but never free, never negative. */
+    /**
+     * The price {@code player} pays for something that costs {@code base}: discounted, but never free, never
+     * negative.
+     */
     public static int discountedPrice(int base, int discountPercent) {
         if (base <= 0 || discountPercent <= 0) return Math.max(0, base);
         return Math.max(1, (int) Math.round(base * (100 - Math.min(discountPercent, 100)) / 100.0));
@@ -117,9 +119,8 @@ public final class ArmorBonusEffects {
     }
 
     /**
-     * As above, and the run's Ascension (P30) on top: the player's matching boon always, the enemy's growth only when
-     * {@code enemyScaling} is set. A boss battle merges every player's operations, so it asks for the enemy's from one
-     * player only; otherwise the boss would be raised once per teammate.
+     * As above, plus the run's Ascension (P30): the player's boon always, the enemy's growth only when {@code
+     * enemyScaling} is set (a boss battle merges all players' operations, so one player asks).
      */
     public static JsonArray battleEffects(ServerPlayer player, java.util.UUID runId, boolean enemyScaling) {
         JsonArray ops = battleEffects(player);

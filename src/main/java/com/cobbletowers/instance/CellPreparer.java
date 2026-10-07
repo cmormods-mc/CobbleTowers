@@ -20,16 +20,8 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlac
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 /**
- * Turns an empty cell into a floor somebody can play, and back again.
- *
- * <p>The template is vanilla structure NBT, loaded by Minecraft's own
- * {@code StructureTemplateManager}. The arenas were authored as WorldEdit schematics and converted
- * once by {@code validation/schem_to_structure.py}; nothing parses WorldEdit's format at runtime,
- * because the alternative is a hand-written binary parser in the path that builds a floor while
- * players wait.
- *
- * <p>Order matters: the chunks are held <b>before</b> the paste, or the placement writes into chunks
- * that are not loaded.
+ * Turns an empty cell into a floor and back again. The template is vanilla structure NBT (converted once from
+ * WorldEdit by {@code validation/schem_to_structure.py}). Chunks are held before the paste.
  */
 public final class CellPreparer {
 
@@ -37,14 +29,8 @@ public final class CellPreparer {
     private static final int PLACE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
 
     /**
-     * What {@link #reset} sweeps: every chunk the cell holds ({@link CellTickets#RADIUS_CHUNKS} either side of the
-     * centre), from just under the floor to the top of the world.
-     *
-     * <p>This used to be a 64x64 box 17 blocks tall, "wide and tall enough for any arena". The Battle Tower is 93 wide
-     * and 163 tall, and the Test Tower 64 tall, so a reset left everything outside that box behind -- the upper floors
-     * of an earlier build stood inside the next run's tower. A cell is not told what was pasted into it (after a
-     * restart nothing remembers), so the sweep covers all of it, and skips chunk sections that hold only air so that
-     * a clean cell costs almost nothing.
+     * What {@link #reset} sweeps: every chunk the cell holds, from just under the floor to the top of the world. A
+     * cell is not told what was pasted into it, so all of it is covered; air-only sections are skipped.
      */
     private static final int RESET_BELOW = 1;
 
@@ -52,9 +38,8 @@ public final class CellPreparer {
 
     /**
      * What preparing a cell produced.
-     *
-     * @param millis   how long the paste took, measured rather than assumed
-     * @param problems anchors that are not fit to use; empty means the floor is playable
+     * @param millis how long the paste took
+     * @param problems anchors not fit to use; empty means playable
      */
     public record Prepared(int cell, BlockPos origin, Vec3i size, long millis, List<String> problems) {
 
@@ -72,12 +57,8 @@ public final class CellPreparer {
     }
 
     /**
-     * Where this floor's structure sits in this cell.
-     *
-     * <p>The origin depends on the structure's size, because a floor is centred in its cell. Anything
-     * that needs to turn an anchor into a world position has to ask <b>this</b> -- working it out
-     * separately is how the entry anchor ended up twenty-five blocks from the arena it belonged to,
-     * and the party arrived in the void beside their own floor.
+     * Where this floor's structure sits in this cell. The origin depends on the structure's size, so anchors must be
+     * resolved through this.
      */
     public static Optional<BlockPos> originFor(MinecraftServer server, int cell, FloorLayout layout) {
         return server.getStructureManager().get(layout.structure())
@@ -85,10 +66,8 @@ public final class CellPreparer {
     }
 
     /**
-     * Pastes a floor's structure into a cell and checks the result is playable.
-     *
-     * <p>Returns problems rather than throwing: a floor that cannot be built is a cell to quarantine
-     * and a run to park, not a server to take down.
+     * Pastes a floor's structure into a cell and checks it is playable. Returns problems rather than throwing: a
+     * floor that cannot be built is a cell to quarantine and a run to park.
      */
     public static Optional<Prepared> prepare(MinecraftServer server, int cell, FloorLayout layout) {
         CellGrid.requireValid(cell);
@@ -106,10 +85,8 @@ public final class CellPreparer {
         // originFor() must agree with this; it is the same call, kept together on purpose.
 
         CellTickets.hold(server, cell);
-        // A structure does not place its air, so whatever is already in the cell would show through it. Cells are
-        // reset when a run releases them, but a cell used before the sweep covered the whole building (or after a
-        // crash) can still hold an older build; clearing here makes the paste independent of that history. A cell a
-        // reset has just left clean (this run's own release, or an earlier prepare's) is not scanned again.
+        // A structure does not place its air, so an older build could show through; clear first unless the cell is
+        // known clean.
         if (!CellCleanliness.isClean(cell)) {
             int leftover = reset(server, cell);
             if (leftover > 0) TowerLog.warn("Cell {} held {} leftover block(s) before it was prepared; cleared", cell, leftover);
@@ -138,12 +115,8 @@ public final class CellPreparer {
     }
 
     /**
-     * Clears whatever is in the cell. Returns how many blocks were removed.
-     *
-     * <p>Reads the whole sweep volume but only writes where something is there, which for an arena
-     * is a few thousand of the seventy-odd thousand positions looked at. Reads are far cheaper than
-     * writes, and this way the reset does not need to know what was pasted -- which matters, because
-     * after a restart nothing does.
+     * Clears whatever is in the cell and returns how many blocks were removed. Reads the whole volume but only writes
+     * where something is.
      */
     public static int reset(MinecraftServer server, int cell) {
         CellGrid.requireValid(cell);

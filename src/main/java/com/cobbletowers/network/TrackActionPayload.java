@@ -7,8 +7,9 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * A request from the track screen (P37). {@code action} is {@code refresh}, {@code claim} or {@code claim_all}; {@code lane} is {@code mastery}
- * or {@code season}; {@code tower} picks the mastery lane's tower; {@code number} is the level or step. The server revalidates all of it.
+ * A request from the track screen (P37). {@code action} is {@code refresh}, {@code claim} or {@code claim_all};
+ * {@code lane} is {@code mastery} or {@code season}; {@code tower} picks the mastery lane's tower; {@code number} is
+ * the level or step. Revalidated by the server.
  */
 public record TrackActionPayload(String action, String lane, String tower, int number) implements CustomPacketPayload {
     public static final Type<TrackActionPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath("cobbletowers", "track_action_v1"));

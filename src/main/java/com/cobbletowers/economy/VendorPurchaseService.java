@@ -15,11 +15,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The one place a vendor sale actually happens (TDS #16, #18, #19).
- *
- * <p>Every condition is re-checked here, never trusted from a caller: {@link
- * com.cobbletowers.network.TowerNetworking}'s purchase handler is the only caller today, but nothing
- * about this method assumes that stays true.
+ * The one place a vendor sale happens (TDS #16, #18, #19). Every condition is re-checked here, never trusted from the
+ * caller.
  */
 public final class VendorPurchaseService {
 
@@ -79,9 +76,7 @@ public final class VendorPurchaseService {
         if (!TowerWalletStore.get(server).debit(payingPlayerId, price)) {
             return Result.INSUFFICIENT_FUNDS;
         }
-        // Flushed immediately: the same "the money has already moved" reasoning P9's own grant-then-
-        // store ordering uses. A crash between this and the run write below costs a lost purchase
-        // count, never a duplicated debit.
+        // Flushed immediately: a crash before the run write costs a purchase count, never a duplicated debit.
         TowerWalletStore.get(server).checkpoint(server);
 
         VendorServices.apply(service.get().effect(), target);

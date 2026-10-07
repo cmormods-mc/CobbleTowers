@@ -13,11 +13,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The Echo Duels in progress (P35): which players of which run are in an exhibition battle against which Echo.
- *
- * <p>In memory only. A duel is a bonus: a restart ends the battle with the server, and losing the record of it costs nothing,
- * so nothing here is persisted. While any player of a run is still duelling the run may not ready up, cash out or move on;
- * a player who disconnects or whose battle has ended is dropped on the next look, so a stuck duel cannot hold a run shut.
+ * Echo Duels in progress (P35): which players of which run are in an exhibition against which Echo. In memory only,
+ * since a restart ends the battle anyway. A run cannot ready up, cash out or move on while a player duels; a
+ * disconnected or finished player is dropped on the next look.
  */
 public final class EchoDuels {
 
@@ -31,8 +29,8 @@ public final class EchoDuels {
     }
 
     /**
-     * Whether anyone in the run is still in a duel. Drops those who are offline or no longer in a battle first, so this is
-     * also the self-healing that keeps a vanished battle from blocking the intermission.
+     * Whether anyone in the run is still in a duel; drops offline or finished players first, so a vanished battle
+     * cannot block the intermission.
      */
     public static boolean active(MinecraftServer server, UUID runId) {
         Map<UUID, UUID> pending = PENDING.get(runId);

@@ -16,37 +16,19 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 
 /**
- * Cleaning up after a crash, in the cell the crash left behind.
- *
- * <p>The gap P5 wrote down rather than solved: a server that goes down mid-floor strands whatever
- * was fighting -- a tower opponent as readily as a player's own Pokemon -- and the cell keeps them.
- * Nothing noticed until the run finally ended, when the release swept the cell, found entities and
- * quarantined it. Correct behaviour, reporting somebody else's mess, and one cell lost per crash.
- *
- * <p>Why this is not four lines inside {@link RunRecovery}: at the moment recovery runs, the tower
- * dimension holds no tickets at all, so the cell's chunks are not loaded -- and an unloaded chunk
- * reports no entities. A sweep there would return "clean" every time and be believed. So the cell's
- * tickets are taken, the sweep waits until the chunks and their entities have actually arrived, and
- * only then looks.
+ * Cleans up after a crash in the cell the crash left behind. At recovery the tower holds no tickets, so the chunks
+ * are unloaded and report no entities; this takes the cell's tickets, waits for chunks and entities to arrive, then
+ * sweeps.
  */
 public final class RecoverySweep {
 
     /**
-     * How long to wait for a cell's chunks before giving up on it.
-     *
-     * <p>Thirty seconds at 20 ticks a second, which is far longer than loading seven chunks takes on
-     * anything. Giving up is not silent: it says so, and the old safety net -- the quarantine at
-     * release -- is still there behind it.
+     * How long to wait for a cell's chunks before giving up (30 s). Giving up is logged; the quarantine at release
+     * remains the safety net.
      */
     static final int LOAD_TIMEOUT_TICKS = 600;
 
-    /**
-     * Ticks to wait after the chunks report loaded, before sweeping.
-     *
-     * <p>A chunk being loaded and its entities being loaded are two different moments: the entity
-     * sections arrive a tick or two behind. Sweeping on the first is how a sweep reports clean and
-     * leaves a Pokemon standing in the cell.
-     */
+    /** Ticks to wait after the chunks report loaded: entity sections arrive a tick or two later. */
     static final int SETTLE_TICKS = 40;
 
     private record Pending(UUID runId, int waited, int settled) {}
@@ -97,7 +79,8 @@ public final class RecoverySweep {
                 continue;
             }
 
-            // Only what the crash left behind: by now the party may have rejoined and the next floor started in this very
+            // Only what the crash left behind: by now the party may have rejoined and the next floor started in this
+            // very
             // cell, and its opponents and the players' own Pokemon are in a live battle.
             int swept = CellCleanup.sweepEntities(server, cell, CobblemonBattleAdapter::inLiveBattle);
             if (swept > 0) {

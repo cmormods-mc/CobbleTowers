@@ -4,16 +4,9 @@ import com.cobbletowers.showdown.TowerShowdownFx;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
 
 /**
- * Runs before any mod initializes (P23 fix).
- *
- * <p>The one thing here is registering the Showdown extension with CobbleRaids. It cannot wait for
- * {@link CobbleTowers#onInitialize()}: Cobblemon starts its Showdown service on its own thread while mods are still
- * initializing, and CobbleRaids writes the extension files and the list the simulator loads them from the moment it
- * unbundles. A module registered from the initializer arrives after that and is installed but not loaded until the
- * <em>next</em> boot, so the first version of this patch never ran at all.
- *
- * <p>Kept to plain Java on purpose: a pre-launch entrypoint runs before Minecraft's classes are usable. Guarded, because
- * an exception here would stop the server from starting over a feature that is optional.
+ * Runs before any mod initializes (P23): registers the Showdown extension with CobbleRaids, which cannot wait for
+ * {@link CobbleTowers#onInitialize()} (a late module only loads on the next boot). Plain Java and guarded, since
+ * Minecraft is not usable yet and an optional feature must not stop the server.
  */
 public final class TowerPreLaunch implements PreLaunchEntrypoint {
 

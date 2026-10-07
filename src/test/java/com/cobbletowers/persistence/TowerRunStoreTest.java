@@ -14,11 +14,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * What the store owes the rest of the mod: runs come back as they went in, one bad record cannot
- * take the others with it, and finished runs do not accumulate forever.
- *
- * <p>No server here -- {@code save} and {@code load} ignore the registry lookup, so the file format
- * is testable on its own.
+ * What the store owes the mod: runs come back as they went in, one bad record cannot take the others with it, and
+ * finished runs do not accumulate. No server: {@code save} and {@code load} ignore the registry lookup.
  */
 class TowerRunStoreTest {
 
@@ -48,9 +45,7 @@ class TowerRunStoreTest {
         store.put(TestRuns.fresh(RUN_A));
         CompoundTag tag = store.save(new CompoundTag(), null);
 
-        // A record from a build that is not this one. Whatever the damage, the reason it must not
-        // throw is the same: a dedicated server that cannot finish its data load refuses to start,
-        // and one broken run must never be able to do that to a whole server.
+        // A record from another build must not throw: a failed data load stops a dedicated server.
         CompoundTag broken = TestRuns.fresh(RUN_B).toTag();
         broken.putString("tower", "not a valid id");
         tag.getList("runs", Tag.TAG_COMPOUND).add(broken);

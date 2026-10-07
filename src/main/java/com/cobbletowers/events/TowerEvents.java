@@ -6,8 +6,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
- * The in-process stream of {@link TowerEvent}s (P32c). Emitting is cheap and synchronous, on the server thread that caused the
- * event; a subscriber that throws is logged and skipped, so a bug in a listener can never disturb a run.
+ * The in-process stream of {@link TowerEvent}s (P32c). Emitting is synchronous on the causing server thread; a
+ * throwing subscriber is logged and skipped.
  */
 public final class TowerEvents {
 

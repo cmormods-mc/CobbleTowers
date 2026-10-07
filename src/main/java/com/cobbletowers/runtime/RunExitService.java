@@ -23,22 +23,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
 /**
- * Sends players home when they have no live place in a run (P20), and only then lets a finished run's cell
- * be reset. See {@code docs/design/P20-leaving-the-tower.md}.
- *
- * <p>One rule, enforced by a once-a-second sweep: nobody stays in the tower dimension without a live place
- * in a run. A run ending, a player leaving, a dropped connection, a crash and a late login are all just
- * ways of breaking that rule, so none of them needs its own code.
+ * Sends players home when they have no live place in a run (P20), and only then lets a finished run's cell be reset.
+ * One once-a-second sweep enforces it. See {@code docs/design/P20-leaving-the-tower.md}.
  */
 public final class RunExitService {
 
     private static final int SWEEP_EVERY_TICKS = 20;
     private static int ticks;
 
-    /**
-     * Operators in creative or spectator who were in the tower when their own run ended: they go home like anyone else, instead of being
-     * exempt as explorers. In memory on purpose; a restart loses the mark, and the cell release still sends every participant home.
-     */
+    /** Operators in creative or spectator whose own run ended; they go home like anyone else. In memory only. */
     private static final java.util.Set<UUID> LEAVING = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private RunExitService() {}
@@ -64,9 +57,8 @@ public final class RunExitService {
     }
 
     /**
-     * Records where the player is standing, just before the first teleport into the tower. Skipped for a
-     * player already inside it, so a second floor never overwrites the real starting place with a spot in
-     * an arena. Flushed, so a crash while they are inside still leaves a way home.
+     * Records where the player stands before the first teleport into the tower. Skipped if already inside; flushed so
+     * a crash leaves a way home.
      */
     public static void remember(MinecraftServer server, ServerPlayer player) {
         if (inTower(player)) return;
@@ -76,10 +68,7 @@ public final class RunExitService {
         store.checkpoint(server);
     }
 
-    /**
-     * True when a finished run's cell cannot be reset yet because somebody is standing in it. The run keeps
-     * its lease for the beat and the sweep releases it once they have gone.
-     */
+    /** True when a finished run's cell cannot be reset yet because someone is standing in it. */
     public static boolean mustDefer(MinecraftServer server, PersistedRun run) {
         return run.cell().isPresent() && anyoneInside(server, run);
     }
@@ -99,7 +88,8 @@ public final class RunExitService {
         for (PersistedParticipant participant : run.participants()) {
             ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
             if (player == null || !inTower(player)) continue;
-            // Someone already in a new run of their own is not being stranded by this cell: leave them where they are.
+            // Someone already in a new run of their own is not being stranded by this cell: leave them where they
+            // are.
             if (!ExitRules.mayEvacuateAtRelease(standingOf(participant.playerId()))) continue;
             try {
                 evacuate(server, player);
@@ -140,9 +130,11 @@ public final class RunExitService {
         for (PersistedRun run : TowerRuns.all()) {
             if (!run.isRetired() || run.cell().isEmpty()) continue;
             if (ExitRules.releaseDue(anyoneInside(server, run), run.updatedAt(), now)) {
-                // One cell per window (HeavyWork); the rest wait for the next sweep. Players are still sent home by the loop above.
+                // One cell per window (HeavyWork); the rest wait for the next sweep. Players are still sent home by
+                // the loop above.
                 if (!com.cobbletowers.instance.HeavyWork.tryAcquire(now)) break;
-                // A cell is never reset under the people who were in the run: anyone still inside (an operator the loop above
+                // A cell is never reset under the people who were in the run: anyone still inside (an operator the
+                // loop above
                 // chose to leave alone, say) goes home first, or they would be left standing in an empty dimension.
                 evacuateParticipants(server, run);
                 RunTransitionService.releaseCell(server, run, now);
@@ -151,10 +143,8 @@ public final class RunExitService {
     }
 
     /**
-     * {@code /tower leave} for a player stuck in the tower after their run ended: sends them home now instead of
-     * waiting for the sweep. Refuses while they still have a live place in a run.
-     *
-     * @return the sentence to show, or null when this does not apply (not in the tower)
+     * {@code /tower leave}: sends a player stuck in the tower home now.
+     * @return the sentence to show, or null when not in the tower
      */
     public static String leaveNow(MinecraftServer server, ServerPlayer player) {
         if (!inTower(player)) return null;
@@ -166,11 +156,7 @@ public final class RunExitService {
     }
 
     /**
-     * How a player stands with the runs they have been in.
-     *
-     * <p>Looks through every run rather than asking {@link TowerRuns#forPlayer}, because that index drops a
-     * run the moment it finishes (so a finished run never stops a player starting another) -- which would make
-     * a player whose run just ended look like they had never been in one, and skip the beat.
+     * How a player stands with their runs. Scans every run because {@link TowerRuns#forPlayer} drops finished ones.
      */
     static Standing standingOf(UUID playerId) {
         PersistedRun lastEnded = null;

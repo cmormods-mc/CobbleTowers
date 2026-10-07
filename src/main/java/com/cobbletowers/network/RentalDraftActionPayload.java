@@ -8,12 +8,15 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What the pack-opening screen asks of the server (P33). {@code a} and {@code b} are 0-based card indices of the current pack, used
- * only by {@link Action#PICK}. Nothing here is trusted: the draft checks every pick.
+ * What the pack-opening screen asks of the server (P33). {@code a} and {@code b} are 0-based card indices of the
+ * current pack, used by {@link Action#PICK}. The draft checks every pick.
  */
 public record RentalDraftActionPayload(Action action, int a, int b) implements CustomPacketPayload {
 
-    /** READY readies the player up and opens the team's lobby screen; LOBBY just opens it. Both are for a finished draft. */
+    /**
+     * READY readies the player up and opens the team's lobby screen; LOBBY just opens it. Both are for a finished
+     * draft.
+     */
     public enum Action { OPEN, PICK, RESTART, READY, LOBBY }
 
     public static final CustomPacketPayload.Type<RentalDraftActionPayload> TYPE = new CustomPacketPayload.Type<>(

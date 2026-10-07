@@ -10,12 +10,11 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The candidates a kind of trial draws its day from (P32). A pool is data: which towers, playlists and mutator modifiers a trial
- * may combine, how many floors it lasts, and how many floors a daily attempt must clear to count for the streak. The trial for a
- * given day is a pure function of the date and the pool ({@code TrialSchedule}), so every server agrees without talking.
- *
- * @param floors          how many floors the trial lasts (5 for the daily, 10 for the weekly)
- * @param streakMinFloors floors a daily attempt must clear to keep the streak going
+ * The candidates a kind of trial draws from (P32): towers, playlists and mutators a trial may combine, how many
+ * floors it lasts, and how many a daily attempt must clear for the streak. The trial for a day is a pure function of
+ * date and pool ({@code TrialSchedule}).
+ * @param floors trial length (5 daily, 10 weekly)
+ * @param streakMinFloors floors a daily attempt must clear to keep the streak
  */
 public record TrialPoolDefinition(
         ResourceLocation id,
@@ -32,11 +31,10 @@ public record TrialPoolDefinition(
 
     /**
      * One candidate trial.
-     *
-     * @param playlist   the playlist's house rules, if any
-     * @param modifiers  mutators the run starts holding (a field condition, an enemy tweak)
-     * @param enemyLevel every enemy is exactly this level, so results compare; 0 for no lock
-     * @param label      a name for the board and the announcement
+     * @param playlist its house rules, if any
+     * @param modifiers mutators the run starts holding
+     * @param enemyLevel every enemy is exactly this level; 0 for no lock
+     * @param label a name for the board and announcement
      */
     public record Entry(ResourceLocation tower, Optional<ResourceLocation> playlist, List<ResourceLocation> modifiers,
                         int enemyLevel, String label) {

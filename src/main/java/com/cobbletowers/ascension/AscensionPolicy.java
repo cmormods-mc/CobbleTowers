@@ -1,15 +1,9 @@
 package com.cobbletowers.ascension;
 
 /**
- * Everything Ascension (P30) decides, in one pure place -- the way {@code TowerLevelPolicy} is the one place level maths
- * lives (TDS #45). Nothing here knows a server, a registry or a Pokemon.
- *
- * <p>A run's {@code floorIndex} keeps counting up past the tower's last floor. The <b>Ascension</b> is how many full
- * cycles are behind it, and the <b>tower floor</b> is where in the cycle it is, which is what every content lookup (the
- * floor's building, its milestone, its pools) uses. So floor 11 of a ten-floor tower is Ascension 1, tower floor 1.
- *
- * <p>Growth is first-guess constants, named so tuning is one edit. Reward growth is bounded (TDS #9); the rest is
- * deliberately not, because it is what keeps an endless mode hard.
+ * Everything Ascension (P30) decides, in one pure place. A run's {@code floorIndex} keeps counting past the tower's
+ * last floor: the Ascension is the number of full cycles behind it and the tower floor is where in the cycle it is.
+ * Growth constants are first guesses; reward growth is bounded (TDS #9).
  */
 public final class AscensionPolicy {
 
@@ -25,7 +19,9 @@ public final class AscensionPolicy {
     public static final int REWARD_RETAINED_GAP_PERCENT = 90;
     /** EVs added to every stat of every enemy, per Ascension (applied in-battle; see tower-fx.js). */
     public static final int ENEMY_EVS_PER_ASCENSION = 50;
-    /** One {@code evs} operation never carries more than this (the operation's own limit); more is sent as several. */
+    /**
+     * One {@code evs} operation never carries more than this (the operation's own limit); more is sent as several.
+     */
     public static final int MAX_EVS_PER_OPERATION = 2000;
     /** The most EVs a stat can hold in a battle, however they arrive (the extension's own limit). */
     public static final int MAX_EVS_TOTAL = 4000;
@@ -68,8 +64,8 @@ public final class AscensionPolicy {
     }
 
     /**
-     * The reward factor, in percent: 100 at the base cycle, rising with shrinking steps towards
-     * {@code 100 + REWARD_BONUS_CEILING_PERCENT}. Integer arithmetic only, so every server computes the same number.
+     * The reward factor in percent: 100 at the base cycle, rising with shrinking steps towards {@code 100 +
+     * REWARD_BONUS_CEILING_PERCENT}. Integer arithmetic.
      */
     public static int rewardPercent(int ascension) {
         long gap = 10_000;   // what is left of the distance to the ceiling, in hundredths of a percent

@@ -29,9 +29,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Mastery and leaderboards (P31), in chat. {@code /tower mastery [tower]} and {@code /tower leaderboard <board> [tower]} are
- * attached to the player's {@code play} command by {@link PlayCommand}; the operator tools live under
- * {@code /cobbletowers masteryadmin}. The screens say the same things from the same words ({@link MasteryView}).
+ * Mastery and leaderboards (P31), in chat: {@code /tower mastery [tower]} and {@code /tower leaderboard <board>
+ * [tower]} attached by {@link PlayCommand}; operator tools under {@code /cobbletowers masteryadmin}. Same words as
+ * the screens ({@link MasteryView}).
  */
 public final class MasteryCommand {
 
@@ -83,7 +83,8 @@ public final class MasteryCommand {
                         .then(Commands.literal("clearboards").executes(MasteryCommand::clearBoards))));
     }
 
-    // ---- players ---------------------------------------------------------------------------------------------------
+    // ---- players
+    // ---------------------------------------------------------------------------------------------------
 
     private static ResourceLocation defaultTower() {
         return TowerDefinitionRegistry.content().sortedTowerIds().stream().findFirst()
@@ -141,7 +142,8 @@ public final class MasteryCommand {
     private static int leaderboard(CommandContext<CommandSourceStack> context, Board board, ResourceLocation towerId,
                                    String playlist, boolean allTime) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
-        // The default view is the current season's board (P36a); only a per-run board is ever seasonal, and "alltime" asks for the lifetime one.
+        // The default view is the current season's board (P36a); only a per-run board is ever seasonal, and "alltime"
+        // asks for the lifetime one.
         java.util.Optional<Integer> viewing = allTime || !com.cobbletowers.mastery.Boards.seasonal(board)
                 ? java.util.Optional.empty() : com.cobbletowers.season.Seasons.viewNumber();
         String season = viewing.map(com.cobbletowers.season.SeasonSchedule::idOf).orElse("");
@@ -175,7 +177,8 @@ public final class MasteryCommand {
         return shown;
     }
 
-    // ---- operators -------------------------------------------------------------------------------------------------
+    // ---- operators
+    // -------------------------------------------------------------------------------------------------
 
     private static int grant(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
@@ -207,7 +210,9 @@ public final class MasteryCommand {
         return 1;
     }
 
-    /** The tuning report: what the collected numbers say about the thresholds we guessed (see {@code TuningReport}). */
+    /**
+     * The tuning report: what the collected numbers say about the thresholds we guessed (see {@code TuningReport}).
+     */
     private static int report(CommandContext<CommandSourceStack> context) {
         net.minecraft.server.MinecraftServer server = context.getSource().getServer();
         List<com.cobbletowers.mastery.TuningReport.Standing> standings = new java.util.ArrayList<>();

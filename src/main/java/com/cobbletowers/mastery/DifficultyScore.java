@@ -4,11 +4,9 @@ import com.cobbletowers.api.modifier.RiskTier;
 import java.util.List;
 
 /**
- * A run's difficulty as one transparent integer (P31, TDS #90): the risk points of the modifiers it held, five per Ascension,
- * and a handicap for fewer players. Stored with every record so it can be re-derived and compared.
- *
- * <p>Minor modifiers are worth 1, moderate 3, severe 6. A full party of four holding nothing at the base cycle scores 0; a
- * solo run holding nothing scores 15.
+ * A run's difficulty as one integer (P31, TDS #90): modifier risk points (minor 1, moderate 3, severe 6), five per
+ * Ascension and a handicap for fewer players. A full party holding nothing at the base cycle scores 0; a solo run
+ * scores 15.
  */
 public final class DifficultyScore {
 
@@ -31,9 +29,9 @@ public final class DifficultyScore {
     }
 
     /**
-     * @param risks      the risk tier of every modifier held, a locked-in one listed twice
-     * @param ascension  the Ascension of the cycle
-     * @param partySize  how many players the run started with
+     * @param risks the risk tier of every modifier held, a locked-in one listed twice
+     * @param ascension the cycle's Ascension
+     * @param partySize players the run started with
      */
     public static int of(List<RiskTier> risks, int ascension, int partySize) {
         int score = 0;

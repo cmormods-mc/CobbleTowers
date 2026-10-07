@@ -25,10 +25,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The one place a run's ledger becomes a real grant (TDS #24, #30).
- *
- * <p>Split the way {@link DraftService} is: the decisions are pure functions over a run and its
- * loaded content, and only {@link #bank} and {@link #sweepUnbanked} write anything.
+ * Turns a run's ledger into a real grant (TDS #24, #30). Decisions are pure; only {@link #bank} and {@link
+ * #sweepUnbanked} write.
  */
 public final class RewardBankService {
 
@@ -36,28 +34,14 @@ public final class RewardBankService {
 
     // ---------------------------------------------------------------- pure
 
-    /**
-     * The commit key one grant is made under, deliberately distinct from any transition's own
-     * checkpoint key.
-     *
-     * <p>By the time a grant runs, the transition has already moved the run's state, so the state
-     * machine's own replay guard -- a move cannot be applied twice because applying it moves the
-     * state -- cannot cover this. This is the key TDS #30 was left unused for.
-     */
+    /** The commit key one grant is made under, distinct from any transition's checkpoint key (TDS #30). */
     static String grantKey(UUID runId, int throughFloor) {
         return "run:" + runId + ":floor:" + throughFloor + ":granted";
     }
 
     /**
-     * Whether this arrival is a real payout point, and the table to price it from if it is.
-     *
-     * <p>{@code REWARDS_BANKED} always fires the transition on every floor clear -- P1's table has
-     * exactly one edge out of {@code FLOOR_RESOLVING} for a non-final floor, so it must. Whether that
-     * arrival also converts what has accumulated into an un-forfeitable grant is a separate question,
-     * answered here: at {@code INTERMISSION}, only a milestone floor with {@code banksRewards()} true
-     * pays out now -- an ordinary floor has no milestone to consult and the ledger simply keeps
-     * accumulating, still forfeitable by a later loss. {@code COMPLETED} and {@code CASHED_OUT} always
-     * pay out whatever remains, milestone or not, since nothing can forfeit from a terminal state.
+     * Whether this arrival is a real payout point, and the table to price it from. At INTERMISSION only a milestone
+     * floor pays; COMPLETED and CASHED_OUT always pay what remains.
      */
     static Optional<RewardTableDefinition> bankPoint(TowerContent content, PersistedRun run) {
         TowerDefinition tower = content.towers().get(run.towerId());
@@ -85,7 +69,10 @@ public final class RewardBankService {
         return List.copyOf(priced);
     }
 
-    /** The final-payout bonus for the modifiers the run holds, a locked-in one counted twice (as {@code DifficultyScore} does). */
+    /**
+     * The final-payout bonus for the modifiers the run holds, a locked-in one counted twice (as {@code
+     * DifficultyScore} does).
+     */
     static int riskBonusPercent(TowerContent content, PersistedRun run) {
         List<com.cobbletowers.api.modifier.RiskTier> risks = new ArrayList<>();
         for (var held : DraftService.held(content, run.modifiers())) risks.add(held.risk());
@@ -107,11 +94,7 @@ public final class RewardBankService {
         return evenSplit(amount, participants, 0);
     }
 
-    /**
-     * As above, but the remainder starts at participant {@code rotation} (wrapping) instead of always at the
-     * first one. With a catalog of single items, "the first player gets the remainder" meant a team's host
-     * received every lone Revive; rotating by floor and grant position spreads them out.
-     */
+    /** As above, but the remainder starts at participant {@code rotation} so lone items are spread out. */
     static Map<UUID, Integer> evenSplit(int amount, List<UUID> participants, int rotation) {
         Map<UUID, Integer> shares = new LinkedHashMap<>();
         if (participants.isEmpty() || amount <= 0) return shares;
@@ -130,8 +113,8 @@ public final class RewardBankService {
     // -------------------------------------------------------------- writing
 
     /**
-     * The seed loot is rolled from: the run's seed mixed with the run's own id. A run code shares a seed on purpose, so that a friend meets the same
-     * opponents, bosses and draft cards, but loot must not come with it, or a player could hunt for a seed with a jackpot table and replay it.
+     * The seed loot is rolled from: the run seed mixed with the run id, so a shared run-code seed cannot be hunted
+     * for loot.
      */
     static long lootSeed(PersistedRun run) {
         UUID id = run.runId();
@@ -139,20 +122,9 @@ public final class RewardBankService {
     }
 
     /**
-     * Banks whatever this run has earned since it last banked, if this arrival is a real payout point
-     * and it has not already happened.
-     *
-     * <p>Idempotent by construction: {@link #grantKey} is checked against
-     * {@code run.committedTransactions()} before anything is computed, so a replay -- whether from the
-     * live arrival path or from {@link #sweepUnbanked} -- is a safe no-op once the key is committed.
-     *
-     * <p><b>The run record is written before the pending-reward store is touched.</b> The two are
-     * separate files and cannot be flushed as one atomic write, so a crash between them fails one way
-     * or the other; this order picks which. Written first, a crash after it leaves the key committed
-     * with nothing queued for it -- a grant lost, not duplicated. The reverse order fails the other
-     * way: a retry that finds no committed key would recompute and re-queue the same items. CobbleRaids
-     * reasoned through the identical trade-off for its own reward queue and landed the same way: on an
-     * economy, losing a reward is a complaint, duplicating one is an exploit.
+     * Banks what the run earned since it last banked, if this is a payout point. Idempotent via {@link #grantKey}.
+     * The run record is written before the pending-reward store: a crash then loses a grant rather than duplicating
+     * it.
      */
     public static void bank(MinecraftServer server, UUID runId, long now) {
         Optional<PersistedRun> found = TowerRuns.get(runId);
@@ -214,16 +186,8 @@ public final class RewardBankService {
     }
 
     /**
-     * Catches the one crash window the live path cannot: {@code COMPLETED} and {@code CASHED_OUT} are
-     * terminal, so {@code RunRecovery} never parks them and no event is ever legal against them again
-     * -- a crash between their checkpoint and their grant has no other way back. {@code INTERMISSION}
-     * needs no such sweep: it is still live, so {@code RunRecovery} parks it into
-     * {@code RECOVERY_REQUIRED} on every restart regardless, and resuming it re-enters the same
-     * arrival block in {@code RunTransitionService.apply} that {@link #bank} is already wired into --
-     * the same self-healing {@code DraftService.open} already relies on for its own idempotent
-     * re-open. Scoping this sweep to include {@code INTERMISSION} would be dead code under that
-     * ordering; if {@code RunRecovery} ever stops parking live runs unconditionally, that is exactly
-     * what should prompt adding it here.
+     * Catches the crash window the live path cannot: COMPLETED and CASHED_OUT are terminal, so recovery never parks
+     * them. INTERMISSION needs no sweep because resuming re-enters the arrival block that calls {@link #bank}.
      */
     public static int sweepUnbanked(MinecraftServer server, long now) {
         int banked = 0;

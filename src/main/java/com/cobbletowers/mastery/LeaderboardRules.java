@@ -7,10 +7,8 @@ import java.util.UUID;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * How a leaderboard is ordered, capped and updated (P31), with no server in sight.
- *
- * <p>An entry records everything needed to compare it fairly later: the ruleset revision, tower revision and digest the run
- * was played against (TDS #90), the Ascension and difficulty score of the achievement, and who was on the team.
+ * How a leaderboard is ordered, capped and updated (P31). Entries record the ruleset revision, tower revision and
+ * digest they were played against (TDS #90), plus Ascension, difficulty score and team.
  */
 public final class LeaderboardRules {
 
@@ -49,10 +47,9 @@ public final class LeaderboardRules {
 
     /**
      * One ranked result.
-     *
-     * @param players     who earned it, as (id, name at the time) pairs
-     * @param value       depth, milliseconds, score or count, whichever the board ranks
-     * @param runId       the run, or null for the Clears board (which has no run)
+     * @param players who earned it, as (id, name) pairs
+     * @param value depth, milliseconds, score or count, per board
+     * @param runId the run, or null for the Clears board
      */
     public record Entry(List<Member> players, long value, UUID runId, int ascension, int score, int rulesetRevision,
                         int towerRevision, String towerDigest, long at) {
@@ -74,9 +71,8 @@ public final class LeaderboardRules {
     }
 
     /**
-     * The board after offering it {@code entry}: sorted best first, capped, and at most one entry per run (an entry for a run
-     * already on the board replaces it only if it is better, so a run cannot be pushed down by its own later, worse result).
-     * The Clears board has no run and keys an entry on its single player instead.
+     * The board after offering it {@code entry}: best first, capped, one entry per run (a run's entry is replaced
+     * only by a better one). The Clears board keys on its single player.
      */
     public static List<Entry> offer(Board board, List<Entry> current, Entry entry) {
         List<Entry> next = new ArrayList<>(current);
@@ -109,9 +105,8 @@ public final class LeaderboardRules {
     }
 
     /**
-     * A board's identity in storage: board, tower, mode (ANY for a board that has no mode), playlist ({@code ""} for
-     * Standard), so a Monotype clear is ranked apart from a Standard one (P32), and season ({@code ""} for the all-time
-     * board, otherwise {@code s<number>}, P36a).
+     * A board's identity: board, tower, mode (ANY if none), playlist ({@code ""} for Standard) and season ({@code ""}
+     * for all-time, else {@code s<number>}).
      */
     public record Key(Board board, ResourceLocation tower, Mode mode, String playlist, String season) {
         public Key {

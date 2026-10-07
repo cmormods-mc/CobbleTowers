@@ -4,16 +4,9 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 /**
- * Admission control for the tower's heavy work (docs/design/cell-allocation-async.md, option A): pasting a floor into a cell and clearing one
- * each cost 0.3 to 0.9 s of one server tick, and a burst of them backs chunk saves up until the watchdog fires. At most {@link #MAX_PER_WINDOW}
- * heavy operations are admitted in any {@link #WINDOW_MILLIS}; whoever is refused can wait, and does:
- * <ul>
- *   <li>a lobby whose countdown ended starts a second later (and says why);</li>
- *   <li>a finished run's cell is released by the once-a-second exit sweep instead of at once;</li>
- *   <li>the warm pool builds one cell at a time, off the tick that started a run.</li>
- * </ul>
- * Work that cannot wait (a milestone arena rebuilt between floors) is {@link #note noted}, so everything else backs off around it.
- * Server thread only; time is passed in so the rule is a unit test.
+ * Admission control for heavy work (docs/design/cell-allocation-async.md, option A): pasting or clearing a cell costs
+ * 0.3 to 0.9 s of a tick. At most {@link #MAX_PER_WINDOW} operations are admitted per {@link #WINDOW_MILLIS}; the
+ * refused wait. Unavoidable work is {@link #note noted} so the rest backs off. Server thread only; time is passed in.
  */
 public final class HeavyWork {
 

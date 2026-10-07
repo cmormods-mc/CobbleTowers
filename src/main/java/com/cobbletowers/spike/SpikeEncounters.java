@@ -16,11 +16,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The spike's active encounters and what it does when CobbleRaids reports on them.
- *
- * <p>Dev-only. It exists to prove an owned boss fight works end to end for one to four players,
- * and to put numbers on it: the log line at the end carries wall-clock and combat duration so the
- * 24-Pokemon question (TDS #42) is answered by measurement.
+ * The spike's active encounters and what it does when CobbleRaids reports on them. Dev-only: proves a boss fight for
+ * one to four players and logs wall-clock and combat duration (TDS #42).
  */
 public final class SpikeEncounters {
 

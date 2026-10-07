@@ -5,11 +5,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The coded behaviors a CUSTOM modifier can name (P29).
- *
- * <p>Content picks one by id from {@code effect.custom}; what each does lives in {@code CustomEffects}, which turns a
- * run's held behaviors into typed parameters the engine already knows how to consume. Declared here, in the
- * definition package, so a file naming an unknown behavior is refused at load rather than drafting and doing nothing.
+ * The coded behaviors a CUSTOM modifier can name (P29), picked by id from {@code effect.custom}; {@code
+ * CustomEffects} turns held behaviors into typed parameters. Declared here so an unknown behavior is refused at load.
  */
 public enum CustomBehavior {
 

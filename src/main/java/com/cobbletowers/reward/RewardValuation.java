@@ -11,23 +11,15 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Turns a slice of a run's ledger into what it is actually worth.
- *
- * <p>Pure -- no server, no store -- so every rule here (the growth step, where reward-percent lands)
- * is a unit test with no Minecraft in reach, the way every other draw in this codebase is.
- *
- * <p>{@code POOL_FORFEITED} never reaches here: a caller only ever passes the slice of the ledger a
- * run is actually banking, and a forfeited run's ledger is never banked at all.
+ * Turns a slice of a run's ledger into what it is worth. Pure, so tested without Minecraft. POOL_FORFEITED never
+ * reaches here.
  */
 public final class RewardValuation {
 
     private RewardValuation() {}
 
     /** One item, at the amount it was actually worth once growth and the run's modifiers applied. */
-    /**
-     * @param perPlayer true for a milestone's guaranteed item: every participant receives the whole amount,
-     *                  instead of the amount being split between them
-     */
+    /** @param perPlayer true for a milestone's guaranteed item: every participant gets the whole amount */
     public record Grant(ResourceLocation item, int amount, boolean perPlayer) {
         public Grant(ResourceLocation item, int amount) {
             this(item, amount, false);
@@ -38,16 +30,9 @@ public final class RewardValuation {
     static final int BONUS_ORDINAL_BASE = 100_000;
 
     /**
-     * What {@code priced} is worth from {@code table}, scaled by floor depth and by {@code effects}'s
-     * reward percentage.
-     *
-     * <p>Growth is linear, the same additive shape {@code TowerLevelPolicy} scales level by, but as a
-     * rate rather than a flat step: {@code amount + amount * growthPercentPerFloor * floorIndex /
-     * 100}. Reward-percent is applied last, once per grant, through {@link
-     * ModifierEffects#applyReward}, mirroring how {@code applyBossHealth} is the one place the boss's
-     * own percentage is ever applied.
-     *
-     * @param runSeed what every roll here derives from, so a crash cannot reroll a grant (TDS #29)
+     * What {@code priced} is worth from {@code table}: linear growth per floor, then reward-percent applied once via
+     * {@link ModifierEffects#applyReward}.
+     * @param runSeed roll source, so a crash cannot reroll (TDS #29)
      */
     public static List<Grant> value(long runSeed, List<LedgerEntry> priced, RewardTableDefinition table,
                                     ModifierEffects effects) {
@@ -55,10 +40,8 @@ public final class RewardValuation {
     }
 
     /**
-     * As above, also pricing a {@code MILESTONE_CLEARED} entry from the table's milestone section.
-     *
-     * @param milestoneKinds resolves a milestone's id to whether it is a boss or a champion; kept as a
-     *                       parameter so this stays pure
+     * As above, also pricing {@code MILESTONE_CLEARED} entries.
+     * @param milestoneKinds resolves a milestone id to boss or champion
      */
     public static List<Grant> value(long runSeed, List<LedgerEntry> priced, RewardTableDefinition table,
                                     ModifierEffects effects,
@@ -74,9 +57,8 @@ public final class RewardValuation {
     }
 
     /**
-     * As above, for a tower that cycles (P30): {@code cycleLength} is its floor count, and a floor's growth is counted
-     * within its own cycle, so a floor-31 reward does not grow the table three times over. What rises with depth is the
-     * Ascension reward factor in {@code effects}, which is bounded. Zero means the tower does not cycle.
+     * As above for a cycling tower (P30): growth counts within the floor's own cycle. Zero cycleLength means no
+     * cycling.
      */
     public static List<Grant> value(long runSeed, List<LedgerEntry> priced, RewardTableDefinition table,
                                     ModifierEffects effects, com.cobbletowers.modifier.CustomEffects customs,
@@ -85,10 +67,7 @@ public final class RewardValuation {
         return value(runSeed, priced, table, effects, customs, cycleLength, milestoneKinds, entry -> 100);
     }
 
-    /**
-     * As above, with each rolled entry's weight scaled by {@code weightPercent} (P36c). Only the choice of item moves; amounts, growth,
-     * the guaranteed milestone items and every other rule are unchanged.
-     */
+    /** As above, scaling each rolled entry's weight by {@code weightPercent} (P36c); only item choice moves. */
     public static List<Grant> value(long runSeed, List<LedgerEntry> priced, RewardTableDefinition table,
                                     ModifierEffects effects, com.cobbletowers.modifier.CustomEffects customs,
                                     int cycleLength,
@@ -141,7 +120,10 @@ public final class RewardValuation {
         }
     }
 
-    /** The floor a reward's growth is counted from: its place in its own cycle, or the floor itself when nothing cycles. */
+    /**
+     * The floor a reward's growth is counted from: its place in its own cycle, or the floor itself when nothing
+     * cycles.
+     */
     private static int growthFloor(int floorIndex, int cycleLength) {
         return cycleLength > 0 ? com.cobbletowers.ascension.AscensionPolicy.towerFloorOf(floorIndex, cycleLength) : floorIndex;
     }

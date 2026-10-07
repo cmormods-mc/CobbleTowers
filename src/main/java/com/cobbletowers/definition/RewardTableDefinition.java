@@ -16,15 +16,8 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What a tower pays out, keyed by what earned it.
- *
- * <p>A tier absent from the JSON is an empty pool rather than a required one: unlike an encounter
- * pool, which always needs an opponent to draw, a table is not obliged to pay out on every kind of
- * ledger entry (a table with no boss tier simply never rolls one).
- *
- * <p>One table per tower (TowerDefinition.rewardTableId), not one per floor: what varies per floor is
- * depth, a number this table's own growth step scales by, not a distinct roster the way an encounter
- * pool's opponents are.
+ * What a tower pays out, by ledger kind. An absent tier is an empty pool. One table per tower; depth scales it
+ * through the growth step.
  */
 public record RewardTableDefinition(
         ResourceLocation id,
@@ -39,9 +32,8 @@ public record RewardTableDefinition(
 
     /**
      * One possible item.
-     *
-     * @param minAmount the fewest this entry ever grants
-     * @param maxAmount the most this entry ever grants, before growth and reward-percent scaling
+     * @param minAmount fewest granted
+     * @param maxAmount most granted, before growth and reward-percent
      */
     public record Entry(ResourceLocation item, int minAmount, int maxAmount, int weight) implements RewardEntryView {
         public Entry {
@@ -64,9 +56,8 @@ public record RewardTableDefinition(
 
     /**
      * What clearing a milestone floor pays beyond the ordinary tiers (P21).
-     *
-     * @param guaranteed  paid to every participant, in full, never scaled by depth or modifiers
-     * @param bonusRolls  extra weighted picks from {@code bonusPool}, valued and split like any other grant
+     * @param guaranteed paid to every participant in full, never scaled
+     * @param bonusRolls extra weighted picks from {@code bonusPool}
      */
     public record MilestoneReward(List<Guaranteed> guaranteed, int bonusRolls, List<Entry> bonusPool) {
         public MilestoneReward {

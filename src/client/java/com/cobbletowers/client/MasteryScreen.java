@@ -12,11 +12,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * Mastery and leaderboards (P31). Towers down the left, tabs along the top (the player's own achievements, then the four
- * boards), and a scrolling list in the middle. Every click is a request to the server, which answers with a fresh payload that
- * redraws this screen in place; the screen holds no state of its own beyond the scroll position.
- *
- * <p>Not seen in a real client at the time of writing: headless test bots cannot open a screen. Nothing here decides anything.
+ * Mastery and leaderboards (P31): towers on the left, tabs on top (achievements, then the four boards) and a
+ * scrolling list. Every click is a request and the server's fresh payload redraws the screen. Nothing here decides
+ * anything.
  */
 public final class MasteryScreen extends TowerScreen {
 
@@ -68,7 +66,8 @@ public final class MasteryScreen extends TowerScreen {
         int available = width - x - 6;
         for (int i = 0; i < TABS.length; i++) {
             String tab = TABS[i];
-            // Natural width when they all fit; squeezed evenly (and so clipped) only when the window is too narrow for that.
+            // Natural width when they all fit; squeezed evenly (and so clipped) only when the window is too narrow
+            // for that.
             int wide = natural <= available ? font.width(TAB_NAMES[i]) + 12 : Math.min(font.width(TAB_NAMES[i]) + 12, (width - 122) / 5 - 2);
             Button button = TowerButton.builder(Component.literal(TAB_NAMES[i]), b -> request(state.selected(), tab))
                     .pos(tabX, 8).size(wide, 18).build();
@@ -131,7 +130,10 @@ public final class MasteryScreen extends TowerScreen {
     /** A line of the view as drawn: one row of a wrapped line, indented when it continues the one above. */
     private record Visual(net.minecraft.util.FormattedCharSequence text, int color, int indent) {}
 
-    /** The view wrapped to the width of the panel: a long achievement description runs on to a second row rather than being cut off. */
+    /**
+     * The view wrapped to the width of the panel: a long achievement description runs on to a second row rather than
+     * being cut off.
+     */
     private List<Visual> visuals() {
         int wrap = Math.max(60, width - 112 - 10);
         List<Visual> out = new ArrayList<>();

@@ -20,10 +20,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Clubs at run time (P35): the actions players take, the invites between them, and the hook that counts a regional cycle
- * clear. The rules and numbers are {@link ClubBook}; this is the part that knows a server.
- *
- * <p>Regional towers only (Tideforge, Rootvale, Duskvale): Neutral and the Test tower never count toward a club.
+ * Clubs at run time (P35): player actions, invites and the hook that counts a regional cycle clear. Rules are in
+ * {@link ClubBook}. Regional towers only; Neutral and the Test tower never count.
  */
 public final class ClubService {
 
@@ -36,7 +34,10 @@ public final class ClubService {
 
     private ClubService() {}
 
-    /** The week a clear belongs to, as {@code 2026-w41}: the same trial week trials and contracts use (configured zone and reset hour). */
+    /**
+     * The week a clear belongs to, as {@code 2026-w41}: the same trial week trials and contracts use (configured zone
+     * and reset hour).
+     */
     public static String weekKey() {
         return com.cobbletowers.trial.TrialClock.weekKey(com.cobbletowers.trial.TrialService.today());
     }
@@ -138,9 +139,9 @@ public final class ClubService {
     }
 
     /**
-     * The end of a season for clubs (P36c): the top three clubs, as the Hall froze them, unlock the prestige banner for their place
-     * (gold, silver, bronze) and a line of honour, and every member keeps a permanent mark. Idempotent, so a finalisation that crashed and
-     * resumed changes nothing the second time. Then the per-player season bests older than this season are forgotten.
+     * The end of a season for clubs (P36c): the top three clubs as the Hall froze them unlock a place banner and a
+     * line of honour, and every member keeps a permanent mark. Idempotent. Older per-player season bests are then
+     * forgotten.
      */
     public static void awardSeason(MinecraftServer server, int season, List<String> podium) {
         TowerClubStore store = TowerClubStore.get(server);

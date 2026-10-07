@@ -1,11 +1,8 @@
 package com.cobbletowers.runtime;
 
 /**
- * Who may stay in the tower dimension (P20). One rule: nobody stays without a live place in a run.
- *
- * <p>Pure, from plain values and a clock reading, so the whole policy is unit-tested without a server. The
- * sweep that enforces it runs about once a second, which is why a single rule can cover a run ending, a
- * player leaving, a connection being dropped, a crash and a late login.
+ * Who may stay in the tower dimension (P20): nobody without a live place in a run. Pure, from plain values and a
+ * clock reading; enforced by a once-a-second sweep.
  */
 public final class ExitRules {
 
@@ -48,8 +45,8 @@ public final class ExitRules {
     }
 
     /**
-     * @param inTower whether the player is in the tower dimension right now
-     * @param exempt  an operator in creative or spectator mode, who may be looking around on purpose (see {@link #exempt})
+     * @param inTower whether the player is in the tower dimension
+     * @param exempt an operator in creative or spectator mode (see {@link #exempt})
      */
     public static Verdict decide(boolean inTower, boolean exempt, Standing standing, long now) {
         if (!inTower || exempt) return Verdict.STAY;
@@ -61,28 +58,24 @@ public final class ExitRules {
     }
 
     /**
-     * Whether a player in the tower is exempt from being sent home: an operator in creative or spectator mode who is exploring on
-     * purpose. Not one who was in the tower when their <b>own run ended</b> ({@code leavingAfterOwnRun}): that is the end of a run,
-     * not a visit, and leaving them would strand them in a cell that is about to be reset. Found on a real server, where an operator in
-     * creative who cashed out was left in an empty dimension.
+     * Whether a player in the tower is exempt from being sent home: an operator in creative or spectator exploring on
+     * purpose, but not one whose own run just ended ({@code leavingAfterOwnRun}).
      */
     public static boolean exempt(boolean operatorInCreativeOrSpectator, boolean leavingAfterOwnRun) {
         return operatorInCreativeOrSpectator && !leavingAfterOwnRun;
     }
 
     /**
-     * Whether a participant still standing in a finished run's cell may be sent home just before it is reset. Not one who has a live place in
-     * <b>another</b> run: a player who finishes a run and starts the next within the beat is in the tower for the new run, and moving them out
-     * mid-battle (which this safety net did, the first time it was written) strands them and stalls the fight.
+     * Whether a participant still in a finished run's cell may be sent home before it is reset; not one with a live
+     * place in another run.
      */
     public static boolean mayEvacuateAtRelease(Standing standing) {
         return standing.kind() != Standing.Kind.ACTIVE;
     }
 
     /**
-     * Whether a finished run's cell may be reset now. Never while someone is standing in it, except that
-     * once the beat has passed the players have been sent home in the same sweep, so waiting longer would
-     * only hold a cell for nothing.
+     * Whether a finished run's cell may be reset now: never while someone is inside, unless the beat has passed and
+     * they have been sent home.
      */
     public static boolean releaseDue(boolean anyoneInside, long endedAt, long now) {
         return !anyoneInside || now - endedAt >= BEAT_MILLIS;

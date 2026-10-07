@@ -16,7 +16,9 @@ public final class RentalAdmin {
 
     private RentalAdmin() {}
 
-    /** Every rental the player holds as Cobblemon has it: id, species, level, nature, ability, moves, item, tradeable. */
+    /**
+     * Every rental the player holds as Cobblemon has it: id, species, level, nature, ability, moves, item, tradeable.
+     */
     public static List<String> describe(ServerPlayer player) {
         List<String> lines = new ArrayList<>();
         for (Pokemon pokemon : RentalStorage.held(player)) {
@@ -36,7 +38,10 @@ public final class RentalAdmin {
         return out.toString();
     }
 
-    /** Creates a rental with no run behind it and puts it in the player's party if there is room, else a box: a leak to be swept. */
+    /**
+     * Creates a rental with no run behind it and puts it in the player's party if there is room, else a box: a leak
+     * to be swept.
+     */
     public static List<String> giveStray(ServerPlayer player) {
         List<RentalSetDefinition> all = RentalSetRegistry.all();
         if (all.isEmpty()) return List.of("no rental sets are loaded");
@@ -46,8 +51,8 @@ public final class RentalAdmin {
     }
 
     /**
-     * The species the player's Pokedex knows anything about, each with how much ({@code SEEN} or {@code OWNED}), to show that a
-     * rental run added none. An empty record Cobblemon creates and then fills with nothing is not knowledge and is left out.
+     * The species the player's Pokedex knows anything about, each with how much ({@code SEEN} or {@code OWNED}), to
+     * show a rental run added none. Empty records Cobblemon creates are left out.
      */
     public static List<String> pokedex(ServerPlayer player) {
         var records = Cobblemon.INSTANCE.getPlayerDataManager().getPokedexData(player).getSpeciesRecords();

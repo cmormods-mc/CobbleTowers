@@ -44,7 +44,8 @@ class TrialRulesTest {
         return ZonedDateTime.parse(isoZoned).toInstant().toEpochMilli();
     }
 
-    // ---- seed ------------------------------------------------------------------------------------------------------
+    // ---- seed
+    // ------------------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("the seed is stable: the same id always gives the same number, different ids give different ones")
@@ -59,7 +60,8 @@ class TrialRulesTest {
         assertEquals(1000, seen.size(), "no collisions across a thousand days");
     }
 
-    // ---- clock -----------------------------------------------------------------------------------------------------
+    // ---- clock
+    // -----------------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("a trial day turns over at the reset hour in the configured zone, not at midnight")
@@ -98,7 +100,8 @@ class TrialRulesTest {
         assertEquals(LocalDate.of(2026, 10, 5), TrialClock.weekStart(LocalDate.of(2026, 10, 9)));
     }
 
-    // ---- schedule --------------------------------------------------------------------------------------------------
+    // ---- schedule
+    // --------------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("the day's trial is a pure function of the date: same date, same trial and seed; the next day differs")
@@ -184,7 +187,8 @@ class TrialRulesTest {
                 .getAsJsonObject()));
     }
 
-    // ---- scoring ---------------------------------------------------------------------------------------------------
+    // ---- scoring
+    // ---------------------------------------------------------------------------------------------------
 
     @Test
     @DisplayName("floors dominate: a wipe on floor four of five beats a clean run that stopped on floor two")
@@ -210,7 +214,8 @@ class TrialRulesTest {
         assertEquals(5000, TrialScoring.score(5, 5, 99_999_999, 0, 0) - TrialScoring.COMPLETION_BONUS, "a very slow run keeps its floors");
     }
 
-    // ---- streaks ---------------------------------------------------------------------------------------------------
+    // ---- streaks
+    // ---------------------------------------------------------------------------------------------------
 
     private static State run(State state, long... days) {
         for (long day : days) state = StreakRules.qualify(state, day).state();

@@ -7,11 +7,8 @@ import java.util.Objects;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * The rules a run is played under.
- *
- * <p>The level bounds live here and are applied by {@link TowerLevelSnapshot}, which is the only
- * place tower level maths exists (TDS #45, CONFIGURABLE: "do not scatter level math through
- * encounter code").
+ * The rules a run is played under. Level bounds live here and are applied by {@link TowerLevelSnapshot}, the only
+ * place tower level maths exists (TDS #45).
  */
 public record RulesetDefinition(
         ResourceLocation id,

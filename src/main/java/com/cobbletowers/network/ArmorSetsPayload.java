@@ -9,10 +9,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
-/**
- * Every armor set, worded for tooltips (P25). Sent when a player joins and again after each datapack reload, so what a
- * tooltip says is always what the server currently applies. Replaces the client's whole set list each time.
- */
+/** Every armor set, worded for tooltips (P25), sent on join and after each reload; replaces the client's list. */
 public record ArmorSetsPayload(List<ArmorSetView> sets) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<ArmorSetsPayload> TYPE = new CustomPacketPayload.Type<>(

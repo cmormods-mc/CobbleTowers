@@ -12,8 +12,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * What the store owes the rest of the mod, the same way {@link TowerRunStoreTest} does for runs: a
- * player's queue comes back as it went in, and one bad record cannot take the others with it.
+ * What the store owes the mod, as {@link TowerRunStoreTest}: a queue comes back as it went in, and one bad record
+ * cannot take the others.
  */
 class TowerPendingRewardStoreTest {
 

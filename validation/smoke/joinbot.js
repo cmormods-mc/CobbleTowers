@@ -1,8 +1,5 @@
-// A player that joins and does nothing.
-//
-// The run commands take a player selector, so a durability test needs somebody on the server --
-// but nothing about this test needs them to act. mineflayer comes from the CobbleRaids rig's
-// node_modules via NODE_PATH; this repo deliberately vendors no node dependencies of its own.
+// A player that joins and does nothing, so run commands taking a player selector have someone on the server.
+// mineflayer comes from the CobbleRaids rig's node_modules via NODE_PATH; this repo vendors no node dependencies.
 const mineflayer = require('mineflayer');
 
 const [, , username, port] = process.argv;

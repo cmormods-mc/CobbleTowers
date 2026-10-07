@@ -5,10 +5,9 @@ import java.util.List;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Everything a player's worn armor switches on, summed (P24). Immutable; an equal value means nothing changed, which
- * is how the periodic check knows whether to touch attributes at all.
- *
- * @param attributes the attribute modifiers to hold, each with the stable key it is applied under
+ * Everything a player's worn armor switches on, summed (P24). Immutable; equal values mean nothing changed, so the
+ * periodic check can skip attribute updates.
+ * @param attributes modifiers to hold, each with its stable key
  * @param battleEffects logical P23 operations for the wearer's tower battles
  */
 public record ActiveBonuses(

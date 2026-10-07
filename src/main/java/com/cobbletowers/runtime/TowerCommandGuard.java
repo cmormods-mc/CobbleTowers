@@ -14,15 +14,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The runtime half of {@link CommandRules}: who is asked, and where the extra commands come from.
- *
- * <p>Called by {@code CommandsMixin} before any command runs. It only ever refuses a <b>player</b> standing in the tower
- * dimension: the console, RCON and command blocks are untouched (the live tests drive the tower through them), and so is
- * an operator who is in creative or spectator mode -- the same exemption {@link RunExitService} gives, for the same
- * reason: that operator is looking at the tower on purpose.
- *
- * <p>Operators add commands to the deny list, one per line, in {@code config/cobbletowers/blocked_commands.txt}
- * ({@code #} starts a comment). It is read once at startup; the list is for adding, never for allowing a default.
+ * The runtime half of {@link CommandRules}, called by {@code CommandsMixin}. Only refuses a player in the tower
+ * dimension; console, RCON, command blocks and creative or spectator operators are exempt. Operators add commands in
+ * {@code config/cobbletowers/blocked_commands.txt} (one per line, {@code #} comments), read once at startup.
  */
 public final class TowerCommandGuard {
 

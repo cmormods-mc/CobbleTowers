@@ -12,13 +12,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The three packs of a rental draft (P33), a pure function of the pool and a seed: the same seed always offers the same packs,
- * which is what lets a Daily Trial give everyone the same draft.
- *
- * <p>The shape is the one CobblemonCards' own packs have: <b>three common, one uncommon and one rare-or-better</b> card, shuffled.
- * On top of that, <b>at least one epic-or-better card appears across the three packs</b> (a card is upgraded if chance gave none),
- * and a small chance turns one pack into a <b>God Pack</b> of five epic-or-better cards, which a trial never rolls. No species is
- * offered twice in one draft.
+ * The three packs of a rental draft (P33), a pure function of pool and seed so a Daily Trial gives everyone the same
+ * draft. Each pack is three common, one uncommon and one rare-or-better card. At least one epic-or-better appears
+ * overall, a small chance makes a God Pack of five epic-or-better (never in a trial), and no species repeats.
  */
 public final class RentalDraw {
 
@@ -55,8 +51,8 @@ public final class RentalDraw {
     }
 
     /**
-     * @param pool         every set that may be offered
-     * @param allowGodPack false for a trial, so every player's draft has the same shape
+     * @param pool every set that may be offered
+     * @param allowGodPack false for a trial so every draft has the same shape
      */
     public static Offer draw(List<RentalSetDefinition> pool, long seed, boolean allowGodPack) {
         Map<Rarity, List<RentalSetDefinition>> byRarity = new EnumMap<>(Rarity.class);
@@ -112,7 +108,10 @@ public final class RentalDraw {
         return draw.roll(context + ".r", 5) == 0 ? List.of(Rarity.LEGENDARY, Rarity.EPIC, Rarity.RARE) : List.of(Rarity.EPIC, Rarity.LEGENDARY, Rarity.RARE);
     }
 
-    /** A God Pack card: epic or better, and at most two of the five legendary or mythic (so a team can still keep two that are not). */
+    /**
+     * A God Pack card: epic or better, and at most two of the five legendary or mythic (so a team can still keep two
+     * that are not).
+     */
     private static List<Rarity> godChain(Draw draw, String context, int index) {
         boolean top = index < 2 && draw.roll(context + ".t", 100) < 40;
         return top ? List.of(Rarity.LEGENDARY, Rarity.MYTHIC, Rarity.EPIC, Rarity.RARE) : List.of(Rarity.EPIC, Rarity.RARE, Rarity.UNCOMMON);

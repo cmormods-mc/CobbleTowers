@@ -12,17 +12,12 @@ import net.minecraft.nbt.NbtUtils;
 import net.minecraft.nbt.Tag;
 
 /**
- * A boss victory's AscensionLib payout that has not been confirmed yet, kept on disk until it is.
- *
- * <p>The library pays once per (encounter, player, reward kind), so repeating a settlement is always safe; what it
- * cannot do is remember a settlement it never received (library disabled, no running world, a crash between the boss
- * ending and the call). This record is that memory. It holds the arguments of the call, never an amount: the library
- * recomputes the same amounts from the same encounter and player, which is also what lets a retry cover only the
- * players still owed.
- *
- * @param players      who is still owed; shrinks as the library confirms each one
- * @param createdAt    epoch millis, for expiry
- * @param attempts     tries so far, for the log
+ * A boss victory's AscensionLib payout not yet confirmed, kept on disk until it is. The library pays once per
+ * (encounter, player, reward kind), so repeating is safe; this record is the memory of a settlement it never
+ * received. It holds the call's arguments, never an amount.
+ * @param players who is still owed
+ * @param createdAt epoch millis, for expiry
+ * @param attempts tries so far
  */
 public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, int fromFloor, int bossFloor,
                                    boolean keenEyeFloor, List<UUID> players, long createdAt, int attempts) {
@@ -47,12 +42,10 @@ public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, 
 
     /**
      * What is left to settle after one call.
-     *
-     * @param statuses the library's answer, per player, or null when the call itself failed (nothing is confirmed).
-     *                 A player absent from the answer is finished: the Scouter roll lists only those who rolled a
-     *                 drop. {@code GRANTED}, {@code ALREADY_GRANTED}, {@code NOT_PAID} and {@code CONFLICT} are
-     *                 final; {@code DISABLED} and {@code REFUSED} are tried again.
-     * @return the settlement with only the still-owed players, or empty when nobody is
+     * @param statuses the library's answer per player, or null when the call failed. A player absent from the answer
+     *     is finished. {@code GRANTED}, {@code ALREADY_GRANTED}, {@code NOT_PAID} and {@code CONFLICT} are final;
+     *     {@code DISABLED} and {@code REFUSED} are retried.
+     * @return the settlement with only the still-owed players, or empty
      */
     public Optional<PendingLibSettlement> afterAttempt(Map<?, ?> statuses) {
         List<UUID> remaining = new ArrayList<>();

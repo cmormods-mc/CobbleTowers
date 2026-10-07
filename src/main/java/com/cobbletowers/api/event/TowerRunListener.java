@@ -5,10 +5,8 @@ import com.cobbletowers.api.tower.RunState;
 import com.cobbletowers.api.tower.TowerRunView;
 
 /**
- * What an addon is told about a run. Called on the server thread, after the change has been applied
- * and persisted, so what a listener reads is what is committed.
- *
- * <p>An exception thrown from here is contained and logged; it never stops a run advancing.
+ * What an addon is told about a run. Called on the server thread after the change is applied and persisted. An
+ * exception is contained and logged.
  */
 public interface TowerRunListener {
 
@@ -19,8 +17,7 @@ public interface TowerRunListener {
     default void onFloorResolved(TowerRunView run, FloorView floor, boolean cleared) {}
 
     /**
-     * The run reached a terminal state: completed, cashed out, failed or abandoned. A run waiting in
-     * RECOVERY_REQUIRED has not ended and does not fire this.
+     * The run reached a terminal state: completed, cashed out, failed or abandoned. Not fired for RECOVERY_REQUIRED.
      */
     default void onRunEnded(TowerRunView run, RunState terminal) {}
 }

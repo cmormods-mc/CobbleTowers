@@ -27,8 +27,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The Progress tab's tracks (P37): builds what the client draws and answers its claims. Presentation and claiming only; what a level or a step
- * is worth is the track data, and how points and levels are earned is unchanged. Every request is revalidated here, never trusted.
+ * The Progress tab's tracks (P37): builds what the client draws and answers claims. Presentation and claiming only;
+ * every request is revalidated.
  */
 public final class TrackService {
 
@@ -37,12 +37,18 @@ public final class TrackService {
 
     private TrackService() {}
 
-    /** Requests closer together than this from one player are dropped: a client cannot make the server rebuild a track every tick. */
+    /**
+     * Requests closer together than this from one player are dropped: a client cannot make the server rebuild a track
+     * every tick.
+     */
     private static final long MIN_GAP_MILLIS = 150;
     /** Server thread only (the receiver hops to it). */
     private static final Map<java.util.UUID, Long> LAST_REQUEST = new java.util.HashMap<>();
 
-    /** Cuts text to what a payload string may hold ({@code writeUtf} throws past its limit, which would break the packet). */
+    /**
+     * Cuts text to what a payload string may hold ({@code writeUtf} throws past its limit, which would break the
+     * packet).
+     */
     static String cut(String text, int max) {
         return text == null ? "" : text.length() <= max ? text : text.substring(0, Math.max(0, max - 1)) + "…";
     }
@@ -135,7 +141,8 @@ public final class TrackService {
         Optional<SeasonSchedule.Phase> phase = Seasons.phase();
         Optional<SeasonTrackDefinition> found = SeasonTrackRegistry.current();
         if (phase.isEmpty() || found.isEmpty()) return Lane.NONE;
-        // The running season, or during the off-season the one that just ended (its unclaimed steps stay claimable until the next begins).
+        // The running season, or during the off-season the one that just ended (its unclaimed steps stay claimable
+        // until the next begins).
         int number;
         boolean ended;
         long daysLeft;

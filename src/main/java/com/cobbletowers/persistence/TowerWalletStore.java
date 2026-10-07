@@ -8,16 +8,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
-/**
- * A player's CobbleDollar balance (TDS #18): "individual wallets," not a run's own state, so this is
- * keyed by player and outlives any one run -- the same reasoning that keeps a bank balance open after
- * one shopping trip ends. Copies {@link TowerPendingRewardStore}'s exact shape.
- */
-public final class TowerWalletStore extends SavedData {
+/** A player's CobbleDollar balance (TDS #18): keyed by player, outliving any run. */
+public final class TowerWalletStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_wallets";
     private static final String WALLETS = "wallets";
@@ -26,14 +19,9 @@ public final class TowerWalletStore extends SavedData {
 
     private final Map<UUID, Long> balances = new LinkedHashMap<>();
 
-    public static SavedData.Factory<TowerWalletStore> factory() {
-        return new SavedData.Factory<>(TowerWalletStore::new, TowerWalletStore::load, DataFixTypes.LEVEL);
-    }
-
     /** The store for this server. Created empty on a world that has never granted a CobbleDollar. */
     public static TowerWalletStore get(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerWalletStore::new, TowerWalletStore::load, FILE_ID);
     }
 
     public long balanceOf(UUID playerId) {
@@ -48,10 +36,8 @@ public final class TowerWalletStore extends SavedData {
     }
 
     /**
-     * Takes {@code amount} from a player's balance if they have it. Never leaves a balance negative --
-     * a purchase either happens in full or not at all, the same all-or-nothing shape a vendor sale is.
-     *
-     * @return true if the balance covered it and was debited; false if it did not, unchanged
+     * Takes {@code amount} from a balance if covered, never leaving it negative.
+     * @return true if debited; false, unchanged, if it did not cover
      */
     public boolean debit(UUID playerId, long amount) {
         if (amount <= 0) return true;
@@ -60,12 +46,6 @@ public final class TowerWalletStore extends SavedData {
         balances.put(playerId, balance - amount);
         setDirty();
         return true;
-    }
-
-    /** Writes the file to disk immediately: a debited purchase lost to a crash before the next
-     * autosave is CobbleDollars a player was already charged and never got the service for. */
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     static TowerWalletStore load(CompoundTag tag, HolderLookup.Provider registries) {

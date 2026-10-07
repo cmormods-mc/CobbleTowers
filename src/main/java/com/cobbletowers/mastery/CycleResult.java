@@ -5,19 +5,17 @@ import java.util.UUID;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * What one cycle clear amounted to (P31): the unit mastery achievements and leaderboards are judged on. Everything here is a
- * plain value, gathered by {@link MasteryService} when a run clears the last floor of a cycle, so the rules that read it are
- * pure.
- *
- * @param ascension       the Ascension of the cycle just cleared (0 for the base cycle)
- * @param startedSolo     whether the run began with a single player
- * @param activeMillis    the sum of the cycle's floor durations; time spent between floors does not count
- * @param flawless        no player Pokemon fainted during the cycle
- * @param severeModifiers how many severe modifiers the run held, locked-in ones counted twice
- * @param score           the difficulty score ({@link DifficultyScore})
- * @param rulesetRevision the ruleset revision the run pinned (TDS #90)
- * @param towerRevision   the tower revision the run pinned
- * @param towerDigest     the tower's content digest when the run started
+ * What one cycle clear amounted to (P31): the unit achievements and leaderboards are judged on, gathered by {@link
+ * MasteryService}.
+ * @param ascension the cycle's Ascension (0 for base)
+ * @param startedSolo the run began with one player
+ * @param activeMillis sum of the cycle's floor durations
+ * @param flawless no player Pokemon fainted
+ * @param severeModifiers severe modifiers held, locked-in counted twice
+ * @param score the {@link DifficultyScore}
+ * @param rulesetRevision pinned ruleset revision (TDS #90)
+ * @param towerRevision pinned tower revision
+ * @param towerDigest the tower's digest at start
  */
 public record CycleResult(
         UUID runId,

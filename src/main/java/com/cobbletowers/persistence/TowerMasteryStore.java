@@ -10,16 +10,12 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.datafix.DataFixTypes;
-import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * Each player's mastery in each tower (P31): how many cycles they have cleared, the deepest Ascension they have reached, and
- * which achievements they hold (with when). Their mastery level in a tower is the number of achievements held there.
- * Per player and per tower, never per run, so it outlives every run. Copies {@link TowerWalletStore}'s shape.
+ * Each player's mastery per tower (P31): cycles cleared, deepest Ascension and achievements held with when. The
+ * mastery level is the number of achievements held. Per player and tower, outliving any run.
  */
-public final class TowerMasteryStore extends SavedData {
+public final class TowerMasteryStore extends TowerStore {
 
     private static final String FILE_ID = "cobbletowers_mastery";
 
@@ -45,13 +41,8 @@ public final class TowerMasteryStore extends SavedData {
 
     private final Map<UUID, Map<ResourceLocation, Entry>> entries = new LinkedHashMap<>();
 
-    public static SavedData.Factory<TowerMasteryStore> factory() {
-        return new SavedData.Factory<>(TowerMasteryStore::new, TowerMasteryStore::load, DataFixTypes.LEVEL);
-    }
-
     public static TowerMasteryStore get(MinecraftServer server) {
-        ServerLevel overworld = server.overworld();
-        return overworld.getDataStorage().computeIfAbsent(factory(), FILE_ID);
+        return open(server, TowerMasteryStore::new, TowerMasteryStore::load, FILE_ID);
     }
 
     public Progress progressOf(UUID player, ResourceLocation tower) {
@@ -100,11 +91,6 @@ public final class TowerMasteryStore extends SavedData {
     public void reset(UUID player, ResourceLocation tower) {
         Map<ResourceLocation, Entry> byTower = entries.get(player);
         if (byTower != null && byTower.remove(tower) != null) setDirty();
-    }
-
-    /** Written at once: an unlock lost to a crash would be an achievement a player was already told they had. */
-    public void checkpoint(MinecraftServer server) {
-        server.overworld().getDataStorage().save();
     }
 
     private Entry entryFor(UUID player, ResourceLocation tower) {

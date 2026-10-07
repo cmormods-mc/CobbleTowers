@@ -11,9 +11,9 @@ import java.time.ZoneId;
 import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * The trial day's zone and reset hour (P32), read from {@code config/cobbletowers-trials.json}:
- * {@code {"zone": "America/New_York", "reset_hour": 4}}. A missing file or a bad value falls back to the default (UTC, 04:00)
- * and says so in the log; a typo must never stop a server or turn the trial day into a different day without anyone knowing.
+ * The trial day's zone and reset hour (P32), from {@code config/cobbletowers-trials.json}: {@code {"zone":
+ * "America/New_York", "reset_hour": 4}}. A missing file or bad value falls back to UTC 04:00 and says so, so a typo
+ * cannot silently change the trial day.
  */
 public final class TrialConfig {
 

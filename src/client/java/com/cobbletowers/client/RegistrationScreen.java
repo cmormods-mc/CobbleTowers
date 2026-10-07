@@ -11,9 +11,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * The party chooser (P18): everything the player owns, party and boxes, with the ones they have chosen to
- * register marked. Holds nothing of its own -- each click sends a {@link PlayActionPayload} and the
- * server answers with a fresh {@link RegistrationStatePayload}.
+ * The party chooser (P18): everything the player owns, with the chosen Pokemon marked. Each click sends a {@link
+ * PlayActionPayload} and the server answers with a fresh {@link RegistrationStatePayload}.
  */
 public final class RegistrationScreen extends TowerScreen {
 
@@ -38,7 +37,10 @@ public final class RegistrationScreen extends TowerScreen {
         buildWidgets();
     }
 
-    /** How many rows fit above the controls: eight on a tall window, fewer on a short one, so the buttons are never off the screen. */
+    /**
+     * How many rows fit above the controls: eight on a tall window, fewer on a short one, so the buttons are never
+     * off the screen.
+     */
     private int perPage() {
         return Math.max(3, Math.min(MAX_PER_PAGE, (height - 98) / 22));
     }

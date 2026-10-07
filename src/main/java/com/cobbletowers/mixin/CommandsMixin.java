@@ -10,8 +10,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Every command a player types goes through {@code Commands.performCommand}; Fabric has no event before it, so this is
- * where a command is refused inside the tower (see {@link TowerCommandGuard}).
+ * Every typed command goes through {@code Commands.performCommand} and Fabric has no event before it, so commands are
+ * refused inside the tower here (see {@link TowerCommandGuard}).
  */
 @Mixin(Commands.class)
 public abstract class CommandsMixin {

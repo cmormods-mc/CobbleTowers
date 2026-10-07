@@ -16,38 +16,22 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * The one place a participant's state changes.
- *
- * <p>P1 built the three axes -- connection, combat, membership -- arguing that one enum could not
- * hold "knocked out and disconnected", and that a reconnect should restore what a player left rather
- * than guess. Nothing drove them until now: every participant in every run so far has been
- * {@code joined()} and stayed that way. This phase uses them, and adds no new state to do it.
- *
- * <p>Split the way the transition service is split: {@link #changed} and {@link #revivedAtIntermission}
- * are pure -- a run in, a run out -- and the {@code update} pair around them is the thin part that
- * writes. A rule cannot then come to mean two different things in the two handlers that trigger it,
- * and every rule here is testable without a server.
+ * The one place a participant's state changes along the three axes (connection, combat, membership). {@link #changed}
+ * and {@link #revivedAtIntermission} are pure; the {@code update} pair writes.
  */
 public final class ParticipantService {
 
     /**
-     * How long a disconnected player keeps their place, and their run keeps its cell.
-     *
-     * <p>Five minutes: long enough to survive a crash or a client restart on a modded pack, short
-     * enough that one person logging off does not hold a cell and its chunk tickets all evening.
-     * TDS #36 asks for this to be configurable; there is still no config system, and a named constant
-     * with one caller is better than inventing one for a single number.
+     * How long a disconnected player keeps their place and their run its cell. TDS #36 wants it configurable; there
+     * is no config system yet.
      */
     public static final long RECONNECT_WINDOW_MILLIS = 5L * 60 * 1000;
 
     private ParticipantService() {}
 
     /**
-     * The run with one participant's state changed, or the same run when nothing moved.
-     *
-     * <p>Pure. {@code change} is applied to the participant's state and nowhere else, so a rule about
-     * the connection axis cannot reach the combat axis by accident -- the reason the axes were
-     * separated in the first place.
+     * The run with one participant's state changed, or the same run when nothing moved. Pure; the change touches only
+     * that axis.
      */
     public static PersistedRun changed(PersistedRun run, UUID playerId, UnaryOperator<ParticipantState> change,
                                        long now) {
@@ -97,24 +81,14 @@ public final class ParticipantService {
                 && participant.state().connection() == ConnectionState.ONLINE);
     }
 
-    /**
-     * The floor is over and its spectators are promised the next intermission.
-     *
-     * <p>A separate state from spectating, because they are separate facts: one says they are out of
-     * a floor being fought, the other that the floor is done and they are coming back. A player who
-     * reads "you rejoin at the intermission" is reading this one.
-     */
+    /** The floor is over and its spectators are promised the next intermission; separate from spectating. */
     public static PersistedRun pendingRevival(PersistedRun run, long now) {
         return mapStates(run, now, state -> state.isSpectating() ? state.revivePending() : state);
     }
 
     /**
-     * Everyone waiting on an intermission returns to the fight.
-     *
-     * <p>Spectators are taken too, not only those already marked pending: a player who was knocked
-     * out during a floor that then ended some other way -- a boss aborted, a run resumed -- is owed
-     * the same intermission as everybody else, and the alternative is a participant stuck spectating
-     * a floor that is no longer being fought.
+     * Everyone waiting on an intermission returns to the fight, spectators included, so nobody stays stuck spectating
+     * a finished floor.
      */
     public static PersistedRun revivedAtIntermission(PersistedRun run, long now) {
         return mapStates(run, now, state -> state.isSpectating() || state.combat() == CombatState.REVIVE_PENDING

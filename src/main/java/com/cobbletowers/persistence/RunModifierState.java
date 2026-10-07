@@ -11,22 +11,13 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * Everything a run has drafted: what it carries, what it has locked in, and the draft it is sitting
- * at right now.
- *
- * <p>One record rather than three fields on {@link PersistedRun}, for the reason {@link
- * RunCheckpoint} gives about its own two: these change together and only ever make sense together.
- * A run that accumulated a modifier without closing the draft that awarded it is not a state worth
- * being able to write.
- *
- * <p>Ids, never definitions (TDS §10). They are re-resolved against loaded content on read.
- *
- * @param accumulated in draft order, one entry per copy held -- a modifier taken twice appears twice
- * @param lockedIn    the subset made permanent by a Lock-In Draft (TDS #57); each also appears in
- *                    {@code accumulated}, because locking a modifier in does not stop it being held
- * @param draft       the draft on the table, open or just resolved
- * @param relics      the relics found so far (P34), in the order found; they sum into the run's effects like
- *                    modifiers but are not challenges, so they never count toward a Lock-In
+ * Everything a run has drafted: carried, locked in and the open draft. One record because they only make sense
+ * together. Ids, re-resolved on read (TDS section 10).
+ * @param accumulated in draft order, one per copy held
+ * @param lockedIn the subset made permanent by a Lock-In Draft (TDS #57); also in {@code accumulated}
+ * @param draft the draft on the table, open or just resolved
+ * @param relics relics found so far (P34); they sum into effects but are not challenges, so never count toward a
+ *     Lock-In
  */
 public record RunModifierState(
         List<ResourceLocation> accumulated,
@@ -83,13 +74,7 @@ public record RunModifierState(
         return new RunModifierState(next, lockedIn, draft, relics);
     }
 
-    /**
-     * The same state with {@code modifier} made permanent.
-     *
-     * <p>Locking in something already locked in is a no-op rather than an error: the draft that
-     * offers them draws from what the run holds, and a second lock-in on the same modifier is a
-     * reachable, harmless outcome that should not fail a floor.
-     */
+    /** The same state with {@code modifier} made permanent; locking in an already locked-in modifier is a no-op. */
     public RunModifierState lockingIn(ResourceLocation modifier) {
         if (lockedIn.contains(modifier)) return this;
         List<ResourceLocation> next = new ArrayList<>(lockedIn);

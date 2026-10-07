@@ -9,12 +9,9 @@ import java.util.OptionalInt;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * One file of the mastery track (P37), authored in {@code data/<namespace>/cobbletowers/mastery_tracks/*.json} or in the server owner's
- * {@code config/cobbletowers-tracks.json}. Files for the same tower (and the ones for every tower) merge into one track; see
- * {@code MasteryTrack.merge}. A level may be any number from 1 up, so a track can run past the 30 achievements the shipped towers have.
- *
- * <p>A level's {@code perks} <b>set</b> a perk's value from that level upward (they are rates applied where they are used, not claimed);
- * its {@code grants} and {@code cosmetics} are claimed by the player, in the season track's grant format.
+ * One file of the mastery track (P37), from {@code data/<namespace>/cobbletowers/mastery_tracks/*.json} or the
+ * owner's {@code config/cobbletowers-tracks.json}. Files merge into one track (see {@code MasteryTrack.merge}). A
+ * level's {@code perks} set a perk value from that level up; its {@code grants} and {@code cosmetics} are claimed.
  */
 public record MasteryTrackDefinition(Optional<ResourceLocation> tower, List<Rank> ranks, List<Level> levels) {
 

@@ -14,13 +14,10 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * The cosmetics settings (P36d), read at server start from {@code config/cobbletowers-cosmetics.json}:
- *
- * <pre>{"chat_tags": true, "on_earn_commands": ["lp user {player} permission set cobbletowers.cosmetic.{id} true"]}</pre>
- *
- * {@code chat_tags} switches the title and club tag in front of names on or off. {@code on_earn_commands} are console commands run once for each
- * cosmetic that is newly earned, with {@code {player}}, {@code {uuid}}, {@code {id}}, {@code {kind}} and {@code {season}} filled in; the list is empty by
- * default, so nothing runs until a server adds some. A bad file falls back to the defaults and says so in the log.
+ * Cosmetics settings (P36d) from {@code config/cobbletowers-cosmetics.json}: {@code chat_tags} toggles the title and
+ * club tag before names; {@code on_earn_commands} are console commands run per newly earned cosmetic, with {@code
+ * {player}}, {@code {uuid}}, {@code {id}}, {@code {kind}} and {@code {season}} filled in. A bad file falls back to
+ * defaults and says so.
  */
 public final class CosmeticsConfig {
 
