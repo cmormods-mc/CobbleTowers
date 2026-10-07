@@ -12,6 +12,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import org.lwjgl.glfw.GLFW;
@@ -87,9 +88,16 @@ public final class RentalPackScreen extends TowerScreen {
     /** The card under the pointer, which stays chosen while the pointer is anywhere over it (a lifted card covers its neighbours). */
     private int hoverIndex = -1;
 
+    private boolean slicePlayed;
+    private boolean spillPlayed;
+
     private void enter(Stage next) {
         stage = next;
         hoverIndex = -1;
+        if (next == Stage.TEARING) {
+            slicePlayed = false;
+            spillPlayed = false;
+        }
         stageStart = now();
         if (next == Stage.REVEALING) {
             revealOrder.clear();
@@ -279,6 +287,18 @@ public final class RentalPackScreen extends TowerScreen {
 
     /** Moves the stage along: a tear ends in the reveal, a reveal in the choice. */
     private void advance(long t) {
+        if (stage == Stage.TEARING && TowerUiSettings.motion) {
+            // One cue as the blade goes through and one as the light spills out: once each, never from the render loop's own state.
+            float p = Math.min(1f, (t - stageStart) / (float) PackReveal.TEAR_MS);
+            if (!slicePlayed && p >= CUT_START) {
+                slicePlayed = true;
+                if (TowerUiSettings.sounds) Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.SHEEP_SHEAR, 1.4f, 0.6f));
+            }
+            if (!spillPlayed && p >= SPILL_START) {
+                spillPlayed = true;
+                if (TowerUiSettings.sounds) Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.AMETHYST_BLOCK_CHIME, 1.1f, 0.7f));
+            }
+        }
         if (stage == Stage.TEARING && (!animations || !TowerUiSettings.motion || t - stageStart >= PackReveal.TEAR_MS)) {
             enter(animations && TowerUiSettings.motion ? Stage.REVEALING : Stage.CHOOSING);
             refreshButtons();
@@ -334,45 +354,84 @@ public final class RentalPackScreen extends TowerScreen {
         if (!message.isEmpty()) graphics.drawCenteredString(font, message, width / 2, height - 46, TowerUi.DANGER);
     }
 
+    // ---- the pack, and the blade that opens it -------------------------------------------------------------------------------
+
+    private static final ResourceLocation PACK_TOP = ResourceLocation.fromNamespaceAndPath("cobbletowers", "textures/gui/byzantine/pack_top.png");
+    private static final ResourceLocation PACK_BODY = ResourceLocation.fromNamespaceAndPath("cobbletowers", "textures/gui/byzantine/pack_body.png");
+    private static final int PACK_W = 112;
+    private static final int PACK_TOP_H = 16;
+    private static final int PACK_BODY_H = 144;
+    /** The cut, as fractions of the tear: a held breath, the blade across, then the foil strip lifts away on a spill of light. */
+    private static final float CUT_START = 0.25f;
+    private static final float CUT_END = 0.55f;
+    private static final float SPILL_START = 0.55f;
+
+    private static int white(float alpha) {
+        return (Math.max(0, Math.min(255, Math.round(alpha * 255))) << 24) | 0xFFFFFF;
+    }
+
+    private static float clamp01(float v) {
+        return Math.max(0f, Math.min(1f, v));
+    }
+
     private void drawPack(GuiGraphics graphics, long t) {
-        int w = 110;
-        int h = 150;
-        int x = (width - w) / 2;
-        int y = (height - h) / 2 - 6;
-        // The sealed pack keeps its secret: gold for the God Pack, otherwise one neutral blue, never the best card colour.
+        int x = (width - PACK_W) / 2;
+        int y = (height - (PACK_TOP_H + PACK_BODY_H)) / 2 + 6;
+        int cutY = y + PACK_TOP_H;
+        // The sealed pack keeps its secret: gold for the God Pack, otherwise one neutral colour, never the best card colour.
         int glow = godPack() ? TowerUi.BRONZE_LIGHT : TowerUi.BURGUNDY;
         long since = t - stageStart;
-        // The pack glows more as it tears: the suspense.
-        float tear = stage == Stage.TEARING ? Math.min(1f, since / (float) PackReveal.TEAR_MS) : 0f;
-        int pulse = (int) (0x30 + 0x30 * Math.sin(t / 300.0) + 0x60 * tear);
+        float p = stage == Stage.TEARING ? clamp01(since / (float) PackReveal.TEAR_MS) : 0f;
+        int pulse = (int) (0x30 + 0x30 * Math.sin(TowerUiSettings.motion ? t / 300.0 : 0) + 0x40 * p);
         for (int g = 9; g >= 3; g -= 3) {
-            graphics.fill(x - g, y - g, x + w + g, y + h + g, (Math.min(255, pulse / (g / 2)) << 24) | (glow & 0xFFFFFF));
+            graphics.fill(x - g, y - g, x + PACK_W + g, y + PACK_TOP_H + PACK_BODY_H + g, (Math.min(255, pulse / (g / 2)) << 24) | (glow & 0xFFFFFF));
         }
-        // A wooden rental case: oak planks in a dark frame, banded in bronze, with a hasp over the seam.
-        PixelUi.frame(graphics, PixelUi.Frame.DARK, x - 3, y - 3, w + 6, h + 6);
-        PixelUi.tile(graphics, PixelUi.Tile.OAK, x + 3, y + 3, w - 6, h - 6);
-        graphics.fillGradient(x + 3, y + 3, x + w - 3, y + h - 3, 0x22000000, 0x66000000);
-        for (int band : new int[] {x + w / 5 - 3, x + w * 4 / 5 - 3}) {
-            graphics.fill(band, y + 3, band + 7, y + h - 3, 0xFF211510);
-            graphics.fill(band + 1, y + 3, band + 6, y + h - 3, TowerUi.BRONZE);
-            graphics.fill(band + 2, y + 3, band + 3, y + h - 3, TowerUi.BRONZE_LIGHT);
+        graphics.blit(PACK_BODY, x, cutY, PACK_W, PACK_BODY_H, 0f, 0f, PACK_W, PACK_BODY_H, PACK_W, PACK_BODY_H);
+        // No drop shadow: dark lettering on a gold plate turns to a smudge with one (the cards' lettering has none either).
+        String label = "RENTAL PACK";
+        graphics.drawString(font, label, x + (PACK_W - font.width(label)) / 2, cutY + 112 + 5, TowerUi.INK, false);
+
+        float blade = clamp01((p - CUT_START) / (CUT_END - CUT_START));
+        float lift = clamp01((p - SPILL_START) / (1f - SPILL_START));
+        float easeLift = 1f - (1f - lift) * (1f - lift) * (1f - lift);
+        int rise = Math.round(easeLift * 30);
+
+        float fade = 1f - clamp01((p - 0.9f) / 0.1f);         // the light settles as the cards take over
+        boolean cutting = stage == Stage.TEARING && p >= CUT_START;
+
+        // The light that spills out of the opening, behind the strip: a bright gap, and a beam that is hottest in the middle.
+        if (cutting && lift > 0f) {
+            float strength = (1f - 0.35f * lift) * fade;
+            graphics.fill(x + 3, cutY - rise, x + PACK_W - 3, cutY, white(strength));
+            int top = cutY - rise - Math.round(easeLift * 78);
+            graphics.fillGradient(x + 3, top, x + PACK_W - 3, cutY - rise, white(0f), white(0.5f * strength));
+            graphics.fillGradient(x + 30, top + 10, x + PACK_W - 30, cutY - rise, white(0f), white(0.8f * strength));
         }
-        graphics.fill(x + 3, y + h / 2 - 2, x + w - 3, y + h / 2 + 2, 0xFF211510);
-        graphics.fill(x + 3, y + h / 2 - 1, x + w - 3, y + h / 2 + 1, TowerUi.BRONZE);
-        int cx = x + w / 2;
-        int cy = y + h / 2;
-        graphics.fill(cx - 9, cy - 9, cx + 9, cy + 9, 0xFF211510);
-        graphics.fill(cx - 7, cy - 7, cx + 7, cy + 7, TowerUi.BRONZE);
-        graphics.fill(cx - 4, cy - 4, cx + 4, cy + 4, 0xFF40291E);
-        if (stage == Stage.TEARING) {
-            // The seal splits: a bright seam widening across the middle.
-            int seam = (int) (tear * 14);
-            graphics.fill(x + 3, cy - seam, x + w - 3, cy + seam, 0xCCE3BD7F);
+
+        // The foil strip: in place until the blade has passed, then it tilts and lifts away, fading as it goes.
+        graphics.pose().pushPose();
+        if (lift > 0f) {
+            graphics.pose().translate(x + PACK_W, cutY, 0);
+            graphics.pose().mulPose(new org.joml.Quaternionf().rotateZ(-easeLift * 0.2f));
+            graphics.pose().translate(-(x + PACK_W), -cutY - rise, 0);
         }
-        graphics.fill(cx - 36, y + 7, cx + 36, y + 20, 0xCC211510);
-        graphics.drawCenteredString(font, "RENTAL PACK", cx, y + 10, TowerUi.TEXT);
-        graphics.fill(cx - 18, y + h - 20, cx + 18, y + h - 8, 0xCC211510);
-        graphics.drawCenteredString(font, (pack + 1) + " / " + draft.packs().size(), cx, y + h - 17, TowerUi.BRONZE_LIGHT);
+        float stripAlpha = lift < 0.65f ? 1f : 1f - (lift - 0.65f) / 0.35f;
+        graphics.setColor(1f, 1f, 1f, stripAlpha);
+        graphics.blit(PACK_TOP, x, y, PACK_W, PACK_TOP_H, 0f, 0f, PACK_W, PACK_TOP_H, PACK_W, PACK_TOP_H);
+        graphics.setColor(1f, 1f, 1f, 1f);
+        graphics.pose().popPose();
+
+        if (!cutting) return;
+        // The slice of light: the seam stays lit behind the blade, with a soft halo, and the tip flares.
+        int tip = x + Math.round(PACK_W * (1f - (1f - blade) * (1f - blade)));
+        graphics.fill(x, cutY - 1, tip, cutY + 1, white(fade));
+        graphics.fill(x, cutY - 3, tip, cutY + 3, white(0.45f * fade));
+        graphics.fill(x, cutY - 6, tip, cutY + 6, white(0.2f * fade));
+        if (blade < 1f) {
+            graphics.fill(tip - 14, cutY - 1, tip + 2, cutY + 1, white(1f));
+            graphics.fill(tip - 1, cutY - 7, tip + 1, cutY + 7, white(0.9f));
+            graphics.fill(tip - 3, cutY - 2, tip + 3, cutY + 2, white(0.8f));
+        }
     }
 
     private void drawCards(GuiGraphics graphics, int mouseX, int mouseY, long t) {

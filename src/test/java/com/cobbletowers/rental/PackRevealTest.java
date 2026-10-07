@@ -78,5 +78,10 @@ class PackRevealTest {
         assertEquals(0f, PackReveal.shake("common", 100));
         assertEquals(0f, PackReveal.shake("legendary", -1));
         assertEquals(0f, PackReveal.tearShake(PackReveal.TEAR_MS + 1, 5));
+        // a held breath, then still for the cut: it trembles early in the tear and not once the blade is through
+        boolean trembles = false;
+        for (long ms = 5; ms < PackReveal.TEAR_MS * 0.25; ms += 5) trembles |= PackReveal.tearShake(ms, 3) != 0f;
+        assertTrue(trembles);
+        assertEquals(0f, PackReveal.tearShake((long) (PackReveal.TEAR_MS * 0.5), 5));
     }
 }

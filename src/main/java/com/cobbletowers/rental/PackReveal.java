@@ -14,7 +14,7 @@ import java.util.List;
 public final class PackReveal {
 
     /** The pack shaking before it tears open. */
-    public static final long TEAR_MS = 900;
+    public static final long TEAR_MS = 1300;
     /** The pause between one card turning over and the next. */
     public static final long CARD_GAP_MS = 450;
     /** How long one card takes to turn over. */
@@ -107,8 +107,11 @@ public final class PackReveal {
     /** The shaking of the sealed pack as it tears, in pixels, growing then stopping: a held breath. */
     public static float tearShake(long ms, int topRank) {
         if (ms < 0 || ms > TEAR_MS) return 0f;
-        float grow = Math.min(1f, ms / (float) TEAR_MS);
-        float amplitude = 1.5f + grow * (2f + topRank);
+        // The pack trembles for the first part of the tear (a held breath) and is still when the blade goes through.
+        float hold = TEAR_MS * 0.28f;
+        if (ms > hold) return 0f;
+        float grow = ms / hold;
+        float amplitude = 1f + grow * (1.5f + 0.5f * topRank);
         return (float) Math.sin(ms * 0.11) * amplitude;
     }
 }

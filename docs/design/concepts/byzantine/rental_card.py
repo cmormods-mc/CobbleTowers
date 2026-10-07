@@ -324,24 +324,8 @@ def seal(cv, x, y):
         cv.px(x + dx, y + dy, g.GOLD_L)
 
 
-def back_layer():
-    """The face-down side: the same border (gold and lapis, so nothing about the rarity shows), a lapis lozenge field, and a mosaic
-    pokeball inside a gold circle whose rim is its outline."""
-    spec = RARITY['rare']
-    metal = spec['metal']
-    cv = Sprite(CW, CH)
-    for y in range(CH):
-        for x in range(CW):
-            cv.px(x, y, g.PARCH, False)
-    border_layer(cv, spec)
-    ax0, ay0, aw = 8, 8, CW - 16
-    inner_h = CH - 16
-    for y in range(inner_h):
-        for x in range(aw):
-            d = abs((x % 16) - 7.5) + abs((y % 16) - 7.5)
-            c = g.LAPIS[0] if d > 7 else g.GOLD_D if d > 6 else g.LAPIS[1] if d > 3 else g.RUBY[2] if (x + y) % 2 else g.RUBY[0]
-            cv.px(ax0 + x, ay0 + y, c, True)
-    cx, cy, big = ax0 + aw // 2, ay0 + inner_h // 2, 30
+def draw_pokeball(cv, cx, cy, big, metal):
+    """A mosaic pokeball inside a gold circle of radius {big}; the circle's rim is the ball's outline."""
     r = random.Random(9)
     ball = big - 5
     pearl = [rgb('#F4EBD3'), rgb('#DCCFAE'), rgb('#B9AA86')]
@@ -376,6 +360,27 @@ def back_layer():
                     if d < 1.6:
                         c = g.RUBY[0]
             cv.px(x, y, c, True)
+
+
+
+def back_layer():
+    """The face-down side: the same border (gold and lapis, so nothing about the rarity shows), a lapis lozenge field, and a mosaic
+    pokeball inside a gold circle whose rim is its outline."""
+    spec = RARITY['rare']
+    metal = spec['metal']
+    cv = Sprite(CW, CH)
+    for y in range(CH):
+        for x in range(CW):
+            cv.px(x, y, g.PARCH, False)
+    border_layer(cv, spec)
+    ax0, ay0, aw = 8, 8, CW - 16
+    inner_h = CH - 16
+    for y in range(inner_h):
+        for x in range(aw):
+            d = abs((x % 16) - 7.5) + abs((y % 16) - 7.5)
+            c = g.LAPIS[0] if d > 7 else g.GOLD_D if d > 6 else g.LAPIS[1] if d > 3 else g.RUBY[2] if (x + y) % 2 else g.RUBY[0]
+            cv.px(ax0 + x, ay0 + y, c, True)
+    draw_pokeball(cv, ax0 + aw // 2, ay0 + inner_h // 2, 30, metal)
     return cv
 
 
@@ -529,6 +534,67 @@ def inspect_mockup():
     return cv
 
 
+PACK_W, PACK_TOP, PACK_BODY = 112, 16, 144
+
+
+def foil(cv, x0, x1, y0, y1, dim=0.0):
+    """Gold foil crimping: vertical ridges in three golds, a bright first row, a shadowed last one."""
+    ridge = [GLD[0], GLD[1], GLD[2], GLD[1]]
+    for y in range(y0, y1):
+        for x in range(x0, x1):
+            c = ridge[x % 4]
+            if y == y0:
+                c = GLD[3]
+            elif y == y0 + 1:
+                c = mix(c, (255, 255, 255), 0.35)
+            elif y >= y1 - 2:
+                c = mix(c, (0, 0, 0), 0.30)
+            cv.px(x, y, mix(c, (0, 0, 0), dim), True)
+
+
+def pack_top():
+    """The strip that is cut off the top of the pack."""
+    cv = Sprite(PACK_W, PACK_TOP)
+    foil(cv, 0, PACK_W, 0, PACK_TOP)
+    for x in range(PACK_W):
+        cv.px(x, PACK_TOP - 1, g.OUTLINE, True)
+    for y in range(PACK_TOP):
+        cv.px(0, y, g.OUTLINE, True)
+        cv.px(PACK_W - 1, y, g.OUTLINE, True)
+    return cv
+
+
+def pack_body():
+    """The sealed pack below the cut: a foil lip, a gold and lapis border, a lapis night field and a gold medallion with a pokeball.
+    It says nothing about what is inside; the nameplate is lettered live."""
+    spec = RARITY['rare']
+    metal = spec['metal']
+    cv = Sprite(PACK_W, PACK_BODY)
+    band = band_tile(metal, spec['ground'], spec['motif'], spec['gem'])
+    night = [rgb('#0F1E56'), rgb('#17307C'), rgb('#0A1440')]
+    tiles = [g.tile_field(night, g.GOLD_L, s) for s in (1, 2, 3, 4)]
+    for y in range(PACK_BODY):
+        for x in range(PACK_W):
+            tt = tiles[((x // 16) + (y // 16) * 3) % 4]
+            cv.px(x, y, tuple(int(v) for v in tt.img[y % 16, x % 16]), True)
+    g.put_rgb(cv, strip(band, PACK_W - 16, 'bottom'), 8, PACK_BODY - 8)
+    g.put_rgb(cv, strip(band, PACK_BODY - 12, 'left'), 0, 4)
+    g.put_rgb(cv, strip(band, PACK_BODY - 12, 'right'), PACK_W - 8, 4)
+    for cx_, cy_, k in ((0, PACK_BODY - 8, 1), (PACK_W - 8, PACK_BODY - 8, 2)):
+        g.put_rgb(cv, np.rot90(corner(metal, spec['gem']), k), cx_, cy_)
+    foil(cv, 0, PACK_W, 0, 4)
+    draw_pokeball(cv, PACK_W // 2, 62, 32, metal)
+    px0, py0, pw, ph = 12, 112, PACK_W - 24, 17
+    cv.fill(px0 - 1, py0 - 1, px0 + pw + 1, py0 + ph + 1, g.OUTLINE)
+    cv.fill(px0, py0, px0 + pw, py0 + ph, metal[1])
+    cv.fill(px0, py0, px0 + pw, py0 + 1, metal[0])
+    cv.fill(px0, py0 + ph - 1, px0 + pw, py0 + ph, metal[2])
+    for sx in (px0 + 2, px0 + pw - 4):
+        cv.fill(sx, py0 + 2, sx + 2, py0 + 4, metal[2])
+        cv.fill(sx, py0 + ph - 4, sx + 2, py0 + ph - 2, metal[2])
+    return cv
+
+
 TYPE_ORDER = list(TYPE_COLORS)
 SHAPE_ORDER = ['physical', 'special', 'status']
 
@@ -547,6 +613,8 @@ def bake(out):
         save_rgba(frame_layer(rarity), out / f'frame_{rarity}.png')
         save_rgba(field_layer(rarity), out / f'field_{rarity}.png')
     save_rgba(back_layer(), out / 'back.png')
+    save_rgba(pack_top(), out / 'pack_top.png')
+    save_rgba(pack_body(), out / 'pack_body.png')
     atlas = Sprite(7 * len(TYPE_ORDER), 7 * len(SHAPE_ORDER))
     for row, shape in enumerate(SHAPE_ORDER):
         for col, name in enumerate(TYPE_ORDER):
@@ -557,11 +625,22 @@ def bake(out):
     save_rgba(badge, out / 'seal.png')
     (out / 'README.md').write_text(
         'Baked by docs/design/concepts/byzantine/rental_card.py (`python rental_card.py --bake`). Rental card layers: `field_<rarity>.png`\n'
-        '(96x62, nimbus centred at 48,31), `frame_<rarity>.png` (112x160, window left clear), `back.png`, `gems.png` (7x7 gems: rows\n'
+        '(96x62, nimbus centred at 48,31), `frame_<rarity>.png` (112x160, window left clear), `back.png`, `pack_top.png` (112x16, the strip that is cut off) and `pack_body.png` (112x144), `gems.png` (7x7 gems: rows\n'
         f'{SHAPE_ORDER}, columns {TYPE_ORDER}), `seal.png`.\n', encoding='utf-8')
 
 
+def pack_preview():
+    cv = Canvas(PACK_W * 2 + 40, PACK_TOP + PACK_BODY + 24)
+    oak_backdrop(cv)
+    cv.paste(pack_top(), 14, 10)
+    cv.paste(pack_body(), 14, 10 + PACK_TOP)
+    cv.paste(pack_top(), PACK_W + 26, 0)
+    cv.paste(pack_body(), PACK_W + 26, 10 + PACK_TOP)
+    return cv
+
+
 if __name__ == '__main__':
+    render(pack_preview(), 4).save(HERE / 'rental_pack_art.png')
     if '--bake' in sys.argv:
         bake(g.ROOT / 'src/main/resources/assets/cobbletowers/textures/gui/byzantine')
         print('baked')

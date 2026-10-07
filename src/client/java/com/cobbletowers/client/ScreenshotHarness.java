@@ -303,8 +303,10 @@ public final class ScreenshotHarness {
         });
         add(700, "pack table", () -> featureShot("rental_01_pack"));
         add(0, "tear", () -> screen[0].mouseClicked(screen[0].width / 2.0, screen[0].height / 2.0, 0));
-        add(600, "tearing", () -> featureShot("rental_02_tearing"));
-        add(1500, "revealing early", () -> featureShot("rental_03_reveal_early"));
+        for (String frame : new String[] {"a", "b", "c", "d", "e", "f", "g"}) {
+            add(140, "tearing " + frame, () -> featureShot("rental_02" + frame + "_tear"));
+        }
+        add(900, "revealing early", () -> featureShot("rental_03_reveal_early"));
         add(1300, "revealing late", () -> featureShot("rental_04_reveal_late"));
         add(2000, "choosing", () -> featureShot("rental_05_choosing"));
         add(0, "pick two", () -> {
