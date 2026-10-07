@@ -184,9 +184,24 @@ public final class SeasonProgressService {
         return step <= store.of(player, season).steps() || store.claimed(player, claimKey(season, step));
     }
 
-    /** Why a claim is refused, or empty when {@code step} of the running season can be claimed now. */
+    /**
+     * How many reached steps of the season in view (the running one, or during the off-season the one that just ended) are still unclaimed.
+     * Steps stay claimable through the off-season and lapse when the next season starts.
+     */
+    public static int unclaimed(MinecraftServer server, UUID player) {
+        Optional<Integer> season = Seasons.viewNumber();
+        Optional<SeasonTrackDefinition> track = SeasonTrackRegistry.current();
+        if (season.isEmpty() || track.isEmpty()) return 0;
+        TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
+        int reached = track.get().stepsFor(store.of(player, season.get()).total());
+        int open = 0;
+        for (int step = 1; step <= reached; step++) if (!claimed(store, player, season.get(), step)) open++;
+        return open;
+    }
+
+    /** Why a claim is refused, or empty when {@code step} of the season in view can be claimed now. */
     public static Optional<String> refusal(MinecraftServer server, UUID player, int step) {
-        Optional<Integer> season = Seasons.activeNumber();
+        Optional<Integer> season = Seasons.viewNumber();
         Optional<SeasonTrackDefinition> track = SeasonTrackRegistry.current();
         if (season.isEmpty() || track.isEmpty()) return Optional.of("There is no season track running.");
         TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
@@ -204,7 +219,7 @@ public final class SeasonProgressService {
     public static Optional<String> claim(MinecraftServer server, UUID player, int step) {
         Optional<String> refused = refusal(server, player, step);
         if (refused.isPresent()) return refused;
-        int season = Seasons.activeNumber().orElseThrow();
+        int season = Seasons.viewNumber().orElseThrow();
         SeasonTrackDefinition track = SeasonTrackRegistry.current().orElseThrow();
         TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
         Runnable afterwards = grantStep(server, player, season, track, step);
@@ -300,7 +315,17 @@ public final class SeasonProgressService {
     public static Optional<String> loginLine(MinecraftServer server, UUID player) {
         Optional<Integer> season = Seasons.activeNumber();
         Optional<SeasonTrackDefinition> track = SeasonTrackRegistry.current();
-        if (season.isEmpty() || track.isEmpty()) return Optional.empty();
+        if (track.isEmpty()) return Optional.empty();
+        int waiting = unclaimed(server, player);
+        if (season.isEmpty()) {
+            // Off-season: the ended season's unclaimed steps are the only thing worth saying, and they lapse when the next season starts.
+            return waiting == 0 || Seasons.viewNumber().isEmpty() ? Optional.empty()
+                    : Optional.of("Season " + Seasons.viewNumber().get() + " ended: " + waiting + " track reward(s) to claim before the next season begins "
+                            + "(Progress tab in the Tower Hall).");
+        }
+        if (waiting > 0) {
+            return Optional.of("Season " + season.get() + " track: " + waiting + " reward(s) ready to claim (Progress tab in the Tower Hall).");
+        }
         Progress progress = TowerSeasonProgressStore.get(server).of(player, season.get());
         int reached = track.get().stepsFor(progress.total());
         if (reached >= track.get().stepCount()) return Optional.of("Season track: complete.");

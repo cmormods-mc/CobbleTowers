@@ -115,7 +115,7 @@ public final class TrackService {
         String rank = MasteryPerks.rankOf(tower, level);
         int next = MasteryPerks.nextRankAt(tower, level);
         String subtitle = next < 0 ? rank + " (top rank)" : rank + ", " + (next - level) + " to " + MasteryPerks.rankOf(tower, next);
-        return new Lane(true, "Mastery", subtitle, level, 0, 0, 0L, nodes);
+        return new Lane(true, "Mastery", subtitle, level, 0, 0, 0L, "", nodes);
     }
 
     /** A rank starting here, and any perk this level adds. */
@@ -134,30 +134,48 @@ public final class TrackService {
     static Lane seasonLane(MinecraftServer server, ServerPlayer player) {
         Optional<SeasonSchedule.Phase> phase = Seasons.phase();
         Optional<SeasonTrackDefinition> found = SeasonTrackRegistry.current();
-        if (phase.isEmpty() || !(phase.get() instanceof SeasonSchedule.Active active) || found.isEmpty()) return Lane.NONE;
+        if (phase.isEmpty() || found.isEmpty()) return Lane.NONE;
+        // The running season, or during the off-season the one that just ended (its unclaimed steps stay claimable until the next begins).
+        int number;
+        boolean ended;
+        long daysLeft;
+        if (phase.get() instanceof SeasonSchedule.Active active) {
+            number = active.number();
+            ended = false;
+            daysLeft = active.daysLeft();
+        } else if (phase.get() instanceof SeasonSchedule.OffSeason off) {
+            number = off.endedNumber();
+            ended = true;
+            daysLeft = off.daysLeft();
+        } else {
+            return Lane.NONE;
+        }
+        int waiting = SeasonProgressService.unclaimed(server, player.getUUID());
+        if (ended && waiting == 0) return Lane.NONE;
         SeasonTrackDefinition track = found.get();
         TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
-        int total = store.of(player.getUUID(), active.number()).total();
+        int total = store.of(player.getUUID(), number).total();
         int reached = track.stepsFor(total);
-        Map<String, String> tokens = Map.of("season", String.valueOf(active.number()), "season_name", Seasons.definition(active.number()).name());
+        Map<String, String> tokens = Map.of("season", String.valueOf(number), "season_name", Seasons.definition(number).name());
         List<Node> nodes = new ArrayList<>();
         for (SeasonTrackDefinition.Step step : track.steps()) {
             int state = step.number() > reached ? TrackStatePayload.LOCKED
-                    : SeasonProgressService.claimed(store, player.getUUID(), active.number(), step.number())
+                    : SeasonProgressService.claimed(store, player.getUUID(), number, step.number())
                             ? TrackStatePayload.CLAIMED : TrackStatePayload.CLAIMABLE;
             List<SeasonTrackDefinition.Grant> expanded = new ArrayList<>();
             for (SeasonTrackDefinition.Grant grant : step.grants()) {
                 expanded.add(new SeasonTrackDefinition.Grant(Cosmetics.expand(grant.item(), tokens), grant.amount(), "",
                         Cosmetics.expand(grant.label(), tokens)));
             }
-            nodes.add(new Node(step.number(), state, iconOf(expanded), SeasonProgressService.describeStep(step, active.number()), ""));
+            nodes.add(new Node(step.number(), state, iconOf(expanded), SeasonProgressService.describeStep(step, number), ""));
             if (nodes.size() >= MAX_NODES) break;
         }
-        boolean done = reached >= track.stepCount();
+        boolean done = ended || reached >= track.stepCount();
         int into = done ? 0 : total - reached * track.stepCost();
-        long endsIn = TrialService.millisUntilReset() + Math.max(0L, active.daysLeft() - 1) * 86_400_000L;
-        return new Lane(true, "Season " + active.number() + ": " + Seasons.definition(active.number()).name(),
-                total + " points", reached, into, done ? 0 : track.stepCost(), endsIn, nodes);
+        long left = TrialService.millisUntilReset() + Math.max(0L, daysLeft - 1) * 86_400_000L;
+        String title = "Season " + number + ": " + Seasons.definition(number).name() + (ended ? " (ended)" : "");
+        String subtitle = ended ? waiting + " reward(s) to claim before the next season" : total + " points";
+        return new Lane(true, title, subtitle, reached, into, done ? 0 : track.stepCost(), left, ended ? "CLAIM WITHIN" : "ENDS IN", nodes);
     }
 
     // ---- words ------------------------------------------------------------------------------------

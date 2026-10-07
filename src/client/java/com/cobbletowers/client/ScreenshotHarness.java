@@ -210,8 +210,8 @@ public final class ScreenshotHarness {
         }
         long endsIn = (11L * 24 + 3) * 3_600_000L;
         return new com.cobbletowers.network.TrackStatePayload(false, towers, tide.toString(),
-                new com.cobbletowers.network.TrackStatePayload.Lane(true, "Mastery", "Silver, 2 to Gold", 8, 0, 0, 0L, mastery),
-                new com.cobbletowers.network.TrackStatePayload.Lane(true, "Season 1: The Rising Tide", "300 points", 4, 40, 75, endsIn, season), "");
+                new com.cobbletowers.network.TrackStatePayload.Lane(true, "Mastery", "Silver, 2 to Gold", 8, 0, 0, 0L, "", mastery),
+                new com.cobbletowers.network.TrackStatePayload.Lane(true, "Season 1: The Rising Tide", "300 points", 4, 40, 75, endsIn, "ENDS IN", season), "");
     }
 
     // ---- modifier selection stages (the approved oak treatment) -----------------------------------------------------------

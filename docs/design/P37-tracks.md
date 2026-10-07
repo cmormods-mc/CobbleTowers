@@ -80,10 +80,8 @@ or a server-owner config file can add to them, and the mastery track can run pas
   store with the **same deterministic grant id** the auto path used (`addIfAbsent`), saves the claim key **after queueing** (replay-safe: a crash
   between them re-queues harmlessly), then delivers.
 - Server revalidates every claim: node exists, reached (points / mastery level), not yet claimed, season still active for season nodes
-  **As written in code (2026-10-07 review): season nodes can be claimed only while that season is running; unclaimed steps are lost when it
-  ends.** The earlier idea (claimable through the off-season, until the next season's first point replaces the stored progress) is NOT built;
-  it needs the season lane and `SeasonProgressService.refusal/claim` to use `Seasons.viewNumber()` and an off-season display. Owner decision
-  (see the release checklist).
+  **Decided 2026-10-07: unclaimed season steps stay claimable through the off-season** (the 7 days after a season ends) and lapse when the next
+  season starts. The season lane shows the ended season with a "CLAIM WITHIN" countdown while anything is unclaimed, and the login line reminds the player.
 - Mastery grants are claimable at any time after the level is reached (they do not expire).
 - Claim all is one action that claims every reached, unclaimed node in order.
 - Main-thread rule: the action handler hops to the server thread; nothing keeps a `ServerPlayer`, only the UUID.

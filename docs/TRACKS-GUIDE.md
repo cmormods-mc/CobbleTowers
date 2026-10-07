@@ -85,7 +85,7 @@ Grants may use `{season}`, `{season_name}` and `{color}`. Cosmetics are season c
 ## Claiming rules
 
 - A node can be claimed once it is reached and not yet claimed. The server checks all of it; the client only asks.
-- Season nodes can be claimed while that season runs. Mastery rewards never expire.
+- Season nodes can be claimed while that season runs and through the off-season after it; they lapse when the next season starts. Mastery rewards never expire.
 - Season steps that were granted before claiming existed count as claimed, so nobody receives them twice.
 
 A ready-to-copy example pack is in `docs/addon-example/`.

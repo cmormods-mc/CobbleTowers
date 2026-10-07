@@ -27,7 +27,7 @@ the checklist in `docs/RELEASE-CHECKLIST.md` is ticked.
 **Behaviour changes to check before you upgrade** **(unverified)**
 - **Season track steps now need a claim.** Before, a reached step was granted at once. Set `"auto_claim": true` in `config/cobbletowers-tracks.json` to keep the old behaviour.
   Steps already granted under the old rules count as claimed, so nobody receives them twice.
-- **Unclaimed season steps are lost when the season ends** (as built). The checklist asks whether that should change before release.
+- **Unclaimed season steps stay claimable through the off-season** (the 7 days after a season ends) and are lost when the next season starts. The Progress tab and the login message remind players.
 - **Mastery levels have claimable rewards.** The shipped track gives CobbleDollars at the rank levels (50, 100, 150, 200, 300, 400, 750 at levels 1, 5, 10, 15, 20, 25, 30). These are
   untuned; edit `mastery_tracks/default.json` in a datapack or override them in the config.
 - The final payout of a run is now larger when the party held modifiers (see the risk bonus above). If you tuned reward amounts against the old payouts, expect them to rise.
@@ -41,7 +41,7 @@ the checklist in `docs/RELEASE-CHECKLIST.md` is ticked.
 **Requirements**
 - Deploy the CobbleTowers jar together with the AscensionLib jar (rentals are locked out of upgrades only when both are present).
 - Rewards that name CobblemonCards items need that mod on the server; a missing item is skipped with one log line, so players get less and nothing breaks.
-- The build version string is still `0.21.0-p21-warm-pixel-preview`; the logs cannot tell you which build is running until it is bumped (checklist).
+- The build version is now `0.22.0-p37-tracks` (it had never been bumped from `0.21.0-p21-warm-pixel-preview`), so a server log shows which jar is running. Bump it for every deployed build.
 
 ## For addon authors
 - Mastery tracks and season steps are data. Add rewards and ranks with a datapack; files merge, they do not replace. See `docs/TRACKS-GUIDE.md`.

@@ -59,14 +59,16 @@ public record TrackStatePayload(boolean autoClaim, List<Tower> towers, String se
      * A lane. {@code current} is the level (mastery) or the step reached (season); {@code into}/{@code need} are the progress toward the next
      * node (0/0 when there is no next one); {@code endsInMillis} is the time left in a season lane, 0 for the mastery lane.
      */
-    public record Lane(boolean present, String title, String subtitle, int current, int into, int need, long endsInMillis, List<Node> nodes) {
+    public record Lane(boolean present, String title, String subtitle, int current, int into, int need, long endsInMillis,
+                       String timerLabel, List<Node> nodes) {
         public Lane {
             title = clip(title, 128);
             subtitle = clip(subtitle, 256);
+            timerLabel = clip(timerLabel, 32);
             nodes = nodes.size() > 512 ? List.copyOf(nodes.subList(0, 512)) : List.copyOf(nodes);
         }
 
-        public static final Lane NONE = new Lane(false, "", "", 0, 0, 0, 0, List.of());
+        public static final Lane NONE = new Lane(false, "", "", 0, 0, 0, 0, "", List.of());
         private static final StreamCodec<RegistryFriendlyByteBuf, List<Node>> NODES = Node.CODEC.apply(ByteBufCodecs.list(512));
         static final StreamCodec<RegistryFriendlyByteBuf, Lane> CODEC = StreamCodec.of(
                 (buf, lane) -> {
@@ -77,10 +79,11 @@ public record TrackStatePayload(boolean autoClaim, List<Tower> towers, String se
                     buf.writeVarInt(lane.into());
                     buf.writeVarInt(lane.need());
                     buf.writeVarLong(lane.endsInMillis());
+                    buf.writeUtf(lane.timerLabel(), 32);
                     NODES.encode(buf, lane.nodes());
                 },
                 buf -> new Lane(buf.readBoolean(), buf.readUtf(128), buf.readUtf(256), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                        buf.readVarLong(), NODES.decode(buf)));
+                        buf.readVarLong(), buf.readUtf(32), NODES.decode(buf)));
     }
 
     public static final Type<TrackStatePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath("cobbletowers", "tracks_v1"));

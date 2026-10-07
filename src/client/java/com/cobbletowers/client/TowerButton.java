@@ -15,6 +15,8 @@ public final class TowerButton extends Button {
     private boolean dark;
     /** A {@link MenuIcons} key drawn at the left of the label, or null. */
     private String icon;
+    /** Draw only the icon (no label); the label stays as the button's narration. */
+    private boolean iconOnly;
     /** Draws the active tab face while staying a normal widget; set with active=false for "you are here". */
     public boolean selected;
     private long pressedAt;
@@ -41,6 +43,11 @@ public final class TowerButton extends Button {
         PixelUi.frame(g, frame, x, y, w, h);
         if (hover && dark) PixelUi.brackets(g, x + 2, y + 2, w - 4, h - 4, TowerUi.BRONZE_LIGHT);
         int color = selected || (active && !dark) || hover ? TowerUi.TEXT : active ? TowerUi.MUTED : 0xFF8F7A5E;
+        if (iconOnly && icon != null) {
+            // A square control with a picture and no words (the track's tower arrows): the picture is centred and nudged down when pressed.
+            MenuIcons.draw(g, icon, x + (w - 16) / 2, y + (h - 16) / 2 + (pressed ? 1 : 0), 16);
+            return;
+        }
         int left = x, span = w;
         String full = getMessage().getString();
         // The label comes first: the icon is drawn only when the whole label still fits beside it.
@@ -59,15 +66,16 @@ public final class TowerButton extends Button {
     }
     public static final class Builder extends Button.Builder {
         private final Component label; private final OnPress action;
-        private int x,y,w=150,h=20; private Tooltip tooltip; private boolean dark; private String icon;
+        private int x,y,w=150,h=20; private Tooltip tooltip; private boolean dark; private String icon; private boolean iconOnly;
         public Builder dark(){this.dark=true;return this;}
         public Builder icon(String icon){this.icon=icon;return this;}
+        public Builder iconOnly(String icon){this.icon=icon;this.iconOnly=true;return this;}
         Builder(Component label, OnPress action) { super(label, action); this.label=label;this.action=action; }
         @Override public Builder pos(int x,int y) {this.x=x;this.y=y;return this;}
         @Override public Builder size(int w,int h) {this.w=w;this.h=h;return this;}
         @Override public Builder width(int w) {this.w=w;return this;}
         @Override public Builder bounds(int x,int y,int w,int h) {return pos(x,y).size(w,h);}
         @Override public Builder tooltip(Tooltip tip) {this.tooltip=tip;return this;}
-        @Override public TowerButton build() {var button=new TowerButton(x,y,w,h,label,action);button.dark=dark;button.icon=icon;if(tooltip!=null)button.setTooltip(tooltip);return button;}
+        @Override public TowerButton build() {var button=new TowerButton(x,y,w,h,label,action);button.dark=dark;button.icon=icon;button.iconOnly=iconOnly;if(tooltip!=null)button.setTooltip(tooltip);return button;}
     }
 }

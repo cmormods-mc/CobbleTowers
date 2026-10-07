@@ -61,8 +61,8 @@ public final class TowerHallScreen extends TowerMenuScreen {
         if(kind.equals("mastery")&&tracks.towers().size()>1){
             int index=0;for(int i=0;i<tracks.towers().size();i++)if(tracks.towers().get(i).id().toString().equals(tracks.selectedTower()))index=i;
             final int at=index,count=tracks.towers().size();
-            addRenderableWidget(TowerButton.builder(Component.literal("<"),b->{kept.remove("mastery");requestTracks(tracks.towers().get(Math.floorMod(at-1,count)).id().toString());}).pos(x+w-34,y+7).size(14,14).dark().build());
-            addRenderableWidget(TowerButton.builder(Component.literal(">"),b->{kept.remove("mastery");requestTracks(tracks.towers().get((at+1)%count).id().toString());}).pos(x+w-18,y+7).size(14,14).dark().build());
+            addRenderableWidget(TowerButton.builder(Component.literal("<"),b->{kept.remove("mastery");requestTracks(tracks.towers().get(Math.floorMod(at-1,count)).id().toString());}).pos(x+w-38,y+6).size(16,16).dark().iconOnly("left").build());
+            addRenderableWidget(TowerButton.builder(Component.literal(">"),b->{kept.remove("mastery");requestTracks(tracks.towers().get((at+1)%count).id().toString());}).pos(x+w-20,y+6).size(16,16).dark().iconOnly("right").build());
         }
         double[] saved=kept.get(kind);
         strip=new TrackStrip(x,y+51,w,50,kind,data,saved==null?-1:(int)saved[0],saved==null?Double.NaN:saved[1],()->{});
@@ -178,7 +178,7 @@ public final class TowerHallScreen extends TowerMenuScreen {
             long left=tracksAt+data.endsInMillis()-System.currentTimeMillis();
             int bx=x+w-92;
             PixelUi.frame(g,PixelUi.Frame.BUTTON,bx,y+3,88,22);
-            TowerUi.label(g,font,"ENDS IN",bx+6,y+5,78,TowerUi.MUTED);
+            TowerUi.label(g,font,data.timerLabel().isEmpty()?"ENDS IN":data.timerLabel(),bx+6,y+5,78,TowerUi.MUTED);
             TowerUi.label(g,font,timeLeft(left),bx+6,y+14,78,TowerUi.TEXT);
             if(data.need()>0){
                 int bar=w-16-right;g.fill(x+8,y+24,x+8+bar,y+26,0xFF211510);

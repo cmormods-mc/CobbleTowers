@@ -228,6 +228,14 @@ final class MenuIcons {
                 p.r(7, 5, 8, 6, RL); p.r(4, 10, 4, 10, R); p.r(11, 10, 11, 10, R);
                 p.outline();
             }
+            case "left" -> {
+                p.line(10, 3, 5, 8, BL); p.line(10, 4, 5, 9, BL); p.line(5, 8, 10, 13, BL); p.line(5, 7, 10, 12, BL);
+                p.outline();
+            }
+            case "right" -> {
+                p.line(5, 3, 10, 8, BL); p.line(5, 4, 10, 9, BL); p.line(10, 8, 5, 13, BL); p.line(10, 7, 5, 12, BL);
+                p.outline();
+            }
             case "coin" -> {
                 p.disc(8, 8, 5.5, Y); p.ring(8, 8, 4, 0.5, BL); p.r(7, 5, 8, 11, B);
                 p.outline();

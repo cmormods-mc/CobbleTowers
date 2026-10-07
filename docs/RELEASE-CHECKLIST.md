@@ -14,7 +14,7 @@ Ordered by how badly each blocks a release.
   - [ ] Commit and push.
 - [ ] **A human plays a full tower.** Everything so far is headless bots and screenshots. At least two real players, one full tower, watching: animation feel at a real frame rate, mouse feel, audio, the vendor villager, the HUD, worn armor, the Shift tooltip, the Test Tower chambers.
 - [ ] **Cell allocation on the server thread.** A burst of allocate/abandon cycles (hundreds a minute) backs up chunk saves until the 60 s watchdog kills the server, and even ordinary run starts and ends stall a tick for 0.3 to 0.9 s. Options, costs and a recommended order are in `docs/design/cell-allocation-async.md`; the owner picks (three questions at its end).
-- [ ] **Bump the build version string** (`0.21.0-p21-warm-pixel-preview`, never bumped) so a log says which jar runs.
+- [x] **Bump the build version string** (2026-10-07: `0.22.0-p37-tracks`; it had never been bumped). Bump it again for every build you deploy, so a log says which jar runs.
 - [ ] **Deployment.** Ship the CobbleTowers jar and the AscensionLib jar (with the rental craft lock) together; find out where the real server gets AscensionLib (source: `L:\Codex\CobbleAscend\ascensionlib`). Keep the CobbleRaids version label pinned (`0.8.162-admin-helper`).
 
 ### P37 code review (2026-10-07, read-only plus small fixes, still uncompiled)
@@ -26,8 +26,7 @@ than their codec limit would have thrown in `writeUtf` and broken the packet (no
 merged-track cache with arbitrary tower ids (now only known towers); no request throttle on track actions (150 ms per player).
 
 Still open, for the owner or the next session:
-- [ ] **Decide: do unclaimed season steps lapse when the season ends?** Today they do (a battle pass that loses rewards is punishing). Recommended:
-  allow claims through the off-season (needs the season lane to show the ended season, and a login/season-end reminder to claim).
+- [x] **Unclaimed season steps** stay claimable through the off-season (owner decision 2026-10-07) and lapse when the next season starts; the season lane shows "CLAIM WITHIN" and the login line reminds the player. Still to check live (needs a season to end on the rig: pin the day with `TrialService.overrideDay`).
 - [ ] `claimAll` saves world data once per claim (`checkpoint` = `getDataStorage().save()`, twice per claim); claiming 30 steps = ~60 saves.
   Batch it: queue all, then one checkpoint.
 - [ ] `SeasonTrackRegistry.current()` rebuilds the merged track on every call and `claimAll` calls it several times per step; cache the result
