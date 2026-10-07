@@ -31,6 +31,13 @@ public final class RentalStorage {
     /** Set on every rental, saved with the Pokemon, and never set on a player's own. */
     public static final String TAG = "cobbletowers_rental";
 
+    /**
+     * AscensionLib's contract for a lent Pokemon: a persistent boolean with this name locks every upgrade (the upgrade screen, and any
+     * craft). Set on every rental so a player cannot spend materials on a Pokemon that is deleted when the run ends. Plain NBT, so
+     * neither mod needs the other.
+     */
+    public static final String ASCENSION_LOCK_TAG = "ascensionlib_craft_locked";
+
     private RentalStorage() {}
 
     public static boolean isRental(Pokemon pokemon) {
@@ -57,6 +64,7 @@ public final class RentalStorage {
         }
         pokemon.setOriginalTrainer("Battle Tower");
         pokemon.getPersistentData().putBoolean(TAG, true);
+        pokemon.getPersistentData().putBoolean(ASCENSION_LOCK_TAG, true);
         pokemon.heal();
         return pokemon;
     }

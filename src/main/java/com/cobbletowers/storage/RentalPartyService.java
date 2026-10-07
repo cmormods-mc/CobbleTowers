@@ -125,6 +125,9 @@ public final class RentalPartyService {
                 PartyJournalService.restoreNow(server, player);
                 return Lock.FAILED;
             }
+            // Once they are in the party (the library only profiles an owned Pokemon): the rentals fight with ascension profiles like
+            // any other Pokemon, instead of with none while their opponents have them.
+            com.cobbletowers.economy.AscensionLibGrants.profileRentals(rentals, team.sets());
         } catch (RuntimeException ex) {
             TowerLog.error("Lending {} their rental team failed; putting everything back", player.getUUID(), ex);
             PartyJournalService.restoreNow(server, player);
