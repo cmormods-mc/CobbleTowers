@@ -1,6 +1,14 @@
 package com.cobbletowers.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.GameRenderer;
+import org.joml.Matrix4f;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -29,26 +37,44 @@ public final class PixelUi {
 
     private PixelUi() {}
 
-    /** A nine-slice frame. Tiny boxes shrink the corners instead of overlapping them. */
+    /**
+     * A nine-slice frame, drawn as ONE batched draw call (nine quads in one buffer) with the same shader and texture state a vanilla
+     * {@code blit} sets, instead of nine separate blits: a menu is dozens of frames, and a draw call each is what made it slow.
+     * Tiny boxes shrink the corners instead of overlapping them.
+     */
     public static void frame(GuiGraphics g, Frame frame, int x, int y, int w, int h) {
         if (w < 2 || h < 2) return;
         int c = Math.max(1, Math.min(CORNER, Math.min(w, h) / 2));
         int mw = w - 2 * c, mh = h - 2 * c;
-        var t = frame.texture;
         int m = SRC - 2 * SRC_CORNER;
-        g.blit(t, x, y, c, c, 0, 0, SRC_CORNER, SRC_CORNER, SRC, SRC);
-        g.blit(t, x + w - c, y, c, c, SRC - SRC_CORNER, 0, SRC_CORNER, SRC_CORNER, SRC, SRC);
-        g.blit(t, x, y + h - c, c, c, 0, SRC - SRC_CORNER, SRC_CORNER, SRC_CORNER, SRC, SRC);
-        g.blit(t, x + w - c, y + h - c, c, c, SRC - SRC_CORNER, SRC - SRC_CORNER, SRC_CORNER, SRC_CORNER, SRC, SRC);
+        RenderSystem.setShaderTexture(0, frame.texture);
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        Matrix4f matrix = g.pose().last().pose();
+        BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        int far = SRC - SRC_CORNER;
+        quad(b, matrix, x, y, c, c, 0, 0, SRC_CORNER, SRC_CORNER);
+        quad(b, matrix, x + w - c, y, c, c, far, 0, SRC_CORNER, SRC_CORNER);
+        quad(b, matrix, x, y + h - c, c, c, 0, far, SRC_CORNER, SRC_CORNER);
+        quad(b, matrix, x + w - c, y + h - c, c, c, far, far, SRC_CORNER, SRC_CORNER);
         if (mw > 0) {
-            g.blit(t, x + c, y, mw, c, SRC_CORNER, 0, m, SRC_CORNER, SRC, SRC);
-            g.blit(t, x + c, y + h - c, mw, c, SRC_CORNER, SRC - SRC_CORNER, m, SRC_CORNER, SRC, SRC);
+            quad(b, matrix, x + c, y, mw, c, SRC_CORNER, 0, m, SRC_CORNER);
+            quad(b, matrix, x + c, y + h - c, mw, c, SRC_CORNER, far, m, SRC_CORNER);
         }
         if (mh > 0) {
-            g.blit(t, x, y + c, c, mh, 0, SRC_CORNER, SRC_CORNER, m, SRC, SRC);
-            g.blit(t, x + w - c, y + c, c, mh, SRC - SRC_CORNER, SRC_CORNER, SRC_CORNER, m, SRC, SRC);
+            quad(b, matrix, x, y + c, c, mh, 0, SRC_CORNER, SRC_CORNER, m);
+            quad(b, matrix, x + w - c, y + c, c, mh, far, SRC_CORNER, SRC_CORNER, m);
         }
-        if (mw > 0 && mh > 0) g.blit(t, x + c, y + c, mw, mh, SRC_CORNER, SRC_CORNER, m, m, SRC, SRC);
+        if (mw > 0 && mh > 0) quad(b, matrix, x + c, y + c, mw, mh, SRC_CORNER, SRC_CORNER, m, m);
+        BufferUploader.drawWithShader(b.buildOrThrow());
+    }
+
+    /** One textured quad: a box of {@code w}x{@code h} GUI pixels showing the {@code uw}x{@code vh} texel region at ({@code u},{@code v}). */
+    private static void quad(BufferBuilder b, Matrix4f matrix, int x, int y, int w, int h, int u, int v, int uw, int vh) {
+        float u1 = u / (float) SRC, u2 = (u + uw) / (float) SRC, v1 = v / (float) SRC, v2 = (v + vh) / (float) SRC;
+        b.addVertex(matrix, x, y, 0).setUv(u1, v1);
+        b.addVertex(matrix, x, y + h, 0).setUv(u1, v2);
+        b.addVertex(matrix, x + w, y + h, 0).setUv(u2, v2);
+        b.addVertex(matrix, x + w, y, 0).setUv(u2, v1);
     }
 
     /** A 16x16 material tiled across a box at integer positions (never stretched). */

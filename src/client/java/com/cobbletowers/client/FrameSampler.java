@@ -59,7 +59,7 @@ final class FrameSampler {
         if (installed) return;
         installed = true;
         ScreenEvents.AFTER_INIT.register((minecraft, screen, width, height) -> {
-            if (!(screen instanceof TowerHallScreen)) return;
+            if (!(screen instanceof TowerScreen)) return;
             ScreenEvents.beforeRender(screen).register((s, g, mouseX, mouseY, delta) -> renderStart = System.nanoTime());
             ScreenEvents.afterRender(screen).register((s, g, mouseX, mouseY, delta) -> {
                 if (!recording) return;
@@ -123,6 +123,12 @@ final class FrameSampler {
             TowerUiSettings.glow = false;
             hover(null);
         });
+        adder.add(0, "Modifier screen", () -> {
+            TowerUiSettings.glow = true;
+            Minecraft.getInstance().setScreen(ScreenshotHarness.sampleModifierScreen());
+        });
+        adder.add(2200, "Modifier revealed", () -> {});
+        phase(adder, "modifier_idle", () -> hover(null));
         adder.add(0, "Building blocks", FrameSampler::microbench);
         adder.add(0, "Report", () -> report(directory));
     }
@@ -176,6 +182,10 @@ final class FrameSampler {
         bench(out, "tooltip (3 lines)", g, () -> g.renderTooltip(minecraft.font, List.of(
                 net.minecraft.network.chat.Component.literal("Tideforge Tower"), net.minecraft.network.chat.Component.literal("A sea tower"),
                 net.minecraft.network.chat.Component.literal("10 floors")).stream().map(c -> c.getVisualOrderText()).toList(), 100, 100));
+        for (String theme : new String[] {"weather:raindance", "enemy:tough", "constraint:no_switch", "reward_up:hoard", "encounter:crowd"}) {
+            bench(out, "modifier scene " + theme + " 90x100", g, () -> ModifierScene.draw(g, 20, 20, 90, 100, theme, 1400, true, 26));
+        }
+        bench(out, "one line of text (UI font)", g, () -> g.drawString(TowerFonts.get(), "Tideforge Tower", 20, 20, 0xFFFFFFFF, false));
         bench(out, "one line of text", g, () -> g.drawString(minecraft.font, "Tideforge Tower", 20, 20, 0xFFFFFFFF, false));
         blocks = out.toString();
     }

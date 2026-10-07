@@ -211,6 +211,15 @@ public final class ScreenshotHarness {
                 ByzantineCardFace.SHAPES.get((h / 7) % ByzantineCardFace.SHAPES.size()));
     }
 
+    /** A four-card modifier offer in the real screen, for frame-time sampling. */
+    static IntermissionScreen sampleModifierScreen() {
+        return new IntermissionScreen(sampleOffer(1, -1, -1, List.of(
+                sampleCard("a", "Downpour", 1, 1, "weather:raindance", "Risk: moderate"),
+                sampleCard("b", "Colossus", 0, 2, "enemy:tough", "Risk: severe"),
+                sampleCard("c", "Locked Doors", 0, 1, "constraint:no_switch", "Risk: moderate"),
+                sampleCard("d", "Hazard Pay", 2, 0, "reward_up:hoard", "Risk: minor"))));
+    }
+
     private static void modifierScript() {
         var offer = List.of(
                 sampleCard("downpour", "Downpour", 1, 1, "weather:raindance", "Risk: moderate / Stack limit: 1",

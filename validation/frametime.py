@@ -9,8 +9,9 @@ import client_launch
 
 root = Path(__file__).resolve().parent.parent
 scale = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 3
-sodium = 'sodium' in sys.argv
-tag = f'scale{scale}-{"sodium" if sodium else "vanilla"}'
+iris = 'iris' in sys.argv
+sodium = 'sodium' in sys.argv or iris
+tag = f'scale{scale}-{"iris" if iris else "sodium" if sodium else "vanilla"}'
 game = root / 'build' / f'frametime-client-{tag}'
 out = root / 'build' / f'frametime-{tag}'
 if game.exists():
@@ -27,6 +28,14 @@ for pattern in ('fabric-api-*.jar', 'Cobblemon-*.jar', 'CobbleRaids-*.jar'):
 if sodium:
     source = client_launch.first(rig.parent / 'testserver-full' / 'mods-disabled-for-testing', 'sodium-fabric-*.jar')
     shutil.copy2(source, mods / source.name)
+if iris:
+    source = client_launch.first(rig.parent / 'testserver-full' / 'mods-disabled-for-testing', 'iris-fabric-*.jar')
+    shutil.copy2(source, mods / source.name)
+    pack = Path(os.environ['SHADERPACK'])
+    (game / 'shaderpacks').mkdir()
+    shutil.copy2(pack, game / 'shaderpacks' / pack.name)
+    (game / 'config').mkdir(exist_ok=True)
+    (game / 'config' / 'iris.properties').write_text(f'shaderPack={pack.name}\nenableShaders=true\n', encoding='utf-8')
 jars = [p for p in (root / 'build' / 'libs').glob('CobbleTowers-*.jar') if not p.name.endswith('-sources.jar')]
 jar = max(jars, key=lambda p: p.stat().st_mtime)
 shutil.copy2(jar, mods / jar.name)

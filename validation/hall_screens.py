@@ -8,9 +8,10 @@ import client_launch
 
 root=Path(__file__).resolve().parent.parent
 scale=int(sys.argv[1]) if len(sys.argv)>1 else 3
+iris='iris' in sys.argv
 mode=sys.argv[2] if len(sys.argv)>2 and sys.argv[2] in ('features','all','modifier') else 'hall'
-game=root/'build'/f'{mode}-client-scale{scale}'
-shots=root/'build'/f'{mode}-screens-scale{scale}'
+game=root/'build'/f'{mode}-client-scale{scale}{"-iris" if iris else ""}'
+shots=root/'build'/f'{mode}-screens-scale{scale}{"-iris" if iris else ""}'
 game.mkdir(parents=True,exist_ok=True)
 shots.mkdir(parents=True,exist_ok=True)
 mods=game/'mods'
@@ -19,6 +20,15 @@ rig=Path('L:/claude-cobbleraids-work/testserver-181')
 for pattern in ('fabric-api-*.jar','Cobblemon-*.jar','CobbleRaids-*.jar'):
     source=client_launch.first(rig/'mods',pattern)
     shutil.copy2(source,mods/source.name)
+if iris:
+    for pattern in ('iris-fabric-*.jar','sodium-fabric-*.jar'):
+        source=client_launch.first(rig.parent/'testserver-full'/'mods-disabled-for-testing',pattern)
+        shutil.copy2(source,mods/source.name)
+    pack=Path(os.environ['SHADERPACK'])
+    (game/'shaderpacks').mkdir(exist_ok=True)
+    shutil.copy2(pack,game/'shaderpacks'/pack.name)
+    (game/'config').mkdir(exist_ok=True)
+    (game/'config'/'iris.properties').write_text(f'shaderPack={pack.name}\nenableShaders=true\n',encoding='utf-8')
 jar=root/'build/libs/CobbleTowers-0.21.0-p21-warm-pixel-preview.jar'
 for prior in mods.glob('CobbleTowers-*.jar'):
     if prior.name != jar.name:
