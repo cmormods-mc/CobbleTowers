@@ -1,5 +1,6 @@
 package com.cobbletowers.trial;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.definition.TrialPoolDefinition;
 import com.cobbletowers.definition.TrialPoolDefinition.Kind;
 import java.time.LocalDate;
@@ -26,7 +27,7 @@ public final class TrialSchedule {
 
         /** The board this trial's results live on, as a tower-style id: {@code cobbletowers:daily/2026-10-05}. */
         public ResourceLocation boardId() {
-            return ResourceLocation.fromNamespaceAndPath("cobbletowers", kind.name().toLowerCase(Locale.ROOT) + "/" + periodKey);
+            return CobbleTowers.id(kind.name().toLowerCase(Locale.ROOT) + "/" + periodKey);
         }
 
         /** A name for messages. */

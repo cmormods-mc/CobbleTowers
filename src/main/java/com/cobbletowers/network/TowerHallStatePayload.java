@@ -1,5 +1,6 @@
 package com.cobbletowers.network;
 
+import com.cobbletowers.CobbleTowers;
 import java.util.List;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -29,7 +30,7 @@ public record TowerHallStatePayload(List<Destination> towers, List<Trial> trials
     }
 
     public static final Type<TowerHallStatePayload> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath("cobbletowers", "tower_hall_v1"));
+            CobbleTowers.id("tower_hall_v1"));
     public static final StreamCodec<RegistryFriendlyByteBuf, TowerHallStatePayload> STREAM_CODEC = StreamCodec.composite(
             Destination.CODEC.apply(ByteBufCodecs.list(256)), TowerHallStatePayload::towers,
             Trial.CODEC.apply(ByteBufCodecs.list(2)), TowerHallStatePayload::trials,

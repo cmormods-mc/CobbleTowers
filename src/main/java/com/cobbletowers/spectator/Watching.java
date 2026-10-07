@@ -1,5 +1,6 @@
 package com.cobbletowers.spectator;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.instance.TowerDimension;
 import com.cobbletowers.persistence.PersistedRun;
@@ -25,6 +26,10 @@ public final class Watching {
     private record Watch(UUID runId, UUID targetId, GameType previousMode) {}
 
     private static final Map<UUID, Watch> WATCHES = new ConcurrentHashMap<>();
+
+    static {
+        ServerState.onStop(WATCHES::clear);
+    }
 
     private Watching() {}
 

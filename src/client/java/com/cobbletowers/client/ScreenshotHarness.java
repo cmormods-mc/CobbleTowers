@@ -1,5 +1,6 @@
 package com.cobbletowers.client;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.definition.RentalSetDefinition;
 import com.cobbletowers.network.IntermissionStatePayload;
 import com.cobbletowers.network.MasteryScreenPayload;
@@ -148,7 +149,7 @@ public final class ScreenshotHarness {
     private static void hallScript() {
         var towers = List.of("tideforge", "rootvale", "duskvale", "neutral", "custom_arena").stream()
                 .map(id -> new com.cobbletowers.network.TowerHallStatePayload.Destination(
-                        ResourceLocation.fromNamespaceAndPath("cobbletowers", id),
+                        CobbleTowers.id(id),
                         id.equals("custom_arena") ? "A custom datapack arena with a long title" : id.substring(0,1).toUpperCase()+id.substring(1)+" Tower", 10, 2, true)).toList();
         var play = new PlayStatePayload(List.of(), PlayStatePayload.Lobby.none(), List.of(50,50,50), "", false);
         var trial = new com.cobbletowers.network.TowerHallStatePayload.Trial("daily", "sample",
@@ -182,8 +183,8 @@ public final class ScreenshotHarness {
      * Stand-in battle tracks for pictures: a mastery lane at level 8 (35 levels) and a season lane at step 4 of 12.
      */
     private static com.cobbletowers.network.TrackStatePayload sampleTracks() {
-        var tide = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge");
-        var root = ResourceLocation.fromNamespaceAndPath("cobbletowers", "rootvale");
+        var tide = CobbleTowers.id("tideforge");
+        var root = CobbleTowers.id("rootvale");
         var towers = List.of(new com.cobbletowers.network.TrackStatePayload.Tower(tide, "Tideforge Tower", 8),
                 new com.cobbletowers.network.TrackStatePayload.Tower(root, "Rootvale Tower", 3));
         var mastery = new java.util.ArrayList<com.cobbletowers.network.TrackStatePayload.Node>();
@@ -218,7 +219,7 @@ public final class ScreenshotHarness {
     // -----------------------------------------------------------
 
     private static IntermissionStatePayload.Card sampleCard(String id, String name, int votes, int risk, String theme, String... lines) {
-        return new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", id), name, votes, risk, theme, List.of(lines));
+        return new IntermissionStatePayload.Card(CobbleTowers.id(id), name, votes, risk, theme, List.of(lines));
     }
 
     private static IntermissionStatePayload sampleOffer(int state, int chosen, int myVote, List<IntermissionStatePayload.Card> cards) {
@@ -399,12 +400,12 @@ public final class ScreenshotHarness {
 
         // The play screen as a host in Rental mode, then as a plain host; and the mastery screen with the real
         // achievements.
-        ResourceLocation tower = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge");
+        ResourceLocation tower = CobbleTowers.id("tideforge");
         List<PlayStatePayload.Tower> towers = List.of(
-                new PlayStatePayload.Tower(ResourceLocation.fromNamespaceAndPath("cobbletowers", "neutral"), "Challenger Tower"),
+                new PlayStatePayload.Tower(CobbleTowers.id("neutral"), "Challenger Tower"),
                 new PlayStatePayload.Tower(tower, "Tideforge Spire"),
-                new PlayStatePayload.Tower(ResourceLocation.fromNamespaceAndPath("cobbletowers", "rootvale"), "Rootvale Keep"),
-                new PlayStatePayload.Tower(ResourceLocation.fromNamespaceAndPath("cobbletowers", "duskvale"), "Duskvale Crypt"));
+                new PlayStatePayload.Tower(CobbleTowers.id("rootvale"), "Rootvale Keep"),
+                new PlayStatePayload.Tower(CobbleTowers.id("duskvale"), "Duskvale Crypt"));
         List<String> ids = List.of("hardcore", "level_cap_50", "monotype", "rental", "solo_gauntlet", "underdog");
         List<String> names = List.of("Hardcore", "Level Cap 50", "Monotype", "Rental Draft", "Solo Gauntlet", "Underdog");
         add(0, "play screen, rental", () -> Minecraft.getInstance().setScreen(new PlayScreen(new PlayStatePayload(towers,
@@ -419,18 +420,18 @@ public final class ScreenshotHarness {
         add(600, "play screen plain shot", () -> featureShot("play_02_no_lobby"));
         add(0, "intermission", () -> Minecraft.getInstance().setScreen(new IntermissionScreen(new IntermissionStatePayload(3,
                 new IntermissionStatePayload.Draft(1, List.of(
-                        new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "downpour"), "Downpour", 2, 1, "weather:raindance", List.of("Risk: moderate / Stack limit: 1","Battle weather: raindance","No direct reward amount multiplier.")),
-                        new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "grassy_terrain"), "Grassy Terrain", 0, 0, "terrain:grassyterrain", List.of("Risk: minor / Stack limit: 1","Battle terrain: grassyterrain","No direct reward amount multiplier.")),
-                        new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "empty_pockets"), "Empty Pockets", 1, 1, "reward_down", List.of("Risk: moderate / Stack limit: 1","Eligible reward amounts: x0.50"))),
+                        new IntermissionStatePayload.Card(CobbleTowers.id("downpour"), "Downpour", 2, 1, "weather:raindance", List.of("Risk: moderate / Stack limit: 1","Battle weather: raindance","No direct reward amount multiplier.")),
+                        new IntermissionStatePayload.Card(CobbleTowers.id("grassy_terrain"), "Grassy Terrain", 0, 0, "terrain:grassyterrain", List.of("Risk: minor / Stack limit: 1","Battle terrain: grassyterrain","No direct reward amount multiplier.")),
+                        new IntermissionStatePayload.Card(CobbleTowers.id("empty_pockets"), "Empty Pockets", 1, 1, "reward_down", List.of("Risk: moderate / Stack limit: 1","Eligible reward amounts: x0.50"))),
                         -1, 0),
                 List.of(new IntermissionStatePayload.Member("Alex", true, false), new IntermissionStatePayload.Member("Sam", false, false),
                         new IntermissionStatePayload.Member("Jo", false, true)),
                 27, "Vote for the next floor's modifier.", true))));
         add(600, "intermission shot", () -> featureShot("intermission_01_draft"));
         add(0, "vendor", () -> Minecraft.getInstance().setScreen(new VendorScreen(new VendorCatalogPayload(18450, List.of(
-                new VendorCatalogPayload.Entry(ResourceLocation.fromNamespaceAndPath("cobbletowers", "heal_party"), "Heal the party", 1200, 3),
-                new VendorCatalogPayload.Entry(ResourceLocation.fromNamespaceAndPath("cobbletowers", "revive_one"), "Revive one Pokemon", 2500, 2),
-                new VendorCatalogPayload.Entry(ResourceLocation.fromNamespaceAndPath("cobbletowers", "reroll_draft"), "Reroll the modifier draft", 900, 1)),
+                new VendorCatalogPayload.Entry(CobbleTowers.id("heal_party"), "Heal the party", 1200, 3),
+                new VendorCatalogPayload.Entry(CobbleTowers.id("revive_one"), "Revive one Pokemon", 2500, 2),
+                new VendorCatalogPayload.Entry(CobbleTowers.id("reroll_draft"), "Reroll the modifier draft", 900, 1)),
                 List.of(new VendorCatalogPayload.Teammate(new java.util.UUID(0, 1), "Alex", true),
                         new VendorCatalogPayload.Teammate(new java.util.UUID(0, 2), "Sam", true),
                         new VendorCatalogPayload.Teammate(new java.util.UUID(0, 3), "Jo", false)),
@@ -459,13 +460,13 @@ public final class ScreenshotHarness {
         // nothing, so the
         // tiers show as locked; Shift (the checklist) cannot be held from here.
         add(0, "armor tooltip", () -> {
-            ResourceLocation helmet = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge_helmet");
-            ArmorTooltips.update(List.of(new com.cobbletowers.armor.ArmorSetView(ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge"),
+            ResourceLocation helmet = CobbleTowers.id("tideforge_helmet");
+            ArmorTooltips.update(List.of(new com.cobbletowers.armor.ArmorSetView(CobbleTowers.id("tideforge"),
                     "Tideforged Plate", 0x46B4E6,
                     List.of(new com.cobbletowers.armor.ArmorSetView.Piece("head", helmet),
-                            new com.cobbletowers.armor.ArmorSetView.Piece("chest", ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge_chestplate")),
-                            new com.cobbletowers.armor.ArmorSetView.Piece("legs", ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge_leggings")),
-                            new com.cobbletowers.armor.ArmorSetView.Piece("feet", ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge_boots"))),
+                            new com.cobbletowers.armor.ArmorSetView.Piece("chest", CobbleTowers.id("tideforge_chestplate")),
+                            new com.cobbletowers.armor.ArmorSetView.Piece("legs", CobbleTowers.id("tideforge_leggings")),
+                            new com.cobbletowers.armor.ArmorSetView.Piece("feet", CobbleTowers.id("tideforge_boots"))),
                     List.of(new com.cobbletowers.armor.ArmorSetView.Tier(2, List.of("+1 underwater breathing", "+50% water movement", "+5% catch rate on Water types")),
                             new com.cobbletowers.armor.ArmorSetView.Tier(4, List.of("Water attacks hit 10% harder", "Vendor prices -5%"))))));
             Minecraft.getInstance().setScreen(new net.minecraft.client.gui.screens.Screen(net.minecraft.network.chat.Component.literal("tooltip")) {
@@ -515,7 +516,7 @@ public final class ScreenshotHarness {
         }
         return new MasteryScreenPayload(
                 List.of(new MasteryScreenPayload.Tower(tower, "Tideforge Spire", 14, "Gold"),
-                        new MasteryScreenPayload.Tower(ResourceLocation.fromNamespaceAndPath("cobbletowers", "neutral"), "Challenger Tower", 3, "Bronze")),
+                        new MasteryScreenPayload.Tower(CobbleTowers.id("neutral"), "Challenger Tower", 3, "Bronze")),
                 tower.toString(), tab,
                 new MasteryScreenPayload.Mastery("Mastery level 14 (Gold): 20 of 30 achievements. 4 more for Platinum.",
                         "+4% reward items, 2 free vendor rerolls, a title", achievements),
@@ -538,7 +539,7 @@ public final class ScreenshotHarness {
             for (Path file : files.filter(p -> p.toString().endsWith(".json")).sorted().toList()) {
                 String name = file.getFileName().toString().replace(".json", "");
                 try (Reader reader = Files.newBufferedReader(file)) {
-                    all.add(RentalSetDefinition.fromJson(ResourceLocation.fromNamespaceAndPath("cobbletowers", name),
+                    all.add(RentalSetDefinition.fromJson(CobbleTowers.id(name),
                             JsonParser.parseReader(reader).getAsJsonObject()));
                 }
             }

@@ -1,5 +1,6 @@
 package com.cobbletowers.armor;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -24,7 +25,7 @@ public final class ArmorSetRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, ArmorSetDefinition>>
         implements IdentifiableResourceReloadListener {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "armor_sets");
+    public static final ResourceLocation ID = CobbleTowers.id("armor_sets");
     private static final String FOLDER = "cobbletowers/armor_sets";
 
     private static volatile Map<ResourceLocation, ArmorSetDefinition> SETS = Map.of();

@@ -1,5 +1,6 @@
 package com.cobbletowers.definition;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -24,7 +25,7 @@ public final class RentalSetRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, RentalSetDefinition>>
         implements IdentifiableResourceReloadListener {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "rental_sets");
+    public static final ResourceLocation ID = CobbleTowers.id("rental_sets");
     private static final String FOLDER = "cobbletowers/rental_sets";
 
     private static volatile Map<ResourceLocation, RentalSetDefinition> LOADED = Map.of();

@@ -1,12 +1,12 @@
 package com.cobbletowers.season;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import eu.pb4.placeholders.api.PlaceholderResult;
 import eu.pb4.placeholders.api.Placeholders;
 import java.util.List;
 import java.util.function.Function;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -27,7 +27,7 @@ final class PlaceholderBridge {
         add("club_tag", player -> clubOf(player, true));
         add("club_name", player -> clubOf(player, false));
         // The whole decoration, coloured as in chat, for a formatter that wants one thing to place.
-        Placeholders.register(ResourceLocation.fromNamespaceAndPath("cobbletowers", "prefix"), (context, argument) -> {
+        Placeholders.register(CobbleTowers.id("prefix"), (context, argument) -> {
             if (!context.hasPlayer()) return PlaceholderResult.invalid("no player");
             ServerPlayer player = context.player();
             var server = player.getServer();
@@ -46,7 +46,7 @@ final class PlaceholderBridge {
     }
 
     private static void add(String name, Function<ServerPlayer, String> value) {
-        Placeholders.register(ResourceLocation.fromNamespaceAndPath("cobbletowers", name), (context, argument) -> {
+        Placeholders.register(CobbleTowers.id(name), (context, argument) -> {
             if (!context.hasPlayer()) return PlaceholderResult.invalid("no player");
             return PlaceholderResult.value(Component.literal(value.apply(context.player())));
         });

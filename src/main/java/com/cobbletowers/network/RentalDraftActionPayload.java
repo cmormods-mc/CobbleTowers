@@ -5,7 +5,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 
 /**
  * What the pack-opening screen asks of the server (P33). {@code a} and {@code b} are 0-based card indices of the
@@ -20,7 +19,7 @@ public record RentalDraftActionPayload(Action action, int a, int b) implements C
     public enum Action { OPEN, PICK, RESTART, READY, LOBBY }
 
     public static final CustomPacketPayload.Type<RentalDraftActionPayload> TYPE = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "rental_draft_action"));
+            CobbleTowers.id("rental_draft_action"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, RentalDraftActionPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.idMapper(index -> Action.values()[Math.floorMod(index, Action.values().length)], Action::ordinal),

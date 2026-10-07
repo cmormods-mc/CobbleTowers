@@ -1,5 +1,6 @@
 package com.cobbletowers.client;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
 import com.cobblemon.mod.common.client.gui.PokemonGuiUtilsKt;
 import com.cobblemon.mod.common.client.gui.ProfileTransformType;
@@ -51,9 +52,9 @@ public final class PartnerInspectionScreen extends TowerScreen {
             }catch(RuntimeException e){modelFailed=true;org.slf4j.LoggerFactory.getLogger("cobbletowers-ui").warn("Partner model unavailable: {}",species,e);}finally{g.pose().popPose();}
         }else if(!gear.isEmpty()){
             if(minecraft.level!=null){
-                if(mannequin==null){mannequin=new ArmorStand(minecraft.level,0,0,0);String[] parts={"helmet","chestplate","leggings","boots"};EquipmentSlot[] slots={EquipmentSlot.HEAD,EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET};for(int i=0;i<parts.length;i++)mannequin.setItemSlot(slots[i],new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath("cobbletowers",gear+"_"+parts[i]))));}
+                if(mannequin==null){mannequin=new ArmorStand(minecraft.level,0,0,0);String[] parts={"helmet","chestplate","leggings","boots"};EquipmentSlot[] slots={EquipmentSlot.HEAD,EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET};for(int i=0;i<parts.length;i++)mannequin.setItemSlot(slots[i],new ItemStack(BuiltInRegistries.ITEM.get(CobbleTowers.id(gear+"_"+parts[i]))));}
                 InventoryScreen.renderEntityInInventoryFollowsMouse(g,16,80,right-16,wellBottom,(int)(vh*.4f*zoom),0,mx,my,mannequin);
-            }else {g.pose().pushPose();g.pose().translate(12+vw/2f-24,80+vh*.2f,0);g.pose().scale(3,3,1);g.renderItem(new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath("cobbletowers",gear+"_chestplate"))),0,0);g.pose().popPose();}
+            }else {g.pose().pushPose();g.pose().translate(12+vw/2f-24,80+vh*.2f,0);g.pose().scale(3,3,1);g.renderItem(new ItemStack(BuiltInRegistries.ITEM.get(CobbleTowers.id(gear+"_chestplate"))),0,0);g.pose().popPose();}
         }
         g.disableScissor();
         int y=70;

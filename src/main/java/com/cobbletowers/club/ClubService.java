@@ -1,5 +1,6 @@
 package com.cobbletowers.club;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.club.ClubBook.Club;
 import com.cobbletowers.club.ClubBook.Result;
@@ -31,6 +32,10 @@ public final class ClubService {
     private record Invite(String club, long expiresAt) {}
 
     private static final Map<UUID, Invite> INVITES = new HashMap<>();
+
+    static {
+        ServerState.onStop(INVITES::clear);
+    }
 
     private ClubService() {}
 

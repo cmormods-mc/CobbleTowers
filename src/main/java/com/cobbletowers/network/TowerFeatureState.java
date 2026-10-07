@@ -1,11 +1,11 @@
 package com.cobbletowers.network;
 
+import com.cobbletowers.CobbleTowers;
 import java.util.List;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 
 /** Structured records and server-authorized actions. Explanatory lines are rendered, never parsed. */
 public record TowerFeatureState(int requestId,String section,String title,List<Entry> entries,List<Action> actions,String message) implements CustomPacketPayload {
@@ -21,7 +21,7 @@ public record TowerFeatureState(int requestId,String section,String title,List<E
                 ByteBufCodecs.stringUtf8(512).apply(ByteBufCodecs.list(32)),Entry::lines,
                 Action.CODEC.apply(ByteBufCodecs.list(16)),Entry::actions,Entry::new);
     }
-    public static final Type<TowerFeatureState> TYPE=new Type<>(ResourceLocation.fromNamespaceAndPath("cobbletowers","feature_state_v1"));
+    public static final Type<TowerFeatureState> TYPE=new Type<>(CobbleTowers.id("feature_state_v1"));
     public static final StreamCodec<RegistryFriendlyByteBuf,TowerFeatureState> STREAM_CODEC=StreamCodec.composite(
             ByteBufCodecs.VAR_INT,TowerFeatureState::requestId,ByteBufCodecs.stringUtf8(24),TowerFeatureState::section,
             ByteBufCodecs.stringUtf8(128),TowerFeatureState::title,

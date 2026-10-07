@@ -121,7 +121,7 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
     }
 
     public static final CustomPacketPayload.Type<PlayStatePayload> TYPE = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "play_state"));
+            CobbleTowers.id("play_state"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, PlayStatePayload> STREAM_CODEC = StreamCodec.composite(
             Tower.STREAM_CODEC.apply(ByteBufCodecs.list()), PlayStatePayload::towers,

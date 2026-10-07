@@ -1,5 +1,6 @@
 package com.cobbletowers.definition;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -25,7 +26,7 @@ public final class SeasonRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, SeasonDefinition>>
         implements IdentifiableResourceReloadListener {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "seasons");
+    public static final ResourceLocation ID = CobbleTowers.id("seasons");
     private static final String FOLDER = "cobbletowers/seasons";
 
     private static volatile Map<ResourceLocation, SeasonDefinition> LOADED = Map.of();

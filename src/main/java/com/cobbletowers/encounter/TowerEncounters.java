@@ -1,10 +1,8 @@
 package com.cobbletowers.encounter;
 
+import com.cobbletowers.ServerState;
 import com.cobblemon.mod.common.Cobblemon;
-import com.cobblemon.mod.common.api.pokemon.PokemonSpecies;
-import com.cobblemon.mod.common.battles.pokemon.BattlePokemon;
 import com.cobblemon.mod.common.pokemon.Pokemon;
-import com.cobblemon.mod.common.pokemon.Species;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbleraids.api.encounter.EncounterResult;
@@ -12,26 +10,18 @@ import com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter;
 import com.cobbletowers.battle.cobblemon.PartyReader;
 import com.cobbletowers.battle.cobbleraids.TowerBossAdapter;
 import com.cobbletowers.definition.BossPoolDefinition;
-import com.cobbletowers.definition.EncounterPoolDefinition;
 import com.cobbletowers.definition.FloorAnchor;
 import com.cobbletowers.definition.FloorDefinition;
 import com.cobbletowers.definition.MilestoneDefinition;
-import com.cobbletowers.definition.RegionalThemeDefinition;
-import com.cobbletowers.definition.RulesetDefinition;
-import com.cobbletowers.definition.ScoutingProfileDefinition;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.diagnostics.TowerMetrics;
-import com.cobbletowers.economy.AscensionLibRewards;
 import com.cobbletowers.economy.AscensionLibScouting;
-import com.cobbletowers.economy.ScoutingTiers;
 import com.cobbletowers.instance.CellPreparer;
 import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.modifier.ModifierEffects;
 import com.cobbletowers.instance.TowerDimension;
-import com.cobbletowers.network.ScoutingRevealPayload;
-import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.persistence.LedgerEntry;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
@@ -48,13 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
-import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -105,8 +90,9 @@ public final class TowerEncounters {
 
     private static final Map<UUID, Round> ROUNDS = new LinkedHashMap<>();
 
-    /** Each player's current AscensionLib scouting encounter, keyed {@code run/player}; ended with that battle. */
-    private static final Map<String, String> OPPONENT_SCOUTING = new LinkedHashMap<>();
+    static {
+        ServerState.onStop(TowerEncounters::onServerStopped);
+    }
 
     private TowerEncounters() {}
 
@@ -129,51 +115,16 @@ public final class TowerEncounters {
     public static Optional<Round> begin(MinecraftServer server, UUID runId) {
         Optional<PersistedRun> found = TowerRuns.get(runId);
         if (found.isEmpty()) return Optional.empty();
-        PersistedRun run = found.get();
+        Optional<FloorSetup> resolved = FloorSetup.resolve(server, found.get(), true);
+        if (resolved.isEmpty()) return Optional.empty();
+        FloorSetup setup = resolved.get();
+        PersistedRun run = setup.run();
 
-        TowerContent content = TowerDefinitionRegistry.content();
-        Optional<FloorDefinition> floor = content.floorAt(run.towerId(), run.floorIndex());
-        TowerDefinition tower = content.towers().get(run.towerId());
-        if (floor.isEmpty() || tower == null) {
-            TowerLog.error("Run {} is on {} floor {}, which is not loaded", runId, run.towerId(), run.floorIndex());
-            return Optional.empty();
-        }
-        EncounterPoolDefinition pool = content.pools().get(floor.get().encounterPoolId());
-        RulesetDefinition ruleset = com.cobbletowers.definition.RulesetResolver.forRun(content, run,
-                floor.get().rulesetOverride());
-        if (pool == null || ruleset == null) {
-            TowerLog.error("Floor {} names content that is not loaded (pool {}, ruleset {})",
-                    floor.get().id(), floor.get().encounterPoolId(), tower.rulesetId());
-            return Optional.empty();
-        }
-
-        ServerLevel level = TowerDimension.level(server);
-        OptionalInt cell = run.cell();
-        if (level == null || cell.isEmpty() || floor.get().layout().isEmpty()) {
-            TowerLog.error("Run {} has no built floor to fight on", runId);
-            return Optional.empty();
-        }
-        // Asked of the preparer, never recomputed: a second calculation put the entry anchor in the void.
-        Optional<BlockPos> maybeOrigin =
-                CellPreparer.originFor(server, cell.getAsInt(), floor.get().layout().get());
-        if (maybeOrigin.isEmpty()) {
-            TowerLog.error("Floor {} names structure {}, which is not loaded; cannot place anybody",
-                    floor.get().id(), floor.get().layout().get().structure());
-            return Optional.empty();
-        }
-        BlockPos origin = maybeOrigin.get();
-
-        List<ServerPlayer> fighters = new ArrayList<>();
-        for (PersistedParticipant participant : run.participants()) {
-            if (!participant.state().canFight()) continue;
-            ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
-            if (player != null) fighters.add(player);
-        }
+        List<ServerPlayer> fighters = fightersOf(server, run);
         if (fighters.isEmpty()) {
             TowerLog.error("Run {} has nobody able to fight floor {}", runId, run.floorIndex());
             return Optional.empty();
         }
-
         // Taken once, from everybody, before a single battle starts (TDS #45): a party that faints or
         // disconnects during the floor cannot make the rest of it easier.
         List<Integer> partyLevels = levelsOf(run, fighters);
@@ -184,61 +135,80 @@ public final class TowerEncounters {
             return Optional.empty();
         }
 
-        // Put the party in the arena before anything is fought.
-        FloorAnchor entry = floor.get().layout().get().entry();
-        BlockPos arrival = entry.in(origin);
+        arrive(server, setup, fighters);
+        ModifierEffects effects = DraftService.effects(run);
+        Optional<Round> round = startOpponents(server, setup, fighters, partyLevels, effects);
+        if (round.isEmpty()) {
+            TowerLog.error("Run {} drew no opponents at all for floor {}; pool {} produced nothing",
+                    runId, run.floorIndex(), setup.floor().encounterPoolId());
+            return Optional.empty();
+        }
+        ROUNDS.put(runId, round.get());
+        TowerLog.info("Floor {} of run {} begun with {} opponent(s){}", run.floorIndex(), runId,
+                round.get().byPlayer().size(),
+                effects.extraOpponents() > 0 ? " plus " + effects.extraOpponents() + " more each" : "");
+        return round;
+    }
+
+    /** The run's participants who can fight and are online. */
+    private static List<ServerPlayer> fightersOf(MinecraftServer server, PersistedRun run) {
+        List<ServerPlayer> fighters = new ArrayList<>();
+        for (PersistedParticipant participant : run.participants()) {
+            if (!participant.state().canFight()) continue;
+            ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+            if (player != null) fighters.add(player);
+        }
+        return fighters;
+    }
+
+    /** Puts the party in the arena before anything is fought. */
+    private static void arrive(MinecraftServer server, FloorSetup setup, List<ServerPlayer> fighters) {
+        FloorAnchor entry = setup.layout().entry();
+        BlockPos arrival = entry.in(setup.origin());
         for (int ordinal = 0; ordinal < fighters.size(); ordinal++) {
             ServerPlayer player = fighters.get(ordinal);
             // Where they stand now is where they go home to (P20); skipped if they are already inside.
             RunExitService.remember(server, player);
-            player.teleportTo(level, arrival.getX() + 0.5 + ordinal * 2, arrival.getY(),
+            player.teleportTo(setup.level(), arrival.getX() + 0.5 + ordinal * 2, arrival.getY(),
                     arrival.getZ() + 0.5, entry.yaw(), 0.0f);
         }
+    }
 
-        // What the party has drafted, resolved once for the whole floor rather than per opponent.
-        ModifierEffects effects = DraftService.effects(run);
-        // Which theme, if any, this floor's pool favors -- resolved once, the same lookup pattern
-        // already used for the pool and ruleset themselves (P10).
-        Optional<RegionalThemeDefinition> theme = pool.regionalPool().flatMap(content::regionalTheme);
-
+    /** Draws and starts each fighter's first opponent. Empty when none could be started. */
+    private static Optional<Round> startOpponents(MinecraftServer server, FloorSetup setup,
+                                                  List<ServerPlayer> fighters, List<Integer> partyLevels,
+                                                  ModifierEffects effects) {
+        PersistedRun run = setup.run();
         Map<UUID, Status> byPlayer = new LinkedHashMap<>();
         Map<UUID, Wave> waves = new LinkedHashMap<>();
         for (int ordinal = 0; ordinal < fighters.size(); ordinal++) {
             ServerPlayer player = fighters.get(ordinal);
             long started = System.nanoTime();
-            Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(pool, run.seed(), run.floorIndex(), ordinal,
-                    partyLevels, ruleset, effects.levelOffset(), theme);
+            Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(setup.pool(), run.seed(), run.floorIndex(),
+                    ordinal, partyLevels, setup.ruleset(), effects.levelOffset(), setup.theme());
             if (snapshot.isEmpty()) continue;
             waves.put(player.getUUID(),
                     new Wave(ordinal + fighters.size(), fighters.size(), effects.extraOpponents()));
 
-            // Spread out, so four opponents do not stand inside one another.
-            BlockPos where = floor.get().layout().get().presentation().in(origin).offset(ordinal * 4, 0, 0);
-            // Declared and armed BEFORE the battle starts: the enemy's ascension effects ride its >start, so the
-            // enemy
-            // a Scouter reveals has to exist by then.
-            String scoutId = declareOpponent(runId, player.getUUID(), run.floorIndex(), snapshot.get());
+            BlockPos where = setup.presentation(ordinal);
+            // Declared and armed before the battle starts: the enemy's ascension effects ride its >start, so the
+            // enemy a Scouter reveals has to exist by then.
+            String scoutId = FloorScouting.declareOpponent(run.runId(), player.getUUID(), run.floorIndex(),
+                    snapshot.get());
             Optional<UUID> battle = AscensionLibScouting.armed(List.of(player.getUUID()), scoutId,
-                    () -> CobblemonBattleAdapter.start(level, player, snapshot.get(), where, runId, run.floorIndex()));
-            if (battle.isEmpty()) endOpponentScouting(runId, player.getUUID());
+                    () -> CobblemonBattleAdapter.start(setup.level(), player, snapshot.get(), where, run.runId(),
+                            run.floorIndex()));
+            if (battle.isEmpty()) FloorScouting.endOpponent(run.runId(), player.getUUID());
             byPlayer.put(player.getUUID(), battle.isPresent() ? Status.FIGHTING : Status.OUT);
             if (battle.isPresent()) {
                 // First opponent per player is timed here; later ones in sendNextOpponent.
-                TowerMetrics.recordEncounterConstruction(server, runId, (System.nanoTime() - started) / 1_000_000);
+                TowerMetrics.recordEncounterConstruction(server, run.runId(),
+                        (System.nanoTime() - started) / 1_000_000);
             }
         }
-        if (byPlayer.isEmpty()) {
-            TowerLog.error("Run {} drew no opponents at all for floor {}; pool {} produced nothing",
-                    runId, run.floorIndex(), floor.get().encounterPoolId());
-            return Optional.empty();
-        }
-
-        Round round = new Round(runId, run.floorIndex(), Phase.PREREQUISITE, byPlayer, waves,
-                System.currentTimeMillis());
-        ROUNDS.put(runId, round);
-        TowerLog.info("Floor {} of run {} begun with {} opponent(s){}", run.floorIndex(), runId, byPlayer.size(),
-                effects.extraOpponents() > 0 ? " plus " + effects.extraOpponents() + " more each" : "");
-        return Optional.of(round);
+        if (byPlayer.isEmpty()) return Optional.empty();
+        return Optional.of(new Round(run.runId(), run.floorIndex(), Phase.PREREQUISITE, byPlayer, waves,
+                System.currentTimeMillis()));
     }
 
     /**
@@ -264,7 +234,7 @@ public final class TowerEncounters {
             com.cobbletowers.echo.EchoDuels.onResolved(server, binding, playerWon);
             return;
         }
-        endOpponentScouting(binding.runId(), binding.playerId());
+        FloorScouting.endOpponent(binding.runId(), binding.playerId());
         Round round = ROUNDS.get(binding.runId());
         if (round == null) return;
 
@@ -329,26 +299,19 @@ public final class TowerEncounters {
      */
     public static boolean startEchoDuel(MinecraftServer server, PersistedRun run, ServerPlayer player, int ordinal,
                                         com.cobbletowers.echo.EchoPolicy.Pick pick) {
-        ServerLevel level = TowerDimension.level(server);
-        if (level == null || run.cell().isEmpty()) return false;
-        TowerContent content = TowerDefinitionRegistry.content();
-        Optional<FloorDefinition> floor = content.floorAt(run.towerId(), run.floorIndex());
-        if (floor.isEmpty() || floor.get().layout().isEmpty()) return false;
-        EncounterPoolDefinition pool = content.pools().get(floor.get().encounterPoolId());
-        RulesetDefinition ruleset = com.cobbletowers.definition.RulesetResolver.forRun(content, run,
-                floor.get().rulesetOverride());
-        if (pool == null || ruleset == null) return false;
-        Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), floor.get().layout().get());
-        if (origin.isEmpty()) return false;
-        Optional<RegionalThemeDefinition> theme = pool.regionalPool().flatMap(content::regionalTheme);
-        Optional<EncounterSnapshot> drawn = EncounterDraw.draw(pool, run.seed(), run.floorIndex(), ordinal,
-                levelsOf(run, List.of(player)), ruleset, DraftService.effects(run).levelOffset(), theme);
+        Optional<FloorSetup> resolved = FloorSetup.resolve(server, run, false);
+        if (resolved.isEmpty()) return false;
+        FloorSetup setup = resolved.get();
+        Optional<EncounterSnapshot> drawn = EncounterDraw.draw(setup.pool(), run.seed(), run.floorIndex(), ordinal,
+                levelsOf(run, List.of(player)), setup.ruleset(), DraftService.effects(run).levelOffset(),
+                setup.theme());
         if (drawn.isEmpty()) return false;
         EncounterSnapshot opponent = drawn.get().withEcho(pick.properties(), pick.echo().name());
-        BlockPos where = floor.get().layout().get().presentation().in(origin.get()).offset(ordinal * 4, 0, 0);
+        BlockPos where = setup.presentation(ordinal);
         // An exhibition is explicitly native: no enemy effects, not even a wild rating.
         return AscensionLibScouting.armed(List.of(player.getUUID()), null,
-                () -> CobblemonBattleAdapter.startExhibition(level, player, opponent, where, run.runId(), run.floorIndex())).isPresent();
+                () -> CobblemonBattleAdapter.startExhibition(setup.level(), player, opponent, where, run.runId(),
+                        run.floorIndex())).isPresent();
     }
 
     /**
@@ -361,89 +324,33 @@ public final class TowerEncounters {
         if (found.isEmpty()) return false;
         PersistedRun run = found.get();
         ServerPlayer player = server.getPlayerList().getPlayer(playerId);
-        ServerLevel level = TowerDimension.level(server);
-        if (player == null || level == null || run.cell().isEmpty()) return false;
-
-        TowerContent content = TowerDefinitionRegistry.content();
-        Optional<FloorDefinition> floor = content.floorAt(run.towerId(), run.floorIndex());
-        TowerDefinition tower = content.towers().get(run.towerId());
-        if (floor.isEmpty() || tower == null || floor.get().layout().isEmpty()) return false;
-        EncounterPoolDefinition pool = content.pools().get(floor.get().encounterPoolId());
-        RulesetDefinition ruleset = com.cobbletowers.definition.RulesetResolver.forRun(content, run,
-                floor.get().rulesetOverride());
-        if (pool == null || ruleset == null) return false;
-
-        Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), floor.get().layout().get());
-        if (origin.isEmpty()) return false;
+        Optional<FloorSetup> resolved = FloorSetup.resolve(server, run, false);
+        if (player == null || resolved.isEmpty()) return false;
+        FloorSetup setup = resolved.get();
 
         long started = System.nanoTime();
         ModifierEffects effects = DraftService.effects(run);
-        Optional<RegionalThemeDefinition> theme = pool.regionalPool().flatMap(content::regionalTheme);
         // Levels come from this player's own party; fainted Pokemon still count (TDS #45).
-        Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(pool, run.seed(), run.floorIndex(),
-                wave.nextOrdinal(), levelsOf(run, List.of(player)), ruleset, effects.levelOffset(), theme);
+        Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(setup.pool(), run.seed(), run.floorIndex(),
+                wave.nextOrdinal(), levelsOf(run, List.of(player)), setup.ruleset(), effects.levelOffset(),
+                setup.theme());
         if (snapshot.isEmpty()) return false;
 
-        BlockPos where = floor.get().layout().get().presentation().in(origin.get())
-                .offset(wave.nextOrdinal() * 4, 0, 0);
-        String scoutId = declareOpponent(round.runId(), playerId, run.floorIndex(), snapshot.get());
+        BlockPos where = setup.presentation(wave.nextOrdinal());
+        String scoutId = FloorScouting.declareOpponent(round.runId(), playerId, run.floorIndex(), snapshot.get());
         Optional<UUID> battle = AscensionLibScouting.armed(List.of(playerId), scoutId,
-                () -> CobblemonBattleAdapter.start(level, player, snapshot.get(), where, round.runId(), run.floorIndex()));
+                () -> CobblemonBattleAdapter.start(setup.level(), player, snapshot.get(), where, round.runId(),
+                        run.floorIndex()));
         if (battle.isEmpty()) {
-            endOpponentScouting(round.runId(), playerId);
+            FloorScouting.endOpponent(round.runId(), playerId);
             return false;
         }
-        // TDS #60/section 11: the same span the log line below already narrates, now measured --
-        // from the draw through the battle actually starting.
         TowerMetrics.recordEncounterConstruction(server, round.runId(), (System.nanoTime() - started) / 1_000_000);
-        theme.ifPresent(resolved -> announceJersey(player, resolved, snapshot.get()));
-        sendScoutingReveal(player, content, tower, floor.get(), run, effects, snapshot.get());
+        setup.theme().ifPresent(theme -> FloorScouting.announceJersey(player, theme, snapshot.get()));
+        FloorScouting.sendReveal(player, setup, effects, snapshot.get());
         TowerLog.info("Run {} floor {}: {} faces another opponent ({} left after this)",
                 round.runId(), run.floorIndex(), playerId, wave.remaining() - 1);
         return true;
-    }
-
-    /** Sent alongside the encounter; never gates it. */
-    private static void sendScoutingReveal(ServerPlayer player, TowerContent content, TowerDefinition tower,
-                                           FloorDefinition floor, PersistedRun run, ModifierEffects effects,
-                                           EncounterSnapshot snapshot) {
-        Optional<ScoutingProfileDefinition> profile = content.scoutingProfileFor(tower.id());
-        if (profile.isEmpty()) return;
-        List<ScoutingRevealPayload.Category> revealed = new ArrayList<>();
-        for (ScoutingProfileDefinition.RevealCategory category : profile.get().categories()) {
-            if (!ScoutingReveal.isRevealed(category, run.floorIndex(), effects.scoutingBonus())) continue;
-            revealed.add(new ScoutingRevealPayload.Category(category.name(),
-                    scoutingValue(category.name(), floor, snapshot)));
-        }
-        TowerNetworking.sendScoutingReveal(player, new ScoutingRevealPayload(run.floorIndex(), List.copyOf(revealed)));
-    }
-
-    /** Display text for a scouting category. An unknown category is shown revealed without a value. */
-    private static String scoutingValue(String category, FloorDefinition floor, EncounterSnapshot snapshot) {
-        return switch (category) {
-            case "typing" -> typingOf(snapshot.species());
-            case "threat_level" -> "Level " + snapshot.level();
-            case "field_conditions" -> floor.modifierIds().isEmpty() ? "none"
-                    : floor.modifierIds().stream().map(ResourceLocation::getPath).collect(Collectors.joining(", "));
-            default -> "revealed";
-        };
-    }
-
-    private static String typingOf(ResourceLocation species) {
-        Species resolved = PokemonSpecies.INSTANCE.getByIdentifier(species);
-        if (resolved == null) return "unknown";
-        StringBuilder types = new StringBuilder(resolved.getPrimaryType().getName());
-        if (resolved.getSecondaryType() != null) types.append('/').append(resolved.getSecondaryType().getName());
-        return types.toString();
-    }
-
-    /** Plain vanilla title packets, so no client mod is needed. */
-    private static void announceJersey(ServerPlayer player, RegionalThemeDefinition theme, EncounterSnapshot snapshot) {
-        if (snapshot.jerseyNumber().isEmpty()) return;
-        player.connection.send(new ClientboundSetTitleTextPacket(
-                Component.literal(theme.displayName() + " -- " + theme.doctrine())));
-        player.connection.send(new ClientboundSetSubtitleTextPacket(
-                Component.literal("#" + snapshot.jerseyNumber().getAsInt() + " " + snapshot.species().getPath())));
     }
 
     /**
@@ -452,7 +359,7 @@ public final class TowerEncounters {
      */
     public static boolean dropPlayer(MinecraftServer server, UUID runId, UUID playerId, String why, long now) {
         CobblemonBattleAdapter.endPlayer(server, runId, playerId);
-        endOpponentScouting(runId, playerId);
+        FloorScouting.endOpponent(runId, playerId);
         Round round = ROUNDS.get(runId);
         if (round == null || !round.byPlayer().containsKey(playerId)) return false;
         if (round.byPlayer().get(playerId) != Status.FIGHTING) return false;
@@ -508,16 +415,10 @@ public final class TowerEncounters {
     private static boolean startBoss(MinecraftServer server, Round round, long now) {
         Optional<PersistedRun> found = TowerRuns.get(round.runId());
         if (found.isEmpty()) return false;
-        PersistedRun run = found.get();
-
-        TowerContent content = TowerDefinitionRegistry.content();
-        Optional<FloorDefinition> floor = content.floorAt(run.towerId(), run.floorIndex());
-        TowerDefinition tower = content.towers().get(run.towerId());
-        if (floor.isEmpty() || tower == null) return false;
-        RulesetDefinition ruleset = com.cobbletowers.definition.RulesetResolver.forRun(content, run,
-                floor.get().rulesetOverride());
-        ServerLevel level = TowerDimension.level(server);
-        if (ruleset == null || level == null || run.cell().isEmpty() || floor.get().layout().isEmpty()) return false;
+        Optional<FloorSetup> resolved = FloorSetup.resolve(server, found.get(), false);
+        if (resolved.isEmpty()) return false;
+        FloorSetup setup = resolved.get();
+        PersistedRun run = setup.run();
 
         List<ServerPlayer> standing = new ArrayList<>();
         for (Map.Entry<UUID, Status> entry : round.byPlayer().entrySet()) {
@@ -528,30 +429,26 @@ public final class TowerEncounters {
         if (standing.isEmpty()) return false;
 
         // A milestone floor takes the boss the milestone names; every other floor draws one.
-        Optional<BossPoolDefinition> pool = floor.get().bossPoolId()
-                .map(id -> content.bossPools().get(id))
+        Optional<BossPoolDefinition> pool = setup.floor().bossPoolId()
+                .map(id -> setup.content().bossPools().get(id))
                 .filter(Objects::nonNull);
-        Optional<BossDraw.Boss> boss = BossDraw.draw(pool, handpickedBoss(content, tower, floor.get()),
-                run.seed(), run.floorIndex(), levelsOf(run, standing), ruleset,
+        Optional<BossDraw.Boss> boss = BossDraw.draw(pool, handpickedBoss(setup.content(), setup.tower(), setup.floor()),
+                run.seed(), run.floorIndex(), levelsOf(run, standing), setup.ruleset(),
                 DraftService.effects(run).bossLevelOffset());
         if (boss.isEmpty()) {
-            TowerLog.error("Floor {} names neither a boss pool nor a milestone boss", floor.get().id());
+            TowerLog.error("Floor {} names neither a boss pool nor a milestone boss", setup.floor().id());
             return false;
         }
-
-        Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), floor.get().layout().get());
-        if (origin.isEmpty()) return false;
-        BlockPos where = floor.get().layout().get().presentation().in(origin.get());
 
         // The boss fight sends out CLONES of each party (CobbleRaids), so a lead left standing from the
         // opponent fight would be there twice. Put the real ones away first.
         for (ServerPlayer player : standing) recallParty(player);
 
         Optional<UUID> started = TowerBossAdapter.start(
-                server, level, standing, boss.get(), where, round.runId(), round.floorIndex(),
+                server, setup.level(), standing, boss.get(), setup.presentation(0), round.runId(), round.floorIndex(),
                 DraftService.effects(run),
                 // Declared inside the adapter, once the encounter id exists and before the boss battle starts.
-                encounterId -> declareBoss(server, run, content, round.floorIndex(), boss.get(), standing, encounterId));
+                encounterId -> FloorScouting.declareBoss(server, setup, boss.get(), standing, encounterId));
         if (started.isEmpty()) return false;
 
         ROUNDS.put(round.runId(),
@@ -603,7 +500,7 @@ public final class TowerEncounters {
                                 LedgerEntry.milestoneCleared(binding.floorIndex(), milestone.id(), now)));
                 // Logged so an operator can see floors completing.
                 TowerLog.info("Floor {} of run {} cleared", binding.floorIndex(), binding.runId());
-                payAscensionLib(server, binding, result, now);
+                FloorPayout.pay(server, binding, result, now);
                 // Everyone watching is now owed the intermission, which is where they come back.
                 ParticipantService.markRevivePending(server, binding.runId(), now);
                 // And the party's Pokemon go back in their balls: the floor is over, and a lead left
@@ -632,53 +529,6 @@ public final class TowerEncounters {
         }
     }
 
-    /**
-     * Pays a cleared floor in AscensionLib: a Scouter roll per floor, milestone bands on milestone floors, a small
-     * band for a Trial's last floor. Paid to every run member; retried by {@link AscensionLibRewards}.
-     */
-    private static void payAscensionLib(MinecraftServer server, TowerBossAdapter.Binding binding,
-                                        EncounterResult result, long now) {
-        Optional<PersistedRun> found = TowerRuns.get(binding.runId());
-        if (found.isEmpty()) return;
-        PersistedRun run = found.get();
-        TowerContent content = TowerDefinitionRegistry.content();
-        String outcome = result.outcome().name();
-        List<UUID> members = run.participants().stream()
-                .filter(participant -> participant.state().isInRun())
-                .map(PersistedParticipant::playerId)
-                .toList();
-        if (members.isEmpty()) return;
-
-        int floorLimit = run.options().floorLimit();
-        if (floorLimit > 0) {
-            // A Trial pays once, when its last floor is cleared, at the rank its length implies. No Scouter rolls and
-            // no
-            // milestone bands: it is repeatable practice and must not out-earn or bypass the tower.
-            if (binding.floorIndex() >= floorLimit) {
-                AscensionLibRewards.settleTrial(server, result.encounterId(), outcome,
-                        trialRank(floorLimit), members, now);
-            }
-            return;
-        }
-
-        boolean keenEye = DraftService.effects(run).scoutingBonus() > 0;
-        AscensionLibRewards.settleScouterDrops(server, result.encounterId(), outcome, keenEye, members, now);
-
-        if (content.milestoneAt(run.towerId(), binding.floorIndex()).isEmpty()) return;
-        int from = AscensionLibRewards.segmentStart(
-                floor -> content.milestoneAt(run.towerId(), floor).isPresent(), binding.floorIndex());
-        AscensionLibRewards.settleMilestone(server, result.encounterId(), outcome, from, binding.floorIndex(),
-                members, now);
-    }
-
-    /**
-     * A trial's rank (1-3) follows its length like the scouting tiers: 1-4 floors rank 1, 5-9 rank 2, 10 and more
-     * rank 3.
-     */
-    static int trialRank(int floorLimit) {
-        return floorLimit < 5 ? 1 : floorLimit < 10 ? 2 : 3;
-    }
-
     /** The run is lost. The unclaimed pool is marked, not deleted, so it can still be read. */
     private static void lose(MinecraftServer server, UUID runId, int floorIndex, long now) {
         TowerLog.info("Floor {} of run {} wiped the party; the unclaimed pool is forfeited",
@@ -688,38 +538,6 @@ public final class TowerEncounters {
         RunTransitionService.apply(server, runId, RunEvent.ENCOUNTER_RESOLVED_WIPED, now);
     }
 
-
-    /** Lets players scout this opponent; the id is unique per opponent and arms the battle. */
-    private static String declareOpponent(UUID runId, UUID playerId, int floorIndex, EncounterSnapshot snapshot) {
-        String id = runId + "-f" + floorIndex + "-o" + snapshot.ordinal();
-        String previous = OPPONENT_SCOUTING.put(runId + "/" + playerId, id);
-        if (previous != null && !previous.equals(id)) AscensionLibScouting.end(previous);
-        AscensionLibScouting.declare(id, List.of(playerId), 0, ScoutingTiers.tierFor(floorIndex, false), false,
-                snapshot.species().toString(), snapshot.level());
-        return id;
-    }
-
-    private static void endOpponentScouting(UUID runId, UUID playerId) {
-        String id = OPPONENT_SCOUTING.remove(runId + "/" + playerId);
-        if (id != null) AscensionLibScouting.end(id);
-    }
-
-    private static void endOpponentScouting(UUID runId) {
-        String prefix = runId + "/";
-        for (String key : List.copyOf(OPPONENT_SCOUTING.keySet())) {
-            if (key.startsWith(prefix)) AscensionLibScouting.end(OPPONENT_SCOUTING.remove(key));
-        }
-    }
-
-    /** Lets the party scout the floor's boss; a boss with no species cannot be scouted. */
-    private static void declareBoss(MinecraftServer server, PersistedRun run, TowerContent content, int floorIndex,
-                                    BossDraw.Boss boss, List<ServerPlayer> standing, UUID encounterId) {
-        Optional<String> species = com.cobbletowers.battle.cobbleraids.RaidSpecies.of(server, boss.definition());
-        if (species.isEmpty()) return;
-        boolean milestone = content.milestoneAt(run.towerId(), floorIndex).isPresent();
-        AscensionLibScouting.declare(encounterId.toString(), standing.stream().map(ServerPlayer::getUUID).toList(), 0,
-                ScoutingTiers.tierFor(floorIndex, milestone), true, species.get(), boss.level());
-    }
 
     /** Appends to the unclaimed pool. No worth is decided here; that is P9's. */
     /** Adds an entry to a run's unclaimed pool. Public for the operator {@code runs earn} command, a test seam. */
@@ -738,7 +556,7 @@ public final class TowerEncounters {
     /** Ends a run's floor without resolving it: abandoning, parking, shutting down. */
     public static void abandon(MinecraftServer server, UUID runId) {
         ROUNDS.remove(runId);
-        endOpponentScouting(runId);
+        FloorScouting.endRun(runId);
         CobblemonBattleAdapter.endRun(server, runId);
         // The boss too, or it stands in the cell until the sweep quarantines it.
         TowerBossAdapter.abort(runId);
@@ -776,7 +594,7 @@ public final class TowerEncounters {
     public static int onServerStopped(MinecraftServer server) {
         int held = ROUNDS.size();
         ROUNDS.clear();
-        OPPONENT_SCOUTING.clear();
+        FloorScouting.clear();
         CobblemonBattleAdapter.onServerStopped(server);
         TowerBossAdapter.onServerStopped();
         return held;

@@ -1,5 +1,6 @@
 package com.cobbletowers.instance;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -26,6 +27,10 @@ public final class CellTickets {
     public static final int RADIUS_CHUNKS = 3;
 
     private static final Set<Integer> HELD = new LinkedHashSet<>();
+
+    static {
+        ServerState.onStop(CellTickets::onServerStopped);
+    }
 
     private CellTickets() {}
 

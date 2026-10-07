@@ -31,7 +31,7 @@ public record RewardRevealPayload(int floorIndex, List<Grant> grants) implements
     }
 
     public static final CustomPacketPayload.Type<RewardRevealPayload> TYPE = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "reward_reveal"));
+            CobbleTowers.id("reward_reveal"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, RewardRevealPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.VAR_INT, RewardRevealPayload::floorIndex,

@@ -1,5 +1,6 @@
 package com.cobbletowers.network;
 
+import com.cobbletowers.CobbleTowers;
 import java.util.List;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -88,7 +89,7 @@ public record TrackStatePayload(boolean autoClaim, List<Tower> towers, String se
                         buf.readVarLong(), buf.readUtf(32), NODES.decode(buf)));
     }
 
-    public static final Type<TrackStatePayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath("cobbletowers", "tracks_v1"));
+    public static final Type<TrackStatePayload> TYPE = new Type<>(CobbleTowers.id("tracks_v1"));
     public static final StreamCodec<RegistryFriendlyByteBuf, TrackStatePayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.BOOL, TrackStatePayload::autoClaim, Tower.CODEC.apply(ByteBufCodecs.list(256)), TrackStatePayload::towers,
             ByteBufCodecs.stringUtf8(128), TrackStatePayload::selectedTower, Lane.CODEC, TrackStatePayload::mastery,

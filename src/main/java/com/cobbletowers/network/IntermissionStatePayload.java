@@ -56,7 +56,7 @@ public record IntermissionStatePayload(int floor, Draft draft, List<Member> memb
     }
 
     public static final CustomPacketPayload.Type<IntermissionStatePayload> TYPE = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "intermission_state"));
+            CobbleTowers.id("intermission_state"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, IntermissionStatePayload> STREAM_CODEC =
             StreamCodec.composite(

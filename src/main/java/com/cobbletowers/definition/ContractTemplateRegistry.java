@@ -1,5 +1,6 @@
 package com.cobbletowers.definition;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.definition.ContractTemplateDefinition.Period;
 import com.google.gson.JsonObject;
@@ -25,7 +26,7 @@ public final class ContractTemplateRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, ContractTemplateDefinition>>
         implements IdentifiableResourceReloadListener {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "contract_templates");
+    public static final ResourceLocation ID = CobbleTowers.id("contract_templates");
     private static final String FOLDER = "cobbletowers/contract_templates";
 
     private static volatile Map<ResourceLocation, ContractTemplateDefinition> LOADED = Map.of();

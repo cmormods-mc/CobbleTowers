@@ -1,5 +1,6 @@
 package com.cobbletowers.economy;
 
+import com.cobbletowers.CobbleTowers;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -9,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
  */
 public final class CobbleDollars {
 
-    public static final ResourceLocation ITEM_ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "cobble_dollar");
+    public static final ResourceLocation ITEM_ID = CobbleTowers.id("cobble_dollar");
 
     private CobbleDollars() {}
 }

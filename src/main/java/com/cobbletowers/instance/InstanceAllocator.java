@@ -1,5 +1,6 @@
 package com.cobbletowers.instance;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.diagnostics.TowerMetrics;
 import com.cobbletowers.persistence.CellQuarantine;
@@ -25,6 +26,10 @@ public final class InstanceAllocator {
     private static final BitSet LEASED = new BitSet(CellGrid.MAX_CELLS);
     private static final Map<Integer, UUID> RUN_BY_CELL = new HashMap<>();
     private static final Map<UUID, Integer> CELL_BY_RUN = new HashMap<>();
+
+    static {
+        ServerState.onStop(InstanceAllocator::onServerStopped);
+    }
 
     private InstanceAllocator() {}
 

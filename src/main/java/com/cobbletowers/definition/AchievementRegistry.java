@@ -1,5 +1,6 @@
 package com.cobbletowers.definition;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -25,7 +26,7 @@ public final class AchievementRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, AchievementDefinition>>
         implements IdentifiableResourceReloadListener {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "achievements");
+    public static final ResourceLocation ID = CobbleTowers.id("achievements");
     private static final String FOLDER = "cobbletowers/achievements";
 
     private static volatile Map<ResourceLocation, AchievementDefinition> LOADED = Map.of();

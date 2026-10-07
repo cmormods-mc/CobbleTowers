@@ -13,7 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 public record ArmorSetsPayload(List<ArmorSetView> sets) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<ArmorSetsPayload> TYPE = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "armor_sets"));
+            CobbleTowers.id("armor_sets"));
 
     private static final StreamCodec<RegistryFriendlyByteBuf, ArmorSetView.Piece> PIECE = StreamCodec.composite(
             ByteBufCodecs.STRING_UTF8, ArmorSetView.Piece::slot,

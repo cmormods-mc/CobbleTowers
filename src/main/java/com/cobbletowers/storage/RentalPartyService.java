@@ -1,5 +1,6 @@
 package com.cobbletowers.storage;
 
+import com.cobbletowers.ServerState;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import com.cobblemon.mod.common.api.events.pokemon.ExperienceGainedEvent;
 import com.cobblemon.mod.common.api.events.pokemon.PokedexDataChangedEvent;
@@ -37,6 +38,10 @@ public final class RentalPartyService {
     private static final int SWEEP_EVERY_TICKS = 1200;
     /** Players who joined and are due a sweep, so one runs after their storage has loaded. */
     private static final Map<UUID, Integer> JOINED = new HashMap<>();
+
+    static {
+        ServerState.onStop(JOINED::clear);
+    }
     private static int ticks;
 
     private RentalPartyService() {}

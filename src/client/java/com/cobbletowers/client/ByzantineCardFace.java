@@ -1,5 +1,6 @@
 package com.cobbletowers.client;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.network.RentalDraftPayload;
 import java.util.List;
 import java.util.Locale;
@@ -39,7 +40,7 @@ public final class ByzantineCardFace implements CardFace {
     private ByzantineCardFace() {}
 
     private static ResourceLocation art(String name) {
-        return ResourceLocation.fromNamespaceAndPath("cobbletowers", "textures/gui/byzantine/" + name + ".png");
+        return CobbleTowers.id("textures/gui/byzantine/" + name + ".png");
     }
 
     private static String rarity(String rarity) {

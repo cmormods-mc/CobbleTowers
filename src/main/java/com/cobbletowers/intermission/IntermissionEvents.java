@@ -1,5 +1,6 @@
 package com.cobbletowers.intermission;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.api.modifier.RiskTier;
 import com.cobbletowers.definition.ModifierDefinition;
 import com.cobbletowers.definition.TowerContent;
@@ -64,7 +65,7 @@ public final class IntermissionEvents {
 
         /** The draft-card id of this option. */
         public ResourceLocation cardId() {
-            return ResourceLocation.fromNamespaceAndPath("cobbletowers", "event/" + id);
+            return CobbleTowers.id("event/" + id);
         }
 
         public static Optional<Option> fromCard(ResourceLocation card) {

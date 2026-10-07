@@ -8,7 +8,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 
 /**
  * What the party chooser shows (P18): every Pokemon the player owns in party and boxes, which are chosen and how many
@@ -30,7 +29,7 @@ public record RegistrationStatePayload(List<Entry> pokemon, List<UUID> chosen, i
     }
 
     public static final CustomPacketPayload.Type<RegistrationStatePayload> TYPE = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "registration_state"));
+            CobbleTowers.id("registration_state"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, RegistrationStatePayload> STREAM_CODEC =
             StreamCodec.composite(

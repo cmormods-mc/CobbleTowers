@@ -17,8 +17,6 @@ import com.cobbletowers.runtime.RecoverySweep;
 import com.cobbletowers.runtime.RunRecovery;
 import com.cobbletowers.runtime.TowerPresence;
 import com.cobbletowers.runtime.TowerRuns;
-import com.cobbletowers.spike.SpikeCommand;
-import com.cobbletowers.spike.SpikeEncounters;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -26,10 +24,15 @@ import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.packs.PackType;
 
-/** Entrypoint: tower definitions, stored runs and their recovery, the debug commands, and the spike. */
+/** Entrypoint: tower definitions, stored runs and their recovery, and the debug commands. */
 public final class CobbleTowers implements ModInitializer {
 
     public static final String MOD_ID = "cobbletowers";
+
+    /** A {@code cobbletowers:} resource location. */
+    public static net.minecraft.resources.ResourceLocation id(String path) {
+        return net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
+    }
 
     @Override
     public void onInitialize() {
@@ -57,7 +60,6 @@ public final class CobbleTowers implements ModInitializer {
                 com.cobbletowers.command.CosmeticsCommand.registerAdmin(dispatcher);
                 CellsCommand.register(dispatcher);
                 DiagnosticsCommand.register(dispatcher);
-                SpikeCommand.register(dispatcher);
             } catch (RuntimeException ex) {
                 TowerLog.error("Could not register the CobbleTowers commands", ex);
             }
@@ -97,18 +99,7 @@ public final class CobbleTowers implements ModInitializer {
                 TowerLog.error("Could not sweep unfinished card rewards", ex);
             }
         });
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> SpikeEncounters.onServerStopped());
-        // Per-server state on a class that is not per-server: an integrated client keeps this JVM
-        // across worlds, so anything left indexed here would be read back against the next one.
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> TowerRuns.onServerStopped());
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> InstanceAllocator.onServerStopped());
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> CellTickets.onServerStopped());
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> CellWarmPool.onServerStopped());
-        ServerLifecycleEvents.SERVER_STOPPED.register(TowerEncounters::onServerStopped);
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> TowerPresence.onServerStopped());
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> RecoverySweep.onServerStopped());
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> com.cobbletowers.lobby.LobbyService.clear());
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> com.cobbletowers.intermission.IntermissionService.clear());
+        ServerState.install();
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new TowerDefinitionRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.AchievementRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.PlaylistRegistry());

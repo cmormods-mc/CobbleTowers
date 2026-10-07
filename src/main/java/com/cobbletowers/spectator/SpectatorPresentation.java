@@ -1,5 +1,6 @@
 package com.cobbletowers.spectator;
 
+import com.cobbletowers.ServerState;
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobbletowers.network.SpectatorPanelPayload;
@@ -22,6 +23,10 @@ import net.minecraft.server.level.ServerPlayer;
 public final class SpectatorPresentation {
 
     private static final Map<UUID, UUID> FOLLOWING = new ConcurrentHashMap<>();
+
+    static {
+        ServerState.onStop(FOLLOWING::clear);
+    }
 
     private SpectatorPresentation() {}
 

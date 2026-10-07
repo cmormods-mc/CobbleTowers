@@ -1,5 +1,6 @@
 package com.cobbletowers.intermission;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.api.tower.RunState;
@@ -37,6 +38,10 @@ import net.minecraft.server.level.ServerPlayer;
 public final class IntermissionService {
 
     private static final Map<UUID, IntermissionRound> ROUNDS = new HashMap<>();
+
+    static {
+        ServerState.onStop(IntermissionService::clear);
+    }
 
     private IntermissionService() {}
 

@@ -1,5 +1,6 @@
 package com.cobbletowers.definition;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.mastery.MasteryTracks;
 import com.google.gson.JsonObject;
@@ -23,7 +24,7 @@ public final class MasteryTrackRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, MasteryTrackDefinition>>
         implements IdentifiableResourceReloadListener {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "mastery_tracks");
+    public static final ResourceLocation ID = CobbleTowers.id("mastery_tracks");
     private static final String FOLDER = "cobbletowers/mastery_tracks";
 
     @Override

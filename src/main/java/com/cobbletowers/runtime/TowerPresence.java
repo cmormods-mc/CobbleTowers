@@ -1,5 +1,6 @@
 package com.cobbletowers.runtime;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.api.tower.participant.ConnectionState;
@@ -174,6 +175,10 @@ public final class TowerPresence {
      */
     /** When each run's draft was first seen with nobody able to vote. In memory, so a restart restarts the window. */
     private static final Map<UUID, Long> DRAFT_EMPTY_SINCE = new ConcurrentHashMap<>();
+
+    static {
+        ServerState.onStop(TowerPresence::onServerStopped);
+    }
 
     public static void sweep(MinecraftServer server, long now) {
         expireGraceWindows(server, now);

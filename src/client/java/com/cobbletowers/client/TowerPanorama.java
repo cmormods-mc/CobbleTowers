@@ -1,5 +1,6 @@
 package com.cobbletowers.client;
 
+import com.cobbletowers.CobbleTowers;
 import com.mojang.blaze3d.platform.NativeImage;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -78,7 +79,7 @@ final class TowerPanorama {
         paint(new ImagePainter(image), region, w, h, moving, glint, lamp);
         DynamicTexture texture = new DynamicTexture(image);
         texture.setFilter(false, false);
-        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("cobbletowers", "dynamic/panorama/" + serial++);
+        ResourceLocation id = CobbleTowers.id("dynamic/panorama/" + serial++);
         Minecraft.getInstance().getTextureManager().register(id, texture);
         return id;
     }

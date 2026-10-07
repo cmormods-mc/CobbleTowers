@@ -1,5 +1,6 @@
 package com.cobbletowers.track;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.definition.AchievementRegistry;
 import com.cobbletowers.definition.SeasonTrackDefinition;
 import com.cobbletowers.definition.SeasonTrackRegistry;
@@ -44,6 +45,10 @@ public final class TrackService {
     private static final long MIN_GAP_MILLIS = 150;
     /** Server thread only (the receiver hops to it). */
     private static final Map<java.util.UUID, Long> LAST_REQUEST = new java.util.HashMap<>();
+
+    static {
+        ServerState.onStop(LAST_REQUEST::clear);
+    }
 
     /**
      * Cuts text to what a payload string may hold ({@code writeUtf} throws past its limit, which would break the

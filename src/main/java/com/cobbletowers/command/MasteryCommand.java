@@ -1,5 +1,6 @@
 package com.cobbletowers.command;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.definition.AchievementDefinition;
 import com.cobbletowers.definition.AchievementRegistry;
 import com.cobbletowers.definition.TowerDefinition;
@@ -88,7 +89,7 @@ public final class MasteryCommand {
 
     private static ResourceLocation defaultTower() {
         return TowerDefinitionRegistry.content().sortedTowerIds().stream().findFirst()
-                .orElse(ResourceLocation.fromNamespaceAndPath("cobbletowers", "neutral"));
+                .orElse(CobbleTowers.id("neutral"));
     }
 
     /** Opens the screen for a client that has it; false means the caller should answer in chat instead. */

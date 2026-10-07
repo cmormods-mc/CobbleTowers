@@ -31,11 +31,16 @@ import com.cobbletowers.runtime.RunTransitionService;
 import com.cobbletowers.runtime.TowerPresence;
 import com.cobbletowers.runtime.TowerRuns;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -61,109 +66,99 @@ public final class RunsCommand {
 
     private RunsCommand() {}
 
+    private static LiteralArgumentBuilder<CommandSourceStack> op(String name) {
+        return Commands.literal(name).requires(source -> source.hasPermission(2));
+    }
+
+    private static RequiredArgumentBuilder<CommandSourceStack, UUID> runArg() {
+        return Commands.argument("run", UuidArgument.uuid());
+    }
+
+    /** An operator literal that takes just a run id. */
+    private static LiteralArgumentBuilder<CommandSourceStack> opOnRun(String name, Command<CommandSourceStack> action) {
+        return op(name).then(runArg().executes(action));
+    }
+
+    private static SuggestionProvider<CommandSourceStack> suggesting(List<String> values) {
+        return (context, builder) -> {
+            values.forEach(builder::suggest);
+            return builder.buildFuture();
+        };
+    }
+
+    /** Each subcommand carries its own {@code requires}: Brigadier keeps the first registration's on a merged literal. */
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("cobbletowers")
-                .then(Commands.literal("runs")
-                        // The one thing here a player is meant to do for themselves. Everything else
-                        // under "runs" drives the machine by hand and stays at permission 2.
-                        .then(Commands.literal("leave").executes(RunsCommand::leave))
-                        // Player-facing, no {@code .requires}: cashing out is the party's decision. Not blocked by an
-                        // open draft.
-                        .then(Commands.literal("cashout").executes(RunsCommand::cashout))
-                        .then(Commands.literal("reward")
-                                .then(Commands.literal("show").executes(RunsCommand::rewardShow)))
-                        // Player-facing: opens the caller's shop. INTERMISSION-only is enforced by
-                        // VendorPurchaseService.
-                        .then(Commands.literal("vendor").executes(RunsCommand::vendor)
-                                // Operator test tools: a live test cannot earn CobbleDollars or send a purchase.
-                                .then(Commands.literal("credit")
-                                        .requires(source -> source.hasPermission(2))
-                                        .then(Commands.argument("player", EntityArgument.player())
-                                                .then(Commands.argument("amount", IntegerArgumentType.integer(1))
-                                                        .executes(RunsCommand::vendorCredit))))
-                                .then(Commands.literal("buy")
-                                        .requires(source -> source.hasPermission(2))
-                                        .then(Commands.argument("run", UuidArgument.uuid())
-                                                .then(Commands.argument("service", ResourceLocationArgument.id())
-                                                        .then(Commands.argument("payer", EntityArgument.player())
-                                                                .then(Commands.argument("target", EntityArgument.player())
-                                                                        .executes(RunsCommand::vendorBuy)))))))
-                        // Player-facing, so no permission. Each subcommand carries its own {@code requires}:
-                        // Brigadier keeps the first registration's on a merged literal. {@code force} puts a modifier
-                        // on a run without a draw (operator).
-                        .then(Commands.literal("grant")
-                                .requires(source -> source.hasPermission(2))
-                                .then(Commands.argument("run", UuidArgument.uuid())
-                                        .then(Commands.argument("modifier", ResourceLocationArgument.id())
-                                                .executes(RunsCommand::grant))))
-                        .then(Commands.literal("draft")
-                                .then(Commands.literal("show")
-                                        .executes(RunsCommand::draftShow))
-                                .then(Commands.literal("vote")
-                                        .then(Commands.argument("card", IntegerArgumentType.integer(1, 9))
-                                                .executes(RunsCommand::draftVote)))
-                                .then(Commands.literal("force")
-                                        .requires(source -> source.hasPermission(2))
-                                        .then(Commands.argument("run", UuidArgument.uuid())
-                                                .executes(RunsCommand::draftForce))))
-                        .then(Commands.literal("list")
-                                .requires(source -> source.hasPermission(2))
-                                .executes(RunsCommand::list))
-                        .then(Commands.literal("show")
-                                .requires(source -> source.hasPermission(2))
-                                .then(Commands.argument("run", UuidArgument.uuid()).executes(RunsCommand::show)))
-                        .then(Commands.literal("create")
-                                .requires(source -> source.hasPermission(2))
-                                .then(Commands.argument("tower", ResourceLocationArgument.id())
-                                        .then(Commands.argument("players", EntityArgument.players())
-                                                .executes(RunsCommand::create))))
-                        .then(Commands.literal("validate")
-                                .requires(source -> source.hasPermission(2))
-                                .then(Commands.argument("run", UuidArgument.uuid())
-                                        .executes(RunsCommand::validate)))
-                        // Queues battle effects (P23) for a player's next tower battle: the seam armor-set bonuses
-                        // will use, and how a live test pins one down. `fx <player> clear` empties the queue.
-                        .then(Commands.literal("fx")
-                                .requires(source -> source.hasPermission(2))
-                                .then(Commands.argument("player", net.minecraft.commands.arguments.EntityArgument.player())
-                                        .then(Commands.argument("json", StringArgumentType.greedyString())
-                                                .executes(RunsCommand::fx))))
-                        .then(Commands.literal("earn")
-                                .requires(source -> source.hasPermission(2))
-                                .then(Commands.argument("run", UuidArgument.uuid())
-                                        .then(Commands.argument("kind", StringArgumentType.word())
-                                                .suggests((context, builder) -> {
-                                                    for (String kind : new String[] {"opponent", "boss", "floor", "milestone"}) {
-                                                        builder.suggest(kind);
-                                                    }
-                                                    return builder.buildFuture();
-                                                })
-                                                .executes(RunsCommand::earn))))
-                        .then(Commands.literal("allocate")
-                                .requires(source -> source.hasPermission(2))
-                                .then(Commands.argument("run", UuidArgument.uuid())
-                                        .executes(RunsCommand::allocate)))
-                        .then(Commands.literal("encounter")
-                                .requires(source -> source.hasPermission(2))
-                                .then(Commands.argument("run", UuidArgument.uuid())
-                                        .executes(RunsCommand::encounter)))
-                        .then(Commands.literal("watchdog")
-                                .requires(source -> source.hasPermission(2))
-                                .then(Commands.argument("cap", StringArgumentType.word())
-                                        .suggests((context, builder) -> builder.suggest("player")
-                                                .suggest("floor").buildFuture())
-                                        .executes(RunsCommand::watchdog)))
-                        .then(Commands.literal("advance")
-                                .requires(source -> source.hasPermission(2))
-                                .then(Commands.argument("run", UuidArgument.uuid())
-                                        .then(Commands.argument("event", StringArgumentType.word())
-                                                .suggests((context, builder) -> {
-                                                    for (RunEvent event : RunEvent.values()) {
-                                                        builder.suggest(event.name().toLowerCase(Locale.ROOT));
-                                                    }
-                                                    return builder.buildFuture();
-                                                })
-                                                .executes(RunsCommand::advance))))));
+                .then(playerCommands())
+                .then(operatorCommands()));
+    }
+
+    /** Commands a player runs for themselves: no permission. */
+    private static LiteralArgumentBuilder<CommandSourceStack> playerCommands() {
+        LiteralArgumentBuilder<CommandSourceStack> group = Commands.literal("runs");
+        group.then(Commands.literal("leave").executes(RunsCommand::leave));
+        // Cashing out is the party's decision; not blocked by an open draft.
+        group.then(Commands.literal("cashout").executes(RunsCommand::cashout));
+        group.then(Commands.literal("reward").then(Commands.literal("show").executes(RunsCommand::rewardShow)));
+        // INTERMISSION-only is enforced by VendorPurchaseService; credit and buy are operator test tools.
+        group.then(Commands.literal("vendor").executes(RunsCommand::vendor)
+                .then(op("credit")
+                        .then(Commands.argument("player", EntityArgument.player())
+                                .then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                                        .executes(RunsCommand::vendorCredit))))
+                .then(op("buy")
+                        .then(runArg()
+                                .then(Commands.argument("service", ResourceLocationArgument.id())
+                                        .then(Commands.argument("payer", EntityArgument.player())
+                                                .then(Commands.argument("target", EntityArgument.player())
+                                                        .executes(RunsCommand::vendorBuy)))))));
+        // {@code force} puts a modifier on a run without a draw (operator).
+        group.then(Commands.literal("draft")
+                .then(Commands.literal("show").executes(RunsCommand::draftShow))
+                .then(Commands.literal("vote")
+                        .then(Commands.argument("card", IntegerArgumentType.integer(1, 9))
+                                .executes(RunsCommand::draftVote)))
+                .then(opOnRun("force", RunsCommand::draftForce)));
+        return group;
+    }
+
+    /** Dev tools that drive the run machine by hand: permission 2. */
+    private static LiteralArgumentBuilder<CommandSourceStack> operatorCommands() {
+        LiteralArgumentBuilder<CommandSourceStack> group = Commands.literal("runs");
+        group.then(op("grant")
+                .then(runArg()
+                        .then(Commands.argument("modifier", ResourceLocationArgument.id())
+                                .executes(RunsCommand::grant))));
+        group.then(op("list").executes(RunsCommand::list));
+        group.then(opOnRun("show", RunsCommand::show));
+        group.then(op("create")
+                .then(Commands.argument("tower", ResourceLocationArgument.id())
+                        .then(Commands.argument("players", EntityArgument.players())
+                                .executes(RunsCommand::create))));
+        group.then(opOnRun("validate", RunsCommand::validate));
+        // Queues battle effects (P23) for a player's next tower battle; `fx <player> clear` empties the queue.
+        group.then(op("fx")
+                .then(Commands.argument("player", EntityArgument.player())
+                        .then(Commands.argument("json", StringArgumentType.greedyString())
+                                .executes(RunsCommand::fx))));
+        group.then(op("earn")
+                .then(runArg()
+                        .then(Commands.argument("kind", StringArgumentType.word())
+                                .suggests(suggesting(List.of("opponent", "boss", "floor", "milestone")))
+                                .executes(RunsCommand::earn))));
+        group.then(opOnRun("allocate", RunsCommand::allocate));
+        group.then(opOnRun("encounter", RunsCommand::encounter));
+        group.then(op("watchdog")
+                .then(Commands.argument("cap", StringArgumentType.word())
+                        .suggests(suggesting(List.of("player", "floor")))
+                        .executes(RunsCommand::watchdog)));
+        group.then(op("advance")
+                .then(runArg()
+                        .then(Commands.argument("event", StringArgumentType.word())
+                                .suggests(suggesting(Arrays.stream(RunEvent.values())
+                                        .map(event -> event.name().toLowerCase(Locale.ROOT)).toList()))
+                                .executes(RunsCommand::advance))));
+        return group;
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.cobbletowers.definition;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -24,7 +25,7 @@ public final class TrialPoolRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, TrialPoolDefinition>>
         implements IdentifiableResourceReloadListener {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "trial_pools");
+    public static final ResourceLocation ID = CobbleTowers.id("trial_pools");
     private static final String FOLDER = "cobbletowers/trial_pools";
 
     private static volatile Map<ResourceLocation, TrialPoolDefinition> LOADED = Map.of();

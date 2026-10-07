@@ -1,5 +1,6 @@
 package com.cobbletowers.client;
 
+import com.cobbletowers.CobbleTowers;
 import com.mojang.blaze3d.platform.NativeImage;
 import java.io.IOException;
 import java.util.HashMap;
@@ -48,7 +49,7 @@ final class PartnerSprites {
     }
 
     private static Optional<Info> load(ResourceManager manager, String id) {
-        ResourceLocation texture = ResourceLocation.fromNamespaceAndPath("cobbletowers", "textures/gui/partners/" + id + ".png");
+        ResourceLocation texture = CobbleTowers.id("textures/gui/partners/" + id + ".png");
         var resource = manager.getResource(texture);
         if (resource.isEmpty()) return Optional.empty();
         try (var in = resource.get().open(); NativeImage image = NativeImage.read(in)) {

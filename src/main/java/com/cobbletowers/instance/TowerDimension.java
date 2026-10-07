@@ -1,5 +1,6 @@
 package com.cobbletowers.instance;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -15,7 +16,7 @@ import net.minecraft.world.level.Level;
  */
 public final class TowerDimension {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tower");
+    public static final ResourceLocation ID = CobbleTowers.id("tower");
     public static final ResourceKey<Level> LEVEL = ResourceKey.create(Registries.DIMENSION, ID);
 
     private TowerDimension() {}

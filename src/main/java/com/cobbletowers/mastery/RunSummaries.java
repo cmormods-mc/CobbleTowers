@@ -1,5 +1,6 @@
 package com.cobbletowers.mastery;
 
+import com.cobbletowers.ServerState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,16 @@ public final class RunSummaries {
     private static final Map<UUID, String> STREAK_LINE = new ConcurrentHashMap<>();
     private static final Map<UUID, RunReport> LAST_REPORT = new ConcurrentHashMap<>();
     private static final Map<UUID, String> LAST_PLAYERS = new ConcurrentHashMap<>();
+
+    static {
+        ServerState.onStop(() -> {
+            UNLOCKED.clear();
+            TRIAL_SCORE.clear();
+            STREAK_LINE.clear();
+            LAST_REPORT.clear();
+            LAST_PLAYERS.clear();
+        });
+    }
 
     private RunSummaries() {}
 

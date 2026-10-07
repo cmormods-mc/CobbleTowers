@@ -1,5 +1,6 @@
 package com.cobbletowers.battle.cobbleraids;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbleraids.api.encounter.CobbleRaidsEncounters;
 import com.cobbleraids.api.encounter.EncounterListener;
 import com.cobbleraids.api.encounter.EncounterPolicy;
@@ -31,7 +32,7 @@ import net.minecraft.world.phys.Vec3;
 public final class TowerBossAdapter {
 
     /** Who owns these encounters, so CobbleRaids can tell a tower boss from a wild raid. */
-    private static final ResourceLocation OWNER = ResourceLocation.fromNamespaceAndPath("cobbletowers", "floor");
+    private static final ResourceLocation OWNER = CobbleTowers.id("floor");
 
     /** No catching, no raid rewards, no raid progression; damage and PP carry back to the party (TDS #16). */
     static final EncounterPolicy POLICY = EncounterPolicy.none().withCarryover(true, true);

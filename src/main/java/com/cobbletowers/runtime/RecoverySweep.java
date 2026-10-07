@@ -1,5 +1,6 @@
 package com.cobbletowers.runtime;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter;
 import com.cobbletowers.diagnostics.TowerMetrics;
@@ -34,6 +35,10 @@ public final class RecoverySweep {
     private record Pending(UUID runId, int waited, int settled) {}
 
     private static final Map<Integer, Pending> PENDING = new LinkedHashMap<>();
+
+    static {
+        ServerState.onStop(RecoverySweep::onServerStopped);
+    }
 
     private RecoverySweep() {}
 

@@ -39,7 +39,7 @@ public record VendorCatalogPayload(long cobbleDollars, List<Entry> services, Lis
     }
 
     public static final CustomPacketPayload.Type<VendorCatalogPayload> TYPE = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "vendor_catalog"));
+            CobbleTowers.id("vendor_catalog"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, VendorCatalogPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.VAR_LONG, VendorCatalogPayload::cobbleDollars,

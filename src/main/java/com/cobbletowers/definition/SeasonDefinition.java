@@ -1,5 +1,6 @@
 package com.cobbletowers.definition;
 
+import com.cobbletowers.CobbleTowers;
 import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Optional;
@@ -16,9 +17,9 @@ public record SeasonDefinition(int number, String name, Optional<ResourceLocatio
 
     /** The regional towers a generated season rotates through, in order. */
     public static final List<ResourceLocation> REGIONS = List.of(
-            ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge"),
-            ResourceLocation.fromNamespaceAndPath("cobbletowers", "rootvale"),
-            ResourceLocation.fromNamespaceAndPath("cobbletowers", "duskvale"));
+            CobbleTowers.id("tideforge"),
+            CobbleTowers.id("rootvale"),
+            CobbleTowers.id("duskvale"));
 
     public SeasonDefinition {
         if (number < 1) throw new IllegalArgumentException("season number must be >= 1, got " + number);

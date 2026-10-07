@@ -5,7 +5,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 
 /**
  * One thing a player did on the intermission screen. {@code argument} is the card index for {@code PICK_CARD}, else
@@ -16,7 +15,7 @@ public record IntermissionActionPayload(Action action, int argument) implements 
     public enum Action { PICK_CARD, READY, UNREADY, CASH_OUT, STAY, VENDOR, REFRESH }
 
     public static final CustomPacketPayload.Type<IntermissionActionPayload> TYPE = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "intermission_action"));
+            CobbleTowers.id("intermission_action"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, IntermissionActionPayload> STREAM_CODEC =
             StreamCodec.composite(

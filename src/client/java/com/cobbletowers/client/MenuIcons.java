@@ -1,5 +1,6 @@
 package com.cobbletowers.client;
 
+import com.cobbletowers.CobbleTowers;
 import com.mojang.blaze3d.platform.NativeImage;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +34,7 @@ final class MenuIcons {
         paint(new Pen(image), key);
         DynamicTexture texture = new DynamicTexture(image);
         texture.setFilter(false, false);
-        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("cobbletowers", "dynamic/icon/" + serial++);
+        ResourceLocation id = CobbleTowers.id("dynamic/icon/" + serial++);
         Minecraft.getInstance().getTextureManager().register(id, texture);
         return id;
     }

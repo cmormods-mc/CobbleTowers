@@ -15,7 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 public record VendorPurchasePayload(ResourceLocation serviceId, UUID targetPlayerId) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<VendorPurchasePayload> TYPE = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "vendor_purchase"));
+            CobbleTowers.id("vendor_purchase"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, VendorPurchasePayload> STREAM_CODEC = StreamCodec.composite(
             ResourceLocation.STREAM_CODEC, VendorPurchasePayload::serviceId,

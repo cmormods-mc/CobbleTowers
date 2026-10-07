@@ -65,7 +65,7 @@ public record MasteryScreenPayload(List<Tower> towers, String selected, String t
     }
 
     public static final CustomPacketPayload.Type<MasteryScreenPayload> TYPE = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "mastery_screen"));
+            CobbleTowers.id("mastery_screen"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, MasteryScreenPayload> STREAM_CODEC = StreamCodec.composite(
             Tower.STREAM_CODEC.apply(ByteBufCodecs.list()), MasteryScreenPayload::towers,

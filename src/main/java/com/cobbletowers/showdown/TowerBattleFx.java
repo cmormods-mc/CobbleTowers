@@ -1,5 +1,6 @@
 package com.cobbletowers.showdown;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -38,6 +39,13 @@ public final class TowerBattleFx {
     private static final Map<UUID, JsonArray> QUEUED = new ConcurrentHashMap<>();
     /** Armed for the battle being started right now: resolved operations, by player. */
     private static final Map<UUID, JsonArray> ARMED = new ConcurrentHashMap<>();
+
+    static {
+        ServerState.onStop(() -> {
+            QUEUED.clear();
+            ARMED.clear();
+        });
+    }
 
     private TowerBattleFx() {}
 

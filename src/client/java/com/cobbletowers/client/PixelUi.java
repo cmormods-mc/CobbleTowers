@@ -1,5 +1,6 @@
 package com.cobbletowers.client;
 
+import com.cobbletowers.CobbleTowers;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -24,13 +25,13 @@ public final class PixelUi {
         DARK("frame_dark"), PARCHMENT("frame_parchment"), BUTTON("button_normal"), BUTTON_HOVER("button_hover"),
         BUTTON_PRESSED("button_pressed"), BUTTON_DISABLED("button_disabled"), SECONDARY("button_secondary"), TAB("tab_active");
         final ResourceLocation texture;
-        Frame(String name) { texture = ResourceLocation.fromNamespaceAndPath("cobbletowers", "textures/gui/pixel/" + name + ".png"); }
+        Frame(String name) { texture = CobbleTowers.id("textures/gui/pixel/" + name + ".png"); }
     }
 
     public enum Tile {
         OAK("tile_oak"), PARCHMENT("tile_parchment"), BRONZE("tile_bronze"), BURGUNDY("tile_cloth_burgundy");
         final ResourceLocation texture;
-        Tile(String name) { texture = ResourceLocation.fromNamespaceAndPath("cobbletowers", "textures/gui/pixel/" + name + ".png"); }
+        Tile(String name) { texture = CobbleTowers.id("textures/gui/pixel/" + name + ".png"); }
     }
 
     private PixelUi() {}

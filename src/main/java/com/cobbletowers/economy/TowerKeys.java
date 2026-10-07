@@ -1,5 +1,6 @@
 package com.cobbletowers.economy;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,7 +23,7 @@ import net.minecraft.world.item.Rarity;
  */
 public final class TowerKeys {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tower_key");
+    public static final ResourceLocation ID = CobbleTowers.id("tower_key");
 
     private static Item item;
     private static volatile boolean required;

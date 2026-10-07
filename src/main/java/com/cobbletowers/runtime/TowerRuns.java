@@ -1,5 +1,6 @@
 package com.cobbletowers.runtime;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.diagnostics.TowerMetrics;
 import com.cobbletowers.persistence.PersistedParticipant;
@@ -23,6 +24,10 @@ public final class TowerRuns {
 
     private static final Map<UUID, PersistedRun> BY_ID = new LinkedHashMap<>();
     private static final Map<UUID, UUID> RUN_BY_PLAYER = new HashMap<>();
+
+    static {
+        ServerState.onStop(TowerRuns::onServerStopped);
+    }
 
     private TowerRuns() {}
 

@@ -1,5 +1,6 @@
 package com.cobbletowers.instance;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.definition.FloorLayout;
 import java.util.ArrayDeque;
@@ -85,6 +86,10 @@ public final class CellWarmPool {
      * tick that started a run.
      */
     private static final Map<ResourceLocation, FloorLayout> WANTED = new LinkedHashMap<>();
+
+    static {
+        ServerState.onStop(CellWarmPool::onServerStopped);
+    }
 
     public static void want(FloorLayout layout) {
         WANTED.put(layout.structure(), layout);

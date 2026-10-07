@@ -1,5 +1,6 @@
 package com.cobbletowers.client;
 
+import com.cobbletowers.CobbleTowers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.resources.ResourceLocation;
@@ -9,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
  * cobbletowers:ui} with vanilla glyphs as fallback. Tooltips and chat stay vanilla.
  */
 final class TowerFonts {
-    private static final ResourceLocation UI = ResourceLocation.fromNamespaceAndPath("cobbletowers", "ui");
+    private static final ResourceLocation UI = CobbleTowers.id("ui");
     private static Font ui;
 
     private TowerFonts() {}

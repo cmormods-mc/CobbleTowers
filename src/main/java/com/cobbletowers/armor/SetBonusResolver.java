@@ -1,5 +1,6 @@
 package com.cobbletowers.armor;
 
+import com.cobbletowers.CobbleTowers;
 import com.google.gson.JsonArray;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -76,7 +77,6 @@ public final class SetBonusResolver {
     }
 
     static ResourceLocation keyOf(ArmorSetDefinition set, int index) {
-        return ResourceLocation.fromNamespaceAndPath("cobbletowers",
-                "armor_set/" + set.id().getNamespace() + "_" + set.id().getPath().replace('/', '_') + "/" + index);
+        return CobbleTowers.id("armor_set/" + set.id().getNamespace() + "_" + set.id().getPath().replace('/', '_') + "/" + index);
     }
 }

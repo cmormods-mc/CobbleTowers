@@ -6,7 +6,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 
 /**
  * What a scouting profile reveals about a floor's draw, sent alongside the encounter, never gating it (TDS #22, #49).
@@ -22,7 +21,7 @@ public record ScoutingRevealPayload(int floorIndex, List<Category> categories) i
     }
 
     public static final CustomPacketPayload.Type<ScoutingRevealPayload> TYPE = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "scouting_reveal"));
+            CobbleTowers.id("scouting_reveal"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, ScoutingRevealPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.VAR_INT, ScoutingRevealPayload::floorIndex,

@@ -1,5 +1,6 @@
 package com.cobbletowers.storage;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.participant.MembershipState;
 import com.cobbletowers.battle.cobblemon.PartyStorage;
@@ -45,6 +46,10 @@ public final class PartyJournalService {
     private static int ticks;
     /** Players already told their boxes are full, so the once-a-second sweep does not repeat itself. */
     private static final java.util.Set<UUID> TOLD_FULL = new java.util.HashSet<>();
+
+    static {
+        ServerState.onStop(TOLD_FULL::clear);
+    }
 
     private PartyJournalService() {}
 

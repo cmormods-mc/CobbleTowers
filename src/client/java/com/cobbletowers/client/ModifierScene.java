@@ -1,8 +1,8 @@
 package com.cobbletowers.client;
 
+import com.cobbletowers.CobbleTowers;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.ResourceLocation;
 
 /**
  * The battle dioramas on modifier cards: stepped, integer-aligned fills with a Pokemon sprite from {@code
@@ -105,7 +105,7 @@ final class ModifierScene {
     }
 
     private static void sprite(GuiGraphics g, String name, int x, int y) {
-        g.blit(ResourceLocation.fromNamespaceAndPath("cobbletowers", "textures/gui/partners/" + name + ".png"),
+        g.blit(CobbleTowers.id("textures/gui/partners/" + name + ".png"),
                 x, y, SPRITE_W, SPRITE_H, 0, 0, SPRITE_W, SPRITE_H, SPRITE_W, SPRITE_H);
     }
 

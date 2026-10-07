@@ -1,5 +1,6 @@
 package com.cobbletowers.client;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.network.PlayStatePayload;
 import com.cobbletowers.network.TowerHallStatePayload;
 import java.io.IOException;
@@ -16,7 +17,6 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
 /**
@@ -105,7 +105,7 @@ final class FrameSampler {
         directory = out;
         install();
         var towers = List.of("tideforge", "rootvale", "duskvale", "neutral", "custom_arena").stream()
-                .map(id -> new TowerHallStatePayload.Destination(ResourceLocation.fromNamespaceAndPath("cobbletowers", id),
+                .map(id -> new TowerHallStatePayload.Destination(CobbleTowers.id(id),
                         id.substring(0, 1).toUpperCase() + id.substring(1) + " Tower", 10, 2, true)).toList();
         var play = new PlayStatePayload(List.of(), PlayStatePayload.Lobby.none(), List.of(50, 50, 50), "", false);
         var state = new TowerHallStatePayload(towers, List.of(), play, "", false);

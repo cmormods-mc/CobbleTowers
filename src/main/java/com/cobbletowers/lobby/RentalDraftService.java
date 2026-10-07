@@ -1,5 +1,6 @@
 package com.cobbletowers.lobby;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.definition.PlaylistDefinition;
 import com.cobbletowers.definition.PlaylistRegistry;
 import com.cobbletowers.definition.RentalSetDefinition;
@@ -27,6 +28,10 @@ import net.minecraft.server.level.ServerPlayer;
 public final class RentalDraftService {
 
     private static final Map<UUID, RentalDraft> DRAFTS = new HashMap<>();
+
+    static {
+        ServerState.onStop(DRAFTS::clear);
+    }
 
     private RentalDraftService() {}
 

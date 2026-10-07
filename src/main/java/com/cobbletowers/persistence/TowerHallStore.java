@@ -1,5 +1,6 @@
 package com.cobbletowers.persistence;
 
+import com.cobbletowers.TowerLog;
 import com.cobbletowers.mastery.LeaderboardRules.Board;
 import com.cobbletowers.mastery.LeaderboardRules.Entry;
 import com.cobbletowers.mastery.LeaderboardRules.Key;
@@ -136,7 +137,8 @@ public final class TowerHallStore extends TowerStore {
                         LocalDate.parse(item.getString("ended_on")), boards, clubs);
                 store.seasons.put(season.number(), season);
             } catch (RuntimeException ex) {
-                // A season this build cannot read is skipped, never fatal; the Hall must not stop a server.
+                // Skipped, never fatal: the Hall must not stop a server.
+                TowerLog.error("Skipped an unreadable Hall of Fame season: {}", ex.toString());
             }
         }
         return store;

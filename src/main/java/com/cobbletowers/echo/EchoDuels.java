@@ -1,5 +1,6 @@
 package com.cobbletowers.echo;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter;
 import com.cobbletowers.persistence.TowerEchoStore;
@@ -20,6 +21,10 @@ import net.minecraft.server.level.ServerPlayer;
 public final class EchoDuels {
 
     private static final Map<UUID, Map<UUID, UUID>> PENDING = new HashMap<>();
+
+    static {
+        ServerState.onStop(PENDING::clear);
+    }
 
     private EchoDuels() {}
 

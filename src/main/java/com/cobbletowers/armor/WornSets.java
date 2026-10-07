@@ -1,5 +1,6 @@
 package com.cobbletowers.armor;
 
+import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -31,6 +32,10 @@ public final class WornSets {
     static final int CHECK_INTERVAL_TICKS = 10;
 
     private static final Map<UUID, ActiveBonuses> CACHE = new ConcurrentHashMap<>();
+
+    static {
+        ServerState.onStop(CACHE::clear);
+    }
     private static final Set<ResourceLocation> WARNED_ATTRIBUTES = ConcurrentHashMap.newKeySet();
     private static boolean installed;
     private static int ticks;

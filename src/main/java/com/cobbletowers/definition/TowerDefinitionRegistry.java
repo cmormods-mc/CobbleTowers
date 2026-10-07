@@ -1,5 +1,6 @@
 package com.cobbletowers.definition;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.registry.TowerRegistryView;
 import com.cobbletowers.api.registry.TowerSummary;
@@ -29,7 +30,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 public final class TowerDefinitionRegistry
         extends SimplePreparableReloadListener<TowerContent> implements IdentifiableResourceReloadListener {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tower_definitions");
+    public static final ResourceLocation ID = CobbleTowers.id("tower_definitions");
 
     private static volatile TowerContent CONTENT = TowerContent.EMPTY;
     private static final TowerRegistryView VIEW = new View();

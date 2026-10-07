@@ -1,5 +1,6 @@
 package com.cobbletowers.client;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.network.RentalDraftActionPayload;
 import com.cobbletowers.network.RentalDraftPayload;
 import com.cobbletowers.rental.PackReveal;
@@ -367,8 +368,8 @@ public final class RentalPackScreen extends TowerScreen {
     // ---- the pack, and the blade that opens it
     // -------------------------------------------------------------------------------
 
-    private static final ResourceLocation PACK_TOP = ResourceLocation.fromNamespaceAndPath("cobbletowers", "textures/gui/byzantine/pack_top.png");
-    private static final ResourceLocation PACK_BODY = ResourceLocation.fromNamespaceAndPath("cobbletowers", "textures/gui/byzantine/pack_body.png");
+    private static final ResourceLocation PACK_TOP = CobbleTowers.id("textures/gui/byzantine/pack_top.png");
+    private static final ResourceLocation PACK_BODY = CobbleTowers.id("textures/gui/byzantine/pack_body.png");
     private static final int PACK_W = 112;
     private static final int PACK_TOP_H = 16;
     private static final int PACK_BODY_H = 144;

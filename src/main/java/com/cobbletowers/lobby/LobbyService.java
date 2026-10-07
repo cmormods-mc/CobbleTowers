@@ -1,5 +1,7 @@
 package com.cobbletowers.lobby;
 
+import com.cobbletowers.ServerState;
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunEvent;
 import com.cobbletowers.api.tower.RunState;
@@ -95,6 +97,7 @@ public final class LobbyService {
     /** Memory hygiene at shutdown, like {@code TowerRuns.onServerStopped}. */
     public static void clear() {
         BY_HOST.clear();
+        LAST_CODES.clear();
     }
 
     /** One line per forming team: host, tower, how many are ready and pending, and whether it is counting down. */
@@ -256,6 +259,10 @@ public final class LobbyService {
     /** The code of the last run each player started, for {@code /tower play code}. In memory only. */
     private static final Map<UUID, String> LAST_CODES = new java.util.concurrent.ConcurrentHashMap<>();
 
+    static {
+        ServerState.onStop(LobbyService::clear);
+    }
+
     /** What {@code /tower play code} says with no argument: the code of the run you last started. */
     public static String lastCode(ServerPlayer player) {
         String code = LAST_CODES.get(player.getUUID());
@@ -304,7 +311,7 @@ public final class LobbyService {
             return "Mode: Standard.";
         }
         ResourceLocation id = raw.contains(":") ? ResourceLocation.tryParse(raw)
-                : ResourceLocation.fromNamespaceAndPath("cobbletowers", raw.toLowerCase(java.util.Locale.ROOT));
+                : CobbleTowers.id(raw.toLowerCase(java.util.Locale.ROOT));
         java.util.Optional<PlaylistDefinition> playlist = id == null ? java.util.Optional.empty() : PlaylistRegistry.get(id);
         if (playlist.isEmpty()) return "No mode called " + raw + ". Try: standard, "
                 + PlaylistRegistry.all().stream().map(p -> p.id().getPath()).collect(java.util.stream.Collectors.joining(", ")) + ".";

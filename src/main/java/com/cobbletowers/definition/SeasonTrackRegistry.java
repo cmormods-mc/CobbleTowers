@@ -1,5 +1,6 @@
 package com.cobbletowers.definition;
 
+import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.track.TrackConfig;
 import com.google.gson.JsonObject;
@@ -25,7 +26,7 @@ public final class SeasonTrackRegistry
         extends SimplePreparableReloadListener<Map<ResourceLocation, SeasonTrackRegistry.File>>
         implements IdentifiableResourceReloadListener {
 
-    public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "season_tracks");
+    public static final ResourceLocation ID = CobbleTowers.id("season_tracks");
     private static final String FOLDER = "cobbletowers/season_tracks";
 
     /** One parsed file: its steps (empty for an addon file that only adds) and the steps it adds to. */

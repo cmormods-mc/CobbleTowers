@@ -120,7 +120,7 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
     }
 
     public static final CustomPacketPayload.Type<RentalDraftPayload> TYPE = new CustomPacketPayload.Type<>(
-            ResourceLocation.fromNamespaceAndPath(CobbleTowers.MOD_ID, "rental_draft"));
+            CobbleTowers.id("rental_draft"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, RentalDraftPayload> STREAM_CODEC = StreamCodec.composite(
             Pack.STREAM_CODEC.apply(ByteBufCodecs.list()), RentalDraftPayload::packs,
