@@ -242,6 +242,12 @@ public final class RunTransitionService {
             RunExitService.announce(server, run);
             return;
         }
+        // Clearing a cell is heavy work. When the tower is busy the run keeps its lease for a beat and the once-a-second exit sweep
+        // releases it (nobody is inside, so it is due at once); nothing is lost by waiting.
+        if (!com.cobbletowers.instance.HeavyWork.tryAcquire(now)) {
+            TowerLog.info("Run {} ended; its cell {} will be released by the exit sweep (the tower is busy)", run.runId(), run.cell().getAsInt());
+            return;
+        }
         releaseCell(server, run, now);
     }
 

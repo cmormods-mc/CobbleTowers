@@ -150,6 +150,7 @@ public final class InstanceAllocator {
                 TowerLog.info("Cell {} released by run {}", cell, runId);
                 return new Released(cell);
             }
+            CellCleanliness.markDirty(cell);
             CellStateStore.get(server).quarantine(server,
                     new CellQuarantine(cell, report.summary(), System.currentTimeMillis()));
             return new Quarantined(cell, report.summary());
@@ -189,6 +190,8 @@ public final class InstanceAllocator {
     /** Returns a quarantined cell to service. False when it was not quarantined. */
     public static boolean clearQuarantine(MinecraftServer server, int cell) {
         CellGrid.requireValid(cell);
+        // Whatever put it in quarantine may have left anything in it: its next use must scan it.
+        CellCleanliness.markDirty(cell);
         return CellStateStore.get(server).clear(server, cell);
     }
 
@@ -208,6 +211,8 @@ public final class InstanceAllocator {
     /** Memory hygiene at shutdown; the index is rebuilt from the runs on the next start. */
     public static int onServerStopped() {
         int held = CELL_BY_RUN.size();
+        CellCleanliness.clearAll();
+        HeavyWork.reset();
         LEASED.clear();
         RUN_BY_CELL.clear();
         CELL_BY_RUN.clear();

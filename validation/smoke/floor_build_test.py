@@ -172,20 +172,38 @@ def main() -> None:
             results.append(Result("the tower reports what it is holding loaded",
                                   held >= 1 and per_cell == 49, listed.strip()[:200]))
 
-            # The pool tops up after a run takes a cell, so the next party does not wait for a paste.
-            time.sleep(1)
+            # The pool tops up after a run takes a cell, so the next party does not wait for a paste. It builds from its own tick, one
+            # cell at a time and only when the tower is not busy with other heavy work, so wait for it rather than looking at once.
+            # Wait for the pool to reach its target (2 per structure, built one every ~5 s): otherwise it would take the cell this run
+            # frees and paste a fresh arena into it, and "the arena was cleared" could not be told apart from "it was rebuilt".
+            deadline = time.time() + 30
+            while warm < 2 and time.time() < deadline:
+                time.sleep(1)
+                listed = rcon.command("cobbletowers cells list")
+                warm = number(listed, r"(\d+) warm")
             results.append(Result("the warm pool built cells ahead of the next run", warm >= 1,
                                   f"warm={warm}; {listed.strip()[:160]}"))
 
-            # Ending the run resets the cell and lets the chunks go.
+            # Ending the run resets the cell and lets the chunks go. A clear right after another heavy operation waits for the
+            # once-a-second exit sweep, so poll until the cell is released.
             rcon.command(f"cobbletowers runs advance {run} abandon_requested")
             (sx, sy, sz), _ = samples[0]
-            emptied = probe.holds(f"execute in cobbletowers:tower if block "
-                                  f"{origin[0] + sx} {origin[1] + sy} {origin[2] + sz} minecraft:air")
+            emptied = False
+            deadline = time.time() + 15
+            while time.time() < deadline:
+                emptied = probe.holds(f"execute in cobbletowers:tower if block "
+                                      f"{origin[0] + sx} {origin[1] + sy} {origin[2] + sz} minecraft:air")
+                if emptied:
+                    break
+                time.sleep(1)
             results.append(Result("ending a run clears the arena out of the cell", emptied,
                                   "a sampled arena block is still there after the run ended"))
             probe.close()
             after = rcon.command(f"cobbletowers cells show {cell}")
+            deadline = time.time() + 10
+            while "chunks not held" not in after and time.time() < deadline:
+                time.sleep(0.5)
+                after = rcon.command(f"cobbletowers cells show {cell}")
             results.append(Result("and lets the cell's chunks go", "chunks not held" in after,
                                   after.strip()[:220]))
             results.append(Result("a cell released clean is not quarantined", "quarantined" not in after,

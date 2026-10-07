@@ -108,9 +108,14 @@ public final class CellPreparer {
         CellTickets.hold(server, cell);
         // A structure does not place its air, so whatever is already in the cell would show through it. Cells are
         // reset when a run releases them, but a cell used before the sweep covered the whole building (or after a
-        // crash) can still hold an older build; clearing here makes the paste independent of that history.
-        int leftover = reset(server, cell);
-        if (leftover > 0) TowerLog.warn("Cell {} held {} leftover block(s) before it was prepared; cleared", cell, leftover);
+        // crash) can still hold an older build; clearing here makes the paste independent of that history. A cell a
+        // reset has just left clean (this run's own release, or an earlier prepare's) is not scanned again.
+        if (!CellCleanliness.isClean(cell)) {
+            int leftover = reset(server, cell);
+            if (leftover > 0) TowerLog.warn("Cell {} held {} leftover block(s) before it was prepared; cleared", cell, leftover);
+        }
+        // From here the cell holds (some of) a build, whether or not the paste succeeds.
+        CellCleanliness.markDirty(cell);
 
         long started = System.nanoTime();
         boolean placed = template.placeInWorld(level, origin, origin,
@@ -176,6 +181,7 @@ public final class CellPreparer {
             }
         }
         if (cleared > 0) TowerLog.info("Cell {} reset, {} block(s) cleared", cell, cleared);
+        CellCleanliness.markClean(cell);
         return cleared;
     }
 }

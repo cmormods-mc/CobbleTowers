@@ -140,6 +140,8 @@ public final class RunExitService {
         for (PersistedRun run : TowerRuns.all()) {
             if (!run.isRetired() || run.cell().isEmpty()) continue;
             if (ExitRules.releaseDue(anyoneInside(server, run), run.updatedAt(), now)) {
+                // One cell per window (HeavyWork); the rest wait for the next sweep. Players are still sent home by the loop above.
+                if (!com.cobbletowers.instance.HeavyWork.tryAcquire(now)) break;
                 // A cell is never reset under the people who were in the run: anyone still inside (an operator the loop above
                 // chose to leave alone, say) goes home first, or they would be left standing in an empty dimension.
                 evacuateParticipants(server, run);

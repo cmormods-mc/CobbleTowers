@@ -153,8 +153,10 @@ public final class RunLifecycle {
         if (previous.isPresent() && previous.get().structure().equals(next.get().structure())) return true;
 
         int cell = run.cell().getAsInt();
-        CellPreparer.reset(server, cell);
+        // prepare() clears the previous floor itself (the cell is dirty), so there is no separate reset: one scan, not two.
         Optional<CellPreparer.Prepared> prepared = CellPreparer.prepare(server, cell, next.get());
+        // This cannot wait for a slot (the party is between floors), so it is noted: everything else backs off around it.
+        com.cobbletowers.instance.HeavyWork.note(System.currentTimeMillis());
         if (prepared.isEmpty() || !prepared.get().isPlayable()) {
             TowerLog.error("Cell {} could not be rebuilt as {} for run {}: {}", cell, next.get().structure(), runId,
                     prepared.map(CellPreparer.Prepared::summary).orElse("the structure did not place"));
@@ -213,7 +215,8 @@ public final class RunLifecycle {
         }
 
         // Only now, once a run has actually taken one, is there evidence the pool should hold more.
-        CellWarmPool.topUp(server, layout.get(), now);
+        // The pool is told what to keep ready and builds it from its own tick, not here: a cell built in this tick would stall the run start again.
+        CellWarmPool.want(layout.get());
         return outcome;
     }
 

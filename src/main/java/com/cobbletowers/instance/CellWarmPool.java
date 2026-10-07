@@ -62,12 +62,17 @@ public final class CellWarmPool {
      * and a pool that retries hard on a broken server is worse than a pool that stays empty.
      */
     public static int topUp(MinecraftServer server, FloorLayout layout, long now) {
+        return topUp(server, layout, now, Integer.MAX_VALUE);
+    }
+
+    /** As above, building at most {@code maxBuilds} cells in this call (the tick builds one at a time). */
+    public static int topUp(MinecraftServer server, FloorLayout layout, long now, int maxBuilds) {
         if (now - lastTopUp < COOLDOWN_MILLIS) return 0;
         lastTopUp = now;
 
         Deque<Integer> ready = READY.computeIfAbsent(layout.structure(), key -> new ArrayDeque<>());
         int built = 0;
-        while (ready.size() < TARGET_PER_STRUCTURE) {
+        while (ready.size() < TARGET_PER_STRUCTURE && built < maxBuilds) {
             InstanceAllocator.Allocation allocation = InstanceAllocator.allocate(server, poolTenant(ready.size()));
             if (!(allocation instanceof InstanceAllocator.Leased leased)) break;
 
@@ -86,6 +91,42 @@ public final class CellWarmPool {
             TowerLog.info("Warm pool built {} cell(s) for {}; {} ready", built, layout.structure(), ready.size());
         }
         return built;
+    }
+
+    /**
+     * Layouts a run has used, so the pool knows what to keep ready. Recording one costs nothing; the building happens in {@link #tick}, away
+     * from the tick that started a run (building a cell there stalled the run start by a second paste).
+     */
+    private static final Map<ResourceLocation, FloorLayout> WANTED = new LinkedHashMap<>();
+
+    public static void want(FloorLayout layout) {
+        WANTED.put(layout.structure(), layout);
+    }
+
+    /** Once a second: builds ONE missing cell if the tower is not busy with other heavy work. Returns how many were built. */
+    public static int tick(MinecraftServer server, long now) {
+        for (FloorLayout layout : WANTED.values()) {
+            Deque<Integer> ready = READY.get(layout.structure());
+            if (ready != null && ready.size() >= TARGET_PER_STRUCTURE) continue;
+            if (now - lastTopUp < COOLDOWN_MILLIS) return 0;
+            if (!HeavyWork.tryAcquire(now)) return 0;
+            return topUp(server, layout, now, 1);
+        }
+        return 0;
+    }
+
+    private static int ticks;
+
+    /** Registers the once-a-second tick. */
+    public static void install() {
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (++ticks % 20 != 0) return;
+            try {
+                tick(server, System.currentTimeMillis());
+            } catch (RuntimeException ex) {
+                TowerLog.error("The warm pool tick failed", ex);
+            }
+        });
     }
 
     /**
@@ -117,6 +158,7 @@ public final class CellWarmPool {
     public static int onServerStopped() {
         int ready = readyCount();
         READY.clear();
+        WANTED.clear();
         lastTopUp = 0;
         return ready;
     }
@@ -124,6 +166,7 @@ public final class CellWarmPool {
     /** Test seam. */
     static void resetForTests() {
         READY.clear();
+        WANTED.clear();
         lastTopUp = 0;
     }
 

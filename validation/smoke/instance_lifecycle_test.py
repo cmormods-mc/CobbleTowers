@@ -120,7 +120,13 @@ def main() -> None:
                                   verified.strip()[:200]))
 
             rcon.command(f"cobbletowers runs advance {run_b} abandon_requested")
+            # The release is spread out by the tower's heavy-work limiter (one cell clear per ~1.2 s): when another cell was cleared a moment
+            # ago it waits for the once-a-second exit sweep, so give it a few seconds instead of looking at once.
             after = rcon.command(f"cobbletowers cells show {cell_b}")
+            deadline = time.time() + 10
+            while "quarantined" not in after and time.time() < deadline:
+                time.sleep(0.5)
+                after = rcon.command(f"cobbletowers cells show {cell_b}")
             results.append(Result("ending a run with something still in its cell quarantines it",
                                   "quarantined" in after, after.strip()[:200]))
 

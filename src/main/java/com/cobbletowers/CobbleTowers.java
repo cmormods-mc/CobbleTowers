@@ -140,6 +140,7 @@ public final class CobbleTowers implements ModInitializer {
         com.cobbletowers.storage.PartyJournalService.install();
         com.cobbletowers.storage.RentalPartyService.install();
         com.cobbletowers.runtime.RunExitService.install();
+        com.cobbletowers.instance.CellWarmPool.install();
         com.cobbletowers.instance.TowerDropGuard.install();
         com.cobbletowers.vendor.VendorNpc.install();
         com.cobbletowers.mastery.MasteryService.install();

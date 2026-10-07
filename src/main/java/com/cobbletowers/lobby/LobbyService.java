@@ -450,6 +450,15 @@ public final class LobbyService {
             }
             if (!lobby.counting()) continue;
             if (lobby.countdownDue(now)) {
+                if (!com.cobbletowers.instance.HeavyWork.tryAcquire(now)) {
+                    // The tower is busy building or clearing other arenas (one at a time keeps the server responsive): wait a second.
+                    lobby.beginCountdown(now, 1_000L);
+                    for (UUID id : lobby.team()) {
+                        ServerPlayer player = server.getPlayerList().getPlayer(id);
+                        if (player != null) player.displayClientMessage(Component.literal("The tower is preparing other arenas; starting in a moment..."), true);
+                    }
+                    continue;
+                }
                 launch(server, lobby, now);
             } else {
                 int left = lobby.secondsLeft(now);
