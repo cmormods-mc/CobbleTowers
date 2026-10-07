@@ -15,68 +15,75 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class RunSummaries {
 
-    private static final Map<UUID, List<String>> UNLOCKED = new ConcurrentHashMap<>();
-    private static final Map<UUID, Integer> TRIAL_SCORE = new ConcurrentHashMap<>();
-    private static final Map<UUID, String> STREAK_LINE = new ConcurrentHashMap<>();
-    private static final Map<UUID, RunReport> LAST_REPORT = new ConcurrentHashMap<>();
-    private static final Map<UUID, String> LAST_PLAYERS = new ConcurrentHashMap<>();
+    /** What has been gathered for one run so far. */
+    private static final class Story {
+        final List<String> unlocked = new ArrayList<>();
+        Integer trialScore;
+        String streakLine = "";
+    }
+
+    private record Last(RunReport report, String players) {}
+
+    private static final Map<UUID, Story> BY_RUN = new ConcurrentHashMap<>();
+    private static final Map<UUID, Last> LAST_BY_PLAYER = new ConcurrentHashMap<>();
 
     static {
         ServerState.onStop(() -> {
-            UNLOCKED.clear();
-            TRIAL_SCORE.clear();
-            STREAK_LINE.clear();
-            LAST_REPORT.clear();
-            LAST_PLAYERS.clear();
+            BY_RUN.clear();
+            LAST_BY_PLAYER.clear();
         });
     }
 
     private RunSummaries() {}
 
+    private static Story story(UUID runId) {
+        return BY_RUN.computeIfAbsent(runId, id -> new Story());
+    }
+
     public static void unlocked(UUID runId, String achievement) {
-        UNLOCKED.computeIfAbsent(runId, id -> new ArrayList<>()).add(achievement);
+        Story story = story(runId);
+        synchronized (story) {
+            story.unlocked.add(achievement);
+        }
     }
 
     public static void trialScore(UUID runId, int score) {
-        TRIAL_SCORE.put(runId, score);
+        story(runId).trialScore = score;
     }
 
     public static void streakLine(UUID runId, String line) {
-        STREAK_LINE.merge(runId, line, (a, b) -> a + "; " + b);
+        Story story = story(runId);
+        synchronized (story) {
+            story.streakLine = story.streakLine.isEmpty() ? line : story.streakLine + "; " + line;
+        }
     }
 
     /** Takes (and forgets) what was gathered for a run. */
     public record Gathered(List<String> unlocked, Optional<Integer> trialScore, String streakLine) {}
 
     public static Gathered take(UUID runId) {
-        List<String> unlocked = UNLOCKED.remove(runId);
-        return new Gathered(unlocked == null ? List.of() : List.copyOf(unlocked), Optional.ofNullable(TRIAL_SCORE.remove(runId)),
-                STREAK_LINE.getOrDefault(runId, ""));
+        Story story = BY_RUN.remove(runId);
+        if (story == null) return new Gathered(List.of(), Optional.empty(), "");
+        synchronized (story) {
+            return new Gathered(List.copyOf(story.unlocked), Optional.ofNullable(story.trialScore), story.streakLine);
+        }
     }
 
-    public static void forgetStreakLine(UUID runId) {
-        STREAK_LINE.remove(runId);
+    /** Drops anything gathered for a run whose report was not built. */
+    public static void discard(UUID runId) {
+        BY_RUN.remove(runId);
     }
 
     public static void remember(UUID player, RunReport report, String players) {
-        LAST_REPORT.put(player, report);
-        LAST_PLAYERS.put(player, players);
+        LAST_BY_PLAYER.put(player, new Last(report, players));
     }
 
     public static Optional<RunReport> lastReportOf(UUID player) {
-        return Optional.ofNullable(LAST_REPORT.get(player));
+        return Optional.ofNullable(LAST_BY_PLAYER.get(player)).map(Last::report);
     }
 
     public static String lastPlayersOf(UUID player) {
-        return LAST_PLAYERS.getOrDefault(player, "");
-    }
-
-    /** For a server stop. */
-    public static void clear() {
-        UNLOCKED.clear();
-        TRIAL_SCORE.clear();
-        STREAK_LINE.clear();
-        LAST_REPORT.clear();
-        LAST_PLAYERS.clear();
+        Last last = LAST_BY_PLAYER.get(player);
+        return last == null ? "" : last.players();
     }
 }

@@ -114,8 +114,8 @@ against `maxPurchasesPerRun` before a purchase is allowed; `0` skips the check e
 
 ## 4. Public API and the shop screen
 
-`com.cobbletowers.api.vendor.VendorServiceView` -- id, display name, price, remaining purchases this
-run (or empty for unlimited). `com.cobbletowers.network.VendorCatalogPayload` (S2C) carries a run's
+The vendor catalog is not part of the public API (a `VendorServiceView` was planned and never built).
+`com.cobbletowers.network.VendorCatalogPayload` (S2C) carries a run's
 resolved catalog when requested; `com.cobbletowers.network.VendorPurchasePayload` (C2S) names a
 service and a target player, mirroring `CycleTeammatePayload`'s posture: the server re-validates every
 condition in §3 itself and never trusts a client's claim about affordability or eligibility.

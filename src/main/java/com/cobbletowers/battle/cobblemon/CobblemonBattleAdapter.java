@@ -157,6 +157,7 @@ public final class CobblemonBattleAdapter {
             PokemonBattle battle = BattleRegistry.getBattleByParticipatingPlayer(player);
             return battle != null && !battle.getEnded();
         } catch (RuntimeException ex) {
+            TowerLog.errorOnce("inBattle", "Could not read a player's battle state; treating them as not in battle", ex);
             return false;
         }
     }

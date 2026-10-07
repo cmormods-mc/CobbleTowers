@@ -1,5 +1,7 @@
 package com.cobbletowers;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,6 +9,8 @@ import org.slf4j.LoggerFactory;
 public final class TowerLog {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("CobbleTowers");
+
+    private static final Set<String> LOGGED_ONCE = ConcurrentHashMap.newKeySet();
 
     private TowerLog() {}
 
@@ -21,5 +25,10 @@ public final class TowerLog {
     /** A trailing Throwable in {@code args} is logged with its stack trace, as SLF4J does. */
     public static void error(String message, Object... args) {
         LOGGER.error(message, args);
+    }
+
+    /** Like {@link #error} but only the first time {@code key} is seen, for failures on hot paths. */
+    public static void errorOnce(String key, String message, Object... args) {
+        if (LOGGED_ONCE.add(key)) LOGGER.error(message, args);
     }
 }

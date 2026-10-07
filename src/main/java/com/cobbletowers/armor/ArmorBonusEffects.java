@@ -58,6 +58,7 @@ public final class ArmorBonusEffects {
                     int percent = WornSets.current(player).shinyPercent();
                     return percent > 0 ? chance * (1f + percent / 100f) : chance;
                 } catch (RuntimeException ex) {
+                    TowerLog.errorOnce("shiny", "The armor shiny bonus failed for a roll; the odds are unchanged", ex);
                     return chance;
                 }
             });

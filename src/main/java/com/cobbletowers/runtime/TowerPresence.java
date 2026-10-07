@@ -49,10 +49,8 @@ public final class TowerPresence {
     private TowerPresence() {}
 
     public static void install() {
-        // Fabric fires this on the Netty thread that saw the socket close -- several at once when a party drops
-        // together --
-        // and everything onDisconnect touches is single-threaded state. ServerThread.run moves it onto the server
-        // thread.
+        // Fabric fires this on the Netty thread that saw the socket close (several at once when a party drops
+        // together), and everything onDisconnect touches is single-threaded state, so hop to the server thread.
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ServerPlayer player = handler.getPlayer();
             ServerThread.run(server, () -> guarded("handle a disconnect", () -> onDisconnect(server, player)));
@@ -169,10 +167,6 @@ public final class TowerPresence {
         return new Verdict(stalled, false);
     }
 
-    /**
-     * Expired grace windows, then stalled floors. Public so {@code runs watchdog} can run it with the clock wound
-     * forward.
-     */
     /** When each run's draft was first seen with nobody able to vote. In memory, so a restart restarts the window. */
     private static final Map<UUID, Long> DRAFT_EMPTY_SINCE = new ConcurrentHashMap<>();
 
@@ -180,6 +174,10 @@ public final class TowerPresence {
         ServerState.onStop(TowerPresence::onServerStopped);
     }
 
+    /**
+     * Expired grace windows, then stalled floors. Public so {@code runs watchdog} can run it with the clock wound
+     * forward.
+     */
     public static void sweep(MinecraftServer server, long now) {
         expireGraceWindows(server, now);
         settleAbandonedDrafts(server, now);

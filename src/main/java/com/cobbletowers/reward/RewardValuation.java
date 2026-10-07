@@ -18,8 +18,10 @@ public final class RewardValuation {
 
     private RewardValuation() {}
 
-    /** One item, at the amount it was actually worth once growth and the run's modifiers applied. */
-    /** @param perPlayer true for a milestone's guaranteed item: every participant gets the whole amount */
+    /**
+     * One item, at the amount it was worth once growth and the run's modifiers applied.
+     * @param perPlayer true for a milestone's guaranteed item: every participant gets the whole amount
+     */
     public record Grant(ResourceLocation item, int amount, boolean perPlayer) {
         public Grant(ResourceLocation item, int amount) {
             this(item, amount, false);

@@ -336,7 +336,7 @@ public final class MasteryService {
             for (String line : report.lines()) player.sendSystemMessage(Component.literal(line).withStyle(ChatFormatting.GRAY));
             player.sendSystemMessage(Component.literal("  /tower report share posts this run to chat.").withStyle(ChatFormatting.DARK_GRAY));
         }
-        RunSummaries.forgetStreakLine(run.runId());
+        RunSummaries.discard(run.runId());
     }
 
     // ---- telling people -------------------------------------------------------------------------------------------

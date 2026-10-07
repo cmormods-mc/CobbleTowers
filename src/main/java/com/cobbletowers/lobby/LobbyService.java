@@ -3,13 +3,9 @@ package com.cobbletowers.lobby;
 import com.cobbletowers.ServerState;
 import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.TowerLog;
-import com.cobbletowers.api.tower.RunEvent;
-import com.cobbletowers.api.tower.RunState;
 import com.cobbletowers.battle.cobblemon.PartyReader;
 import com.cobbletowers.battle.cobblemon.PartyStorage;
 import com.cobbletowers.definition.RulesetDefinition;
-import com.cobbletowers.runtime.PlaylistRules;
-import com.cobbletowers.persistence.RunOptions;
 import com.cobbletowers.definition.RulesetResolver;
 import com.cobbletowers.definition.PlaylistRegistry;
 import com.cobbletowers.definition.PlaylistDefinition;
@@ -19,17 +15,10 @@ import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.network.PlayStatePayload;
 import com.cobbletowers.network.RegistrationStatePayload;
 import com.cobbletowers.network.TowerNetworking;
-import com.cobbletowers.persistence.PersistedRun;
-import com.cobbletowers.runtime.PartyValidation;
 import com.cobbletowers.runtime.PartyValidation.PartyMember;
-import com.cobbletowers.runtime.RunFactory;
-import com.cobbletowers.runtime.RunLifecycle;
-import com.cobbletowers.runtime.RunTransitionService;
 import com.cobbletowers.runtime.TowerRuns;
 import com.cobbletowers.storage.PartyArrangement;
 import com.cobbletowers.rental.RentalDraft;
-import com.cobbletowers.storage.PartyJournalService;
-import com.cobbletowers.storage.RentalPartyService;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -219,7 +208,6 @@ public final class LobbyService {
         return "You left the team.";
     }
 
-    /** The host confirms; the countdown runs and {@link #tick} launches the run when it ends. */
     /** The host picks today's trial (P32); its tower, playlist, mutators, level and seed fix the lobby. */
     public static String selectTrial(MinecraftServer server, ServerPlayer player,
                                      com.cobbletowers.definition.TrialPoolDefinition.Kind kind) {
@@ -264,6 +252,10 @@ public final class LobbyService {
     }
 
     /** What {@code /tower play code} says with no argument: the code of the run you last started. */
+    static void rememberCode(UUID player, String code) {
+        LAST_CODES.put(player, code);
+    }
+
     public static String lastCode(ServerPlayer player) {
         String code = LAST_CODES.get(player.getUUID());
         return code == null ? "You have not started a run since the server last restarted." : "Your last run code: " + code;
@@ -358,6 +350,7 @@ public final class LobbyService {
         return level == 0 ? "Starting from the first floor." : "Starting at Ascension " + level + ".";
     }
 
+    /** The host confirms; the countdown runs and {@link #tick} launches the run when it ends. */
     public static String start(MinecraftServer server, ServerPlayer host) {
         TowerLobby lobby = BY_HOST.get(host.getUUID());
         if (lobby == null) return inRun(host.getUUID()) ? inRunMessage() : "Pick a tower first.";
@@ -445,7 +438,7 @@ public final class LobbyService {
                     }
                     continue;
                 }
-                launch(server, lobby, now);
+                LobbyLaunch.launch(server, lobby, now);
             } else {
                 int left = lobby.secondsLeft(now);
                 if (!lobby.announce(left)) continue;
@@ -455,237 +448,6 @@ public final class LobbyService {
                 }
             }
         }
-    }
-
-    /** The countdown ended. Everything checkable without touching a player's world is checked first. */
-    private static void launch(MinecraftServer server, TowerLobby lobby, long now) {
-        lobby.cancelCountdown();
-        TowerContent content = TowerDefinitionRegistry.content();
-        TowerDefinition tower = content.towers().get(lobby.tower());
-        RulesetDefinition ruleset = RulesetResolver.forTower(content, tower, lobby.playlist());
-        if (ruleset == null) {
-            broadcast(server, lobby, "That tower is no longer available.");
-            return;
-        }
-
-        // Starting early: the unanswered are dropped, and so is anyone who has gone offline.
-        for (UUID id : lobby.pending()) lobby.remove(id);
-        List<UUID> players = new ArrayList<>();
-        Map<UUID, List<UUID>> parties = new LinkedHashMap<>();
-        Map<UUID, List<UUID>> locks = new LinkedHashMap<>();
-        Map<UUID, RentalDraft.Team> rentalTeams = new LinkedHashMap<>();
-        boolean rentalRun = RentalDraftService.isRentalLobby(lobby);
-        List<String> problems = new ArrayList<>();
-        for (UUID id : lobby.team()) {
-            ServerPlayer player = server.getPlayerList().getPlayer(id);
-            if (player == null) {
-                if (!id.equals(lobby.host())) lobby.remove(id);
-                else problems.add("The host is offline.");
-                continue;
-            }
-            if (inRun(id)) {
-                problems.add(name(player) + " is already in a tower run.");
-                continue;
-            }
-            if (rentalRun) {
-                // A rental run (P33): the party is the drafted team, so the player's own Pokemon are not judged at
-                // all.
-                Optional<RentalDraft> draft = RentalDraftService.draftOf(id).filter(RentalDraft::complete);
-                if (draft.isEmpty()) {
-                    problems.add(name(player) + " has not finished their draft (/tower draft)");
-                    continue;
-                }
-                if (!RentalPartyService.canMakeRoom(player)) {
-                    problems.add(name(player) + " needs free box space for their own Pokemon while they play");
-                    continue;
-                }
-                RentalDraft.Team team = draft.get().finish(UUID::randomUUID);
-                rentalTeams.put(id, team);
-                players.add(id);
-                parties.put(id, team.ids());
-                continue;
-            }
-            List<UUID> picked = lobby.chosenOf(id);
-            PartyStorage.Snapshot snapshot = PartyStorage.snapshot(player);
-            List<PartyMember> party;
-            if (picked.isEmpty()) {
-                party = PartyReader.members(player);
-            } else {
-                party = new ArrayList<>();
-                for (UUID pokemon : picked) snapshot.member(pokemon).ifPresent(party::add);
-                if (party.size() != picked.size()) {
-                    problems.add(name(player) + " chose a Pokemon that is no longer theirs");
-                    continue;
-                }
-            }
-            PartyValidation.Result checked = PartyValidation.validate(party, ruleset);
-            checked.problems().forEach(problem -> problems.add(name(player) + " " + problem));
-            // The playlist's clauses (P32) apply to what would be registered.
-            lobby.playlist().flatMap(PlaylistRegistry::get).ifPresent(playlist ->
-                    PlaylistRules.problems(party.stream().filter(member -> checked.registered().contains(member.id())).toList(),
-                            playlist).forEach(problem -> problems.add(name(player) + ": " + problem)));
-            if (!picked.isEmpty()) {
-                // Dry-run before anyone is moved: a plan that cannot be carried out is refused up front.
-                PartyArrangement.Plan plan = PartyJournalService.dryRun(player, checked.registered());
-                if (!plan.ok()) problems.add(name(player) + " cannot register that party (" + plan.failure() + ")");
-                locks.put(id, checked.registered());
-            }
-            players.add(id);
-            parties.put(id, checked.registered());
-        }
-        // Re-checked at the start: someone who accepted after the host chose may not have reached it.
-        int startAt = lobby.ascension();
-        if (startAt > 0) {
-            com.cobbletowers.persistence.TowerAscensionStore records = com.cobbletowers.persistence.TowerAscensionStore.get(server);
-            for (UUID id : players) {
-                if (records.recordOf(id, lobby.tower()) < startAt) {
-                    ServerPlayer shallow = server.getPlayerList().getPlayer(id);
-                    problems.add((shallow == null ? "A teammate" : name(shallow)) + " has not reached Ascension " + startAt);
-                }
-            }
-        }
-        // The entry item (decided 2026-10-05): one tower key per player, checked here and taken only once the run
-        // has really started (below), so a launch that fails costs nothing.
-        boolean keyRun = com.cobbletowers.economy.TowerKeyPolicy.costsKey(
-                com.cobbletowers.economy.TowerKeys.required(), lobby.trial().isPresent(), rentalRun);
-        if (keyRun) {
-            for (UUID id : players) {
-                ServerPlayer keyholder = server.getPlayerList().getPlayer(id);
-                if (keyholder == null || com.cobbletowers.economy.TowerKeys.count(keyholder) < 1) {
-                    problems.add((keyholder == null ? "A teammate" : name(keyholder)) + " needs a Tower Key");
-                }
-            }
-        }
-        if (!problems.isEmpty()) {
-            TowerLog.info("The lobby of {} could not start {}: {}", lobby.host(), lobby.tower(), String.join("; ", problems));
-            broadcast(server, lobby, "Cannot start: " + String.join("; ", problems));
-            return;
-        }
-
-        long seed = lobby.seed().orElseGet(() -> server.overworld().getRandom().nextLong());
-        RunOptions options = RunOptions.of(lobby.playlist());
-        List<ResourceLocation> trialModifiers = List.of();
-        if (lobby.trial().isPresent()) {
-            // A trial (P32): the same seed, mutators and enemy level for everybody, limited to its floors, from floor
-            // 1.
-            com.cobbletowers.trial.TrialSchedule.Instance trial = lobby.trial().get();
-            boolean scored = com.cobbletowers.trial.TrialService.wouldBeScored(server, players, trial.id());
-            options = new RunOptions(lobby.playlist(), Optional.of(trial.id()), trial.floors(), scored, trial.entry().enemyLevel());
-            trialModifiers = trial.entry().modifiers();
-            seed = trial.seed();
-            startAt = 0;
-        }
-        Optional<PersistedRun> created = RunFactory.create(content, lobby.tower(), players, parties, startAt, options,
-                trialModifiers, seed, now);
-        if (created.isEmpty()) {
-            broadcast(server, lobby, "That tower is no longer available.");
-            return;
-        }
-        UUID runId = created.get().runId();
-        TowerRuns.save(server, created.get(), true);
-        if (lobby.trial().isEmpty()) {
-            // Printed for every ordinary run (P35): a friend who enters it plays the same run.
-            String code = com.cobbletowers.runcode.RunCode.encode(lobby.tower(), lobby.playlist(), startAt, seed);
-            for (UUID id : players) LAST_CODES.put(id, code);
-            broadcast(server, lobby, "Run code: " + code + " (share it; /tower play code <code> starts the same run)");
-            TowerLog.info("Run {} started with code {}", runId, code);
-        }
-
-        // Move registered Pokemon into the party. Journaled and flushed first, per player, so a failure or
-        // a crash anywhere from here on can be undone; a failure here undoes the ones already done.
-        for (UUID id : players) {
-            RentalDraft.Team lent = rentalTeams.get(id);
-            List<UUID> target = locks.get(id);
-            if (target == null && lent == null) continue;
-            ServerPlayer player = server.getPlayerList().getPlayer(id);
-            // A rental run (P33) lends the drafted team through the same journal; anything else moves the player's
-            // own Pokemon.
-            Object result = lent != null
-                    ? (player == null ? RentalPartyService.Lock.FAILED : RentalPartyService.lock(server, runId, player, lent))
-                    : (player == null ? PartyJournalService.Lock.FAILED : PartyJournalService.lockIn(server, runId, player, target));
-            if (result == PartyJournalService.Lock.FAILED || result == PartyJournalService.Lock.NOT_OWNED
-                    || result == PartyJournalService.Lock.NO_ROOM || result == PartyJournalService.Lock.TOO_MANY
-                    || result == RentalPartyService.Lock.FAILED || result == RentalPartyService.Lock.NO_ROOM
-                    || result == RentalPartyService.Lock.IN_BATTLE) {
-                RunTransitionService.apply(server, runId, RunEvent.ABANDON_REQUESTED, now);
-                restoreParties(server, players);
-                broadcast(server, lobby, "Cannot start: " + (player == null ? "a player went offline"
-                        : name(player) + " could not have their party arranged (" + result + ")") + ". Try again.");
-                return;
-            }
-        }
-
-        RunTransitionService.Outcome validated = RunLifecycle.validateParty(server, runId, now,
-                id -> Optional.ofNullable(server.getPlayerList().getPlayer(id)).map(PartyReader::members));
-        if (!(validated instanceof RunTransitionService.Move move) || move.next().state() != RunState.ALLOCATING_INSTANCE) {
-            // Pre-checked above, so this is a party that changed in the gap. The run is abandoned by
-            // the rejection; the team is left to try again.
-            restoreParties(server, players);
-            broadcast(server, lobby, "Cannot start: a party changed while the run was being set up. Try again.");
-            return;
-        }
-
-        RunTransitionService.Outcome allocated = RunLifecycle.allocateInstance(server, runId, now);
-        if (!(allocated instanceof RunTransitionService.Move)) {
-            abandonParked(server, runId, now);
-            restoreParties(server, players);
-            broadcast(server, lobby, "Cannot start: no tower space is free right now. Try again in a moment.");
-            return;
-        }
-
-        if (!openFloor(server, runId, now)) {
-            // The run is parked by openFloor; it holds the team until recovery or an operator settles it.
-            dissolve(server, lobby, "The floor could not be opened; the run is parked for recovery.");
-            return;
-        }
-        // The attempt is spent only now that the run has really started: a launch that failed above costs nothing.
-        if (keyRun) {
-            for (UUID id : players) {
-                ServerPlayer keyholder = server.getPlayerList().getPlayer(id);
-                // The run is open and cannot be undone here, so a key that vanished in the gap is logged, not
-                // enforced.
-                if (keyholder != null && com.cobbletowers.economy.TowerKeys.take(keyholder)) {
-                    keyholder.sendSystemMessage(Component.literal("Used 1 Tower Key."));
-                } else {
-                    TowerLog.warn("Run {} started but player {} had no Tower Key left to take", runId, id);
-                }
-            }
-        }
-        TowerRuns.get(runId).ifPresent(started -> {
-            com.cobbletowers.trial.TrialService.recordLaunch(server, started);
-            if (started.options().isTrial()) {
-                String note = started.options().scored() ? "This is your scored attempt." : "This run is practice and will not post.";
-                for (UUID id : players) {
-                    ServerPlayer player = server.getPlayerList().getPlayer(id);
-                    if (player != null) player.sendSystemMessage(Component.literal(note));
-                }
-            }
-        });
-        dissolve(server, lobby, "");
-        TowerLog.info("Lobby of {} started run {} on {}", players.size(), runId, lobby.tower());
-    }
-
-    /** PREPARING -> FLOOR_READY, then the floor itself; parks the run on failure. */
-    private static boolean openFloor(MinecraftServer server, UUID runId, long now) {
-        if (!(RunTransitionService.apply(server, runId, RunEvent.PREPARATION_COMPLETE, now)
-                instanceof RunTransitionService.Move)) {
-            RunTransitionService.apply(server, runId, RunEvent.TECHNICAL_FAILURE, now);
-            return false;
-        }
-        return RunLifecycle.beginFloor(server, runId, now);
-    }
-
-    /** Puts every listed player's Pokemon back at once, after a start that did not happen. */
-    private static void restoreParties(MinecraftServer server, List<UUID> players) {
-        for (UUID id : players) {
-            ServerPlayer player = server.getPlayerList().getPlayer(id);
-            if (player != null) PartyJournalService.restoreNow(server, player);
-        }
-    }
-
-    /** Frees a team held by a run that never got a cell, so they can retry (a parked run still holds them). */
-    private static void abandonParked(MinecraftServer server, UUID runId, long now) {
-        RunTransitionService.apply(server, runId, RunEvent.RECOVERY_ABANDONED, now);
     }
 
     // ---- choosing what to register (P18) -----------------------------------------------------
@@ -769,7 +531,7 @@ public final class LobbyService {
         sendState(server, player, lobbyOf(player.getUUID()).orElse(null), message, true);
     }
 
-    private static void dissolve(MinecraftServer server, TowerLobby lobby, String message) {
+    static void dissolve(MinecraftServer server, TowerLobby lobby, String message) {
         BY_HOST.remove(lobby.host());
         RentalDraftService.clearAll(lobby);
         List<UUID> everyone = new ArrayList<>(lobby.team());
@@ -782,7 +544,7 @@ public final class LobbyService {
         }
     }
 
-    private static void broadcast(MinecraftServer server, TowerLobby lobby, String message) {
+    static void broadcast(MinecraftServer server, TowerLobby lobby, String message) {
         List<UUID> everyone = new ArrayList<>(lobby.team());
         everyone.addAll(lobby.pending());
         for (UUID id : everyone) {
@@ -850,7 +612,7 @@ public final class LobbyService {
 
     // ---- helpers -------------------------------------------------------------------------------
 
-    private static boolean inRun(UUID player) {
+    static boolean inRun(UUID player) {
         return TowerRuns.forPlayer(player).filter(run -> !run.isRetired()).isPresent();
     }
 
@@ -859,7 +621,7 @@ public final class LobbyService {
         return tower == null ? id.toString() : tower.displayName();
     }
 
-    private static String name(ServerPlayer player) {
+    static String name(ServerPlayer player) {
         return player.getGameProfile().getName();
     }
 }

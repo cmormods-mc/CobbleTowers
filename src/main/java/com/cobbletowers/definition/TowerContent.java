@@ -289,7 +289,6 @@ public record TowerContent(
         return tower.scoutingProfile().flatMap(this::scoutingProfile);
     }
 
-    /** The milestone landing on this floor of this tower, if there is one. */
     /** Whether a milestone is a boss or a champion, by its id. Empty for an id no tower names. */
     public Optional<com.cobbletowers.api.tower.MilestoneKind> milestoneKindOf(ResourceLocation milestoneId) {
         MilestoneDefinition milestone = milestones().get(milestoneId);
@@ -306,9 +305,6 @@ public record TowerContent(
         return Optional.empty();
     }
 
-    /**
-     * The modifiers a floor may offer, in a stable order. A floor that names none draws from every loaded modifier.
-     */
     /** Every loaded relic, in a stable order (a draw walks this list subtracting weights). */
     public List<ModifierDefinition> relicPool() {
         List<ModifierDefinition> pool = new ArrayList<>();

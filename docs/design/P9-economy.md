@@ -36,8 +36,7 @@ Per P1's rule of an interface only where it creates a stable extension boundary.
 
 - **`RewardTableView`** — id, display name, the per-`Kind` tiers, the per-floor growth step.
 - **`PendingRewardView`** — what a player is holding unclaimed: item, amount, the run and floor it
-  came from. Reachable the same way `RunModifiersView` is meant to be from `TowerRunView`: an addon
-  reading a run should not need a second entry point to see what it earned.
+  came from. Not reachable from `TowerRunView` today.
 
 ## 2. Definitions — `RewardTableDefinition`
 

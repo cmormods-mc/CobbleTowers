@@ -34,12 +34,6 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
     }
 
     /**
-     * The player's lobby.
-     * @param role 0 none, 1 host, 2 invited, 3 on the team
-     * @param selected the lobby's tower id, empty if none
-     * @param countdown whole seconds until the run starts, or -1
-     */
-    /**
      * The Ascension (P30) the lobby will start at and the deepest the team may choose.
      * @param offered whether the tower ascends; when false the picker is hidden
      */
@@ -55,10 +49,6 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
         }
     }
 
-    /**
-     * The playlists (P32) on offer and the one chosen ({@code ""} is Standard); {@code rental} when that one lends a
-     * drafted team (P33).
-     */
     /**
      * The rental ready-up (P33): whether the host confirmed the mode, whether this player has a finished draft,
      * whether they are ready, and whether the host is.
@@ -105,6 +95,12 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
         }
     }
 
+    /**
+     * The player's lobby.
+     * @param role 0 none, 1 host, 2 invited, 3 on the team
+     * @param selected the lobby's tower id, empty if none
+     * @param countdown whole seconds until the run starts, or -1
+     */
     public record Lobby(int role, String selected, String hostName, List<Member> members, int countdown, Options options) {
         static final StreamCodec<RegistryFriendlyByteBuf, Lobby> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.VAR_INT, Lobby::role,

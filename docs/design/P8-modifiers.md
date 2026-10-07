@@ -55,7 +55,7 @@ P1's rule of *an interface only where it creates a stable extension boundary*.
 - **`ModifierView`** — id, type, display name, risk tier, group, stack limit.
 - **`DraftView`** / **`DraftCardView`** — the offered cards and the tally, which is what P11's GUI
   will render and what the debug command prints today.
-- **`RunModifiersView`** — what a run has accumulated, reachable from `TowerRunView`.
+- A `RunModifiersView` was planned and never built; a run's modifiers are not exposed through the API.
 
 `validation/validate_api_boundary.py` already refuses a public signature naming an internal type, so
 these are covered without a new check.

@@ -1,5 +1,6 @@
 package com.cobbletowers.season;
 
+import com.cobbletowers.TowerLog;
 import com.cobbletowers.club.ClubBook;
 import com.cobbletowers.persistence.TowerClubStore;
 import com.cobbletowers.persistence.TowerSeasonProgressStore;
@@ -33,6 +34,7 @@ public final class ChatTags {
             Optional<ClubBook.Club> club = TowerClubStore.get(server).book().clubOf(player);
             return Cosmetics.decoration(title, club.map(ClubBook.Club::tag), club.map(ClubBook.Club::banner));
         } catch (RuntimeException ex) {
+            TowerLog.errorOnce("chatTags", "Could not build a chat tag; names are left plain", ex);
             return List.of();
         }
     }
