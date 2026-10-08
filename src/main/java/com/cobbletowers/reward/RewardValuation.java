@@ -31,6 +31,9 @@ public final class RewardValuation {
     /** Where bonus rolls draw their ordinals, disjoint from the ledger-position ordinals below it. */
     static final int BONUS_ORDINAL_BASE = 100_000;
 
+    /** Where a table's extra rolls (P39) draw theirs; the first roll keeps the ledger position, so older results do not move. */
+    static final int EXTRA_ROLL_ORDINAL_BASE = 300_000;
+
     /**
      * What {@code priced} is worth from {@code table}: linear growth per floor, then reward-percent applied once via
      * {@link ModifierEffects#applyReward}.
@@ -85,14 +88,20 @@ public final class RewardValuation {
             }
             Optional<RewardKind> kind = toRewardKind(entry.kind());
             if (kind.isEmpty()) continue;
-            List<RewardTableDefinition.Entry> pool = table.entriesFor(kind.get());
+            int floor = growthFloor(entry.floorIndex(), cycleLength);
+            // Only the items this floor's depth allows (P39); the whole pool if the bands leave nothing.
+            List<RewardTableDefinition.Entry> pool = table.entriesFor(kind.get(), floor);
             if (pool.isEmpty()) continue;
 
-            RewardTableDefinition.Entry rolled = RewardDraw.pickItem(runSeed, entry.floorIndex(), n, pool, weightPercent);
-            int amount = RewardDraw.rollAmount(runSeed, entry.floorIndex(), n, rolled.minAmount(), rolled.maxAmount());
-            int grown = amount + amount * table.growthPercentPerFloor() * growthFloor(entry.floorIndex(), cycleLength) / 100;
-            int worth = effects.applyReward(grown) * customs.rewardPercent(runSeed, entry.floorIndex(), n) / 100;
-            if (worth > 0) grants.add(new Grant(rolled.item(), worth));
+            int rolls = table.rollsFor(kind.get());
+            for (int roll = 0; roll < rolls; roll++) {
+                int ordinal = roll == 0 ? n : EXTRA_ROLL_ORDINAL_BASE + n * 16 + roll;
+                RewardTableDefinition.Entry rolled = RewardDraw.pickItem(runSeed, entry.floorIndex(), ordinal, pool, weightPercent);
+                int amount = RewardDraw.rollAmount(runSeed, entry.floorIndex(), ordinal, rolled.minAmount(), rolled.maxAmount());
+                int grown = amount + amount * table.growthPercentPerFloor() * floor / 100;
+                int worth = effects.applyReward(grown) * customs.rewardPercent(runSeed, entry.floorIndex(), ordinal) / 100;
+                if (worth > 0) grants.add(new Grant(rolled.item(), worth));
+            }
         }
         return List.copyOf(grants);
     }

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 3,
+  "revision": 5,
   "display_name": "Duskvale Tower Rewards",
   "growth_percent_per_floor": 8,
   "tiers": {
@@ -9,115 +9,184 @@
         "item": "cobbletowers:cobble_dollar",
         "min_amount": 6,
         "max_amount": 12,
-        "weight": 60
+        "weight": 90,
+        "min_floor": 1
       },
       {
         "item": "cobblemon:oran_berry",
         "min_amount": 1,
         "max_amount": 3,
-        "weight": 40
+        "weight": 30,
+        "min_floor": 1,
+        "max_floor": 4
       },
       {
         "item": "cobblemon:sitrus_berry",
         "min_amount": 1,
         "max_amount": 3,
-        "weight": 20
+        "weight": 20,
+        "min_floor": 3,
+        "max_floor": 6
       },
       {
         "item": "cobblemon:lum_berry",
         "min_amount": 1,
         "max_amount": 3,
-        "weight": 20
+        "weight": 20,
+        "min_floor": 5,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:pecha_berry",
         "min_amount": 1,
         "max_amount": 3,
-        "weight": 20
+        "weight": 10,
+        "min_floor": 1,
+        "max_floor": 5
       },
       {
         "item": "cobblemon:potion",
         "min_amount": 1,
         "max_amount": 2,
-        "weight": 45
+        "weight": 35,
+        "min_floor": 1,
+        "max_floor": 4
       },
       {
         "item": "cobblemon:super_potion",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 20
+        "weight": 25,
+        "min_floor": 3,
+        "max_floor": 6
       },
       {
         "item": "cobblemon:dusk_ball",
         "min_amount": 2,
         "max_amount": 4,
-        "weight": 30
+        "weight": 25,
+        "min_floor": 2,
+        "max_floor": 6
       },
       {
         "item": "cobblemon:quick_ball",
         "min_amount": 2,
         "max_amount": 4,
-        "weight": 25
+        "weight": 20,
+        "min_floor": 2,
+        "max_floor": 6
       },
       {
         "item": "cobblemon:great_ball",
         "min_amount": 2,
         "max_amount": 4,
-        "weight": 20
+        "weight": 25,
+        "min_floor": 2,
+        "max_floor": 6
       },
       {
         "item": "cobblemon:antidote",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 8
+        "weight": 5,
+        "min_floor": 1,
+        "max_floor": 6
       },
       {
         "item": "cobblemon:paralyze_heal",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 8
+        "weight": 5,
+        "min_floor": 1,
+        "max_floor": 6
       },
       {
         "item": "cobblemon:awakening",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 8
+        "weight": 5,
+        "min_floor": 1,
+        "max_floor": 6
       },
       {
         "item": "cobblemon:burn_heal",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 8
+        "weight": 5,
+        "min_floor": 1,
+        "max_floor": 6
       },
       {
         "item": "cobblemon:ice_heal",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 8
+        "weight": 5,
+        "min_floor": 1,
+        "max_floor": 6
       },
       {
         "item": "cobblemon:red_apricorn",
         "min_amount": 1,
         "max_amount": 2,
-        "weight": 10
+        "weight": 5,
+        "min_floor": 1,
+        "max_floor": 4
       },
       {
         "item": "cobblemon:blue_apricorn",
         "min_amount": 1,
         "max_amount": 2,
-        "weight": 10
+        "weight": 5,
+        "min_floor": 1,
+        "max_floor": 4
       },
       {
         "item": "cobblemon:green_apricorn",
         "min_amount": 1,
         "max_amount": 2,
-        "weight": 10
+        "weight": 5,
+        "min_floor": 1,
+        "max_floor": 4
       },
       {
         "item": "cobblemon:exp_candy_xs",
         "min_amount": 1,
         "max_amount": 2,
-        "weight": 22
+        "weight": 22,
+        "min_floor": 1,
+        "max_floor": 5
+      },
+      {
+        "item": "cobblemon:hyper_potion",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 25,
+        "min_floor": 6,
+        "max_floor": 10
+      },
+      {
+        "item": "cobblemon:ultra_ball",
+        "min_amount": 2,
+        "max_amount": 3,
+        "weight": 25,
+        "min_floor": 6,
+        "max_floor": 10
+      },
+      {
+        "item": "cobblemon:exp_candy_s",
+        "min_amount": 1,
+        "max_amount": 2,
+        "weight": 25,
+        "min_floor": 4,
+        "max_floor": 10
+      },
+      {
+        "item": "cobblemon:exp_candy_m",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 10,
+        "min_floor": 8,
+        "max_floor": 10
       }
     ],
     "floor_cleared": [
@@ -125,31 +194,40 @@
         "item": "cobbletowers:cobble_dollar",
         "min_amount": 20,
         "max_amount": 40,
-        "weight": 60
+        "weight": 70,
+        "min_floor": 1
       },
       {
         "item": "cobblemon:exp_candy_s",
         "min_amount": 1,
         "max_amount": 2,
-        "weight": 40
+        "weight": 35,
+        "min_floor": 1,
+        "max_floor": 6
       },
       {
         "item": "cobblemon:exp_candy_m",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 15
+        "weight": 25,
+        "min_floor": 4,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:hyper_potion",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 25
+        "weight": 25,
+        "min_floor": 3,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:revive",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 20
+        "weight": 20,
+        "min_floor": 2,
+        "max_floor": 10
       },
       {
         "item": "minecraft:emerald",
@@ -161,61 +239,81 @@
         "item": "cobblemon:pp_up",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 4
+        "weight": 6,
+        "min_floor": 5,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:dusk_ball",
         "min_amount": 1,
         "max_amount": 2,
-        "weight": 20
+        "weight": 20,
+        "min_floor": 2,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:quick_ball",
         "min_amount": 1,
         "max_amount": 2,
-        "weight": 12
+        "weight": 12,
+        "min_floor": 2,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:hp_up",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3
+        "weight": 4,
+        "min_floor": 4,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:protein",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3
+        "weight": 4,
+        "min_floor": 4,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:iron",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3
+        "weight": 4,
+        "min_floor": 4,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:calcium",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3
+        "weight": 4,
+        "min_floor": 4,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:zinc",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3
+        "weight": 4,
+        "min_floor": 4,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:carbos",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3
+        "weight": 4,
+        "min_floor": 4,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:dusk_stone",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 6
+        "weight": 6,
+        "min_floor": 3,
+        "max_floor": 10
       },
       {
         "item": "cobblemon-cards:booster_pack_dark",
@@ -270,6 +368,22 @@
         "min_amount": 1,
         "max_amount": 1,
         "weight": 3
+      },
+      {
+        "item": "cobblemon:exp_candy_l",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 8,
+        "min_floor": 8,
+        "max_floor": 10
+      },
+      {
+        "item": "cobblemon:max_revive",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 8,
+        "min_floor": 7,
+        "max_floor": 10
       }
     ],
     "boss_defeated": [
@@ -283,19 +397,25 @@
         "item": "cobblemon:exp_candy_m",
         "min_amount": 1,
         "max_amount": 2,
-        "weight": 35
+        "weight": 35,
+        "min_floor": 1,
+        "max_floor": 6
       },
       {
         "item": "cobblemon:exp_candy_l",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 15
+        "weight": 25,
+        "min_floor": 3,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:revive",
         "min_amount": 1,
         "max_amount": 2,
-        "weight": 25
+        "weight": 25,
+        "min_floor": 1,
+        "max_floor": 6
       },
       {
         "item": "minecraft:diamond",
@@ -307,43 +427,57 @@
         "item": "cobblemon:dusk_ball",
         "min_amount": 2,
         "max_amount": 3,
-        "weight": 20
+        "weight": 20,
+        "min_floor": 2,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:hp_up",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5
+        "weight": 6,
+        "min_floor": 3,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:protein",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5
+        "weight": 6,
+        "min_floor": 3,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:iron",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5
+        "weight": 6,
+        "min_floor": 3,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:calcium",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5
+        "weight": 6,
+        "min_floor": 3,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:zinc",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5
+        "weight": 6,
+        "min_floor": 3,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:carbos",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5
+        "weight": 6,
+        "min_floor": 3,
+        "max_floor": 10
       },
       {
         "item": "cobblemon:dusk_stone",
@@ -434,8 +568,50 @@
         "min_amount": 1,
         "max_amount": 1,
         "weight": 6
+      },
+      {
+        "item": "cobbletowers:cobble_dollar",
+        "min_amount": 40,
+        "max_amount": 80,
+        "weight": 40
+      },
+      {
+        "item": "cobblemon:exp_candy_xl",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 8,
+        "min_floor": 8,
+        "max_floor": 10
+      },
+      {
+        "item": "cobblemon:max_revive",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 20,
+        "min_floor": 5,
+        "max_floor": 10
+      },
+      {
+        "item": "cobblemon:pp_up",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 8,
+        "min_floor": 5,
+        "max_floor": 10
+      },
+      {
+        "item": "cobblemon:rare_candy",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6,
+        "min_floor": 7,
+        "max_floor": 10
       }
     ]
+  },
+  "rolls": {
+    "floor_cleared": 2,
+    "boss_defeated": 2
   },
   "milestones": {
     "boss": {

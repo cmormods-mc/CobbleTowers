@@ -124,4 +124,53 @@ class RewardValuationTest {
         assertEquals(ResourceLocation.fromNamespaceAndPath("minecraft", "diamond"), grants.get(1).item());
         assertEquals(ResourceLocation.fromNamespaceAndPath("minecraft", "emerald"), grants.get(2).item());
     }
+
+    @Test
+    @DisplayName("an entry with a floor band is rolled only on those floors")
+    void floorBands() {
+        RewardTableDefinition table = table("""
+                {"schema_version": 1, "display_name": "x",
+                 "tiers": {"opponent_defeated": [
+                   {"item": "minecraft:stick", "max_floor": 3},
+                   {"item": "minecraft:diamond", "min_floor": 6}]}}""");
+        for (int floor = 1; floor <= 10; floor++) {
+            List<RewardValuation.Grant> grants = RewardValuation.value(SEED, List.of(LedgerEntry.opponentDefeated(floor, TOWER, UUID.randomUUID(), 1L)),
+                    table, ModifierEffects.NONE);
+            String expected = floor <= 3 ? "minecraft:stick" : floor >= 6 ? "minecraft:diamond" : null;
+            if (expected == null) {
+                // Floors 4 and 5 are in no band: the whole pool, so the table never pays nothing for a gap.
+                assertEquals(1, grants.size(), "floor " + floor);
+            } else {
+                assertEquals(expected, grants.get(0).item().toString(), "floor " + floor);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("rolls makes a ledger entry pay that many items, and the first roll is the one it paid before")
+    void extraRolls() {
+        String tiers = "\"tiers\": {\"floor_cleared\": [{\"item\": \"minecraft:stick\", \"weight\": 1}, {\"item\": \"minecraft:diamond\", \"weight\": 1},"
+                + " {\"item\": \"minecraft:emerald\", \"weight\": 1}]}";
+        RewardTableDefinition once = table("{\"schema_version\": 1, \"display_name\": \"x\", " + tiers + "}");
+        RewardTableDefinition twice = table("{\"schema_version\": 1, \"display_name\": \"x\", " + tiers + ", \"rolls\": {\"floor_cleared\": 2}}");
+        LedgerEntry cleared = LedgerEntry.floorCleared(2, ResourceLocation.fromNamespaceAndPath("cobbletowers", "f2"), 1L);
+
+        List<RewardValuation.Grant> one = RewardValuation.value(SEED, List.of(cleared), once, ModifierEffects.NONE);
+        List<RewardValuation.Grant> two = RewardValuation.value(SEED, List.of(cleared), twice, ModifierEffects.NONE);
+        assertEquals(1, one.size());
+        assertEquals(2, two.size());
+        assertEquals(one.get(0), two.get(0), "the first roll is unchanged by asking for more");
+        assertEquals(two, RewardValuation.value(SEED, List.of(cleared), twice, ModifierEffects.NONE), "and a replay gives the same items");
+    }
+
+    @Test
+    @DisplayName("a table refuses a bad floor band or roll count")
+    void badBandsAndRolls() {
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> table("""
+                {"schema_version": 1, "display_name": "x",
+                 "tiers": {"opponent_defeated": [{"item": "minecraft:stone", "min_floor": 5, "max_floor": 2}]}}"""));
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> table("""
+                {"schema_version": 1, "display_name": "x", "rolls": {"floor_cleared": 9},
+                 "tiers": {"floor_cleared": [{"item": "minecraft:stone"}]}}"""));
+    }
 }

@@ -26,16 +26,33 @@ public record RewardTableDefinition(
         String displayName,
         int growthPercentPerFloor,
         Map<RewardKind, List<Entry>> tiers,
-        Map<MilestoneKind, MilestoneReward> milestones) implements RewardTableView {
+        Map<MilestoneKind, MilestoneReward> milestones,
+        Map<RewardKind, Integer> rolls) implements RewardTableView {
 
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
+    /** Most rolls one ledger entry may make (a table asking for more is refused, not clamped). */
+    public static final int MAX_ROLLS = 5;
 
     /**
      * One possible item.
      * @param minAmount fewest granted
      * @param maxAmount most granted, before growth and reward-percent
+     * @param minFloor first floor of the tower (within its cycle) this can be rolled on
+     * @param maxFloor last floor of the tower this can be rolled on
      */
-    public record Entry(ResourceLocation item, int minAmount, int maxAmount, int weight) implements RewardEntryView {
+    public record Entry(ResourceLocation item, int minAmount, int maxAmount, int weight, int minFloor, int maxFloor)
+            implements RewardEntryView {
+
+        /** An entry that can be rolled on every floor. */
+        public Entry(ResourceLocation item, int minAmount, int maxAmount, int weight) {
+            this(item, minAmount, maxAmount, weight, 1, Integer.MAX_VALUE);
+        }
+
+        /** Whether this can be rolled on {@code floor} (the floor within the tower's own cycle). */
+        public boolean availableOn(int floor) {
+            return floor >= minFloor && floor <= maxFloor;
+        }
+
         public Entry {
             Objects.requireNonNull(item, "item");
             if (minAmount < 1) throw new IllegalArgumentException("min_amount must be >= 1, got " + minAmount);
@@ -43,6 +60,10 @@ public record RewardTableDefinition(
                 throw new IllegalArgumentException("max_amount must be >= min_amount, got " + maxAmount);
             }
             if (weight < 1) throw new IllegalArgumentException("weight must be >= 1, got " + weight);
+            if (minFloor < 1 || maxFloor < minFloor) {
+                throw new IllegalArgumentException("min_floor and max_floor must satisfy 1 <= min_floor <= max_floor, got "
+                        + minFloor + " and " + maxFloor);
+            }
         }
     }
 
@@ -76,12 +97,25 @@ public record RewardTableDefinition(
     /** A table with no milestone section, which is every table written before P21. */
     public RewardTableDefinition(ResourceLocation id, int schemaVersion, int revision, String displayName,
                                  int growthPercentPerFloor, Map<RewardKind, List<Entry>> tiers) {
-        this(id, schemaVersion, revision, displayName, growthPercentPerFloor, tiers, Map.of());
+        this(id, schemaVersion, revision, displayName, growthPercentPerFloor, tiers, Map.of(), Map.of());
+    }
+
+    /** A table that rolls once per ledger entry, which is every table written before P39. */
+    public RewardTableDefinition(ResourceLocation id, int schemaVersion, int revision, String displayName,
+                                 int growthPercentPerFloor, Map<RewardKind, List<Entry>> tiers,
+                                 Map<MilestoneKind, MilestoneReward> milestones) {
+        this(id, schemaVersion, revision, displayName, growthPercentPerFloor, tiers, milestones, Map.of());
     }
 
     public RewardTableDefinition {
         Objects.requireNonNull(id, "id");
         milestones = Map.copyOf(milestones);
+        rolls = Map.copyOf(rolls);
+        for (Map.Entry<RewardKind, Integer> roll : rolls.entrySet()) {
+            if (roll.getValue() < 1 || roll.getValue() > MAX_ROLLS) {
+                throw new IllegalArgumentException("rolls for " + roll.getKey() + " must be 1.." + MAX_ROLLS + ", got " + roll.getValue());
+            }
+        }
         Objects.requireNonNull(displayName, "displayName");
         tiers = Map.copyOf(tiers);
         if (schemaVersion != SUPPORTED_SCHEMA_VERSION) {
@@ -103,6 +137,22 @@ public record RewardTableDefinition(
     /** The entries for one kind, as this record's own type rather than the view's. */
     public List<Entry> entriesFor(RewardKind kind) {
         return tiers.getOrDefault(kind, List.of());
+    }
+
+    /** How many items one ledger entry of this kind rolls: 1 unless the table says more. */
+    public int rollsFor(RewardKind kind) {
+        return rolls.getOrDefault(kind, 1);
+    }
+
+    /**
+     * The entries of one kind that can be rolled on {@code floor}. When the floor band leaves nothing, the whole pool,
+     * so a table can never pay nothing for a mistake in its bands.
+     */
+    public List<Entry> entriesFor(RewardKind kind, int floor) {
+        List<Entry> all = entriesFor(kind);
+        List<Entry> here = new ArrayList<>();
+        for (Entry entry : all) if (entry.availableOn(floor)) here.add(entry);
+        return here.isEmpty() ? all : here;
     }
 
     /** What a milestone of this kind pays, if the table says. */
@@ -131,7 +181,17 @@ public record RewardTableDefinition(
                 TowerJson.requireString(root, "display_name"),
                 TowerJson.integer(root, "growth_percent_per_floor", 0),
                 tiers,
-                readMilestones(root));
+                readMilestones(root),
+                readRolls(root));
+    }
+
+    private static Map<RewardKind, Integer> readRolls(JsonObject root) {
+        JsonObject section = TowerJson.object(root, "rolls");
+        Map<RewardKind, Integer> out = new EnumMap<>(RewardKind.class);
+        for (RewardKind kind : RewardKind.values()) {
+            if (section.has(tierKey(kind))) out.put(kind, section.get(tierKey(kind)).getAsInt());
+        }
+        return out;
     }
 
     private static Map<MilestoneKind, MilestoneReward> readMilestones(JsonObject root) {
@@ -167,7 +227,9 @@ public record RewardTableDefinition(
                     TowerJson.requireId(entry, "item"),
                     TowerJson.integer(entry, "min_amount", 1),
                     TowerJson.integer(entry, "max_amount", 1),
-                    TowerJson.integer(entry, "weight", 100)));
+                    TowerJson.integer(entry, "weight", 100),
+                    TowerJson.integer(entry, "min_floor", 1),
+                    TowerJson.integer(entry, "max_floor", Integer.MAX_VALUE)));
         }
         return List.copyOf(entries);
     }
@@ -177,16 +239,7 @@ public record RewardTableDefinition(
         if (!tiersJson.get(key).isJsonArray()) {
             throw new IllegalArgumentException("field 'tiers." + key + "' must be an array");
         }
-        List<Entry> entries = new ArrayList<>();
-        for (JsonElement element : tiersJson.getAsJsonArray(key)) {
-            JsonObject entry = element.getAsJsonObject();
-            entries.add(new Entry(
-                    TowerJson.requireId(entry, "item"),
-                    TowerJson.integer(entry, "min_amount", 1),
-                    TowerJson.integer(entry, "max_amount", 1),
-                    TowerJson.integer(entry, "weight", 100)));
-        }
-        return List.copyOf(entries);
+        return readEntries(tiersJson.getAsJsonArray(key));
     }
 
     private static String tierKey(RewardKind kind) {
