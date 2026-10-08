@@ -107,9 +107,7 @@ public record PlaylistDefinition(
         int max = enemyLevelMax > 0 ? Math.max(base.minEnemyLevel(), Math.min(base.maxEnemyLevel(), enemyLevelMax)) : base.maxEnemyLevel();
         int size = party.maxParty() > 0 ? Math.min(base.registeredPartySize(), party.maxParty()) : base.registeredPartySize();
         if (max == base.maxEnemyLevel() && size == base.registeredPartySize()) return base;
-        return new RulesetDefinition(base.id(), base.schemaVersion(), base.revision(), base.minEnemyLevel(), max, size,
-                base.requiresBattleReadyParty(), base.itemActionBudget(), base.carriesHealthBetweenFloors(),
-                base.carriesPpBetweenFloors());
+        return base.withLevelsAndParty(base.minEnemyLevel(), max, size);
     }
 
     public static PlaylistDefinition fromJson(ResourceLocation id, JsonObject root) {

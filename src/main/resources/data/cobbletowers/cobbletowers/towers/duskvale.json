@@ -2,7 +2,7 @@
   "schema_version": 1,
   "revision": 1,
   "display_name": "Duskvale Tower",
-  "ruleset": "cobbletowers:standard",
+  "ruleset": "cobbletowers:duskvale",
   "reward_table": "cobbletowers:duskvale",
   "regional_theme": "cobbletowers:duskvale",
   "scouting_profile": "cobbletowers:regional",

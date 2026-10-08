@@ -23,9 +23,7 @@ public final class RulesetResolver {
     /** A trial's level lock (P32): every enemy is exactly this level, so results compare. */
     public static RulesetDefinition locked(RulesetDefinition ruleset, int lock) {
         if (ruleset == null || lock <= 0) return ruleset;
-        return new RulesetDefinition(ruleset.id(), ruleset.schemaVersion(), ruleset.revision(), lock, lock,
-                ruleset.registeredPartySize(), ruleset.requiresBattleReadyParty(), ruleset.itemActionBudget(),
-                ruleset.carriesHealthBetweenFloors(), ruleset.carriesPpBetweenFloors());
+        return ruleset.withLevelsAndParty(lock, lock, ruleset.registeredPartySize());
     }
 
     /** The tower's own ruleset narrowed by a playlist (the lobby, before a run exists). */

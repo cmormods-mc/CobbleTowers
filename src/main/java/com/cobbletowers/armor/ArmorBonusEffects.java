@@ -130,6 +130,7 @@ public final class ArmorBonusEffects {
             int ascension = com.cobbletowers.modifier.DraftService.ascensionOf(run);
             com.cobbletowers.ascension.AscensionFx.boon(ascension).forEach(ops::add);
             if (enemyScaling) com.cobbletowers.ascension.AscensionFx.enemy(ascension).forEach(ops::add);
+            com.cobbletowers.encounter.RegionFx.ops(run, player.getUUID(), enemyScaling).forEach(ops::add);
         });
         return ops;
     }

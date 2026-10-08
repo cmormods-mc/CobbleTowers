@@ -123,6 +123,27 @@ function applySideCondition(battle, op) {
   }
 }
 
+/**
+ * Makes the named sides' Pokemon ignore their held items for this battle (Tideforge's rule). The simulator already
+ * skips every item effect for a Pokemon whose ignoringItem() is true (it is how Embargo and Magic Room work), so this
+ * replaces that one method on each Pokemon of the side, nothing else; the item is not removed or changed.
+ */
+function applySuppressItems(battle, op) {
+  for (const side of sidesOf(battle, op)) {
+    for (const pokemon of side.pokemon) {
+      if (!pokemon || typeof pokemon.ignoringItem !== 'function') continue;
+      pokemon.ignoringItem = function () { return true; };
+    }
+  }
+}
+
+/** Records a drain rule: the named sides heal `percent` of the damage their moves deal. The wrapper is installed once. */
+function addDrainRule(battle, op, rules) {
+  const sides = sidesOf(battle, op).map(side => side.id);
+  if (sides.length === 0) return;
+  rules.drain.push({sides, percent: clamp(op.percent, 1, 50, 10)});
+}
+
 /** Records a damage rule; the wrapper that enforces it is installed once, after every operation has run. */
 function addDamageRule(battle, op, rules, key) {
   const type = validType(battle, op.type);
@@ -212,6 +233,8 @@ const OPERATIONS = {
   sidecondition: (battle, op) => applySideCondition(battle, op),
   damage: (battle, op, rules) => addDamageRule(battle, op, rules, 'dealt'),
   resist: (battle, op, rules) => addDamageRule(battle, op, rules, 'taken'),
+  suppress_items: (battle, op) => applySuppressItems(battle, op),
+  drain: (battle, op, rules) => addDrainRule(battle, op, rules),
 };
 
 function matches(rule, sideId, type) {
@@ -248,6 +271,34 @@ function wrapDamage(battle, rules) {
   };
 }
 
+/**
+ * Heals the attacker by a share of the damage its move dealt, for the sides a drain rule names. Wraps spreadDamage on
+ * this battle only and fails open: whatever goes wrong, the damage is the engine's own number.
+ */
+function wrapDrain(battle, rules) {
+  const original = battle.spreadDamage;
+  if (typeof original !== 'function') {
+    note(battle, 'Tower drain effects are not available in this simulator.');
+    return;
+  }
+  battle.spreadDamage = function (damage, targetArray, source, effect) {
+    const result = original.apply(this, arguments);
+    try {
+      if (!source || !source.side || !Array.isArray(result) || !effect || effect.effectType !== 'Move') return result;
+      let percent = 0;
+      for (const rule of rules.drain) if (rule.sides.includes(source.side.id)) percent += rule.percent;
+      if (percent <= 0) return result;
+      let dealt = 0;
+      for (const value of result) if (typeof value === 'number' && value > 0) dealt += value;
+      const heal = Math.floor(dealt * Math.min(percent, 100) / 100);
+      if (heal > 0 && source.hp > 0 && source.hp < source.maxhp) battle.heal(heal, source, source, 'drain');
+    } catch (err) {
+      /* a missed heal is a small bug; an exception here would hang the battle */
+    }
+    return result;
+  };
+}
+
 /** Applies every operation in battle.format.towerFx once. Exported for the tests. */
 function applyTowerFx(battle) {
   const fx = battle.format && battle.format.towerFx;
@@ -255,7 +306,7 @@ function applyTowerFx(battle) {
   battle.towerFxApplied = true;
   if (fx.length > MAX_OPS) note(battle, `Only the first ${MAX_OPS} tower effects were applied.`);
 
-  const rules = {dealt: [], taken: []};
+  const rules = {dealt: [], taken: [], drain: []};
   let applied = 0;
   for (const op of fx.slice(0, MAX_OPS)) {
     const name = op && typeof op === 'object' ? op.op : undefined;
@@ -269,6 +320,7 @@ function applyTowerFx(battle) {
     }
   }
   if (rules.dealt.length || rules.taken.length) wrapDamage(battle, rules);
+  if (rules.drain.length) wrapDrain(battle, rules);
   applied += battle.towerFxPreApplied || 0;
   if (applied > 0) note(battle, 'Tower effects are in play.');
   // To the server log, not just the battle log: the Java side logs what it HANDED to Showdown, and only this line

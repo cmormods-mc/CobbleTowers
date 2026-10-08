@@ -184,6 +184,12 @@ public final class TowerBattleFx {
                 if (!side(op, clean) || !oneOf(op, "id", SIDE_CONDITIONS, clean)) return Optional.empty();
                 copyInt(op, "duration", 0, 20, clean);
             }
+            case "suppress_items" -> {
+                if (!side(op, clean)) return Optional.empty();
+            }
+            case "drain" -> {
+                if (!side(op, clean) || !copyInt(op, "percent", 1, 50, clean)) return Optional.empty();
+            }
             case "damage", "resist" -> {
                 if (!side(op, clean) || !copyInt(op, "percent", 1, 300, clean)) return Optional.empty();
                 String type = string(op, "type");

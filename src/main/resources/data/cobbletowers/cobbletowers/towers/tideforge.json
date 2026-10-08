@@ -2,7 +2,7 @@
   "schema_version": 1,
   "revision": 1,
   "display_name": "Tideforge Tower",
-  "ruleset": "cobbletowers:standard",
+  "ruleset": "cobbletowers:tideforge",
   "reward_table": "cobbletowers:tideforge",
   "regional_theme": "cobbletowers:tideforge",
   "scouting_profile": "cobbletowers:regional",

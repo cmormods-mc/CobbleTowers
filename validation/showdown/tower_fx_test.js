@@ -33,19 +33,19 @@ const fx = require(FX_FILE);
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /** Cobblemon's packed team: name|species|uuid|currentHealth|status|statusDuration|item|ability|moves|pp|nature|... */
-function pack(species, ability, moves, level) {
-  return [species, species, '00000000-0000-0000-0000-00000000000' + species.length, '', '', '', 'none', ability,
+function pack(species, ability, moves, level, item = 'none') {
+  return [species, species, '00000000-0000-0000-0000-00000000000' + species.length, '', '', '', item, ability,
     moves.join(','), moves.map(() => '16/16').join(','), 'Hardy', '', '', '', '', String(level), ''].join('|');
 }
 
-const BLASTOISE = () => pack('Blastoise', 'torrent', ['hydropump', 'icebeam', 'surf', 'earthquake'], 50);
-const CHARIZARD = () => pack('Charizard', 'blaze', ['flamethrower', 'airslash', 'dragonclaw', 'roost'], 50);
+const BLASTOISE = (item) => pack('Blastoise', 'torrent', ['hydropump', 'icebeam', 'surf', 'earthquake'], 50, item);
+const CHARIZARD = (item) => pack('Charizard', 'blaze', ['flamethrower', 'airslash', 'dragonclaw', 'roost'], 50, item);
 
 /**
  * Runs a battle to the end of turn one, with `towerFx` on the format object where CobbleRaids' provider puts it.
  * Returns the log, the stream's battle and anything the stream threw.
  */
-async function battle({towerFx, moves = ['move 2', 'move 4'], extraFormat = {}, turns = 1} = {}) {
+async function battle({towerFx, moves = ['move 2', 'move 4'], extraFormat = {}, turns = 1, items = ['none', 'none']} = {}) {
   const stream = new BS.BattleStream();
   const lines = [];
   const errors = [];
@@ -59,8 +59,8 @@ async function battle({towerFx, moves = ['move 2', 'move 4'], extraFormat = {}, 
   const format = Object.assign({mod: 'gen9', gameType: 'singles', gen: 9, ruleset: [], effectType: 'Format'}, extraFormat);
   if (towerFx !== undefined) format.towerFx = towerFx;
   stream.write('>start ' + JSON.stringify({format, seed: [1, 2, 3, 4]}));
-  stream.write('>player p1 ' + JSON.stringify({name: 'A', team: BLASTOISE()}));
-  stream.write('>player p2 ' + JSON.stringify({name: 'B', team: CHARIZARD()}));
+  stream.write('>player p1 ' + JSON.stringify({name: 'A', team: BLASTOISE(items[0])}));
+  stream.write('>player p2 ' + JSON.stringify({name: 'B', team: CHARIZARD(items[1])}));
   await sleep(250);
   for (let turn = 0; turn < turns && !stream.battle.ended; turn++) {
     stream.write('>p1 ' + moves[0]);
@@ -230,6 +230,34 @@ test('a damage rule is local to its battle: a later battle without it is unaffec
   await battle({towerFx: [{op: 'damage', sides: ['p1'], type: 'any', percent: 300}]});
   const after = await battle({});
   assert.strictEqual(hp(after, 1), hp(baseline, 1));
+});
+
+// Region rules (P38).
+test('suppress_items: the named side loses its item effects (Life Orb recoil), the other side keeps them, the item stays', async () => {
+  const b = await battle({towerFx: [{op: 'suppress_items', sides: ['p1']}], items: ['lifeorb', 'lifeorb'], moves: ['move 1', 'move 1']});
+  assert.ok(b.battle.sides[0].active[0].ignoringItem(), 'p1 ignores its item');
+  assert.ok(!b.battle.sides[1].active[0].ignoringItem(), 'p2 does not');
+  const p1Orb = b.lines.filter(line => /\|-damage\|p1a.*\[from\] item: Life Orb/.test(line));
+  const p2Orb = b.lines.filter(line => /\|-damage\|p2a.*\[from\] item: Life Orb/.test(line));
+  assert.strictEqual(p1Orb.length, 0, 'no Life Orb recoil on the suppressed side');
+  assert.ok(p2Orb.length > 0, 'the other side still takes Life Orb recoil');
+  assert.strictEqual(b.battle.sides[0].active[0].item, 'lifeorb', 'the item is not removed');
+});
+
+test('drain: the named side heals a share of the damage it deals, never over its max HP', async () => {
+  // p1 (Blastoise) moves second, after taking a hit, so it has something to heal.
+  const none = await battle({moves: ['move 2', 'move 1']});
+  const drained = await battle({towerFx: [{op: 'drain', sides: ['p1'], percent: 20}], moves: ['move 2', 'move 1']});
+  assert.ok(said(drained, /\|-heal\|p1a.*\[from\] drain/), 'p1 healed from drain');
+  assert.ok(hp(drained, 0) > hp(none, 0), 'the drained side ends higher: ' + hp(drained, 0) + ' vs ' + hp(none, 0));
+  assert.ok(hp(drained, 0) <= maxhp(drained, 0));
+  assert.strictEqual(hp(drained, 1), hp(none, 1), 'the other side takes the same damage as without drain');
+});
+
+test('drain: a side not named does not heal, and an oversized percent is clamped', async () => {
+  const b = await battle({towerFx: [{op: 'drain', sides: ['p1'], percent: 9999}], moves: ['move 2', 'move 1']});
+  assert.ok(!said(b, /\|-heal\|p2a.*\[from\] drain/), 'p2 never drains');
+  assert.ok(b.errors.length === 0);
 });
 
 test('several operations together all apply', async () => {

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "revision": 1,
   "display_name": "Rootvale Tower",
-  "ruleset": "cobbletowers:standard",
+  "ruleset": "cobbletowers:rootvale",
   "reward_table": "cobbletowers:rootvale",
   "regional_theme": "cobbletowers:rootvale",
   "scouting_profile": "cobbletowers:regional",

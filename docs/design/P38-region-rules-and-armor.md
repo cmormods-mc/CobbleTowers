@@ -11,7 +11,7 @@ Status: design, written before the code (the TDS gate). Owner answers 2026-10-08
 | How a tower's three differ | **All of tier, role and sub-theme at once** (see the table) |
 | Tideforge rule | No held items for the player's Pokemon |
 | Rootvale rule | Enemy Pokemon heal a share of the damage they deal: **10% at floor 1 rising to 20% at floor 10** |
-| Duskvale rule | Each floor puts an unavoidable status on the **lead** Pokemon, **random per floor** (seeded), to be answered with cure items |
+| Duskvale rule | Each floor puts an unavoidable status on the **lead** Pokemon at the start of **every fight of the floor** (opponents and boss), the status random per floor (seeded), to be answered with cure items |
 | Raid Points | Unchanged (25 / 75) |
 
 ## Stage 1: region rules (needs code, no art)
@@ -23,11 +23,11 @@ saved run are unchanged:
 |---|---|---|
 | `player_held_items: false` | The player's side ignores held items for the whole battle (no Leftovers, berries, Choice items, Life Orb). The Pokemon keep the item in their party; nothing is removed | a `suppress_items` operation wrapping `Pokemon.ignoringItem` for the named side only, so it is inert for the other side and for any battle without it |
 | `enemy_drain_percent` (start and end) | After an enemy Pokemon deals damage it heals that share of it, capped at what it is missing | a `drain` operation: a rule on the named side, applied where damage is dealt (as the existing damage rules are), bounded and fail-open like them |
-| `floor_status` (list of statuses) | At the first battle of each floor, one status from the list, chosen by the run seed and the floor, is put on the lead | the existing `status` operation, with the choice made on the Java side from `seed` and `floorIndex` so a replay gives the same status |
+| `floor_status` (list of statuses) | At the start of every fight of a floor, that floor's status (chosen from the list by the run seed and the floor) is put on the lead; one that already has a status keeps it | the existing `status` operation, with the choice made on the Java side from `seed` and `floorIndex` so a replay gives the same status |
 
 * Java: `RulesetDefinition` parses and validates the fields, `RulesetView` exposes them (the API boundary validator guards the new signatures), and the battle-effects builder adds the operations
   to the battle's `towerFx`. The drain percent is `lerp(10, 20, (floor - 1) / (floorCount - 1))`, rounded, so a tower with another floor count still ends at 20.
-* Duskvale statuses: poison, burn, paralysis, sleep, freeze (`psn`, `brn`, `par`, `slp`, `frz`). Applied once per floor, to the lead only; a Pokemon that already has a status keeps it.
+* Duskvale statuses: poison, burn, paralysis, sleep, freeze (`psn`, `brn`, `par`, `slp`, `frz`). Applied at the start of every fight of the floor, to the lead only; a Pokemon that already has a status keeps it, so a cure used between fights is answered by the next fight (owner decision 2026-10-08).
   The vendor must sell the matching cures (Antidote, Burn Heal, Paralyze Heal, Awakening, Ice Heal, Full Heal); a Duskvale vendor check is part of the stage's test. Battle items can be used in ordinary
   floor fights; a boss fight under the no-items rule cannot, which is part of the pressure (the owner can relax it).
 * Hardcore (no vendor, no items) with Duskvale is the harshest combination and is allowed; it is not special-cased.
