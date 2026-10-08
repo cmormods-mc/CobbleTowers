@@ -29,7 +29,7 @@ if iris:
     shutil.copy2(pack,game/'shaderpacks'/pack.name)
     (game/'config').mkdir(exist_ok=True)
     (game/'config'/'iris.properties').write_text(f'shaderPack={pack.name}\nenableShaders=true\n',encoding='utf-8')
-jar=root/'build/libs/CobbleTowers-0.24.1-p41-card-colors.jar'
+jar=root/'build/libs/CobbleTowers-0.25.0-p42-run-view.jar'
 for prior in mods.glob('CobbleTowers-*.jar'):
     if prior.name != jar.name:
         prior.unlink()

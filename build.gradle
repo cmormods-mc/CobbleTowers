@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.13.6'
 }
 
-version = '0.24.1-p41-card-colors'
+version = '0.25.0-p42-run-view'
 group = 'com.cobbletowers'
 
 base {

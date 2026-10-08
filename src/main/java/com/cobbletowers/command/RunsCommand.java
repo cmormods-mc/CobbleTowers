@@ -605,7 +605,7 @@ public final class RunsCommand {
         }
 
         TowerRuns.save(source.getServer(),
-                run.withModifiers(run.modifiers().accumulating(modifierId), System.currentTimeMillis()), true);
+                run.withModifiers(run.modifiers().accumulating(modifierId, run.floorIndex()), System.currentTimeMillis()), true);
         source.sendSuccess(() -> Component.literal("Granted " + modifierId + " to run " + runId), true);
         return 1;
     }

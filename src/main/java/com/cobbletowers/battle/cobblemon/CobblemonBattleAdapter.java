@@ -131,6 +131,7 @@ public final class CobblemonBattleAdapter {
         }
 
         UUID battleId = success.getBattle().getBattleId();
+        if (!exhibition) com.cobbletowers.menu.RunEffectsService.send(player, runId);
         Binding binding = new Binding(runId, player.getUUID(), floorIndex, snapshot.species(), opponent.getUUID(),
                 System.currentTimeMillis(), exhibition);
         BY_BATTLE.put(battleId, binding);

@@ -40,6 +40,7 @@ public final class TowerNetworking {
         PayloadTypeRegistry.playS2C().register(TrackStatePayload.TYPE, TrackStatePayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(TrackActionPayload.TYPE, TrackActionPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(SpectatorPanelPayload.TYPE, SpectatorPanelPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(RunEffectsPayload.TYPE, RunEffectsPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(RewardRevealPayload.TYPE, RewardRevealPayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(CycleTeammatePayload.TYPE, CycleTeammatePayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(VendorCatalogPayload.TYPE, VendorCatalogPayload.STREAM_CODEC);

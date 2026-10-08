@@ -143,7 +143,7 @@ public final class IntermissionEvents {
                 }
                 ModifierDefinition curse = curses.get((int) Math.floorMod(seed >> 3, curses.size()));
                 ModifierDefinition relic = relics.get((int) Math.floorMod(seed >> 7, relics.size()));
-                return new Outcome(state.accumulating(curse.id()).withRelic(relic.id()), false,
+                return new Outcome(state.accumulating(curse.id(), floorIndex + 1).withRelic(relic.id(), floorIndex + 1), false,
                         "The shrine takes its price (" + curse.displayName() + ") and gives " + relic.displayName() + ".");
             }
             case GAMBLER_STAKE -> {
@@ -155,7 +155,7 @@ public final class IntermissionEvents {
                         return new Outcome(state, false, "You win, but there is nothing left to win.");
                     }
                     ModifierDefinition won = relics.get((int) Math.floorMod(seed >> 7, relics.size()));
-                    return new Outcome(state.withRelic(won.id()), false, "The gambler pays out: " + won.displayName() + ".");
+                    return new Outcome(state.withRelic(won.id(), floorIndex + 1), false, "The gambler pays out: " + won.displayName() + ".");
                 }
                 return new Outcome(state.withoutRelic(staked), false, "The gambler takes your stake.");
             }

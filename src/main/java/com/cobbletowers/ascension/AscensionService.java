@@ -49,7 +49,7 @@ public final class AscensionService {
                 content.draftablePool(run.towerId(), run.floorIndex()),
                 DraftService.held(content, run.modifiers()), run.seed(), ascension);
         forced.ifPresent(modifier -> TowerRuns.save(server,
-                run.withModifiers(run.modifiers().accumulating(modifier.id()), now), true));
+                run.withModifiers(run.modifiers().accumulating(modifier.id(), run.floorIndex()), now), true));
         TowerLog.info("Run {} ascends to Ascension {}{}", runId, ascension,
                 forced.map(modifier -> ", forced " + modifier.id()).orElse(", with nothing left to force"));
 

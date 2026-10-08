@@ -454,6 +454,8 @@ public final class ScreenshotHarness {
                 new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("minecraft", "diamond"), 2),
                 new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("cobbleraids", "raid_points"), 25, "Raid Points"))))));
         add(600, "reward reveal shot", () -> featureShot("reward_01_reveal"));
+        add(0, "run effects overlay", () -> Minecraft.getInstance().setScreen(new HudPreviewScreen()));
+        add(900, "run effects overlay shot", () -> featureShot("run_effects_hud"));
         add(0, "reward reveal raid points", () -> Minecraft.getInstance().setScreen(new RewardRevealScreen(new RewardRevealPayload(4, List.of(
                 new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("cobbleraids", "raid_points"), 25, "Raid Points"))))));
         add(1400, "reward reveal raid points shot", () -> featureShot("reward_02_raid_points"));
@@ -551,5 +553,24 @@ public final class ScreenshotHarness {
             }
         }
         return all;
+    }
+
+    /** A bare screen that draws the run-effects overlay over a dark field, for a picture of it. */
+    private static final class HudPreviewScreen extends net.minecraft.client.gui.screens.Screen {
+        HudPreviewScreen() {
+            super(net.minecraft.network.chat.Component.literal("hud"));
+        }
+
+        @Override
+        public void render(net.minecraft.client.gui.GuiGraphics g, int mx, int my, float dt) {
+            g.fill(0, 0, width, height, 0xFF20242C);
+            RunEffectsHud.draw(g, new com.cobbletowers.network.RunEffectsPayload(6, 16, List.of(
+                    new com.cobbletowers.network.RunEffectsPayload.Item("Sharpened Claws", false, 2, 3, List.of(
+                            "[-] Foes rise 3 levels above the tower.", "[+] Loot swells to x1.25 on every floor.")),
+                    new com.cobbletowers.network.RunEffectsPayload.Item("Glass Cannon", false, 1, 5, List.of(
+                            "[+] Start battles with +2 Attack and Sp. Atk.", "[-] Start battles at 60% HP.")),
+                    new com.cobbletowers.network.RunEffectsPayload.Item("War Banner", true, 1, 4, List.of(
+                            "[+] Start battles with +1 Attack and Sp. Atk.")))), "K", true);
+        }
     }
 }

@@ -60,14 +60,26 @@ public final class TowerFeatureService {
         var relics=com.cobbletowers.modifier.DraftService.relicsHeld(content,run.modifiers());
         head.add(held.size()+" modifier"+(held.size()==1?"":"s")+", "+relics.size()+" relic"+(relics.size()==1?"":"s")+" (room for "+com.cobbletowers.persistence.RunModifierState.MAX_RELICS+").");
         entries.add(entry("run","This run",head));
-        Map<net.minecraft.resources.ResourceLocation,Integer> counts=new LinkedHashMap<>();
-        for(var m:held)counts.merge(m.id(),1,Integer::sum);
-        for(var e:counts.entrySet()){
+        var state=run.modifiers();
+        // Grouped by modifier, remembering the floor each copy first applied to (0 = not recorded, an older run).
+        Map<net.minecraft.resources.ResourceLocation,List<Integer>> floors=new LinkedHashMap<>();
+        for(int i=0;i<state.accumulated().size();i++)floors.computeIfAbsent(state.accumulated().get(i),k->new ArrayList<>()).add(state.modifierFloor(i));
+        for(var e:floors.entrySet()){
             var m=content.modifier(e.getKey()).orElse(null);if(m==null)continue;
-            boolean locked=run.modifiers().lockedIn().contains(m.id());
-            entries.add(entry("mod:"+m.id(),"Modifier: "+m.displayName()+(e.getValue()>1?" x"+e.getValue():"")+(locked?" (locked in)":""),ModifierMenuText.lines(m)));
+            boolean locked=state.lockedIn().contains(m.id());
+            entries.add(entry("mod:"+m.id(),"Modifier: "+m.displayName()+(e.getValue().size()>1?" x"+e.getValue().size():"")+(locked?" (locked in)":"")+whenTaken(e.getValue()),ModifierMenuText.lines(m)));
         }
-        for(var relic:relics)entries.add(entry("relic:"+relic.id(),"Relic: "+relic.displayName(),ModifierMenuText.lines(relic)));
+        for(int i=0;i<state.relics().size();i++){
+            var relic=content.modifier(state.relics().get(i)).orElse(null);if(relic==null)continue;
+            entries.add(entry("relic:"+relic.id()+":"+i,"Relic: "+relic.displayName()+whenTaken(List.of(state.relicFloor(i))),ModifierMenuText.lines(relic)));
+        }
+    }
+
+    /** " (from floor 3)" or " (floors 3, 7)"; nothing for an older run that never recorded it. */
+    private static String whenTaken(List<Integer> floors) {
+        List<Integer> known=floors.stream().filter(f->f>0).toList();
+        if(known.isEmpty())return "";
+        return known.size()==1?" (from floor "+known.get(0)+")":" (floors "+known.stream().map(String::valueOf).collect(java.util.stream.Collectors.joining(", "))+")";
     }
 
     static boolean isOffered(TowerFeatureState state,TowerFeatureRequest request) {

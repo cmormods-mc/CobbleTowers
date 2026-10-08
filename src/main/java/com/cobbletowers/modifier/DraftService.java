@@ -228,10 +228,10 @@ public final class DraftService {
         }
 
         RunModifierState next = draft.relic()
-                ? run.modifiers().withRelic(won).withDraft(resolved)
+                ? run.modifiers().withRelic(won, draft.floorIndex() + 1).withDraft(resolved)
                 : draft.lockIn()
                         ? run.modifiers().lockingIn(won).withDraft(resolved)
-                        : run.modifiers().accumulating(won).withDraft(resolved);
+                        : run.modifiers().accumulating(won, draft.floorIndex() + 1).withDraft(resolved);
 
         if (draft.relic()) {
             PersistedRun afterRelic = run.withModifiers(next, now);
