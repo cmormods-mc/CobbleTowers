@@ -179,6 +179,24 @@ def clear_tower(rcon: Rcon) -> None:
     rcon.command("execute in cobbletowers:tower run forceload remove all")
 
 
+def force_auto_claim(server_dir: Path):
+    """Turns track auto-claim on for a run (P37 made claiming manual by default) and returns a function that restores the config."""
+    config = server_dir / "config" / "cobbletowers-tracks.json"
+    backup = config.with_suffix(".json.bak")
+    if config.exists():
+        shutil.copy2(config, backup)
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text('{"auto_claim": true}', encoding="utf-8")
+
+    def restore() -> None:
+        if backup.exists():
+            shutil.move(str(backup), str(config))
+        elif config.exists():
+            config.unlink()
+
+    return restore
+
+
 def reset_tower_world(server_dir: Path) -> None:
     """Deletes the tower dimension and the mod's saved state. Server must be stopped.
 

@@ -27,7 +27,7 @@ sys.path.insert(0, str(HERE))
 
 from rcon import Rcon  # noqa: E402
 from run_durability_test import (  # noqa: E402
-    Result, Server, install_jar, reset_tower_world, read_password, server_port,
+    Result, Server, force_auto_claim, install_jar, reset_tower_world, read_password, server_port,
 )
 
 BOT = f"TCs{int(time.time()) % 100000}"
@@ -48,6 +48,7 @@ def main() -> None:
     if args.jar:
         install_jar(server_dir, args.jar.resolve())
     reset_tower_world(server_dir)
+    restore_tracks = force_auto_claim(server_dir)
 
     config_file = server_dir / "config" / "cobbletowers-cosmetics.json"
     config_backup = config_file.with_suffix(".json.bak")
@@ -213,6 +214,7 @@ def main() -> None:
             bot.kill()
         print("Stopping server")
         server.stop()
+        restore_tracks()
         config_file.unlink(missing_ok=True)
         if config_backup.exists():
             shutil.move(config_backup, config_file)

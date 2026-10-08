@@ -162,8 +162,11 @@ def main() -> None:
             rcon.command(f"cobbletowers runs vendor credit {BOT} 30")
             bought = rcon.command(f"cobbletowers runs vendor buy {run} cobbletowers:full_heal {BOT} {BOT}")
             after = rcon.command(f"execute as {BOT} run cobbletowers runs vendor")
+            # Buying can complete the daily "shopper" contract, which pays a bonus.
+            bonus = sum(int(n) for n in re.findall(r"completed the contract \S+ and is paid (\d+) CobbleDollars",
+                                                   server.read_log()))
             results.append(Result("the purchase succeeds and debits the discounted 23 (30 -> 7)",
-                                  bought_result(bought) == "SUCCESS" and balance_of(after) == 7,
+                                  bought_result(bought) == "SUCCESS" and balance_of(after) == 7 + bonus,
                                   f"{bought.strip()[:100]} / {after.strip()[:100]}"))
 
             clear_armor(rcon)

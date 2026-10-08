@@ -149,8 +149,11 @@ def main() -> None:
 
             after_buy = rcon.command(f"execute as {BOT} run cobbletowers runs vendor")
             # Full Heal is priced at 25 in the shipped content; 30 - 25 = 5.
+            # Buying can complete the daily "shopper" contract, which pays a bonus.
+            bonus = sum(int(n) for n in re.findall(r"completed the contract \S+ and is paid (\d+) CobbleDollars",
+                                                   server.read_log()))
             results.append(Result("the purchase debited exactly its price, no more and no less",
-                                  balance_of(after_buy) == 5, after_buy.strip()[:200]))
+                                  balance_of(after_buy) == 5 + bonus, after_buy.strip()[:200]))
 
             # === the run remembers how many times it has bought this (TDS #19) ==================
             purchase_line = rcon.command(f"cobbletowers runs show {run}")
