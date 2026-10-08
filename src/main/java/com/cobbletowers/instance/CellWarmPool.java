@@ -95,29 +95,76 @@ public final class CellWarmPool {
         WANTED.put(layout.structure(), layout);
     }
 
+    /** The build in progress (one at a time) and who holds its lease. */
+    private static SlicedBuild BUILD;
+    private static UUID BUILD_TENANT;
+
+    /** Per-tick time a warm build may take; the rest of the tick belongs to the game. */
+    private static final long SLICE_BUDGET_NANOS = 4_000_000L;
+
     /**
-     * Once a second: builds ONE missing cell if the tower is not busy with other heavy work. Returns how many were
-     * built.
+     * Once a second: starts ONE missing cell if the tower is not busy with other heavy work. The build itself runs a
+     * slice per tick ({@link #advance}), so it never holds the server thread for the whole paste. Returns how many
+     * were started.
      */
     public static int tick(MinecraftServer server, long now) {
+        if (BUILD != null) return 0;
         for (FloorLayout layout : WANTED.values()) {
             Deque<Integer> ready = READY.get(layout.structure());
             if (ready != null && ready.size() >= TARGET_PER_STRUCTURE) continue;
             if (now - lastTopUp < COOLDOWN_MILLIS) return 0;
             if (!HeavyWork.tryAcquire(now)) return 0;
-            return topUp(server, layout, now, 1);
+            lastTopUp = now;
+            return begin(server, layout) ? 1 : 0;
         }
         return 0;
     }
 
+    private static boolean begin(MinecraftServer server, FloorLayout layout) {
+        Deque<Integer> ready = READY.computeIfAbsent(layout.structure(), key -> new ArrayDeque<>());
+        UUID tenant = poolTenant(ready.size());
+        if (!(InstanceAllocator.allocate(server, tenant) instanceof InstanceAllocator.Leased leased)) return false;
+        var build = SlicedBuild.start(server, leased.cell(), layout);
+        if (build.isEmpty()) {
+            InstanceAllocator.release(server, tenant, leased.cell());
+            return false;
+        }
+        BUILD = build.get();
+        BUILD_TENANT = tenant;
+        return true;
+    }
+
+    /** Every tick: gives the build in progress one slice, and files the cell when it is finished. */
+    static void advance(MinecraftServer server) {
+        SlicedBuild build = BUILD;
+        if (build == null) return;
+        SlicedBuild.Status status = build.advance(server, SLICE_BUDGET_NANOS);
+        if (status == SlicedBuild.Status.WORKING) return;
+        UUID tenant = BUILD_TENANT;
+        BUILD = null;
+        BUILD_TENANT = null;
+        com.cobbletowers.diagnostics.TowerMetrics.recordAllocation(server, build.workMillis());
+        if (status == SlicedBuild.Status.DONE && build.problems().isEmpty()) {
+            InstanceAllocator.transferLease(build.cell, tenant, POOL);
+            Deque<Integer> ready = READY.computeIfAbsent(build.layout.structure(), key -> new ArrayDeque<>());
+            ready.addLast(build.cell);
+            TowerLog.info("Warm pool built cell {} for {} in {} ms of slices (longest {} ms); {} ready", build.cell,
+                    build.layout.structure(), build.workMillis(), build.longestStepMillis(), ready.size());
+            return;
+        }
+        if (status == SlicedBuild.Status.DONE) TowerLog.error("Cell {} was built but is not playable: {}", build.cell, String.join("; ", build.problems()));
+        // Give it straight back; release decides whether it is merely empty or actually bad.
+        InstanceAllocator.release(server, tenant, build.cell);
+    }
+
+    /** Registers the per-tick slice and the once-a-second start. */
     private static int ticks;
 
-    /** Registers the once-a-second tick. */
     public static void install() {
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (++ticks % 20 != 0) return;
             try {
-                tick(server, System.currentTimeMillis());
+                advance(server);
+                if (++ticks % 20 == 0) tick(server, System.currentTimeMillis());
             } catch (RuntimeException ex) {
                 TowerLog.error("The warm pool tick failed", ex);
             }
@@ -148,12 +195,16 @@ public final class CellWarmPool {
         int ready = readyCount();
         READY.clear();
         WANTED.clear();
+        BUILD = null;
+        BUILD_TENANT = null;
         lastTopUp = 0;
         return ready;
     }
 
     /** Test seam. */
     static void resetForTests() {
+        BUILD = null;
+        BUILD_TENANT = null;
         READY.clear();
         WANTED.clear();
         lastTopUp = 0;

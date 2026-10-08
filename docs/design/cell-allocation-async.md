@@ -1,6 +1,8 @@
 # Cell allocation off the critical path
 
-Status: proposal (2026-10-07), for the owner to choose an option. Nothing is built. Release blocker #3 in `docs/RELEASE-CHECKLIST.md`.
+Status (2026-10-08): admission control (A), the clean-cell check (C1) and the once-a-second warm pool tick (C4) were built earlier (`HeavyWork`,
+`CellCleanliness`, `CellWarmPool.tick`). The warm pool's build is now sliced across ticks (B, for the one caller nobody waits on): see "As built" at the end.
+The run-start prepare and the release reset are still synchronous, and C2/C3 are not built. Release blocker #3 in `docs/RELEASE-CHECKLIST.md`.
 
 ## The problem
 
@@ -73,3 +75,13 @@ stall and the queue depth, and run `soak_test.py` with `--pause 0` as the burst 
 - Unit tests (no server): the limiter and queue ordering; the `CLEAN` bit transitions (verified release sets it, allocate clears it, restart treats every cell as unknown).
 - Rig: `bot_stress_test.py` and `soak_test.py` (both `--pause 0` and `--pause 2`) with MSPT recorded; the cell-reset and quarantine smoke tests; a kill-and-restart during a prepare and during a release (the cell must come back reset or quarantined).
 - Live: two bots start and end runs back to back while a third watches the tick time.
+
+## As built: the warm pool build, a slice per tick (2026-10-08)
+
+`SlicedBuild` does what `CellPreparer.prepare` does, in steps: reset per chunk when the cell is not known clean, then one paste per chunk the structure reaches
+(`StructurePlaceSettings.setBoundingBox`), each step skipping a chunk that is not loaded yet (`getChunkNow`, never a blocking load; 60 s then it gives up and releases).
+`CellWarmPool.advance` gives the build in progress one step-or-more inside a 4 ms budget every tick; `tick` (once a second) only starts the next build, one at a time.
+
+Measured on the rig (`soak_test --pause 2`, 18 builds): the longest single step averaged 60 ms (max 84 ms), against a 343 ms mean (up to 1.0 s) for the old
+synchronous paste. The total work is higher (about 580 ms against 343 ms) because every `placeInWorld` call walks the whole template, so splitting the paste
+further (Y bands) made it worse (2.3 s total, steps no shorter) and was dropped. Run-start `prepare` and release `reset` still hold a tick for their full length.

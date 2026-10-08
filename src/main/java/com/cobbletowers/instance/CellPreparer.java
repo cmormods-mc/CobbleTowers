@@ -26,7 +26,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 public final class CellPreparer {
 
     /** Placement flags: tell clients, and skip the neighbour-shape updates a solid build does not need. */
-    private static final int PLACE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
+    static final int PLACE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
 
     /**
      * What {@link #reset} sweeps: every chunk the cell holds, from just under the floor to the top of the world. A
@@ -123,38 +123,45 @@ public final class CellPreparer {
         ServerLevel level = TowerDimension.level(server);
         if (level == null) return 0;
 
-        BlockPos centre = CellGrid.centerOf(cell);
-        BlockState air = Blocks.AIR.defaultBlockState();
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        ChunkPos middle = new ChunkPos(centre);
-        int lowest = CellGrid.FLOOR_Y - RESET_BELOW;
+        ChunkPos middle = new ChunkPos(CellGrid.centerOf(cell));
         int cleared = 0;
         int reach = CellTickets.RADIUS_CHUNKS;
         for (int chunkX = middle.x - reach; chunkX <= middle.x + reach; chunkX++) {
             for (int chunkZ = middle.z - reach; chunkZ <= middle.z + reach; chunkZ++) {
-                LevelChunk chunk = level.getChunk(chunkX, chunkZ);
-                LevelChunkSection[] sections = chunk.getSections();
-                for (int index = 0; index < sections.length; index++) {
-                    LevelChunkSection section = sections[index];
-                    if (section.hasOnlyAir()) continue;
-                    int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(index));
-                    for (int localY = 0; localY < 16; localY++) {
-                        int y = baseY + localY;
-                        if (y < lowest) continue;
-                        for (int localX = 0; localX < 16; localX++) {
-                            for (int localZ = 0; localZ < 16; localZ++) {
-                                if (section.getBlockState(localX, localY, localZ).isAir()) continue;
-                                cursor.set(chunkX * 16 + localX, y, chunkZ * 16 + localZ);
-                                level.setBlock(cursor, air, PLACE_FLAGS);
-                                cleared++;
-                            }
-                        }
-                    }
-                }
+                cleared += resetChunk(level, level.getChunk(chunkX, chunkZ));
             }
         }
         if (cleared > 0) TowerLog.info("Cell {} reset, {} block(s) cleared", cell, cleared);
         CellCleanliness.markClean(cell);
+        return cleared;
+    }
+
+    /** Clears one loaded chunk of the cell and returns how many blocks were removed. */
+    static int resetChunk(ServerLevel level, LevelChunk chunk) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        int lowest = CellGrid.FLOOR_Y - RESET_BELOW;
+        int chunkX = chunk.getPos().x;
+        int chunkZ = chunk.getPos().z;
+        int cleared = 0;
+        LevelChunkSection[] sections = chunk.getSections();
+        for (int index = 0; index < sections.length; index++) {
+            LevelChunkSection section = sections[index];
+            if (section.hasOnlyAir()) continue;
+            int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(index));
+            for (int localY = 0; localY < 16; localY++) {
+                int y = baseY + localY;
+                if (y < lowest) continue;
+                for (int localX = 0; localX < 16; localX++) {
+                    for (int localZ = 0; localZ < 16; localZ++) {
+                        if (section.getBlockState(localX, localY, localZ).isAir()) continue;
+                        cursor.set(chunkX * 16 + localX, y, chunkZ * 16 + localZ);
+                        level.setBlock(cursor, air, PLACE_FLAGS);
+                        cleared++;
+                    }
+                }
+            }
+        }
         return cleared;
     }
 }
