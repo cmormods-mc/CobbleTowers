@@ -274,6 +274,16 @@ public final class CobblemonBattleAdapter {
         return ended;
     }
 
+    /** Whether the player is a participant in a battle that has not ended, ours or CobbleRaids'. */
+    public static boolean inLiveBattle(ServerPlayer player) {
+        try {
+            PokemonBattle battle = BattleRegistry.getBattleByParticipatingPlayer(player);
+            return battle != null && !battle.getEnded();
+        } catch (RuntimeException ex) {
+            return false;
+        }
+    }
+
     /** Ends whatever battle a player is in, including one CobbleRaids started. @return true if one was ended */
     public static boolean endBattleOf(ServerPlayer player) {
         try {

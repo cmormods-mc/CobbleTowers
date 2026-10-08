@@ -106,8 +106,19 @@ public final class TowerPresence {
         boolean late = since != null && now - since > ParticipantService.RECONNECT_WINDOW_MILLIS;
         // Spectating only if a floor is actually in progress.
         boolean floorInProgress = TowerEncounters.of(run.runId()).isPresent();
+        // A boss fight CobbleRaids is holding their slot in: they are still a participant, so resume it, not watch it.
+        boolean resumes = TowerEncounters.of(run.runId())
+                .filter(round -> round.phase() == TowerEncounters.Phase.BOSS
+                        && round.byPlayer().get(playerId) != TowerEncounters.Status.OUT)
+                .isPresent() && CobblemonBattleAdapter.inLiveBattle(player);
+        boolean spectate = floorInProgress && !resumes;
         ParticipantService.update(server, run.runId(), playerId,
-                state -> floorInProgress ? state.reconnected().spectating() : state.reconnected(), now);
+                state -> spectate ? state.reconnected().spectating() : state.reconnected(), now);
+        if (resumes) {
+            TowerLog.info("Player {} rejoined run {} and resumes the boss fight",
+                    player.getGameProfile().getName(), run.runId());
+            return;
+        }
         if (!floorInProgress) {
             TowerLog.info("Player {} rejoined run {}{}, which is between floors",
                     player.getGameProfile().getName(), run.runId(), late ? " after their window closed" : "");
