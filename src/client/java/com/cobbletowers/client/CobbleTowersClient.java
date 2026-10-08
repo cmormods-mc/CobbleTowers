@@ -90,7 +90,7 @@ public final class CobbleTowersClient implements ClientModInitializer {
                     if (current instanceof TowerHallScreen hall && !payload.open()) {
                         hall.updateLobby(payload);
                     } else if (current instanceof TowerFeatureScreen feature && !payload.open()) {
-                        feature.hall().updateLobby(payload);
+                        if (feature.hall() != null) feature.hall().updateLobby(payload);
                     } else if (current instanceof PlayScreen open) {
                         // A change to the lobby: redrawn in place, as the vendor screen is.
                         open.update(payload);

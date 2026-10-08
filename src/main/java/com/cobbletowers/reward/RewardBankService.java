@@ -73,7 +73,7 @@ public final class RewardBankService {
      * The final-payout bonus for the modifiers the run holds, a locked-in one counted twice (as {@code
      * DifficultyScore} does).
      */
-    static int riskBonusPercent(TowerContent content, PersistedRun run) {
+    public static int riskBonusPercent(TowerContent content, PersistedRun run) {
         List<com.cobbletowers.api.modifier.RiskTier> risks = new ArrayList<>();
         for (var held : DraftService.held(content, run.modifiers())) risks.add(held.risk());
         for (var locked : run.modifiers().lockedIn()) content.modifier(locked).ifPresent(m -> risks.add(m.risk()));

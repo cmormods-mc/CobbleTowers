@@ -195,6 +195,9 @@ public final class IntermissionScreen extends TowerScreen implements ModifierCar
                         b -> send(cashing ? IntermissionActionPayload.Action.STAY : IntermissionActionPayload.Action.CASH_OUT, 0))
                 .pos(sheetX + (third + 4) * 2, actionsTop + 21).size(rowW - (third + 4) * 2, 18).build());
 
+        // What this run is carrying: every modifier and relic, with what each does (the same view the Hall's codex links to).
+        addRenderableWidget(TowerButton.builder(Component.literal("This run"), b -> TowerFeatureScreen.open(this, "run"))
+                .pos(panelX + panelW - 116, 9).size(62, 16).build());
         if (!revealed() && motionOn()) {
             addRenderableWidget(TowerButton.builder(Component.literal("Skip"), b -> {
                         skipped = true;
@@ -260,7 +263,7 @@ public final class IntermissionScreen extends TowerScreen implements ModifierCar
         List<FormattedCharSequence> lines = new ArrayList<>();
         if (inspected >= 0 && inspected < state.draft().cards().size()) {
             for (String line : state.draft().cards().get(inspected).lines()) {
-                lines.addAll(font.split(Component.literal(line), Math.max(40, sheetW - 14)));
+                lines.addAll(font.split(TowerUi.styled(line), Math.max(40, sheetW - 14)));
             }
         }
         body = lines;

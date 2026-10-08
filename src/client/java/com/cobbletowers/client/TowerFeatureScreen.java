@@ -17,7 +17,7 @@ import net.minecraft.util.FormattedCharSequence;
 /** Paginated ledger with explicit review forms. Late responses only update their requesting screen. */
 public final class TowerFeatureScreen extends TowerMenuScreen {
     private static final AtomicInteger IDS=new AtomicInteger();
-    private final TowerHallScreen parent;
+    private final net.minecraft.client.gui.screens.Screen parent;
     private String feature;
     private TowerFeatureState state;
     private int requestId,page,linePage,selected=-1;
@@ -27,8 +27,8 @@ public final class TowerFeatureScreen extends TowerMenuScreen {
     private String typed="",status="";
     private boolean uncertain;
 
-    private TowerFeatureScreen(TowerHallScreen parent,String feature){this.parent=parent;this.feature=feature;section=feature;}
-    static void open(TowerHallScreen parent,String feature){var screen=new TowerFeatureScreen(parent,feature);Minecraft.getInstance().setScreen(screen);screen.send("open","");}
+    private TowerFeatureScreen(net.minecraft.client.gui.screens.Screen parent,String feature){this.parent=parent;this.feature=feature;section=feature;}
+    static void open(net.minecraft.client.gui.screens.Screen parent,String feature){var screen=new TowerFeatureScreen(parent,feature);Minecraft.getInstance().setScreen(screen);screen.send("open","");}
     static TowerFeatureScreen preview(TowerHallScreen parent,TowerFeatureState sample){var s=new TowerFeatureScreen(parent,sample.section());s.state=sample;s.section=sample.title();s.status=sample.message();return s;}
     @Override protected void init(){rebuild();}
     private void send(String action,String argument){
@@ -46,7 +46,7 @@ public final class TowerFeatureScreen extends TowerMenuScreen {
         rebuild();
     }
     @Override public void tick(){if(pending!=0&&System.nanoTime()-pending>8_000_000_000L){pending=0;uncertain=true;status="Response delayed. Refresh before another action.";rebuild();}}
-    @Override protected void navigate(String next){minecraft.setScreen(parent);parent.navigate(next);}
+    @Override protected void navigate(String next){minecraft.setScreen(parent);if(parent instanceof TowerHallScreen hall)hall.navigate(next);}
     @Override public void onClose(){
         if(review!=null){review=null;typed="";linePage=0;rebuild();}
         else if(selected>=0){selected=-1;linePage=0;rebuild();}
@@ -56,10 +56,10 @@ public final class TowerFeatureScreen extends TowerMenuScreen {
     private int lineCount(){return Math.max(2,(height-(review!=null&&!review.inputHint().isEmpty()?110:89)-contentY-34)/11);}
     private List<FormattedCharSequence> body(){
         List<String> lines=review!=null?List.of(review.confirmation().isEmpty()?review.label():review.confirmation()):state!=null&&selected>=0?state.entries().get(selected).lines():List.of();
-        List<FormattedCharSequence> result=new ArrayList<>();for(String line:lines)result.addAll(font.split(Component.literal(line),Math.max(32,contentWidth-14)));return result;
+        List<FormattedCharSequence> result=new ArrayList<>();for(String line:lines)result.addAll(font.split(TowerUi.styled(line),Math.max(32,contentWidth-14)));return result;
     }
     private void button(String label,int x,int y,int w,Runnable run,boolean enabled){var b=TowerButton.builder(Component.literal(label),ignored->run.run()).pos(x,y).size(w,20).dark().build();b.active=enabled;addRenderableWidget(b);}
-    TowerHallScreen hall(){return parent;}
+    TowerHallScreen hall(){return parent instanceof TowerHallScreen hall?hall:null;}
     private void choose(Action a){
         if(a.id().equals("lobby")){
             if(ClientPlayNetworking.canSend(com.cobbletowers.network.TowerHallActionPayload.TYPE))

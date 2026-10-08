@@ -21,7 +21,7 @@ import net.minecraft.server.level.ServerPlayer;
 /** Menu adapters for the existing gameplay services. No chat parsing or arbitrary command execution. */
 public final class TowerFeatureService {
     private static final Set<String> SECTIONS=Set.of("cosmetics","season","hall","echoes","club","club-top","club-alltime",
-            "watch","codes","contracts","report","modifiers","relics");
+            "watch","codes","contracts","report","modifiers","relics","run");
     private TowerFeatureService() {}
     static Action action(String id,String label,String argument,String confirmation,String input) {return new Action(id,label,argument,confirmation,input);}
     static Action link(String label,String section) {return action("page",label,section,"","");}
@@ -45,6 +45,29 @@ public final class TowerFeatureService {
             else message=apply(server,player,request);
         }
         ServerPlayNetworking.send(player,view(server,player,request,limit(message,512)));
+    }
+
+    /** The player's live run: where it stands, what it carries (a locked-in modifier says so) and the relics, each with what it does. */
+    private static void runView(List<Entry> entries,UUID player) {
+        var found=com.cobbletowers.runtime.TowerRuns.forPlayer(player).filter(run->run.state().isLive());
+        if(found.isEmpty()){entries.add(entry("none","No run in progress",List.of("Start or join a run to see its modifiers and relics here.")));return;}
+        var run=found.get();var content=TowerDefinitionRegistry.content();var tower=content.towers().get(run.towerId());
+        List<String> head=new ArrayList<>();
+        head.add((tower==null?run.towerId().toString():tower.displayName())+", floor "+run.floorIndex()+(tower!=null&&tower.ascension()&&tower.ascensionOf(run.floorIndex())>0?" (Ascension "+tower.ascensionOf(run.floorIndex())+")":""));
+        int risk=com.cobbletowers.reward.RewardBankService.riskBonusPercent(content,run);
+        head.add(ModifierMenuText.GOOD+"Risk carried: +"+risk+"% to your final payout.");
+        var held=com.cobbletowers.modifier.DraftService.held(content,run.modifiers());
+        var relics=com.cobbletowers.modifier.DraftService.relicsHeld(content,run.modifiers());
+        head.add(held.size()+" modifier"+(held.size()==1?"":"s")+", "+relics.size()+" relic"+(relics.size()==1?"":"s")+" (room for "+com.cobbletowers.persistence.RunModifierState.MAX_RELICS+").");
+        entries.add(entry("run","This run",head));
+        Map<net.minecraft.resources.ResourceLocation,Integer> counts=new LinkedHashMap<>();
+        for(var m:held)counts.merge(m.id(),1,Integer::sum);
+        for(var e:counts.entrySet()){
+            var m=content.modifier(e.getKey()).orElse(null);if(m==null)continue;
+            boolean locked=run.modifiers().lockedIn().contains(m.id());
+            entries.add(entry("mod:"+m.id(),"Modifier: "+m.displayName()+(e.getValue()>1?" x"+e.getValue():"")+(locked?" (locked in)":""),ModifierMenuText.lines(m)));
+        }
+        for(var relic:relics)entries.add(entry("relic:"+relic.id(),"Relic: "+relic.displayName(),ModifierMenuText.lines(relic)));
     }
 
     static boolean isOffered(TowerFeatureState state,TowerFeatureRequest request) {
@@ -181,6 +204,13 @@ public final class TowerFeatureService {
                 TowerDefinitionRegistry.content().modifiers().values().stream().filter(m->m.relic()==relic).sorted(Comparator.comparing(ModifierDefinition::displayName))
                         .forEach(m->entries.add(entry(m.id().toString(),m.displayName(),ModifierMenuText.lines(m))));
                 actions.add(link(relic?"Modifiers":"Relics",relic?"modifiers":"relics"));
+                actions.add(link("This run","run"));
+            }
+            case "run" -> {
+                title="Current run";
+                runView(entries,id);
+                actions.add(link("Modifier codex","modifiers"));
+                actions.add(link("Relic codex","relics"));
             }
         }
         if(!message.isEmpty())entries.addFirst(entry("result","Latest result",List.of(message)));

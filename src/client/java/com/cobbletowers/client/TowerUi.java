@@ -35,6 +35,17 @@ public final class TowerUi {
         PixelUi.panel(g, x, y, w, h, accent, 0);
     }
 
+    /** Green for a benefit and red for a cost, readable on the parchment sheets (the server marks the lines, see ModifierMenuText). */
+    public static final int GOOD_INK = 0x2F7A2F;
+    public static final int BAD_INK = 0xB02424;
+
+    /** A card line as drawn: the server's benefit or cost marker is dropped and becomes the colour. */
+    public static net.minecraft.network.chat.Component styled(String line) {
+        if (line.startsWith("[+] ")) return net.minecraft.network.chat.Component.literal(line.substring(4)).withColor(GOOD_INK);
+        if (line.startsWith("[-] ")) return net.minecraft.network.chat.Component.literal(line.substring(4)).withColor(BAD_INK);
+        return net.minecraft.network.chat.Component.literal(line);
+    }
+
     public static void label(GuiGraphics g, Font font, String text, int x, int y, int max, int color) {
         g.drawString(font, font.plainSubstrByWidth(text, Math.max(1, max)), x, y, color, false);
     }
