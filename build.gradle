@@ -2,7 +2,7 @@ plugins {
     id 'fabric-loom' version '1.13.6'
 }
 
-version = '0.22.1-p37-boss-rejoin'
+version = '0.23.0-p38-regions-armor'
 group = 'com.cobbletowers'
 
 base {
