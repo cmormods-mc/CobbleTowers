@@ -67,7 +67,12 @@ public final class TowerRuns {
      * failed flush leaves a consistent pair. A flush failure is reported, not swallowed.
      */
     public static void save(MinecraftServer server, PersistedRun run, boolean forceCheckpoint) {
+        PersistedRun previous = BY_ID.get(run.runId());
         index(run);
+        // The in-fight overlay must never lag the run: any change to what it carries is pushed to its players now.
+        if (com.cobbletowers.menu.RunEffectsService.changed(previous, run)) {
+            com.cobbletowers.menu.RunEffectsService.pushToParticipants(server, run);
+        }
         TowerRunStore store = TowerRunStore.get(server);
         if (!forceCheckpoint) {
             store.put(run);

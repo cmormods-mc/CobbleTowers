@@ -119,6 +119,8 @@ public final class TowerPresence {
                     player.getGameProfile().getName(), run.runId());
             return;
         }
+        // Whatever the floor state, the overlay of a returning player starts from the run as it is now.
+        com.cobbletowers.menu.RunEffectsService.send(player, run.runId());
         if (!floorInProgress) {
             TowerLog.info("Player {} rejoined run {}{}, which is between floors",
                     player.getGameProfile().getName(), run.runId(), late ? " after their window closed" : "");

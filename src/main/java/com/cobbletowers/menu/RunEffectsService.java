@@ -31,6 +31,35 @@ public final class RunEffectsService {
         }
     }
 
+    /**
+     * Tells every online participant what the run now carries, or that it carries nothing because it is over. Called when a
+     * run is saved with a change to its modifiers, relics or floor, so the overlay is never behind the run.
+     */
+    public static void pushToParticipants(net.minecraft.server.MinecraftServer server, PersistedRun run) {
+        try {
+            RunEffectsPayload payload = run.state().isLive() ? build(run) : CLEARED;
+            for (var participant : run.participants()) {
+                ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+                if (player != null && ServerPlayNetworking.canSend(player, RunEffectsPayload.TYPE)) ServerPlayNetworking.send(player, payload);
+            }
+        } catch (RuntimeException ex) {
+            com.cobbletowers.TowerLog.errorOnce("run-effects-push", "Could not push a run's effects to its players", ex);
+        }
+    }
+
+    /** Whether saving {@code next} over {@code previous} changed anything the overlay shows. */
+    public static boolean changed(PersistedRun previous, PersistedRun next) {
+        if (previous == null) return true;
+        var before = previous.modifiers();
+        var after = next.modifiers();
+        return previous.floorIndex() != next.floorIndex() || previous.state().isLive() != next.state().isLive()
+                || !before.accumulated().equals(after.accumulated()) || !before.lockedIn().equals(after.lockedIn())
+                || !before.relics().equals(after.relics());
+    }
+
+    /** Floor 0 means no run: the client forgets what it had. */
+    private static final RunEffectsPayload CLEARED = new RunEffectsPayload(0, 0, List.of());
+
     /** The payload for a run: grouped modifiers then relics, each with only its benefit and cost lines. */
     public static RunEffectsPayload build(PersistedRun run) {
         var content = TowerDefinitionRegistry.content();

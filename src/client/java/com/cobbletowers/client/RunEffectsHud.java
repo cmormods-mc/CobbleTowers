@@ -33,7 +33,8 @@ public final class RunEffectsHud implements HudRenderCallback {
     public static final RunEffectsHud INSTANCE = new RunEffectsHud();
 
     public static void update(RunEffectsPayload payload) {
-        latest = payload;
+        // Floor 0 is the server saying the run is over.
+        latest = payload.floor() <= 0 ? null : payload;
     }
 
     public static void toggle() {
