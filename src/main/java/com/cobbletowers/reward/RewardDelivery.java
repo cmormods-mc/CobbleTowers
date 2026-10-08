@@ -47,14 +47,16 @@ public final class RewardDelivery {
                 // A player's mastery of the tower the reward was earned in (P31) adds to their CobbleDollars.
                 int bonus = com.cobbletowers.mastery.MasteryService.perksForRun(server, player.getUUID(), reward.runId())
                         .cobbleDollarBonusPercent();
-                TowerWalletStore.get(server).credit(player.getUUID(), reward.amount() + (long) reward.amount() * bonus / 100);
-                delivered.add(reward);
+                int credited = (int) Math.min(Integer.MAX_VALUE, reward.amount() + (long) reward.amount() * bonus / 100);
+                TowerWalletStore.get(server).credit(player.getUUID(), credited);
+                // Listed as what was paid (bonus included) and named: a currency is not an item, so the id alone reads as air.
+                delivered.add(shown(reward, credited, "CobbleDollars"));
                 creditedWallet = true;
             } else if (reward.item().equals(RaidPointsCurrency.ITEM_ID)) {
                 // CobbleRaids' own currency, credited through its public API (P21).
-                CobbleRaidsPoints.award(server, player.getUUID(),
-                        com.cobbletowers.armor.ArmorBonusEffects.raidPoints(player, reward.amount(), reward.runId()));
-                delivered.add(reward);
+                int points = com.cobbletowers.armor.ArmorBonusEffects.raidPoints(player, reward.amount(), reward.runId());
+                CobbleRaidsPoints.award(server, player.getUUID(), points);
+                delivered.add(shown(reward, points, "Raid Points"));
             } else if (!reward.components().isEmpty()) {
                 // A card (P33b): an item that is its data. Not handed over, and not lost, if the mod that owns it is
                 // gone.
@@ -78,6 +80,12 @@ public final class RewardDelivery {
             TowerNetworking.sendRewardReveal(player, revealOf(delivered));
         }
         return delivered.size();
+    }
+
+    /** The reward as it is listed to the player: what was actually paid, under a readable name. */
+    private static PendingTowerReward shown(PendingTowerReward reward, int amount, String name) {
+        return new PendingTowerReward(reward.runId(), reward.floorIndex(), reward.item(), amount, reward.grantedAt(),
+                reward.components(), name);
     }
 
     /** The screen payload, sent alongside the chat line; a client without the channel still gets text. */

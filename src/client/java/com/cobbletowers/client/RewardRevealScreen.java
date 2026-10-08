@@ -44,8 +44,11 @@ public final class RewardRevealScreen extends TowerScreen {
         if(grants.isEmpty())g.drawString(font,"No rewards in this grant",width/2-font.width("No rewards in this grant")/2,y+60,TowerUi.INK,false);
         else {
             var grant=grants.get(page);var item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(grant.item());
-            g.pose().pushPose();g.pose().translate(width/2f-16,y+45,0);g.pose().scale(2,2,1);g.renderItem(new net.minecraft.world.item.ItemStack(item),0,0);g.pose().popPose();
-            String label=grant.label().isEmpty()?item.getDescription().getString():grant.label();TowerUi.label(g,font,label+" x"+grant.amount(),x+12,y+h-34,w-24,TowerUi.INK);
+            // A currency (CobbleDollars, Raid Points) or an item this client does not have is no registered item: it would draw as air.
+            boolean known=net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item).equals(grant.item());
+            if(known){g.pose().pushPose();g.pose().translate(width/2f-16,y+45,0);g.pose().scale(2,2,1);g.renderItem(new net.minecraft.world.item.ItemStack(item),0,0);g.pose().popPose();}
+            else MenuIcons.draw(g,grant.item().getPath().contains("cobble_dollar")||grant.item().getPath().contains("raid_points")?"coin":"gift",width/2-16,y+45,32);
+            String label=!grant.label().isEmpty()?grant.label():known?item.getDescription().getString():grant.item().getPath().replace('_',' ');TowerUi.label(g,font,label+" x"+grant.amount(),x+12,y+h-34,w-24,TowerUi.INK);
             g.drawString(font,(page+1)+" / "+grants.size(),width/2-font.width((page+1)+" / "+grants.size())/2,y+h-16,TowerUi.INK,false);
         }
         if(t<1){

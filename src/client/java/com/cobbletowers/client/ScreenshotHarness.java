@@ -447,9 +447,11 @@ public final class ScreenshotHarness {
                 List.of(new java.util.UUID(1, 1), new java.util.UUID(1, 4)), 3, "Choose up to 3.", true))));
         add(600, "registration shot", () -> featureShot("registration_01_chooser"));
         add(0, "reward reveal", () -> Minecraft.getInstance().setScreen(new RewardRevealScreen(new RewardRevealPayload(4, List.of(
+                new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("cobbletowers", "cobble_dollar"), 14, "CobbleDollars"),
                 new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("cobblemon", "rare_candy"), 3),
                 new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("cobblemon", "ultra_ball"), 12),
-                new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("minecraft", "diamond"), 2))))));
+                new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("minecraft", "diamond"), 2),
+                new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("cobbleraids", "raid_points"), 25, "Raid Points"))))));
         add(600, "reward reveal shot", () -> featureShot("reward_01_reveal"));
         add(0, "scouting", () -> Minecraft.getInstance().setScreen(new ScoutingScreen(new ScoutingRevealPayload(5, List.of(
                 new ScoutingRevealPayload.Category("Types", "Water, Ice"),
