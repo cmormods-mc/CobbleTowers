@@ -15,7 +15,7 @@ JAVA = Path('L:/claude-cobbleraids-work/jdk-21.0.12.1+1/bin/java.exe')
 OUT = Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
 SCALE = int(sys.argv[2]) if len(sys.argv) > 2 else 3
 for old in OUT.glob('*.png'): old.unlink()
-tower = ROOT / 'build/libs/CobbleTowers-0.23.0-p38-regions-armor.jar'
+tower = ROOT / 'build/libs/CobbleTowers-0.23.1-p39-loot.jar'
 asc = RIG / 'mods/AscensionLib-0.1.0-prototype.jar'
 password = read_password(RIG); port = server_port(RIG)
 

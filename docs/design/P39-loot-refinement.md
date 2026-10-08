@@ -15,7 +15,7 @@ Written after the owner's report from floor 6 (2026-10-08): two rewards read as 
 * **Content (all four tables, revision +2).**
   * Early floors (1 to 4): berries, Potions, Poke Balls and cheap status heals; XS candy.
   * Middle (3 to 7): Super Potions, Great Balls and the region's balls, Sitrus, small and medium candy.
-  * Late (6 to 10): Hyper Potions, Ultra Balls, medium and large candy; the floor clear adds XL-adjacent items, Max Revive, PP Up, vitamins and stones; the boss adds XL candy, Max Revive, PP Up, Rare Candy (floor 7 on) and CobbleDollars.
+  * Late (6 to 10): Hyper Potions, Ultra Balls, medium and large candy; the floor clear adds a large candy, Max Revive, PP Up, vitamins and stones; the boss adds XL candy, Max Revive, PP Up, Rare Candy (floor 7 on) and CobbleDollars.
   * Berries, apricorns and status heals have lower weights and fall away by floor 5 to 7. CobbleDollars weigh more in the opponent and floor pools.
   * `rolls`: the floor clear and the boss each roll **twice**; an opponent rolls once. A floor with two opponents pays about six items instead of four.
 * Milestone (F5/F10) rewards and the armor drop weights are unchanged.
