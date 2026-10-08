@@ -19,7 +19,16 @@ import org.junit.jupiter.api.Test;
 
 class ArmorSetTest {
 
-    private static final List<String> SET_IDS = List.of("challenger", "tideforge", "rootvale", "duskvale");
+    private static final List<String> SET_IDS = List.of("challenger", "tideforge", "rootvale", "duskvale",
+            "recruit", "tidewalker", "sprout", "duskwanderer", "paragon", "leviathan", "heartwood", "nightfall");
+    /** Set id to its tower and tier (P38): tier I and II drop from the boss tables, tier III from the F10 champion's bonus pool. */
+    private static final Map<String, String[]> TOWER_AND_TIER = Map.ofEntries(
+            Map.entry("challenger", new String[] {"neutral", "2"}), Map.entry("tideforge", new String[] {"tideforge", "2"}),
+            Map.entry("rootvale", new String[] {"rootvale", "2"}), Map.entry("duskvale", new String[] {"duskvale", "2"}),
+            Map.entry("recruit", new String[] {"neutral", "1"}), Map.entry("tidewalker", new String[] {"tideforge", "1"}),
+            Map.entry("sprout", new String[] {"rootvale", "1"}), Map.entry("duskwanderer", new String[] {"duskvale", "1"}),
+            Map.entry("paragon", new String[] {"neutral", "3"}), Map.entry("leviathan", new String[] {"tideforge", "3"}),
+            Map.entry("heartwood", new String[] {"rootvale", "3"}), Map.entry("nightfall", new String[] {"duskvale", "3"}));
     private static final List<String> SLOT_NAMES = List.of("helmet", "chestplate", "leggings", "boots");
 
     private static ResourceLocation id(String path) {
@@ -104,17 +113,27 @@ class ArmorSetTest {
     }
 
     @Test
-    void theBundledRegionalRewardTablesDropTheirOwnSet() throws IOException {
-        for (String table : SET_IDS) {
-            String tower = table.equals("challenger") ? "neutral" : table;
+    void theBundledRewardTablesDropEverySetWhereItsTierSaysAndNowhereElse() throws IOException {
+        for (String set : SET_IDS) {
+            String tower = TOWER_AND_TIER.get(set)[0];
+            int tier = Integer.parseInt(TOWER_AND_TIER.get(set)[1]);
             JsonObject root = read("/data/cobbletowers/cobbletowers/reward_tables/" + tower + ".json");
             JsonArray boss = root.getAsJsonObject("tiers").getAsJsonArray("boss_defeated");
+            JsonArray cleared = root.getAsJsonObject("tiers").getAsJsonArray("floor_cleared");
+            JsonArray champion = root.getAsJsonObject("milestones").getAsJsonObject("champion").getAsJsonArray("bonus_pool");
+            JsonArray guaranteed = root.getAsJsonObject("milestones").getAsJsonObject("champion").getAsJsonArray("guaranteed");
             for (String slot : SLOT_NAMES) {
-                String item = "cobbletowers:" + table + "_" + slot;
-                assertTrue(boss.asList().stream().anyMatch(e -> e.getAsJsonObject().get("item").getAsString().equals(item)),
-                        tower + " boss table drops " + item);
+                String item = "cobbletowers:" + set + "_" + slot;
+                assertEquals(tier != 3, has(boss, item), tower + " boss_defeated and " + item);
+                assertEquals(tier == 1 || set.equals(tower) || set.equals("challenger"), has(cleared, item), tower + " floor_cleared and " + item);
+                assertEquals(tier == 3, has(champion, item), tower + " F10 champion bonus pool and " + item);
+                assertTrue(!has(guaranteed, item), item + " is never a guaranteed drop");
             }
         }
+    }
+
+    private static boolean has(JsonArray entries, String item) {
+        return entries.asList().stream().anyMatch(e -> e.getAsJsonObject().get("item").getAsString().equals(item));
     }
 
     // ---- resolving what is worn ----------------------------------------------------------------------------------

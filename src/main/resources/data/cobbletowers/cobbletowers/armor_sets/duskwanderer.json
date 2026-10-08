@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Dusk Wanderer's Cloak",
+  "color": "#9084B4",
+  "pieces": {
+    "head": "cobbletowers:duskwanderer_helmet",
+    "chest": "cobbletowers:duskwanderer_chestplate",
+    "legs": "cobbletowers:duskwanderer_leggings",
+    "feet": "cobbletowers:duskwanderer_boots"
+  },
+  "bonuses": [
+    {
+      "pieces": 2,
+      "kind": "player",
+      "attribute": "minecraft:generic.luck",
+      "operation": "add_value",
+      "amount": 1.0
+    },
+    {
+      "pieces": 2,
+      "kind": "cobblemon",
+      "modifier": "shiny_percent",
+      "percent": 5
+    },
+    {
+      "pieces": 4,
+      "kind": "battle",
+      "effects": [
+        {
+          "op": "resist",
+          "side": "self",
+          "type": "Dark",
+          "percent": 95
+        }
+      ]
+    },
+    {
+      "pieces": 4,
+      "kind": "tower",
+      "modifier": "raid_points_percent",
+      "percent": 5
+    }
+  ]
+}

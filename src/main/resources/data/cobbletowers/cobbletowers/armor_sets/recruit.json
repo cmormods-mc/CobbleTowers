@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Recruit's Gear",
+  "color": "#B49C7C",
+  "pieces": {
+    "head": "cobbletowers:recruit_helmet",
+    "chest": "cobbletowers:recruit_chestplate",
+    "legs": "cobbletowers:recruit_leggings",
+    "feet": "cobbletowers:recruit_boots"
+  },
+  "bonuses": [
+    {
+      "pieces": 2,
+      "kind": "cobblemon",
+      "modifier": "xp_percent",
+      "percent": 6
+    },
+    {
+      "pieces": 2,
+      "kind": "player",
+      "attribute": "minecraft:generic.max_health",
+      "operation": "add_value",
+      "amount": 1.0
+    },
+    {
+      "pieces": 4,
+      "kind": "battle",
+      "effects": [
+        {
+          "op": "resist",
+          "side": "self",
+          "type": "any",
+          "percent": 97
+        }
+      ]
+    },
+    {
+      "pieces": 4,
+      "kind": "tower",
+      "modifier": "vendor_discount_percent",
+      "percent": 5
+    }
+  ]
+}

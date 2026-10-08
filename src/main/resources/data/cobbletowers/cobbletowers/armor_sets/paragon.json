@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Paragon's Aegis",
+  "color": "#E6E8F4",
+  "pieces": {
+    "head": "cobbletowers:paragon_helmet",
+    "chest": "cobbletowers:paragon_chestplate",
+    "legs": "cobbletowers:paragon_leggings",
+    "feet": "cobbletowers:paragon_boots"
+  },
+  "bonuses": [
+    {
+      "pieces": 2,
+      "kind": "player",
+      "attribute": "minecraft:generic.max_health",
+      "operation": "add_value",
+      "amount": 2.0
+    },
+    {
+      "pieces": 2,
+      "kind": "cobblemon",
+      "modifier": "xp_percent",
+      "percent": 10
+    },
+    {
+      "pieces": 4,
+      "kind": "battle",
+      "effects": [
+        {
+          "op": "boost",
+          "side": "self",
+          "stat": "def",
+          "stages": 1
+        },
+        {
+          "op": "resist",
+          "side": "self",
+          "type": "any",
+          "percent": 92
+        }
+      ]
+    },
+    {
+      "pieces": 4,
+      "kind": "tower",
+      "modifier": "vendor_discount_percent",
+      "percent": 10
+    }
+  ]
+}

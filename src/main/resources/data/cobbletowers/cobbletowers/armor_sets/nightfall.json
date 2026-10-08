@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Nightfall Carapace",
+  "color": "#7C60B4",
+  "pieces": {
+    "head": "cobbletowers:nightfall_helmet",
+    "chest": "cobbletowers:nightfall_chestplate",
+    "legs": "cobbletowers:nightfall_leggings",
+    "feet": "cobbletowers:nightfall_boots"
+  },
+  "bonuses": [
+    {
+      "pieces": 2,
+      "kind": "player",
+      "attribute": "minecraft:generic.luck",
+      "operation": "add_value",
+      "amount": 1.0
+    },
+    {
+      "pieces": 2,
+      "kind": "cobblemon",
+      "modifier": "shiny_percent",
+      "percent": 10
+    },
+    {
+      "pieces": 4,
+      "kind": "battle",
+      "effects": [
+        {
+          "op": "boost",
+          "side": "self",
+          "stat": "spe",
+          "stages": 1
+        },
+        {
+          "op": "resist",
+          "side": "self",
+          "type": "Dark",
+          "percent": 90
+        },
+        {
+          "op": "resist",
+          "side": "self",
+          "type": "Ghost",
+          "percent": 90
+        }
+      ]
+    },
+    {
+      "pieces": 4,
+      "kind": "tower",
+      "modifier": "raid_points_percent",
+      "percent": 10
+    }
+  ]
+}

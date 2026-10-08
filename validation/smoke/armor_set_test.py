@@ -94,7 +94,7 @@ def main() -> None:
         server.start()
         server.wait_until_ready()
         boot = server.read_log()
-        results.append(Result("the shipped armor sets loaded", bool(re.search(r"Loaded [4-9] armor set", boot)),
+        results.append(Result("the shipped armor sets loaded", bool(re.search(r"Loaded 12 armor set", boot)),
                               "no 'Loaded N armor set' line"))
         results.append(Result("Showdown's own runtime loaded the CobbleTowers extension",
                               "Showdown extension cobbletowers-fx loaded" in boot and "Cannot load module" not in boot,
@@ -118,12 +118,12 @@ def main() -> None:
             # Tooltip sync (P25). The bots are not Fabric clients, so they never receive the payload and canSend skips them;
             # what this proves is that a join and a reload stay clean for a client without the channel, and that the reload
             # re-runs the sync path (the sets are loaded again) without a send error.
-            before_reload = server.read_log().count("Loaded 4 armor set(s)")
+            before_reload = server.read_log().count("Loaded 12 armor set(s)")
             rcon.command("reload")
             time.sleep(5)
             after = server.read_log()
-            results.append(Result("a datapack reload loads the armor sets again", after.count("Loaded 4 armor set(s)") > before_reload,
-                                  f"{before_reload} -> {after.count('Loaded 4 armor set(s)')}"))
+            results.append(Result("a datapack reload loads the armor sets again", after.count("Loaded 12 armor set(s)") > before_reload,
+                                  f"{before_reload} -> {after.count('Loaded 12 armor set(s)')}"))
             results.append(Result("joining and reloading are clean for a client that cannot receive the tooltip data",
                                   "Could not send the armor set tooltips" not in after, "a send error was logged"))
 

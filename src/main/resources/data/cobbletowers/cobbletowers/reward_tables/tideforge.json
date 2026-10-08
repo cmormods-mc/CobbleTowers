@@ -246,6 +246,30 @@
         "min_amount": 1,
         "max_amount": 1,
         "weight": 2
+      },
+      {
+        "item": "cobbletowers:tidewalker_helmet",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 3
+      },
+      {
+        "item": "cobbletowers:tidewalker_chestplate",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 3
+      },
+      {
+        "item": "cobbletowers:tidewalker_leggings",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 3
+      },
+      {
+        "item": "cobbletowers:tidewalker_boots",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 3
       }
     ],
     "boss_defeated": [
@@ -386,6 +410,30 @@
         "min_amount": 1,
         "max_amount": 1,
         "weight": 5
+      },
+      {
+        "item": "cobbletowers:tidewalker_helmet",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6
+      },
+      {
+        "item": "cobbletowers:tidewalker_chestplate",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6
+      },
+      {
+        "item": "cobbletowers:tidewalker_leggings",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6
+      },
+      {
+        "item": "cobbletowers:tidewalker_boots",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6
       }
     ]
   },
@@ -575,6 +623,30 @@
           "min_amount": 1,
           "max_amount": 1,
           "weight": 6
+        },
+        {
+          "item": "cobbletowers:leviathan_helmet",
+          "min_amount": 1,
+          "max_amount": 1,
+          "weight": 12
+        },
+        {
+          "item": "cobbletowers:leviathan_chestplate",
+          "min_amount": 1,
+          "max_amount": 1,
+          "weight": 12
+        },
+        {
+          "item": "cobbletowers:leviathan_leggings",
+          "min_amount": 1,
+          "max_amount": 1,
+          "weight": 12
+        },
+        {
+          "item": "cobbletowers:leviathan_boots",
+          "min_amount": 1,
+          "max_amount": 1,
+          "weight": 12
         }
       ]
     }

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Sprout Garb",
+  "color": "#82BE50",
+  "pieces": {
+    "head": "cobbletowers:sprout_helmet",
+    "chest": "cobbletowers:sprout_chestplate",
+    "legs": "cobbletowers:sprout_leggings",
+    "feet": "cobbletowers:sprout_boots"
+  },
+  "bonuses": [
+    {
+      "pieces": 2,
+      "kind": "cobblemon",
+      "modifier": "xp_percent",
+      "percent": 8
+    },
+    {
+      "pieces": 2,
+      "kind": "player",
+      "attribute": "minecraft:generic.max_health",
+      "operation": "add_value",
+      "amount": 1.0
+    },
+    {
+      "pieces": 4,
+      "kind": "battle",
+      "effects": [
+        {
+          "op": "terrain",
+          "side": "both",
+          "id": "grassyterrain",
+          "duration": 3
+        }
+      ]
+    },
+    {
+      "pieces": 4,
+      "kind": "tower",
+      "modifier": "raid_points_percent",
+      "percent": 5
+    }
+  ]
+}

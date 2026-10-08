@@ -246,6 +246,30 @@
         "min_amount": 1,
         "max_amount": 1,
         "weight": 2
+      },
+      {
+        "item": "cobbletowers:duskwanderer_helmet",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 3
+      },
+      {
+        "item": "cobbletowers:duskwanderer_chestplate",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 3
+      },
+      {
+        "item": "cobbletowers:duskwanderer_leggings",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 3
+      },
+      {
+        "item": "cobbletowers:duskwanderer_boots",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 3
       }
     ],
     "boss_defeated": [
@@ -386,6 +410,30 @@
         "min_amount": 1,
         "max_amount": 1,
         "weight": 5
+      },
+      {
+        "item": "cobbletowers:duskwanderer_helmet",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6
+      },
+      {
+        "item": "cobbletowers:duskwanderer_chestplate",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6
+      },
+      {
+        "item": "cobbletowers:duskwanderer_leggings",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6
+      },
+      {
+        "item": "cobbletowers:duskwanderer_boots",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6
       }
     ]
   },
@@ -575,6 +623,30 @@
           "min_amount": 1,
           "max_amount": 1,
           "weight": 5
+        },
+        {
+          "item": "cobbletowers:nightfall_helmet",
+          "min_amount": 1,
+          "max_amount": 1,
+          "weight": 12
+        },
+        {
+          "item": "cobbletowers:nightfall_chestplate",
+          "min_amount": 1,
+          "max_amount": 1,
+          "weight": 12
+        },
+        {
+          "item": "cobbletowers:nightfall_leggings",
+          "min_amount": 1,
+          "max_amount": 1,
+          "weight": 12
+        },
+        {
+          "item": "cobbletowers:nightfall_boots",
+          "min_amount": 1,
+          "max_amount": 1,
+          "weight": 12
         }
       ]
     }

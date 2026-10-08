@@ -17,7 +17,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 ART = Path(__file__).resolve().parent.parent / "src/main/resources/assets/cobbletowers/textures"
-SETS = ["challenger", "tideforge", "rootvale", "duskvale"]
+SETS = ["challenger", "recruit", "paragon", "tideforge", "tidewalker", "leviathan", "rootvale", "sprout", "heartwood", "duskvale", "duskwanderer", "nightfall"]
 SLOTS = ["helmet", "chestplate", "leggings", "boots"]
 SKIN = (222, 170, 130, 255)
 SKIN_SHADE = (190, 140, 105, 255)
@@ -61,12 +61,12 @@ def main() -> int:
     man_w, man_h = 16 * SCALE, 32 * SCALE
     col_w = max(icon_px * 4 + pad * 3, man_w) + pad * 2
     row_h = icon_px + pad + man_h + pad * 3
-    sheet = Image.new("RGBA", (col_w * 2, row_h * 2), (52, 54, 60, 255))
+    sheet = Image.new("RGBA", (col_w * 3, row_h * ((len(SETS) + 2) // 3)), (52, 54, 60, 255))
     draw = ImageDraw.Draw(sheet)
 
     for index, set_id in enumerate(SETS):
-        left = (index % 2) * col_w + pad
-        top = (index // 2) * row_h + pad
+        left = (index % 3) * col_w + pad
+        top = (index // 3) * row_h + pad
         draw.text((left, top - 2), set_id, fill=(235, 235, 240, 255))
         for i, slot in enumerate(SLOTS):
             icon = Image.open(ART / f"item/{set_id}_{slot}.png").convert("RGBA").resize((icon_px, icon_px), Image.NEAREST)

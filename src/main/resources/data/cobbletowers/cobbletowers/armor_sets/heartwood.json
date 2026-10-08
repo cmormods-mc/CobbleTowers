@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Heartwood Bulwark",
+  "color": "#80905C",
+  "pieces": {
+    "head": "cobbletowers:heartwood_helmet",
+    "chest": "cobbletowers:heartwood_chestplate",
+    "legs": "cobbletowers:heartwood_leggings",
+    "feet": "cobbletowers:heartwood_boots"
+  },
+  "bonuses": [
+    {
+      "pieces": 2,
+      "kind": "player",
+      "attribute": "minecraft:generic.max_health",
+      "operation": "add_value",
+      "amount": 3.0
+    },
+    {
+      "pieces": 2,
+      "kind": "cobblemon",
+      "modifier": "xp_percent",
+      "percent": 10
+    },
+    {
+      "pieces": 4,
+      "kind": "battle",
+      "effects": [
+        {
+          "op": "terrain",
+          "side": "both",
+          "id": "grassyterrain",
+          "duration": 5
+        },
+        {
+          "op": "resist",
+          "side": "self",
+          "type": "Grass",
+          "percent": 90
+        },
+        {
+          "op": "resist",
+          "side": "self",
+          "type": "Fairy",
+          "percent": 90
+        }
+      ]
+    },
+    {
+      "pieces": 4,
+      "kind": "tower",
+      "modifier": "vendor_discount_percent",
+      "percent": 10
+    }
+  ]
+}

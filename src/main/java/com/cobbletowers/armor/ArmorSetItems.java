@@ -16,7 +16,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 
 /**
- * The sixteen armor items and four materials (P24), registered in code since they must exist before datapacks. Named
+ * The forty-eight armor items and twelve materials (P24, P38), registered in code since they must exist before datapacks. Named
  * {@code cobbletowers:<set>_<slot>}; what a set does is data ({@link ArmorSetDefinition}). Protection is diamond's
  * (3/8/6/3, toughness 2, durability factor 33, enchantability 10); textures are generated placeholders in {@code
  * textures/models/armor}.
@@ -24,8 +24,13 @@ import net.minecraft.world.item.crafting.Ingredient;
 public final class ArmorSetItems {
 
     public static final String NAMESPACE = "cobbletowers";
-    /** The four sets, in the order they are registered and listed. */
-    public static final List<String> SETS = List.of("challenger", "tideforge", "rootvale", "duskvale");
+    /**
+     * The twelve sets, in the order they are registered and listed: tier II (the first four, one per tower), then tier I
+     * (utility) and tier III (defense) of each tower (P38).
+     */
+    public static final List<String> SETS = List.of("challenger", "tideforge", "rootvale", "duskvale",
+            "recruit", "tidewalker", "sprout", "duskwanderer",
+            "paragon", "leviathan", "heartwood", "nightfall");
 
     private static final int DURABILITY_FACTOR = 33;
     private static final int ENCHANTABILITY = 10;

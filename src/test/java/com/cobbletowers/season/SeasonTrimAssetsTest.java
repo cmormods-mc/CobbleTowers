@@ -98,13 +98,13 @@ class SeasonTrimAssetsTest {
             trimmable.add(value.getAsString());
         }
         int expected = 0;
-        for (String set : new String[] {"challenger", "tideforge", "rootvale", "duskvale"}) {
+        for (String set : com.cobbletowers.armor.ArmorSetItems.SETS) {
             for (String slot : new String[] {"helmet", "chestplate", "leggings", "boots"}) {
                 assertTrue(trimmable.contains("cobbletowers:" + set + "_" + slot), set + "_" + slot);
                 expected++;
             }
         }
-        assertEquals(16, expected);
+        assertEquals(48, expected);
     }
 
     @Test

@@ -33,6 +33,15 @@ PALETTES = {
     "tideforge": [(14, 40, 74), (28, 96, 150), (46, 150, 196), (140, 218, 238), (240, 248, 255)],
     "rootvale": [(30, 44, 22), (52, 96, 40), (92, 150, 62), (170, 206, 110), (160, 112, 60)],
     "duskvale": [(26, 16, 44), (62, 40, 100), (104, 72, 156), (176, 140, 214), (240, 120, 190)],
+    # P38: tier I (utility) and tier III (defense) of each tower; tier II is the four sets above.
+    "recruit": [(50, 48, 44), (112, 104, 92), (168, 158, 140), (222, 212, 190), (150, 150, 170)],
+    "paragon": [(40, 44, 56), (96, 106, 130), (176, 188, 214), (240, 244, 255), (255, 210, 90)],
+    "tidewalker": [(12, 56, 60), (30, 120, 120), (60, 176, 170), (170, 236, 224), (250, 240, 200)],
+    "leviathan": [(8, 20, 48), (20, 52, 110), (40, 96, 170), (150, 190, 236), (250, 226, 70)],
+    "sprout": [(34, 56, 24), (72, 128, 48), (130, 190, 80), (206, 232, 140), (240, 200, 90)],
+    "heartwood": [(36, 24, 14), (84, 56, 34), (128, 92, 56), (176, 140, 92), (110, 190, 80)],
+    "duskwanderer": [(30, 26, 40), (70, 64, 96), (112, 104, 140), (176, 170, 200), (200, 120, 200)],
+    "nightfall": [(10, 8, 20), (34, 24, 60), (62, 44, 104), (120, 96, 170), (255, 180, 60)],
 }
 
 # '.' transparent  O outline  D dark  M main  L light  A accent
@@ -106,7 +115,23 @@ def pattern(set_id: str, x: int, y: int) -> int:
         return 3 if int(2 + 2 * math.sin(x / 2.0 + y / 3.0)) == 0 else 2   # waves
     if set_id == "rootvale":
         return 1 if (x % 4 == 0 and y % 4 in (0, 1)) or (x % 4 == 2 and y % 4 in (2, 3)) else 2   # leaf stitches
-    return 3 if (x * 7 + y * 13) % 17 == 0 else (1 if (x + y) % 5 == 0 else 2)                   # starry weave
+    if set_id == "duskvale":
+        return 3 if (x * 7 + y * 13) % 17 == 0 else (1 if (x + y) % 5 == 0 else 2)               # starry weave
+    if set_id == "recruit":
+        return 1 if y % 5 == 0 and x % 2 == 0 else 2                                              # plain stitched rows
+    if set_id == "paragon":
+        return 3 if (x + y) % 6 == 0 or (x - y) % 6 == 0 else 2                                   # diamond lattice
+    if set_id == "tidewalker":
+        return 3 if int(2 + 2 * math.sin(x / 1.3 + y / 1.7)) == 0 else 2                          # tight ripples
+    if set_id == "leviathan":
+        return 1 if (x % 4 == 0 and (y + (x // 4) * 2) % 4 == 0) else (3 if (x + y) % 7 == 0 else 2)   # scales
+    if set_id == "sprout":
+        return 3 if (x % 5 == 2 and y % 5 == 2) else 2                                            # seeds
+    if set_id == "heartwood":
+        return 1 if x % 3 == 0 and (y + x) % 7 != 0 else 2                                        # bark grain
+    if set_id == "duskwanderer":
+        return 3 if (x * 5 + y * 11) % 23 == 0 else 2                                             # sparse stars
+    return 1 if (x + 2 * y) % 7 in (0, 1) else (3 if (x + 2 * y) % 7 == 4 else 2)                 # crescent stripes
 
 
 def face(image: Image.Image, set_id: str, x0: int, y0: int, w: int, h: int, band: bool) -> None:
