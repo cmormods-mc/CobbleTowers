@@ -163,6 +163,7 @@ public final class CellWarmPool {
     public static void install() {
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
             try {
+                CellClearJobs.advance(server);
                 advance(server);
                 if (++ticks % 20 == 0) tick(server, System.currentTimeMillis());
             } catch (RuntimeException ex) {

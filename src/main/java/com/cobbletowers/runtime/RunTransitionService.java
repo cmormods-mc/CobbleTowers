@@ -218,6 +218,11 @@ public final class RunTransitionService {
     public static void releaseCell(MinecraftServer server, PersistedRun run, long now) {
         OptionalInt cell = run.cell();
         if (cell.isEmpty()) return;
+        // The clearing is done a slice per tick first; the exit sweep comes back to finish the release once it is clean.
+        if (!com.cobbletowers.instance.CellClearJobs.ensureClear(server, cell.getAsInt())) {
+            TowerLog.info("Run {} ended; its cell {} is being cleared in slices before it is released", run.runId(), cell.getAsInt());
+            return;
+        }
         com.cobbletowers.vendor.VendorNpc.despawn(server, run);
         InstanceAllocator.Release release = InstanceAllocator.release(server, run.runId(), cell.getAsInt());
         if (release instanceof InstanceAllocator.Quarantined quarantined) {

@@ -85,3 +85,11 @@ stall and the queue depth, and run `soak_test.py` with `--pause 0` as the burst 
 Measured on the rig (`soak_test --pause 2`, 18 builds): the longest single step averaged 60 ms (max 84 ms), against a 343 ms mean (up to 1.0 s) for the old
 synchronous paste. The total work is higher (about 580 ms against 343 ms) because every `placeInWorld` call walks the whole template, so splitting the paste
 further (Y bands) made it worse (2.3 s total, steps no shorter) and was dropped. Run-start `prepare` and release `reset` still hold a tick for their full length.
+
+### Release clear, a slice per tick (2026-10-08)
+
+`CellClearJobs` clears a finished run's cell chunk by chunk (10 ms budget a tick) before the release: `RunTransitionService.releaseCell` starts a job when the cell is not
+known clean and returns; the once-a-second exit sweep comes back, finds the cell clean, and the unchanged synchronous release then has nothing left to clear (it takes no
+HeavyWork slot). A burst (`soak_test --pause 0`, peak 66 cells held) now queues instead of stalling. Cost: a cell is released about a second later than before, and a burst holds
+its chunks loaded until each cell's turn. A server stopped mid-clear leaves the run holding its cell, and the exit sweep releases it after the restart as it does for any deferred release.
+`floor_encounter_test` failed one check ("the opponent is marked uncatchable: No entity was found") in 1 of 5 runs and passed on rerun; it looks like a timing race in the test.
