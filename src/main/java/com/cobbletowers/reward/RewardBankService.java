@@ -147,7 +147,10 @@ public final class RewardBankService {
         // The risk bonus is paid once, with the final payout of the tower: the run is over (completed or cashed out).
         if (run.state() == RunState.COMPLETED || run.state() == RunState.CASHED_OUT) {
             int bonus = riskBonusPercent(content, run);
+            com.cobbletowers.mastery.TuningCounters.bump(server, "risk_bonus.final_payouts");
             if (bonus > 0) {
+                com.cobbletowers.mastery.TuningCounters.bump(server, "risk_bonus.payouts_with_bonus");
+                com.cobbletowers.mastery.TuningCounters.add(server, "risk_bonus.percent_sum", bonus);
                 grants = RiskReward.apply(grants, bonus);
                 TowerLog.info("Run {} final payout carries a +{}% risk bonus", runId, bonus);
             }

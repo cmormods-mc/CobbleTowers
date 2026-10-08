@@ -151,6 +151,10 @@ def main() -> None:
             season_none = claim_all("season")
             results.append(Result("and then has nothing left", season_none == "Nothing to claim.", season_none))
 
+            report = admin("masteryadmin counters")
+            results.append(Result("the tuning report counts the claims", "claim_mastery" in report and "granted_season" in report
+                                  and "reached_season" in report, report[-300:]))
+
             log = server.read_log()
             results.append(Result("no CobbleTowers exception during any of it",
                                   "\tat com.cobbletowers" not in log and "Mixin apply" not in log,

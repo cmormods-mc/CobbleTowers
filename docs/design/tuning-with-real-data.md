@@ -52,3 +52,20 @@ Also missing since P37, and worth adding before a public release so the first we
 | Cell prepare/release time, longest single stall, queue depth | `TowerMetrics.recordAllocation/recordCleanup` (extend) | whether the allocation work needs `docs/design/cell-allocation-async.md` |
 
 Keep each as a small `SavedData` map and print it in the `masteryadmin report`.
+
+## Counters (built 2026-10-08)
+
+`/cobbletowers masteryadmin counters` prints the tallies in `TowerCounterStore` (telemetry, saved with the world, never checkpointed; also the last part of `masteryadmin report`,
+though an RCON reply cuts the long report off, so read them with `counters`). Keys are `group.name`:
+
+| Group | Recorded at | Answers |
+|---|---|---|
+| `claim_mastery.<tower>:<level>` | `MasteryClaims` | which mastery rewards are claimed |
+| `granted_season.s<season>:<step>`, `reached_season.s<season>:<step>` | `SeasonProgressService` | steps reached against steps granted or claimed (the gap is what lapsed or was never claimed) |
+| `season_points.s<season>w<week>` | `SeasonProgressService` | whether `step_cost` fits the 42-day season |
+| `contract_completed.<template>` | `ContractService` | contract completion rates |
+| `draft_offered/_taken`, `relic_offered/_taken`, `event_offered/_taken` `.<id>` | `DraftService.settle` | pick rate of each modifier, relic and event option |
+| `risk_bonus.final_payouts / payouts_with_bonus / percent_sum` | `RewardBankService.bank` | how often the risk bonus applies and its average size |
+| `floor_time.floors / millis_sum` | `FloorBoss.onBossEnded` | average time to clear a floor |
+
+Not counted: the number of each severity of modifier held per run, and a per-player split (the tallies are server-wide). The cell prepare/release timings are in `/cobbletowers diagnostics`.

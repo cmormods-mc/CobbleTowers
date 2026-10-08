@@ -93,6 +93,7 @@ public final class ContractService {
         }
         TowerContractStore.get(server).checkpoint(server);
         TowerLog.info("{} completed the contract {} and is paid {} CobbleDollars", player, template.id(), reward);
+        com.cobbletowers.mastery.TuningCounters.bump(server, "contract_completed." + template.id());
         com.cobbletowers.season.SeasonProgressService.award(server, player, template.period() == ContractTemplateDefinition.Period.DAILY
                 ? com.cobbletowers.season.SeasonPoints.Source.DAILY_CONTRACT : com.cobbletowers.season.SeasonPoints.Source.WEEKLY_CONTRACT, 0, false);
         ServerPlayer online = server.getPlayerList().getPlayer(player);

@@ -98,6 +98,7 @@ public final class SeasonProgressService {
         TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
         Optional<SeasonTrackDefinition> track = SeasonTrackRegistry.current();
         Progress saved = next;
+        countProgress(server, store, player, season, next, track);
         if (track.isPresent() && !com.cobbletowers.track.TrackConfig.current().autoClaim()) {
             // Claimable (P37): reaching a step only records the points; the player claims the prize from the track.
             int before = track.get().stepsFor(store.of(player, season).total());
@@ -137,6 +138,20 @@ public final class SeasonProgressService {
         store.checkpoint(server);
     }
 
+    /** Tallies the points added (by season week) and each track step newly reached, for the tuning report. */
+    private static void countProgress(MinecraftServer server, TowerSeasonProgressStore store, UUID player, int season, Progress next,
+                                      Optional<SeasonTrackDefinition> track) {
+        int before = store.of(player, season).total();
+        int added = next.total() - before;
+        if (added <= 0) return;
+        Seasons.phase().filter(phase -> phase instanceof SeasonSchedule.Active).map(phase -> ((SeasonSchedule.Active) phase).week())
+                .ifPresent(week -> com.cobbletowers.mastery.TuningCounters.add(server, "season_points.s" + season + "w" + week, added));
+        if (track.isEmpty()) return;
+        for (int step = track.get().stepsFor(before) + 1; step <= track.get().stepsFor(next.total()); step++) {
+            com.cobbletowers.mastery.TuningCounters.bump(server, "reached_season.s" + season + ":" + step);
+        }
+    }
+
     /**
      * Queues a step's rewards and cosmetics and returns what is left to do once the step is recorded: the message and
      * the delivery.
@@ -168,6 +183,7 @@ public final class SeasonProgressService {
             pending.addIfAbsent(player, new PendingTowerReward(grantOf, 1, item, grant.amount(), now, components, label));
             given.add(label.isEmpty() ? describe(item, grant.amount()) : label);
         }
+        com.cobbletowers.mastery.TuningCounters.bump(server, "granted_season.s" + season + ":" + number);
         Set<String> cosmetics = new HashSet<>();
         for (String name : step.cosmetics()) cosmetics.add("s" + season + ":" + name);
         if (flush) pending.checkpoint(server);

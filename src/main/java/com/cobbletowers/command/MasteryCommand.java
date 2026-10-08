@@ -81,6 +81,7 @@ public final class MasteryCommand {
                                         .then(Commands.argument("tower", ResourceLocationArgument.id())
                                                 .executes(MasteryCommand::reset))))
                         .then(Commands.literal("report").executes(MasteryCommand::report))
+                        .then(Commands.literal("counters").executes(MasteryCommand::counters))
                         .then(Commands.literal("clearboards").executes(MasteryCommand::clearBoards))));
     }
 
@@ -235,6 +236,15 @@ public final class MasteryCommand {
                         + (key.playlist().isEmpty() ? "" : " / " + key.playlist()), key.board().lowerIsBetter(),
                         entries.stream().map(com.cobbletowers.mastery.LeaderboardRules.Entry::value).toList())); });
         for (String line : com.cobbletowers.mastery.TuningReport.build(standings, achievements, attempts, boards)) {
+            context.getSource().sendSuccess(() -> Component.literal(line), false);
+        }
+        return counters(context);
+    }
+
+    /** The balance tallies on their own (the full report is longer than an RCON reply holds). */
+    private static int counters(CommandContext<CommandSourceStack> context) {
+        net.minecraft.server.MinecraftServer server = context.getSource().getServer();
+        for (String line : com.cobbletowers.mastery.TuningCounters.lines(com.cobbletowers.persistence.TowerCounterStore.get(server).all())) {
             context.getSource().sendSuccess(() -> Component.literal(line), false);
         }
         return 1;

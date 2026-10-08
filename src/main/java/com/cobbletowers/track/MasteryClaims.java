@@ -100,6 +100,7 @@ public final class MasteryClaims {
         // Cosmetics from a mastery level are recorded under "m:"; showing them is a later phase.
         for (String cosmetic : node.cosmetics()) store.addCosmetics(player, java.util.Set.of("m:" + cosmetic));
         store.markClaimed(player, key(tower, level));
+        com.cobbletowers.mastery.TuningCounters.bump(server, "claim_mastery." + tower.getPath() + ":" + level);
         TowerLog.info("{} claimed mastery level {} of {}: {}", player, level, tower, given);
         return given;
     }

@@ -120,6 +120,10 @@ final class FloorBoss {
                                 LedgerEntry.milestoneCleared(binding.floorIndex(), milestone.id(), now)));
                 // Logged so an operator can see floors completing.
                 TowerLog.info("Floor {} of run {} cleared", binding.floorIndex(), binding.runId());
+                if (round != null) {
+                    com.cobbletowers.mastery.TuningCounters.bump(server, "floor_time.floors");
+                    com.cobbletowers.mastery.TuningCounters.add(server, "floor_time.millis_sum", Math.max(0, now - round.startedAt()));
+                }
                 FloorPayout.pay(server, binding, result, now);
                 // Everyone watching is now owed the intermission, which is where they come back.
                 ParticipantService.markRevivePending(server, binding.runId(), now);

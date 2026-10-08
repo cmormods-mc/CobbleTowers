@@ -219,6 +219,9 @@ public final class DraftService {
                         : draft.relic() ? relicSeed(run, draft.floorIndex()) : draftSeed(run, draft.floorIndex()));
         PersistedDraft resolved = draft.resolvedAs(result.cardIndex(), result.byTieBreak());
         ResourceLocation won = resolved.cards().get(result.cardIndex());
+        String kind = draft.event() ? "event" : draft.relic() ? "relic" : "draft";
+        for (ResourceLocation card : resolved.cards()) com.cobbletowers.mastery.TuningCounters.bump(server, kind + "_offered." + card);
+        com.cobbletowers.mastery.TuningCounters.bump(server, kind + "_taken." + won);
 
         if (draft.event()) {
             return settleEvent(server, run, runId, resolved, won, result.byTieBreak(), now);
