@@ -176,6 +176,8 @@ public final class RunTransitionService {
             // Crossing into a new Ascension (P30) happens as the first floor of the cycle is confirmed.
             if (event == RunEvent.NEXT_FLOOR_CONFIRMED) {
                 com.cobbletowers.ascension.AscensionService.onFloorConfirmed(server, runId, now);
+                // A rental draft's team grows as the floors climb (P40); a no-op for everyone else.
+                com.cobbletowers.rental.RentalScaling.onFloorConfirmed(server, runId);
             }
             // Mastery (P31): floor timing, cycle clears, run endings. Never allowed to disturb the run it is
             // watching.

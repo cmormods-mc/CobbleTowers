@@ -108,6 +108,10 @@ public final class PlayCommand {
                                                 com.cobbletowers.lobby.RentalAdmin.giveStray(EntityArgument.getPlayer(context, "player")))))
                                         .then(Commands.literal("dex").executes(context -> sayAll(context,
                                                 com.cobbletowers.lobby.RentalAdmin.pokedex(EntityArgument.getPlayer(context, "player")))))
+                                        .then(Commands.literal("scale")
+                                                .then(Commands.argument("floor", IntegerArgumentType.integer(1, 999)).executes(context -> sayAll(context,
+                                                        com.cobbletowers.lobby.RentalAdmin.scaleTo(EntityArgument.getPlayer(context, "player"),
+                                                                IntegerArgumentType.getInteger(context, "floor"))))))
                                         .then(Commands.literal("xp").executes(context -> sayAll(context,
                                                 com.cobbletowers.lobby.RentalAdmin.tryExperience(EntityArgument.getPlayer(context, "player")))))))
                         .then(Commands.literal("leave").executes(PlayCommand::leave))

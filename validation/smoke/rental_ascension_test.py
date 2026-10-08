@@ -5,6 +5,8 @@ Needs a rig with AscensionLib installed (testserver-ascend). A bot drafts and st
 
   * every Pokemon of the lent team has an ascension profile (the library's own /ascend inspect says so), which is what a battle's
     ascension effects are built from;
+  * after the draft every pending upgrade credit has been spent on random slots (0 pending), and on floor 4 the team is level 60 with
+    one more upgrade (P40);
   * the library refuses to open the upgrade screen for a rental (/ascend craft), because every rental carries the craft lock;
   * the run ends and the rentals (and with them the lock) are gone.
 
@@ -91,6 +93,13 @@ def main() -> int:
                 if said[-1] and "No ascension profile" not in said[-1] and "empty" not in said[-1]:
                     profiled += 1
             results.append(Result("every Pokemon of the lent team has an ascension profile", profiled == 6, "; ".join(said)))
+            start_view = as_bot(r, "ascend inspect 1").strip()
+            r.command(f"cobbletowers play rentals {rt.BOT} scale 4")
+            time.sleep(2)
+            grown = r.command(f"cobbletowers play rentals {rt.BOT}")
+            results.append(Result("on floor 4 every rental is level 60", grown.count("level=60") == 6, grown[:300]))
+            grown_view = as_bot(r, "ascend inspect 1").strip()
+            results.append(Result("and its profile changed (a level milestone was awarded and an upgrade spent)", grown_view != start_view, grown_view[:200]))
             refusal = as_bot(r, "ascend craft 1")
             results.append(Result("the upgrade screen refuses to open for a rental, saying why", "on loan" in refusal, refusal.strip()[:160]))
             log = server.read_log()

@@ -42,6 +42,12 @@ public final class RentalAdmin {
      * Creates a rental with no run behind it and puts it in the player's party if there is room, else a box: a leak
      * to be swept.
      */
+    /** Probe: lifts the player's rentals as a rental run would on this floor, so a test need not play to it. */
+    public static List<String> scaleTo(ServerPlayer player, int floor) {
+        int raised = com.cobbletowers.rental.RentalScaling.raise(player, floor);
+        return List.of(raised + " rentals rose to level " + com.cobbletowers.rental.RentalScaling.levelFor(floor));
+    }
+
     public static List<String> giveStray(ServerPlayer player) {
         List<RentalSetDefinition> all = RentalSetRegistry.all();
         if (all.isEmpty()) return List.of("no rental sets are loaded");
