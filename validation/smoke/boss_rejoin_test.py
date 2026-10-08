@@ -26,7 +26,7 @@ from run_durability_test import (  # noqa: E402
     Result, Server, clear_tower, install_jar, reset_tower_world, read_password, run_id_from, wait_online,
 )
 from floor_encounter_test import (  # noqa: E402
-    FIRST_MOVE, TOWER, begin_floor, give_party, start_battle_bot, tell_bot, wait_for, wait_for_floor,
+    FIRST_MOVE, FILLERS, LEAD, TOWER, begin_floor, give_party, start_battle_bot, tell_bot, wait_for, wait_for_floor,
 )
 
 STAMP = int(time.time()) % 100000
@@ -38,6 +38,9 @@ def main() -> None:
     parser.add_argument("--server-dir", required=True, type=Path)
     parser.add_argument("--java", type=Path, default=None)
     parser.add_argument("--jar", type=Path, default=None)
+    parser.add_argument("--lead-level", type=int, default=0,
+                        help="give a lead of this level instead of the usual 100, so the boss lives long enough to be rejoined mid-fight")
+    parser.add_argument("--away", type=float, default=0.5, help="seconds the player stays away")
     args = parser.parse_args()
 
     server_dir = args.server_dir.resolve()
@@ -61,7 +64,12 @@ def main() -> None:
                 raise RuntimeError(f"{NAME} never joined")
             rcon.command("execute in cobbletowers:tower run forceload remove all")
             clear_tower(rcon)
-            give_party(rcon, NAME)
+            if args.lead_level:
+                rcon.command(f"pokegiveother {NAME} {LEAD} level={args.lead_level}")
+                for _ in range(FILLERS):
+                    rcon.command(f"pokegiveother {NAME} magikarp level=1")
+            else:
+                give_party(rcon, NAME)
 
             run = run_id_from(rcon.command(f"cobbletowers runs create {TOWER} @a"))
             rcon.command(f"cobbletowers runs advance {run} party_submitted")
@@ -82,7 +90,7 @@ def main() -> None:
 
             bots[NAME].kill()
             print(f"  killed {NAME} as the boss appeared")
-            time.sleep(0.5)  # the test boss dies within seconds, so be back fast
+            time.sleep(args.away)  # the test boss dies within seconds unless --lead-level is low
             bots[NAME] = start_battle_bot(rig, NAME, FIRST_MOVE)
             tell_bot(rig, NAME, "FIGHT")
             tell_bot(rig, NAME, f"MOVE {FIRST_MOVE}")
