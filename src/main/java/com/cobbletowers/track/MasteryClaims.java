@@ -52,6 +52,27 @@ public final class MasteryClaims {
     public static Optional<String> claim(MinecraftServer server, UUID player, ResourceLocation tower, int level) {
         Optional<String> refused = refusal(server, player, tower, level);
         if (refused.isPresent()) return refused;
+        List<String> given = claimOne(server, player, tower, level);
+        flush(server);
+        announce(server, player, level, given);
+        return Optional.empty();
+    }
+
+    /** Pending grants first, then the claim record: a crash between replays the grants harmlessly. */
+    private static void flush(MinecraftServer server) {
+        TowerPendingRewardStore.get(server).checkpoint(server);
+        TowerSeasonProgressStore.get(server).checkpoint(server);
+    }
+
+    private static void announce(MinecraftServer server, UUID player, int level, List<String> given) {
+        ServerPlayer online = server.getPlayerList().getPlayer(player);
+        if (online == null) return;
+        online.sendSystemMessage(Component.literal("Mastery level " + level + " claimed" + (given.isEmpty() ? "" : ": " + String.join(", ", given))));
+        if (!given.isEmpty()) RewardDelivery.deliver(server, online);
+    }
+
+    /** Queues and records one claim in memory without saving (the caller flushes). Already checked claimable. */
+    private static List<String> claimOne(MinecraftServer server, UUID player, ResourceLocation tower, int level) {
         MasteryTrack.Node node = MasteryTracks.forTower(tower).node(level);
         TowerPendingRewardStore pending = TowerPendingRewardStore.get(server);
         long now = System.currentTimeMillis();
@@ -75,26 +96,30 @@ public final class MasteryClaims {
                     Cosmetics.expand(grant.components(), tokens), label));
             given.add(label.isEmpty() ? SeasonProgressService.describe(item, grant.amount()) : label);
         }
-        pending.checkpoint(server);
         TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
         // Cosmetics from a mastery level are recorded under "m:"; showing them is a later phase.
         for (String cosmetic : node.cosmetics()) store.addCosmetics(player, java.util.Set.of("m:" + cosmetic));
         store.markClaimed(player, key(tower, level));
-        store.checkpoint(server);
         TowerLog.info("{} claimed mastery level {} of {}: {}", player, level, tower, given);
-        ServerPlayer online = server.getPlayerList().getPlayer(player);
-        if (online != null) {
-            online.sendSystemMessage(Component.literal("Mastery level " + level + " claimed" + (given.isEmpty() ? "" : ": " + String.join(", ", given))));
-            if (!given.isEmpty()) RewardDelivery.deliver(server, online);
-        }
-        return Optional.empty();
+        return given;
     }
 
     /** Claims every reached, unclaimed level of a tower in order; returns how many. */
     public static int claimAll(MinecraftServer server, UUID player, ResourceLocation tower) {
         int claimed = 0;
+        List<String> all = new ArrayList<>();
         for (MasteryTrack.Node node : MasteryTracks.forTower(tower).nodes()) {
-            if (claim(server, player, tower, node.level()).isEmpty()) claimed++;
+            if (refusal(server, player, tower, node.level()).isPresent()) continue;
+            all.addAll(claimOne(server, player, tower, node.level()));
+            claimed++;
+        }
+        if (claimed == 0) return 0;
+        // One save for the batch, one message.
+        flush(server);
+        ServerPlayer online = server.getPlayerList().getPlayer(player);
+        if (online != null) {
+            online.sendSystemMessage(Component.literal("Claimed " + claimed + " mastery level(s)" + (all.isEmpty() ? "" : ": " + String.join(", ", all))));
+            if (!all.isEmpty()) RewardDelivery.deliver(server, online);
         }
         return claimed;
     }

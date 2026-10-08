@@ -107,7 +107,8 @@ public final class TrackService {
         if (tower == null || !ids.contains(tower)) tower = ids.isEmpty() ? null : ids.get(0);
         Lane mastery = tower == null ? Lane.NONE : masteryLane(server, player, tower);
         return new TrackStatePayload(TrackConfig.current().autoClaim(), towers, tower == null ? "" : cut(tower.toString(), 128), mastery,
-                seasonLane(server, player), cut(message, 256));
+                seasonLane(server, player),
+                cut(ids.isEmpty() && message.isEmpty() ? "No towers are installed on this server." : message, 256));
     }
 
     // ---- mastery ----------------------------------------------------------------------------------

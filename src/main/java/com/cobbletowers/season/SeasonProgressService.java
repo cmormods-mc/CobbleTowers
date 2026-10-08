@@ -124,7 +124,7 @@ public final class SeasonProgressService {
                 for (int step = next.steps() + 1; step <= reached; step++) {
                     // A step already claimed by hand (auto_claim was off earlier) is not granted again.
                     if (store.claimed(player, claimKey(season, step))) continue;
-                    afterwards.add(grantStep(server, player, season, track.get(), step));
+                    afterwards.add(grantStep(server, player, season, track.get(), step, true));
                 }
                 saved = next.withSteps(reached);
                 store.put(player, season, saved);
@@ -141,7 +141,8 @@ public final class SeasonProgressService {
      * Queues a step's rewards and cosmetics and returns what is left to do once the step is recorded: the message and
      * the delivery.
      */
-    private static Runnable grantStep(MinecraftServer server, UUID player, int season, SeasonTrackDefinition track, int number) {
+    private static Runnable grantStep(MinecraftServer server, UUID player, int season, SeasonTrackDefinition track, int number,
+                                      boolean flush) {
         SeasonTrackDefinition.Step step = track.steps().get(number - 1);
         TowerPendingRewardStore pending = TowerPendingRewardStore.get(server);
         long now = System.currentTimeMillis();
@@ -169,7 +170,7 @@ public final class SeasonProgressService {
         }
         Set<String> cosmetics = new HashSet<>();
         for (String name : step.cosmetics()) cosmetics.add("s" + season + ":" + name);
-        pending.checkpoint(server);
+        if (flush) pending.checkpoint(server);
         // The cosmetics go through the one door (P36d): recorded, the first title worn, the earn commands run, the
         // tab list refreshed.
         CosmeticsService.award(server, player, cosmetics);
@@ -238,7 +239,7 @@ public final class SeasonProgressService {
         int season = Seasons.viewNumber().orElseThrow();
         SeasonTrackDefinition track = SeasonTrackRegistry.current().orElseThrow();
         TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
-        Runnable afterwards = grantStep(server, player, season, track, step);
+        Runnable afterwards = grantStep(server, player, season, track, step, true);
         store.markClaimed(player, claimKey(season, step));
         store.checkpoint(server);
         afterwards.run();
@@ -247,11 +248,22 @@ public final class SeasonProgressService {
 
     /** Claims every reached, unclaimed step in order; returns how many. */
     public static int claimAll(MinecraftServer server, UUID player) {
-        int claimed = 0;
-        for (int step = 1; step <= SeasonTrackRegistry.current().map(SeasonTrackDefinition::stepCount).orElse(0); step++) {
-            if (claim(server, player, step).isEmpty()) claimed++;
+        Optional<SeasonTrackDefinition> track = SeasonTrackRegistry.current();
+        Optional<Integer> season = Seasons.viewNumber();
+        if (track.isEmpty() || season.isEmpty()) return 0;
+        TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
+        List<Runnable> afterwards = new ArrayList<>();
+        for (int step = 1; step <= track.get().stepCount(); step++) {
+            if (refusal(server, player, step).isPresent()) continue;
+            afterwards.add(grantStep(server, player, season.get(), track.get(), step, false));
+            store.markClaimed(player, claimKey(season.get(), step));
         }
-        return claimed;
+        if (afterwards.isEmpty()) return 0;
+        // One save for the batch: the pending grants first, then the claim records.
+        TowerPendingRewardStore.get(server).checkpoint(server);
+        store.checkpoint(server);
+        afterwards.forEach(Runnable::run);
+        return afterwards.size();
     }
 
     /**

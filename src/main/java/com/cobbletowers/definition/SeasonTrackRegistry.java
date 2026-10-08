@@ -36,8 +36,21 @@ public final class SeasonTrackRegistry
 
     /** The track every season uses, empty when none is loaded (then seasons run without a track). */
     public static Optional<SeasonTrackDefinition> current() {
-        return merged(LOADED, TrackConfig.current().seasonSteps());
+        Map<ResourceLocation, File> files = LOADED;
+        List<SeasonTrackDefinition.AddStep> owner = TrackConfig.current().seasonSteps();
+        Merged hit = MERGED;
+        // Rebuilt only when the files or the owner's steps are a different object (a reload or a config read).
+        if (hit == null || hit.files != files || hit.owner != owner) {
+            hit = new Merged(files, owner, merged(files, owner));
+            MERGED = hit;
+        }
+        return hit.track;
     }
+
+    private record Merged(Map<ResourceLocation, File> files, List<SeasonTrackDefinition.AddStep> owner,
+                          Optional<SeasonTrackDefinition> track) {}
+
+    private static volatile Merged MERGED;
 
     /** The base track with every file's additions, then the owner's, applied in order. Pure, for tests. */
     public static Optional<SeasonTrackDefinition> merged(Map<ResourceLocation, File> files, List<SeasonTrackDefinition.AddStep> owner) {
@@ -76,6 +89,8 @@ public final class SeasonTrackRegistry
     @Override
     protected void apply(Map<ResourceLocation, File> prepared, ResourceManager manager, ProfilerFiller profiler) {
         LOADED = new java.util.LinkedHashMap<>(prepared);
+        // /reload re-reads the owner's config too, so an edit to it needs no restart.
+        TrackConfig.reload();
         TowerLog.info("Loaded {} season track(s).", prepared.size());
     }
 }
