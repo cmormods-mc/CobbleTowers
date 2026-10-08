@@ -63,6 +63,11 @@ public final class TrackService {
         Long last = LAST_REQUEST.put(player.getUUID(), now);
         if (LAST_REQUEST.size() > 1024) LAST_REQUEST.clear();
         if (last != null && now - last < MIN_GAP_MILLIS) return;
+        apply(server, player, request);
+    }
+
+    /** Carries out a request (no throttle) and sends the player the fresh state. @return the message shown */
+    public static String apply(MinecraftServer server, ServerPlayer player, TrackActionPayload request) {
         String message = "";
         ResourceLocation tower = ResourceLocation.tryParse(request.tower());
         // Only a tower this server has: an arbitrary id from a modified client must not grow the merged-track cache.
@@ -83,6 +88,7 @@ public final class TrackService {
             }
         }
         send(server, player, request.tower(), message);
+        return message;
     }
 
     public static void send(MinecraftServer server, ServerPlayer player, String towerRaw, String message) {

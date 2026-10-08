@@ -27,6 +27,7 @@ import argparse
 import os
 import re
 import shutil
+import zipfile
 import socket
 import subprocess
 import sys
@@ -144,6 +145,15 @@ def install_jar(server_dir: Path, jar: Path) -> None:
     # deleted the add-on data pack beside it in the raids rig.
     for existing in mods.glob("CobbleTowers-*.jar"):
         existing.unlink()
+    # A jar installed under another name (say head.jar) would sit beside this one and Fabric would load either, at random.
+    for other in mods.glob("*.jar"):
+        try:
+            with zipfile.ZipFile(other) as archive:
+                ours = '"id": "cobbletowers"' in archive.read("fabric.mod.json").decode("utf-8", "replace")
+        except (OSError, KeyError, zipfile.BadZipFile):
+            continue
+        if ours:
+            other.unlink()
     (mods / jar.name).write_bytes(jar.read_bytes())
     print(f"Installed {jar.name}")
 
