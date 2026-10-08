@@ -56,6 +56,13 @@ public final class CobblemonBattleAdapter {
     private static final Map<UUID, Long> LAST_ACTIVITY = new HashMap<>();
     private static boolean installed;
 
+    /** Marks an entity this adapter spawned as a tower opponent, so a stray one can be told from anything else. */
+    static final String OPPONENT_TAG = "cobbletowers_opponent";
+    private static final int ORPHAN_SWEEP_TICKS = 100;
+    /** An opponent must have stood this long (ticks) before it can be called stray: the battle starts the tick it spawns. */
+    private static final int ORPHAN_GRACE_TICKS = 200;
+    private static int sweepTicks;
+
     private CobblemonBattleAdapter() {}
 
     /** What happens when a floor's battle ends. Implemented by the encounter, called by this. */
@@ -75,6 +82,14 @@ public final class CobblemonBattleAdapter {
         installed = true;
         CobblemonEvents.BATTLE_VICTORY.subscribe(CobblemonBattleAdapter::onVictorySafely);
         CobblemonEvents.BATTLE_FAINTED.subscribe(CobblemonBattleAdapter::onFaintedSafely);
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (++sweepTicks % ORPHAN_SWEEP_TICKS != 0) return;
+            try {
+                sweepOrphanOpponents(server);
+            } catch (RuntimeException ex) {
+                TowerLog.errorOnce("orphan-sweep", "The stray opponent sweep failed", ex);
+            }
+        });
         TowerLog.info("Cobblemon battle adapter installed");
     }
 
@@ -184,6 +199,7 @@ public final class CobblemonBattleAdapter {
         PokemonEntity entity = pokemon.sendOut(level, Vec3.atBottomCenterOf(where), null, spawned -> {
             // Persistent so it cannot despawn mid-battle, and outside the spawn cap so a tower never
             // eats the overworld's budget for mobs.
+            spawned.addTag(OPPONENT_TAG);
             spawned.setPersistenceRequired();
             spawned.setCountsTowardsSpawnCap(false);
             spawned.setInvulnerable(true);
@@ -256,6 +272,25 @@ public final class CobblemonBattleAdapter {
             discardOpponent(server, binding);
             listener.onResolved(server, binding, playerWon);
         }
+    }
+
+    /**
+     * Removes a tower opponent that is in no battle of ours and in none of Cobblemon's: left standing by a battle that ended
+     * some other way. Only entities this adapter tagged, only in the tower dimension, every five seconds.
+     */
+    static int sweepOrphanOpponents(MinecraftServer server) {
+        ServerLevel level = com.cobbletowers.instance.TowerDimension.level(server);
+        if (level == null) return 0;
+        java.util.Set<UUID> bound = new java.util.HashSet<>();
+        for (Binding binding : BY_BATTLE.values()) bound.add(binding.opponentEntity());
+        List<? extends PokemonEntity> strays = level.getEntities(net.minecraft.world.level.entity.EntityTypeTest.forClass(PokemonEntity.class),
+                entity -> entity.getTags().contains(OPPONENT_TAG) && entity.tickCount > ORPHAN_GRACE_TICKS
+                        && !entity.isBattling() && !bound.contains(entity.getUUID()));
+        for (PokemonEntity stray : strays) {
+            TowerLog.warn("Removing a stray tower opponent ({}) that is in no battle", stray.getPokemon().getSpecies().getName());
+            stray.discard();
+        }
+        return strays.size();
     }
 
     /** Removes a run's opponents and forgets its battles, on every way out that is not a won battle. */
