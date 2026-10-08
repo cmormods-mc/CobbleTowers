@@ -128,31 +128,6 @@ class RentalDraftPayloadTest {
     }
 
     @Test
-    @DisplayName("a card carries the look of its collectible card: rarity, background and effect, and shiny only from a God Pack")
-    void look() throws IOException {
-        List<RentalSetDefinition> pool = pool();
-        RentalDraft draft = null;
-        RentalDraft godDraft = null;
-        for (long seed = 0; seed < 5000 && (draft == null || godDraft == null); seed++) {
-            RentalDraw.Offer offer = RentalDraw.draw(pool, seed, true);
-            if (offer.hasGodPack() && godDraft == null) godDraft = new RentalDraft(offer);
-            if (!offer.hasGodPack() && draft == null) draft = new RentalDraft(offer);
-        }
-        RentalDraftPayload plain = RentalDraftPayload.of(draft, "");
-        for (RentalDraftPayload.Pack pack : plain.packs()) {
-            for (RentalDraftPayload.Card card : pack.cards()) {
-                assertFalse(card.look().shiny());
-                assertEquals(card.rarity(), card.look().rarity(), "the table shows the set's own rarity, uncapped");
-                assertEquals(card.rarity().equals("common") ? "" : "set", card.look().background().isEmpty() ? "" : "set");
-            }
-        }
-        RentalDraftPayload god = RentalDraftPayload.of(godDraft, "");
-        RentalDraftPayload.Pack godPack = god.packs().stream().filter(RentalDraftPayload.Pack::god).findFirst().orElseThrow();
-        assertTrue(godPack.cards().stream().allMatch(card -> card.look().shiny() && !card.look().background().isEmpty()));
-        assertEquals(god, roundTrip(RentalDraftPayload.STREAM_CODEC, god));
-    }
-
-    @Test
     @DisplayName("the draft says which kept Pokemon came from a God Pack")
     void godFlags() throws IOException {
         List<RentalSetDefinition> pool = pool();

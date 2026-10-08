@@ -52,30 +52,16 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
     }
 
     /**
-     * What a set's collectible card looks like (P33b) for a client with CobblemonCards: shiny, rarity, background and
-     * holographic effect (empty for none).
+     * One card: the set's id, its species (for the model and the name) and its rarity ({@code common} ... {@code
+     * mythic}).
      */
-    public record Look(boolean shiny, String rarity, String background, String effect) {
-        static final StreamCodec<RegistryFriendlyByteBuf, Look> STREAM_CODEC = StreamCodec.composite(
-                ByteBufCodecs.BOOL, Look::shiny,
-                ByteBufCodecs.STRING_UTF8, Look::rarity,
-                ByteBufCodecs.STRING_UTF8, Look::background,
-                ByteBufCodecs.STRING_UTF8, Look::effect,
-                Look::new);
-    }
-
-    /**
-     * One card: the set's id, its species (for the model and the name), its rarity ({@code common} ... {@code
-     * mythic}) and its look.
-     */
-    public record Card(ResourceLocation set, String species, String name, String rarity, Details details, Look look) {
+    public record Card(ResourceLocation set, String species, String name, String rarity, Details details) {
         static final StreamCodec<RegistryFriendlyByteBuf, Card> STREAM_CODEC = StreamCodec.composite(
                 ResourceLocation.STREAM_CODEC, Card::set,
                 ByteBufCodecs.STRING_UTF8, Card::species,
                 ByteBufCodecs.STRING_UTF8, Card::name,
                 ByteBufCodecs.STRING_UTF8, Card::rarity,
                 Details.STREAM_CODEC, Card::details,
-                Look.STREAM_CODEC, Card::look,
                 Card::new);
     }
 
@@ -107,12 +93,9 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
             RentalDraw.Pack pack = draft.offer().packs().get(i);
             List<Card> cards = new ArrayList<>();
             for (RentalSetDefinition set : pack.cards()) {
-                // The card as the collection would print it, uncapped: what is on the table is the set's own rarity.
-                RentalCards.Spec card = RentalCards.of(set, pack.god(), RentalSetDefinition.Rarity.MYTHIC);
                 cards.add(new Card(set.id(), set.species(), set.displayName(), set.rarity().lower(),
                         new Details(set.level(), set.ability(), set.nature(), set.item().map(item -> item.getPath()).orElse(""),
-                                set.role(), set.moves().stream().map(moves::resolve).toList()),
-                        new Look(card.shiny(), card.rarity(), card.background().orElse(""), card.effect().orElse(""))));
+                                set.role(), set.moves().stream().map(moves::resolve).toList())));
             }
             packs.add(new Pack(pack.god(), cards, i < picks.size() ? picks.get(i) : List.of()));
         }

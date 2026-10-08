@@ -6,15 +6,21 @@ Ordered by how badly each blocks a release.
 ## Blockers
 
 - [ ] **P37 battle tracks builds and passes tests.** The code (design: `docs/design/P37-tracks.md`) was written without ever being compiled or tested.
-  - [ ] `./gradlew build` is green, including `MasteryTrackTest` (the shipped `mastery_tracks/default.json` must match the old rank and perk table at every level 0..30).
+  - [x] `./gradlew build` is green, including `MasteryTrackTest` (the shipped `mastery_tracks/default.json` must match the old rank and perk table at every level 0..30).
+    - Done 2026-10-08: build, unit tests and `ci_local` pass; `MasteryTrackTest` 6/6.
   - [ ] Progress tab screenshots at GUI scale 2 and 3 (add a `TrackStatePayload` sample to `ScreenshotHarness`), and with shaders (`validation/hall_screens.py <scale> <mode> iris`, `SHADERPACK` set).
-  - [ ] Live claim check on the test rig: claim one mastery level and one season step; claim all; claim twice (refused); crash or restart between queueing and recording (no double pay).
-  - [ ] Migration: a world that already has season progress keeps its granted steps as claimed (no re-grant, no loss).
-  - [ ] Decide: season steps need a claim by default (a change for existing servers); `auto_claim: true` restores the old behaviour. Say so in the release notes.
-  - [ ] Commit and push.
+    - Scale 3 verified 2026-10-08 (`hall_progress_*`). Scale 2 and Iris are still open, as are the `<` `>` page buttons in the tower grid (the tower selector arrows are drawn icons now and read fine).
+  - [x] Live claim check on the test rig: claim one mastery level and one season step; claim all; claim twice (refused); crash or restart between queueing and recording (no double pay).
+    - Done 2026-10-08: `validation/smoke/track_test.py` 21/21 (claim, claim-all, double claim refused) and `track_persist_test.py` 15/15 (hard kill between claims, no double pay).
+  - [x] Migration: a world that already has season progress keeps its granted steps as claimed (no re-grant, no loss).
+    - Done 2026-10-08 in `track_persist_test.py`: steps granted before claiming existed count as claimed, nothing re-granted.
+  - [x] Decide: season steps need a claim by default (a change for existing servers); `auto_claim: true` restores the old behaviour. Say so in the release notes.
+    - Decided (owner, 2026-10-07): claim by default, `auto_claim: true` restores the old behaviour. It is in the release notes.
+  - [x] Commit and push.
 - [ ] **A human plays a full tower.** Everything so far is headless bots and screenshots. At least two real players, one full tower, watching: animation feel at a real frame rate, mouse feel, audio, the vendor villager, the HUD, worn armor, the Shift tooltip, the Test Tower chambers.
 - [ ] **Cell allocation on the server thread.** A burst of allocate/abandon cycles (hundreds a minute) backs up chunk saves until the 60 s watchdog kills the server, and even ordinary run starts and ends stall a tick for 0.3 to 0.9 s. Options, costs and a recommended order are in `docs/design/cell-allocation-async.md`; the owner picks (three questions at its end).
-- [x] **Bump the build version string** (2026-10-07: `0.22.0-p37-tracks`; it had never been bumped). Bump it again for every build you deploy, so a log says which jar runs.
+  - Partly addressed 2026-10-08: the warm pool builds a slice per tick (`SlicedBuild`, longest hold about 60 ms against a 343 ms mean for the synchronous paste) and a finished run's cell is cleared a slice per tick (`CellClearJobs`), so `soak_test --pause 0` queues instead of stalling. Still synchronous: a run start without a warm cell (about 340 ms) and the cold first allocation after boot (2 to 3 s). See "As built" in `docs/design/cell-allocation-async.md`.
+- [x] **Bump the build version string** (2026-10-08: `0.23.0-p38-regions-armor`; it had never been bumped before 2026-10-07). Bump it again for every build you deploy, so a log says which jar runs.
 - [ ] **Deployment.** Ship the CobbleTowers jar and the AscensionLib jar (with the rental craft lock) together; find out where the real server gets AscensionLib (source: `L:\Codex\CobbleAscend\ascensionlib`). Keep the CobbleRaids version label pinned (`0.8.162-admin-helper`).
 
 ### P37 code review (2026-10-07, read-only plus small fixes, still uncompiled)
@@ -27,20 +33,22 @@ merged-track cache with arbitrary tower ids (now only known towers); no request 
 
 Still open, for the owner or the next session:
 - [x] **Unclaimed season steps** stay claimable through the off-season (owner decision 2026-10-07) and lapse when the next season starts; the season lane shows "CLAIM WITHIN" and the login line reminds the player. Still to check live (needs a season to end on the rig: pin the day with `TrialService.overrideDay`).
-- [ ] `claimAll` saves world data once per claim (`checkpoint` = `getDataStorage().save()`, twice per claim); claiming 30 steps = ~60 saves.
+- [x] `claimAll` saves world data once per claim (`checkpoint` = `getDataStorage().save()`, twice per claim); claiming 30 steps = ~60 saves. DONE 2026-10-08: one save per batch.
   Batch it: queue all, then one checkpoint.
-- [ ] `SeasonTrackRegistry.current()` rebuilds the merged track on every call and `claimAll` calls it several times per step; cache the result
+- [x] `SeasonTrackRegistry.current()` rebuilds the merged track on every call and `claimAll` calls it several times per step; cache the result DONE 2026-10-08: cached on the loaded files and the config.
   keyed on the loaded files and the config.
-- [ ] `TrackConfig` is read at server start only; `/reload` re-reads datapacks but not `config/cobbletowers-tracks.json` (document or hook it).
+- [x] `TrackConfig` is read at server start only; `/reload` re-reads datapacks but not `config/cobbletowers-tracks.json` (document or hook it). DONE 2026-10-08: re-read on `/reload`.
 - [ ] An addon season file's own `step_cost` is ignored unless it is the base file (document; the guide says the first file with steps is the base).
-- [ ] Mastery lane with no towers loaded sends an empty lane; the client should say "No towers" instead of an empty strip.
+- [x] Mastery lane with no towers loaded sends an empty lane; the client should say "No towers" instead of an empty strip. DONE 2026-10-08: the player is told "No towers are installed on this server."
 - [ ] `TowerUi.wrapped` has no line limit, so a long reward text can overflow the detail panel on a 240 px GUI.
 
 ## Should be refined before players see it
 
 - [ ] **UI polish.** The pixel font is wider than vanilla and clips some labels (`Selected destina`); check every screen at scale 2 and 3. Spectator HUD in game, hover tooltips and keyboard-only navigation are owner-deferred. Modifier-card sprites are to be replaced (owner: later). Mastery-level cosmetics are recorded (`m:<name>`) but shown nowhere.
 - [ ] **Balance numbers are first guesses.** Mastery thresholds and the shipped mastery grants (CobbleDollars 50/100/150/200/300/400/750), the risk payout bonus (+3% minor, +8% moderate, +15% severe, final payout only), trial and Ascension numbers, per-region tuning (each region has its own reward table with a regional booster pack at the boss floor, but all towers use the same `standard` ruleset, so difficulty and level curves are identical across regions). Add counters (contract completion rate, modifier draft frequency) and tune with real data (`docs/design/tuning-with-real-data.md`, `/cobbletowers masteryadmin report`).
+  - 2026-10-08: `/cobbletowers masteryadmin counters` now records claims, season points, contract completions, modifier pick rates, the risk bonus and floor times (`docs/design/tuning-with-real-data.md`). Region rules and armor tiers (P38) are data and untuned too.
 - [ ] **Confirm the milestone chase rewards are final.** The boss floor guarantees an XL candy, a regional booster pack (CobblemonCards) and 25 Raid Points plus 2 bonus rolls; the champion floor guarantees an XL candy, a God Pack Ticket and 75 Raid Points plus 3 bonus rolls (`reward_tables/<region>.json`). They were "to be determined" before the CobblemonCards crossover; check they are what you want and that the server has CobblemonCards (a missing item is skipped with a log line, so players would silently get less).
+  - 2026-10-08 (P38): the God Pack Ticket stays the guaranteed F10 chase; tier III armor pieces (12 sets in all) drop from the F10 champion bonus pool alongside it. Region rules: Tideforge no held items, Rootvale enemy drain 10 to 20%, Duskvale a status on the lead every fight.
 - [ ] **Unenforced rules: not release blockers, but know what they are.**
   - Battle switching (TDS #48) is deliberately not CobbleTowers' business: switching and item rules reach Showdown only through CobbleRaids' `EncounterRules` for **boss** battles (`TowerBossAdapter.withSwitching/withItems`, set by the No Retreat / no-items modifiers). Ordinary floors use the live party untouched. Nothing to build unless you want ordinary-floor rules.
   - `item_action_budget` (TDS #47) is parsed, validated and unused (`standard.json` sets 0). Its first consumer would be a Hardcore playlist (`docs/design/engagement-roadmap.md`, "How it fits the code"). Either build it with Hardcore, or drop the field from the ruleset schema so datapack authors are not misled.
@@ -50,13 +58,13 @@ Still open, for the owner or the next session:
 
 ## Verification gaps that could hide bugs
 
-- [ ] A multi-hour soak run, and a full 10-floor soak per tower for the F5/F10 milestone raids and the early/late boss pools.
+- [ ] A multi-hour soak run. Full 10-floor soaks (2026-10-08, `battle_tower_test.py --floors 10`): Rootvale and Duskvale cleared; Neutral and Tideforge lost to a high-level boss draw with the bot (one lead against legendary raid bosses) and want a rerun with a stronger party.
 - [ ] Fainted-party and offline-participant rejection (unit-tested only).
 - [ ] Disconnect mid-lobby in a rental draft (no live test).
 - [ ] Other mods reacting to rentals: only `POKEDEX_DATA_CHANGED_PRE` is guarded; check POKEMON_GAINED-style events and any rank track (StellarRankUp has a `pokedex` track) with that mod installed.
 - [ ] Stellar Titles 1.1.2 compatibility jar: menu not tested with a player.
 - [ ] Tab list and chat tag with another chat plugin installed (double or hidden tag; `chat_tags: false` switches it off).
-- [ ] `floor_encounter_test.py` "boss never starts" flake (not reproduced, cause unknown).
+- [ ] `floor_encounter_test.py` "boss never starts" flake (not reproduced, cause unknown). Since 2026-10-08 the check "the opponent is marked uncatchable" also fails about 1 run in 3 (passes on rerun; suspected test race, not bisected).
 
 ## Already in good shape (this session)
 

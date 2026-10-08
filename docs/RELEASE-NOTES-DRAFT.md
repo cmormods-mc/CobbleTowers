@@ -1,4 +1,4 @@
-# Release notes (draft, 2026-10-07)
+# Release notes (draft, updated 2026-10-08)
 
 Covers the work after commit `9688678`. Items marked **(unverified)** are written but have not been built or run yet; do not publish them as done until
 the checklist in `docs/RELEASE-CHECKLIST.md` is ticked.
@@ -10,6 +10,14 @@ the checklist in `docs/RELEASE-CHECKLIST.md` is ticked.
 - A new, more readable pixel font (Pixelify Sans, SIL OFL) in every CobbleTowers menu. Settings > General > Pixel font turns it off.
 - The Tower Hall header shows its towers whole. Menu icons were redrawn in the mod's own style (replacing the Cobblemon sprites) **(unverified)**.
 - Menus draw about three times faster, and were checked under Sodium and Iris with a shader pack.
+
+**Regions and armor (P38)**
+- **Tideforge:** your Pokemon's held items do nothing in battle (they are not removed).
+- **Rootvale:** enemies heal a share of the damage they deal, 10% on floor 1 rising to 20% on the last floor.
+- **Duskvale:** every fight of a floor starts with that floor's status (poison, burn, paralysis, sleep or freeze) on your lead; bring cures.
+- **Twelve armor sets, three per tower:** a utility set (drops from ordinary floors and bosses), the existing offense set, and a defense set that drops only from the F10 champion beside the God Pack Ticket.
+  The new art is placeholder.
+- **Boss fights and disconnects:** rejoining a boss fight inside the CobbleRaids hold window now resumes it instead of putting you in as a spectator.
 
 **Modifiers**
 - Every modifier card is painted for what it does (a tough boss, a fragile boss, a veteran enemy, a crowd, no healing, no setup, no switching, no items, a hoard of coins), and the
@@ -32,8 +40,13 @@ the checklist in `docs/RELEASE-CHECKLIST.md` is ticked.
   untuned; edit `mastery_tracks/default.json` in a datapack or override them in the config.
 - The final payout of a run is now larger when the party held modifiers (see the risk bonus above). If you tuned reward amounts against the old payouts, expect them to rise.
 
+**Rulesets and counters (P38)**
+- A ruleset may now set `player_held_items` (false to disable the player's items), `enemy_drain` (`start` and `end` percent, each 0 to 50) and `floor_status` (a list of `psn`, `brn`, `par`, `slp`, `frz`, `tox`). All are off by default, so existing rulesets and saved runs are unchanged.
+- `/cobbletowers masteryadmin counters` prints balance tallies (track claims, season points, contract completions, modifier pick rates, the risk bonus, floor times).
+- The warm pool and a finished run's cell are now built and cleared a slice per tick, so a run start or end no longer holds the server for a third of a second or more when a warm cell is ready.
+
 **New files and folders**
-- `config/cobbletowers-tracks.json` (optional): `auto_claim`, and `mastery` / `season` blocks merged after every datapack. Read at server start only.
+- `config/cobbletowers-tracks.json` (optional): `auto_claim`, and `mastery` / `season` blocks merged after every datapack. Re-read on `/reload`.
 - Datapack folders: `data/<ns>/cobbletowers/mastery_tracks/*.json` (new) and `season_tracks/*.json` (now also accepts `add_steps`). Guide: `docs/TRACKS-GUIDE.md`; sample pack:
   `docs/addon-example/`.
 - Levels past 30 are supported by the track data, but a level is reached only by unlocking that many achievements, so you also need to add achievements.
@@ -41,7 +54,7 @@ the checklist in `docs/RELEASE-CHECKLIST.md` is ticked.
 **Requirements**
 - Deploy the CobbleTowers jar together with the AscensionLib jar (rentals are locked out of upgrades only when both are present).
 - Rewards that name CobblemonCards items need that mod on the server; a missing item is skipped with one log line, so players get less and nothing breaks.
-- The build version is now `0.22.0-p37-tracks` (it had never been bumped from `0.21.0-p21-warm-pixel-preview`), so a server log shows which jar is running. Bump it for every deployed build.
+- The build version is now `0.23.0-p38-regions-armor` (it had never been bumped from `0.21.0-p21-warm-pixel-preview` before 2026-10-07), so a server log shows which jar is running. Bump it for every deployed build.
 
 ## For addon authors
 - Mastery tracks and season steps are data. Add rewards and ranks with a datapack; files merge, they do not replace. See `docs/TRACKS-GUIDE.md`.
@@ -50,6 +63,5 @@ the checklist in `docs/RELEASE-CHECKLIST.md` is ticked.
 
 ## Known issues
 - The wider UI font clips a few long labels (for example "Selected destina"); the toggle is the workaround.
-- Cells are built on the server thread, so starting or finishing a run can stall one tick for under a second; heavy bursts can trip the watchdog
-  (`docs/design/cell-allocation-async.md`).
+- Cells are mostly built and cleared a slice per tick now, but a run start without a warm cell still takes about 340 ms of one tick, and the first allocation after boot 2 to 3 s (`docs/design/cell-allocation-async.md`).
 - Mastery-level cosmetics are recorded but not shown anywhere yet.
