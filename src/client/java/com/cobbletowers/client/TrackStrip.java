@@ -159,7 +159,7 @@ final class TrackStrip extends AbstractWidget {
         if (item.isPresent() && !item.get().equals(net.minecraft.world.item.Items.AIR)) {
             g.renderItem(new ItemStack(item.get()), x, y);
         } else {
-            MenuIcons.draw(g, id.endsWith("cobble_dollar") || id.endsWith("raid_points") ? "coin" : "gift", x, y, 16);
+            MenuIcons.drawCurrency(g, id, x, y, 16);
         }
     }
 

@@ -453,6 +453,9 @@ public final class ScreenshotHarness {
                 new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("minecraft", "diamond"), 2),
                 new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("cobbleraids", "raid_points"), 25, "Raid Points"))))));
         add(600, "reward reveal shot", () -> featureShot("reward_01_reveal"));
+        add(0, "reward reveal raid points", () -> Minecraft.getInstance().setScreen(new RewardRevealScreen(new RewardRevealPayload(4, List.of(
+                new RewardRevealPayload.Grant(ResourceLocation.fromNamespaceAndPath("cobbleraids", "raid_points"), 25, "Raid Points"))))));
+        add(1400, "reward reveal raid points shot", () -> featureShot("reward_02_raid_points"));
         add(0, "scouting", () -> Minecraft.getInstance().setScreen(new ScoutingScreen(new ScoutingRevealPayload(5, List.of(
                 new ScoutingRevealPayload.Category("Types", "Water, Ice"),
                 new ScoutingRevealPayload.Category("Boss", "Gyarados"),

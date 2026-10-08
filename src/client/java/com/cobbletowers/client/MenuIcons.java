@@ -28,6 +28,17 @@ final class MenuIcons {
         g.blit(texture, x, y, size, size, 0, 0, 16, 16, 16, 16);
     }
 
+    private static final ResourceLocation RAID_POINTS = CobbleTowers.id("textures/gui/raid_points.png");
+
+    /**
+     * The icon of a reward that is not an item: Raid Points get their crystal, CobbleDollars the coin, anything else a
+     * gift. A size of 16 or 32.
+     */
+    static void drawCurrency(GuiGraphics g, String id, int x, int y, int size) {
+        if (id.endsWith("raid_points")) g.blit(RAID_POINTS, x, y, size, size, 0, 0, 16, 16, 16, 16);
+        else draw(g, id.endsWith("cobble_dollar") ? "coin" : "gift", x, y, size);
+    }
+
     private static ResourceLocation build(String key) {
         NativeImage image = new NativeImage(16, 16, true);
         image.fillRect(0, 0, 16, 16, 0);
