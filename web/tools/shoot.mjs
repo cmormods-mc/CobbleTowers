@@ -1,4 +1,4 @@
-// Screenshots of the dev build from the real payload fixtures.   node test/shoot.mjs [outdir]   (run `node build.mjs --dev` first)
+// Screenshots of the dev build from the real payload fixtures.   node tools/shoot.mjs [outdir]   (run `node build.mjs --dev` first)
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -6,7 +6,7 @@ import { chromium } from 'playwright-core';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.resolve(here, '../dist-dev/index.html');
-const outDir = path.resolve(process.argv[2] || path.join(here, 'shots'));
+const outDir = path.resolve(process.argv[2] || path.join(here, '../test/shots'));
 fs.mkdirSync(outDir, { recursive: true });
 
 const fixture = (kind, mutate) => {
@@ -24,6 +24,13 @@ export const SHOTS = {
   draft_done: { payloads: [fixture('RentalDraft')] },
   draft_sealed: { payloads: [fixture('RentalDraft', openDraft)] },
   draft_choose: { payloads: [fixture('RentalDraft', openDraft)], steps: async (page) => { await page.click('.pack'); await page.waitForSelector('.card.pick', { timeout: 8000 }); await page.click('.card.pick >> nth=1'); } },
+  hall: { payloads: [fixture('TowerHallState')] },
+  hall_social: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.click('text=Social'); } },
+  tower_brief: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.click('.tile >> nth=1'); } },
+  trial_brief: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.click('.tile >> nth=5'); } },
+  lobby_host: { payloads: [fixture('TowerHallState'), fixture('PlayState')] },
+  lobby_rental: { payloads: [fixture('PlayState', (d) => { d.lobby.options.modes.readiness = { confirmed: true, drafted: false, mine: false, host: false }; d.lobby.members = [{ name: 'Ash', accepted: true, ready: false }, { name: 'Misty', accepted: false, ready: false }]; d.lobby.options.depth = { chosen: 1, max: 2, offered: true }; })] },
+  lobby_invited: { payloads: [fixture('PlayState', (d) => { d.lobby.role = 2; })] },
   hud: { payloads: [fixture('RunEffects')], hud: true },
 };
 

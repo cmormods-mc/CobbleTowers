@@ -51,7 +51,7 @@ public final class WebGuiBridge {
      */
     private static final Set<CustomPacketPayload.Type<?>> SUPPORTED = Set.of(
             IntermissionStatePayload.TYPE, RentalDraftPayload.TYPE, RewardRevealPayload.TYPE, VendorCatalogPayload.TYPE,
-            RunEffectsPayload.TYPE);
+            RunEffectsPayload.TYPE, TowerHallStatePayload.TYPE, PlayStatePayload.TYPE);
 
     private static volatile WebGuiConfig config = WebGuiConfig.OFF;
     private static volatile boolean linked;

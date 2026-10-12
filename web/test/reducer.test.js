@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { initial, reduce, closeReward } from '../src/reducer.js';
+import { initial, reduce, closeReward, goTo, goBack, begin, timeout } from '../src/reducer.js';
 
 const inter = (open) => ({ floor: 2, draft: null, members: [], countdown: -1, message: '', open });
 
@@ -45,6 +45,52 @@ test('run effects only feed the HUD slice', () => {
   const s = reduce(initial, 'RunEffects', { floor: 4, riskPercent: 20, items: [] }, 1);
   assert.equal(s.fx.floor, 4);
   assert.equal(s.screen, null);
+});
+
+const play = (over = {}) => ({ towers: [], lobby: { role: 0, selected: '', hostName: '', members: [], countdown: -1, options: { depth: { chosen: 0, max: 0, offered: false }, modes: { ids: [], names: [], chosen: '', rental: false, readiness: { confirmed: false, drafted: false, mine: false, host: false } } } }, partyLevels: [], message: '', open: false, ...over });
+const hallData = (p = play()) => ({ towers: [], trials: [], play: p, runStatus: '', canResume: false });
+
+test('the hall payload opens the hall and clears a pending request', () => {
+  let s = begin(initial, 5);
+  assert.equal(s.busyAt, 5);
+  s = reduce(s, 'TowerHallState', hallData(), 9);
+  assert.equal(s.screen, 'hall');
+  assert.equal(s.view, 'hall');
+  assert.equal(s.busyAt, 0);
+  assert.equal(s.play.lobby.role, 0);
+});
+
+test('a flagged play state opens the lobby over the hall and back returns to it', () => {
+  let s = reduce(initial, 'TowerHallState', hallData(), 1);
+  s = goTo(s, 'tower', 'cobbletowers:neutral');
+  s = reduce(s, 'PlayState', play({ open: true }), 2);
+  assert.equal(s.view, 'lobby');
+  s = goBack(s);
+  assert.equal(s.view, 'tower');
+  s = goBack(goBack(s));
+  assert.equal(s.view, 'hall');
+});
+
+test('an unflagged play state only refreshes the lobby slice', () => {
+  const s = reduce(initial, 'PlayState', play({ open: false }), 1);
+  assert.equal(s.screen, null);
+  assert.equal(s.play.lobby.role, 0);
+  const t = reduce(reduce(initial, 'TowerHallState', hallData(), 1), 'PlayState', play({ open: false }), 2);
+  assert.equal(t.view, 'hall');
+});
+
+test('a repeated hall payload keeps the view the player was on', () => {
+  let s = reduce(initial, 'TowerHallState', hallData(), 1);
+  s = goTo(s, 'trial', 'daily');
+  s = reduce(s, 'TowerHallState', hallData(), 2);
+  assert.equal(s.view, 'trial');
+});
+
+test('a request that gets no answer times out into a notice', () => {
+  const s = timeout(begin(initial, 1));
+  assert.equal(s.busyAt, 0);
+  assert.match(s.notice.text, /No response/);
+  assert.equal(timeout(initial), initial);
 });
 
 test('an unknown kind changes nothing', () => {
