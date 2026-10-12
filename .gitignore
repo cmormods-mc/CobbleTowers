@@ -20,3 +20,7 @@ __pycache__/
 
 # Where CI checks out CobbleRaids to publish it locally before building.
 /.cobbleraids/
+/web/node_modules/
+/web/dist-dev/
+/web/src/gen/
+/web/test/shots/

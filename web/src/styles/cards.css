@@ -1,0 +1,34 @@
+/* rental cards: the Byzantine frame is 112x160, measured from the textures */
+.card { --cs: 2; position: relative; width: calc(112px * var(--cs)); height: calc(160px * var(--cs)); flex: none; color: var(--ink); }
+.card > img { position: absolute; display: block; }
+.card .f-field { left: calc(8px * var(--cs)); top: calc(8px * var(--cs)); width: calc(96px * var(--cs)); height: calc(62px * var(--cs)); }
+.card .f-sprite { position: absolute; left: calc(20px * var(--cs)); top: calc(10px * var(--cs)); filter: drop-shadow(0 calc(1px * var(--cs)) 0 rgba(0, 0, 0, .35)); }
+.card .f-frame { left: 0; top: 0; width: 100%; height: 100%; }
+.card .t { position: absolute; white-space: nowrap; line-height: 1; }
+.card .nm { left: 0; right: 0; top: calc(63px * var(--cs)); height: calc(15px * var(--cs)); display: grid; place-items: center; font-size: calc(10px * var(--cs)); color: #211510; font-weight: 600; text-shadow: 0 calc(.5px * var(--cs)) 0 rgba(255, 255, 255, .35); }
+.card .lv { left: calc(12px * var(--cs)); top: calc(11px * var(--cs)); font-size: calc(7px * var(--cs)); color: #fff; text-shadow: 0 calc(1px * var(--cs)) 0 #000; }
+.card .ty { right: calc(12px * var(--cs)); top: calc(11px * var(--cs)); display: flex; gap: calc(1px * var(--cs)); }
+.card .l1 { left: calc(24px * var(--cs)); top: calc(85px * var(--cs)); font-size: calc(7.5px * var(--cs)); }
+.card .l2 { left: calc(24px * var(--cs)); top: calc(94px * var(--cs)); font-size: calc(7.5px * var(--cs)); }
+.card .mv { left: calc(14px * var(--cs)); top: calc(111px * var(--cs)); width: calc(84px * var(--cs)); display: flex; flex-direction: column; gap: calc(2.2px * var(--cs)); }
+.card .mv div { display: flex; align-items: center; gap: calc(3px * var(--cs)); font-size: calc(7.5px * var(--cs)); line-height: 1; }
+.gem { display: inline-block; flex: none; width: calc(7px * var(--cs)); height: calc(7px * var(--cs)); background: url(assets/gui/byzantine/gems.png) no-repeat; background-size: calc(126px * var(--cs)) calc(21px * var(--cs));
+  background-position: calc(var(--c) * -7px * var(--cs)) calc(var(--r, 0) * -7px * var(--cs)); }
+.card.pick { cursor: pointer; transition: transform .12s; } .card.pick:hover { transform: translateY(-8px); }
+.card.kept { transform: translateY(-14px); filter: drop-shadow(0 0 8px var(--gold)) drop-shadow(0 0 2px var(--gold)); }
+.card .kmark { position: absolute; right: calc(8px * var(--cs)); bottom: calc(10px * var(--cs)); width: calc(15px * var(--cs)); height: calc(15px * var(--cs)); }
+.num { position: absolute; left: 50%; bottom: -24px; transform: translateX(-50%); font-size: 18px; color: var(--cream); }
+
+.flip { perspective: 900px; }
+.flip .face, .flip .backc { position: absolute; inset: 0; backface-visibility: hidden; }
+.flip .backc { background: url(assets/gui/byzantine/back.png) 0 0 / 100% 100%; animation: flipb .5s ease forwards; animation-delay: var(--d, 0s); }
+.flip .face { transform: rotateY(-90deg); animation: flipf .5s ease forwards; animation-delay: calc(var(--d, 0s) + .4s); }
+@keyframes flipb { to { transform: rotateY(90deg); opacity: 0; } } @keyframes flipf { to { transform: rotateY(0); } }
+
+.pack { position: relative; width: 224px; height: 320px; cursor: pointer; filter: drop-shadow(0 8px 0 rgba(0, 0, 0, .4)); transition: transform .15s; background: none; border: 0; padding: 0; }
+.pack:hover { transform: scale(1.03) rotate(-1deg); }
+.pack .ptop { position: absolute; left: 0; top: 0; width: 224px; height: 32px; background: url(assets/gui/byzantine/pack_top.png) 0 0 / 100% 100%; }
+.pack .body { position: absolute; left: 0; top: 32px; width: 224px; height: 288px; background: url(assets/gui/byzantine/pack_body.png) 0 0 / 100% 100%; }
+.pack.tear .ptop { animation: tear .6s ease-in forwards; } .pack.tear .body { animation: fade .7s .5s ease forwards; }
+@keyframes tear { to { transform: translate(40px, -90px) rotate(18deg); opacity: 0; } } @keyframes fade { to { opacity: 0; transform: translateY(30px); } }
+.dots { display: flex; gap: 8px; } .dots i { width: 18px; height: 18px; border: 3px solid var(--dark); background: var(--brown); } .dots i.on { background: var(--gold); } .dots i.cur { outline: 3px solid var(--cream); }

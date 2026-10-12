@@ -1,0 +1,18 @@
+{
+  "kind": "RunEffects",
+  "data": {
+    "floor": 4,
+    "riskPercent": 20,
+    "items": [
+      {
+        "name": "Lucky Charm",
+        "relic": true,
+        "count": 1,
+        "floor": 2,
+        "lines": [
+          "Loot swells to x1.25"
+        ]
+      }
+    ]
+  }
+}

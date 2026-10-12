@@ -45,11 +45,13 @@ public final class WebGuiBridge {
     /** How long a page just opened is given to load and say hello before it is considered lost. */
     private static final long LOAD_MILLIS = 6_000;
 
-    /** What the page can show today. Anything else keeps its old behaviour (a native screen if present, else chat). */
+    /**
+     * What the page can show today (P44, one entry per screen built). Anything else keeps its old behaviour: a native screen if
+     * the client has one, else chat. Add a payload here in the same change that adds its screen to {@code web/}.
+     */
     private static final Set<CustomPacketPayload.Type<?>> SUPPORTED = Set.of(
-            IntermissionStatePayload.TYPE, RentalDraftPayload.TYPE, RewardRevealPayload.TYPE, ScoutingRevealPayload.TYPE,
-            VendorCatalogPayload.TYPE, TowerHallStatePayload.TYPE, PlayStatePayload.TYPE, MasteryScreenPayload.TYPE,
-            TrackStatePayload.TYPE, RunEffectsPayload.TYPE);
+            IntermissionStatePayload.TYPE, RentalDraftPayload.TYPE, RewardRevealPayload.TYPE, VendorCatalogPayload.TYPE,
+            RunEffectsPayload.TYPE);
 
     private static volatile WebGuiConfig config = WebGuiConfig.OFF;
     private static volatile boolean linked;
@@ -72,6 +74,7 @@ public final class WebGuiBridge {
             TowerLog.error("The WebGUI mod is installed but its API did not match ({}); tower screens stay native", ex.toString());
             return;
         }
+        WebUiFiles.install();
         config = loaded;
         linked = true;
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> SESSIONS.remove(handler.getPlayer().getUUID()));
