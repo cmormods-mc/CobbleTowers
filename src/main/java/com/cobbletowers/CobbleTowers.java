@@ -40,6 +40,8 @@ public final class CobbleTowers implements ModInitializer {
                 .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("unknown");
 
+        eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils.addModAssets(MOD_ID);
+
         // The Showdown extension is registered in TowerPreLaunch, not here: by the time this runs Cobblemon's
         // Showdown
         // thread has already unbundled the simulator and CobbleRaids has already written its extension list.

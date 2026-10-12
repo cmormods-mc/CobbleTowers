@@ -14,7 +14,12 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Rarity;
+import eu.pb4.polymer.core.api.item.PolymerItem;
+import eu.pb4.polymer.resourcepack.api.PolymerModelData;
+import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * The tower key (decided 2026-10-05): the entry item for an ordinary run, one per player ({@code
@@ -30,10 +35,29 @@ public final class TowerKeys {
 
     private TowerKeys() {}
 
+    /** Server-only item (P43): clients see a trial key with a custom model. */
+    private static final class KeyItem extends Item implements PolymerItem {
+        private final PolymerModelData model = PolymerResourcePackUtils.requestModel(Items.TRIAL_KEY, ID.withPrefix("item/"));
+
+        KeyItem(Item.Properties properties) {
+            super(properties);
+        }
+
+        @Override
+        public Item getPolymerItem(ItemStack stack, ServerPlayer player) {
+            return model.item();
+        }
+
+        @Override
+        public int getPolymerCustomModelData(ItemStack stack, ServerPlayer player) {
+            return model.value();
+        }
+    }
+
     /** Registers the item and reads the setting at each server start. Called once at startup. */
     public static synchronized void install() {
         if (item == null) {
-            item = Registry.register(BuiltInRegistries.ITEM, ID, new Item(new Item.Properties().rarity(Rarity.UNCOMMON)));
+            item = Registry.register(BuiltInRegistries.ITEM, ID, new KeyItem(new Item.Properties().rarity(Rarity.UNCOMMON)));
             ServerLifecycleEvents.SERVER_STARTING.register(server -> required = load());
         }
     }
