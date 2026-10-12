@@ -126,6 +126,7 @@ public final class CobbleTowers implements ModInitializer {
         com.cobbletowers.economy.AscensionLibRewards.install();
         // Disconnects, rejoining, and the watchdog that ends a floor nobody is playing any more.
         TowerPresence.install();
+        com.cobbletowers.webgui.WebGuiBridge.install();
         com.cobbletowers.lobby.LobbyService.install();
         com.cobbletowers.intermission.IntermissionService.install();
         com.cobbletowers.storage.PartyJournalService.install();

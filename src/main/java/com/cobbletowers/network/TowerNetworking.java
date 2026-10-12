@@ -93,6 +93,22 @@ public final class TowerNetworking {
         });
     }
 
+    /**
+     * The server half of any screen action, whichever transport it arrived on. The native receivers above and the WebGUI
+     * bridge both end here, so a click on a web page is handled by exactly the code a click on a native screen is.
+     */
+    public static void handleAction(MinecraftServer server, ServerPlayer player, net.minecraft.network.protocol.common.custom.CustomPacketPayload action) {
+        if (action instanceof IntermissionActionPayload a) handleIntermissionAction(server, player, a);
+        else if (action instanceof PlayActionPayload a) handlePlayAction(server, player, a);
+        else if (action instanceof RentalDraftActionPayload a) com.cobbletowers.lobby.RentalDraftService.handle(server, player, a);
+        else if (action instanceof TowerHallActionPayload a) com.cobbletowers.menu.TowerHallService.handle(server, player, a);
+        else if (action instanceof TrackActionPayload a) com.cobbletowers.track.TrackService.handle(server, player, a);
+        else if (action instanceof VendorPurchasePayload a) handlePurchase(server, player, a);
+        else if (action instanceof MasteryRequestPayload a) MasteryScreens.send(player,
+                MasteryScreens.build(server, player, a.tower(), a.tab(), false));
+        else TowerLog.warn("handleAction was given {}, which is not a screen action", action.getClass().getSimpleName());
+    }
+
     /** The play screen's buttons: each does what the matching {@code /cobbletowers play} subcommand does. */
     private static void handlePlayAction(MinecraftServer server, ServerPlayer player, PlayActionPayload payload) {
         String reply;
@@ -242,50 +258,50 @@ public final class TowerNetworking {
     }
 
     private static void sendVendorCatalog(ServerPlayer player, VendorCatalogPayload payload) {
-        if (ServerPlayNetworking.canSend(player, VendorCatalogPayload.TYPE)) {
-            ServerPlayNetworking.send(player, payload);
+        if (ClientUi.canShow(player, VendorCatalogPayload.TYPE)) {
+            ClientUi.send(player, payload);
         }
     }
 
     /** Never sent to a client that has not registered the channel -- see {@code RewardDelivery}'s chat fallback. */
     public static void sendRewardReveal(ServerPlayer player, RewardRevealPayload payload) {
-        if (ServerPlayNetworking.canSend(player, RewardRevealPayload.TYPE)) {
-            ServerPlayNetworking.send(player, payload);
+        if (ClientUi.canShow(player, RewardRevealPayload.TYPE)) {
+            ClientUi.send(player, payload);
         }
     }
 
     /** Silently does nothing for a client that never registered the channel. */
     public static void sendSpectatorPanel(ServerPlayer player, SpectatorPanelPayload payload) {
-        if (ServerPlayNetworking.canSend(player, SpectatorPanelPayload.TYPE)) {
-            ServerPlayNetworking.send(player, payload);
+        if (ClientUi.canShow(player, SpectatorPanelPayload.TYPE)) {
+            ClientUi.send(player, payload);
         }
     }
 
     /** Silently does nothing for a client that never registered the channel (the commands still work). */
     public static void sendIntermissionState(ServerPlayer player, IntermissionStatePayload payload) {
-        if (ServerPlayNetworking.canSend(player, IntermissionStatePayload.TYPE)) {
-            ServerPlayNetworking.send(player, payload);
+        if (ClientUi.canShow(player, IntermissionStatePayload.TYPE)) {
+            ClientUi.send(player, payload);
         }
     }
 
     /** Silently does nothing for a client that never registered the channel (the commands still work). */
     public static void sendRegistration(ServerPlayer player, RegistrationStatePayload payload) {
-        if (ServerPlayNetworking.canSend(player, RegistrationStatePayload.TYPE)) {
-            ServerPlayNetworking.send(player, payload);
+        if (ClientUi.canShow(player, RegistrationStatePayload.TYPE)) {
+            ClientUi.send(player, payload);
         }
     }
 
     /** Silently does nothing for a client that never registered the channel (the commands still work). */
     public static void sendPlayState(ServerPlayer player, PlayStatePayload payload) {
-        if (ServerPlayNetworking.canSend(player, PlayStatePayload.TYPE)) {
-            ServerPlayNetworking.send(player, payload);
+        if (ClientUi.canShow(player, PlayStatePayload.TYPE)) {
+            ClientUi.send(player, payload);
         }
     }
 
     /** Silently does nothing for a client that never registered the channel. */
     public static void sendScoutingReveal(ServerPlayer player, ScoutingRevealPayload payload) {
-        if (ServerPlayNetworking.canSend(player, ScoutingRevealPayload.TYPE)) {
-            ServerPlayNetworking.send(player, payload);
+        if (ClientUi.canShow(player, ScoutingRevealPayload.TYPE)) {
+            ClientUi.send(player, payload);
         }
     }
 }

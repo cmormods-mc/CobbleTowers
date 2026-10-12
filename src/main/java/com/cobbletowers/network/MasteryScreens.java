@@ -30,7 +30,7 @@ public final class MasteryScreens {
 
     /** Whether this player's client can show the screen. A client without it gets chat instead. */
     public static boolean canShow(ServerPlayer player) {
-        return ServerPlayNetworking.canSend(player, MasteryScreenPayload.TYPE);
+        return ClientUi.canShow(player, MasteryScreenPayload.TYPE);
     }
 
     /**
@@ -98,6 +98,6 @@ public final class MasteryScreens {
     }
 
     public static void send(ServerPlayer player, MasteryScreenPayload payload) {
-        if (canShow(player)) ServerPlayNetworking.send(player, payload);
+        if (canShow(player)) ClientUi.send(player, payload);
     }
 }

@@ -72,7 +72,7 @@ public final class RentalDraftService {
     /** Whether {@link #prompt} will open the pack screen for this player (rather than chat lines, or nothing). */
     public static boolean opensScreen(ServerPlayer player, TowerLobby lobby) {
         return isOpen(lobby) && !RentalSetRegistry.all().isEmpty()
-                && ServerPlayNetworking.canSend(player, RentalDraftPayload.TYPE);
+                && com.cobbletowers.network.ClientUi.canShow(player, RentalDraftPayload.TYPE);
     }
 
     /**
@@ -109,7 +109,7 @@ public final class RentalDraftService {
         }
         if (RentalSetRegistry.all().isEmpty()) return List.of("No rental sets are loaded.");
         RentalDraft draft = open(server, lobby.get(), player.getUUID());
-        if (ServerPlayNetworking.canSend(player, RentalDraftPayload.TYPE)) {
+        if (com.cobbletowers.network.ClientUi.canShow(player, RentalDraftPayload.TYPE)) {
             sendScreen(player, draft, "");
             return List.of("Opening your packs. /tower draft text lists them in chat.");
         }
@@ -128,8 +128,8 @@ public final class RentalDraftService {
     // ---------------------------------------------------------------------------------------
 
     public static void sendScreen(ServerPlayer player, RentalDraft draft, String message) {
-        if (ServerPlayNetworking.canSend(player, RentalDraftPayload.TYPE)) {
-            ServerPlayNetworking.send(player, RentalDraftPayload.of(draft, message, com.cobbletowers.battle.cobblemon.CobblemonMoves::resolve));
+        if (com.cobbletowers.network.ClientUi.canShow(player, RentalDraftPayload.TYPE)) {
+            com.cobbletowers.network.ClientUi.send(player, RentalDraftPayload.of(draft, message, com.cobbletowers.battle.cobblemon.CobblemonMoves::resolve));
         }
     }
 

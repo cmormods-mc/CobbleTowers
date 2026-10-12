@@ -92,8 +92,8 @@ public final class TrackService {
     }
 
     public static void send(MinecraftServer server, ServerPlayer player, String towerRaw, String message) {
-        if (!ServerPlayNetworking.canSend(player, TrackStatePayload.TYPE)) return;
-        ServerPlayNetworking.send(player, build(server, player, towerRaw, message));
+        if (!com.cobbletowers.network.ClientUi.canShow(player, TrackStatePayload.TYPE)) return;
+        com.cobbletowers.network.ClientUi.send(player, build(server, player, towerRaw, message));
     }
 
     public static TrackStatePayload build(MinecraftServer server, ServerPlayer player, String towerRaw, String message) {

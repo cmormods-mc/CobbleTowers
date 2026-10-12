@@ -32,7 +32,7 @@ public final class TowerHallService {
             player.sendSystemMessage(Component.literal("Finish your battle before opening Tower Hall."));
             return;
         }
-        if (!ServerPlayNetworking.canSend(player, TowerHallStatePayload.TYPE)) {
+        if (!com.cobbletowers.network.ClientUi.canShow(player, TowerHallStatePayload.TYPE)) {
             if (IntermissionService.isAtIntermission(player)) IntermissionService.openScreen(server, player, message);
             else LobbyService.openScreenWithMessage(server, player, message);
             return;
@@ -58,7 +58,7 @@ public final class TowerHallService {
         var play = LobbyService.playState(server, player, LobbyService.lobbyOf(player.getUUID()).orElse(null), message, false);
         String status = TowerRuns.forPlayer(player.getUUID()).filter(r -> !r.isRetired())
                 .map(r -> "Floor " + r.floorIndex() + " / " + r.state().name().replace('_', ' ')).orElse("");
-        ServerPlayNetworking.send(player, new TowerHallStatePayload(towers, trials, play, status,
+        com.cobbletowers.network.ClientUi.send(player, new TowerHallStatePayload(towers, trials, play, status,
                 IntermissionService.isAtIntermission(player)));
     }
 

@@ -1,0 +1,50 @@
+package com.cobbletowers.webgui;
+
+import com.cobbletowers.TowerLog;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import net.fabricmc.loader.api.FabricLoader;
+
+/**
+ * {@code config/cobbletowers-webgui.json}: whether tower screens may be shown through the WebGUI mod, and where its page
+ * lives. Off unless the file says otherwise, so installing this build changes nothing for a server that has not opted in.
+ *
+ * <pre>{"enabled": true, "url": "webgui:/cobbletowers/index.html", "mode": "fallback", "heartbeat_seconds": 8}</pre>
+ *
+ * {@code mode}: {@code fallback} uses a web page only for a player whose client lacks CobbleTowers' own screens;
+ * {@code prefer} uses it for everyone who has WebGUI.
+ */
+public record WebGuiConfig(boolean enabled, String url, Mode mode, int heartbeatSeconds) {
+
+    public enum Mode { FALLBACK, PREFER }
+
+    public static final String DEFAULT_URL = "webgui:/cobbletowers/index.html";
+    public static final WebGuiConfig OFF = new WebGuiConfig(false, DEFAULT_URL, Mode.FALLBACK, 8);
+
+    public static WebGuiConfig load() {
+        Path file = FabricLoader.getInstance().getConfigDir().resolve("cobbletowers-webgui.json");
+        if (!Files.exists(file)) return OFF;
+        try {
+            return parse(Files.readString(file));
+        } catch (IOException | RuntimeException ex) {
+            TowerLog.error("{} is not usable ({}); tower screens stay native", file, ex.toString());
+            return OFF;
+        }
+    }
+
+    /** Pure so a test can cover it: a bad value never half-enables the bridge, it throws and the caller keeps it off. */
+    public static WebGuiConfig parse(String json) {
+        JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+        boolean enabled = root.has("enabled") && root.get("enabled").getAsBoolean();
+        String url = root.has("url") ? root.get("url").getAsString().trim() : DEFAULT_URL;
+        if (url.isEmpty()) throw new IllegalArgumentException("url is empty");
+        if (url.indexOf('#') >= 0) throw new IllegalArgumentException("url must not carry a #fragment; the page chooses its own screen");
+        Mode mode = root.has("mode") ? Mode.valueOf(root.get("mode").getAsString().trim().toUpperCase(java.util.Locale.ROOT)) : Mode.FALLBACK;
+        int heartbeat = root.has("heartbeat_seconds") ? root.get("heartbeat_seconds").getAsInt() : 8;
+        if (heartbeat < 3 || heartbeat > 120) throw new IllegalArgumentException("heartbeat_seconds must be 3..120");
+        return new WebGuiConfig(enabled, url, mode, heartbeat);
+    }
+}

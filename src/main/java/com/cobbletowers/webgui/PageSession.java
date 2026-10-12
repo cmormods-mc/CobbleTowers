@@ -1,0 +1,117 @@
+package com.cobbletowers.webgui;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * What the server knows about one player's WebGUI pages, and the rules for what to do with a screen payload meanwhile.
+ *
+ * <p>WebGUI tells the server nothing when a player closes a page (Esc), so "is a page open" is a heartbeat: the page pings
+ * every second or two and is considered open while the last ping is recent. A page that was just opened is "loading" until its
+ * first {@code hello}; payloads that arrive meanwhile are kept and replayed at the hello rather than sent into a page that
+ * is not there yet or used to open it a second time.
+ *
+ * <p>Plain Java with the clock passed in, so the timeline is unit-testable. Server thread only.
+ */
+final class PageSession {
+
+    /** The one kind shown on the HUD page; everything else belongs to the full-screen page. */
+    static final String HUD_KIND = "RunEffects";
+
+    /** What a payload does when it reaches a page, mirroring what the native client does with the same payload. */
+    enum Policy {
+        /** Replaces whatever is showing (a reward reveal, a scouting report). */
+        REPLACE,
+        /** Updates the open page, or opens one. */
+        UPDATE_OR_OPEN,
+        /** Updates the open page, or opens one only if the payload says to. */
+        UPDATE_OR_OPEN_IF_FLAGGED,
+        /** Updates an open page and does nothing otherwise. */
+        UPDATE_ONLY
+    }
+
+    /** What the caller must do with the payload it offered. */
+    enum Action { EMIT, OPEN, NOTHING }
+
+    private record Stamped(long at, String json) {}
+
+    /** "Has not happened", distinct from time 0 so the clock may read anything. */
+    private static final long NEVER = -1;
+
+    private final Map<String, Stamped> latest = new LinkedHashMap<>();
+    private long guiOpenedAt = NEVER;
+    private long hudOpenedAt = NEVER;
+    private long pingGui = NEVER;
+    private long pingHud = NEVER;
+    /** Whether the page opened last has said hello yet: after that it is loaded, whether or not it is still open. */
+    private boolean guiLoaded;
+    private boolean hudLoaded;
+
+    /** Records a payload (so a late page can be caught up) and says what to do with it. */
+    Action offer(String kind, String json, boolean hud, Policy policy, boolean flagged, long now, int heartbeatSeconds, long loadMillis) {
+        latest.put(kind, new Stamped(now, json));
+        if (alive(hud, now, heartbeatSeconds) && policy != Policy.REPLACE) return Action.EMIT;
+        // A page opened a moment ago is still loading and will ask for everything it missed; opening again would only
+        // restart it, and what arrives meanwhile is already stored for that replay.
+        if (loading(hud, now, loadMillis)) return Action.NOTHING;
+        boolean open = switch (policy) {
+            case REPLACE, UPDATE_OR_OPEN -> true;
+            case UPDATE_OR_OPEN_IF_FLAGGED -> flagged;
+            case UPDATE_ONLY -> false;
+        };
+        if (!open) return Action.NOTHING;
+        if (hud) {
+            hudOpenedAt = now;
+            pingHud = NEVER;
+            hudLoaded = false;
+        } else {
+            guiOpenedAt = now;
+            pingGui = NEVER;
+            guiLoaded = false;
+        }
+        return Action.OPEN;
+    }
+
+    /**
+     * A freshly loaded page says hello. Returns what it missed while loading: the latest of each kind produced since it was
+     * opened. Older ones belong to an earlier screen and would only show stale information. A page nobody opened (the player
+     * used {@code /webgui gui} by hand) gets nothing, and asks for its own state.
+     */
+    List<String> hello(boolean hud, long now) {
+        ping(hud, now);
+        if (hud) hudLoaded = true;
+        else guiLoaded = true;
+        long since = hud ? hudOpenedAt : guiOpenedAt;
+        List<String> out = new ArrayList<>();
+        if (since == NEVER) return out;
+        for (Map.Entry<String, Stamped> entry : latest.entrySet()) {
+            if (entry.getKey().equals(HUD_KIND) != hud) continue;
+            if (entry.getValue().at() >= since - 2_000) out.add(entry.getValue().json());
+        }
+        return out;
+    }
+
+    void ping(boolean hud, long now) {
+        if (hud) pingHud = now;
+        else pingGui = now;
+    }
+
+    /** The page said goodbye (it is closing): not open from this moment, without waiting for the heartbeat to lapse. */
+    void bye(boolean hud) {
+        if (hud) pingHud = NEVER;
+        else pingGui = NEVER;
+    }
+
+    boolean alive(boolean hud, long now, int heartbeatSeconds) {
+        long last = hud ? pingHud : pingGui;
+        return last != NEVER && now - last < heartbeatSeconds * 1000L;
+    }
+
+    boolean loading(boolean hud, long now, long loadMillis) {
+        long opened = hud ? hudOpenedAt : guiOpenedAt;
+        boolean loaded = hud ? hudLoaded : guiLoaded;
+        return opened != NEVER && !loaded && now - opened < loadMillis;
+    }
+}

@@ -24,8 +24,8 @@ public final class RunEffectsService {
     /** Sends the player their run's modifiers and relics; silent when the client has no overlay or the run is gone. */
     public static void send(ServerPlayer player, UUID runId) {
         try {
-            if (!ServerPlayNetworking.canSend(player, RunEffectsPayload.TYPE)) return;
-            TowerRuns.get(runId).map(RunEffectsService::build).ifPresent(payload -> ServerPlayNetworking.send(player, payload));
+            if (!com.cobbletowers.network.ClientUi.canShow(player, RunEffectsPayload.TYPE)) return;
+            TowerRuns.get(runId).map(RunEffectsService::build).ifPresent(payload -> com.cobbletowers.network.ClientUi.send(player, payload));
         } catch (RuntimeException ex) {
             com.cobbletowers.TowerLog.errorOnce("run-effects", "Could not send a run's effects to a player", ex);
         }
@@ -40,7 +40,7 @@ public final class RunEffectsService {
             RunEffectsPayload payload = run.state().isLive() ? build(run) : CLEARED;
             for (var participant : run.participants()) {
                 ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
-                if (player != null && ServerPlayNetworking.canSend(player, RunEffectsPayload.TYPE)) ServerPlayNetworking.send(player, payload);
+                if (player != null && com.cobbletowers.network.ClientUi.canShow(player, RunEffectsPayload.TYPE)) com.cobbletowers.network.ClientUi.send(player, payload);
             }
         } catch (RuntimeException ex) {
             com.cobbletowers.TowerLog.errorOnce("run-effects-push", "Could not push a run's effects to its players", ex);

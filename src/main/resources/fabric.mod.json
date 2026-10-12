@@ -26,5 +26,8 @@
     "java": ">=21",
     "cobblemon": ">=1.8.1",
     "cobbleraids": ">=0.8.162-admin-helper"
+  },
+  "suggests": {
+    "webgui": ">=1.8.1"
   }
 }
