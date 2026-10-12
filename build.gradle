@@ -58,6 +58,7 @@ dependencies {
     // Server-only items (P43): the server runs the bundled Polymer; clients need none of it.
     modCompileOnly 'eu.pb4:polymer-core:0.9.19+1.21.1'
     modCompileOnly 'eu.pb4:polymer-resource-pack:0.9.19+1.21.1'
+    modCompileOnly 'eu.pb4:polymer-reg-sync-manipulator:0.9.19+1.21.1'
 
     // Compile-only and non-transitive: CobbleRaids is installed on the server as its own mod, and its
     // own dependencies (SkiesGUIs, Placeholder API) are its business, not ours. Only the public API

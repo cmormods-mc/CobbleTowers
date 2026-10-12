@@ -4,13 +4,20 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import eu.pb4.polymer.core.api.item.PolymerItem;
+import eu.pb4.polymer.resourcepack.api.PolymerArmorModel;
+import eu.pb4.polymer.resourcepack.api.PolymerModelData;
+import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
+import eu.pb4.polymer.rsm.api.RegistrySyncUtils;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterial;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -66,8 +73,8 @@ public final class ArmorSetItems {
         for (String set : SETS) {
             Holder<ArmorMaterial> material = registerMaterial(set);
             for (ArmorItem.Type type : SLOT_NAMES.keySet()) {
-                Item item = new ArmorItem(material, type,
-                        new Item.Properties().durability(type.getDurability(DURABILITY_FACTOR)));
+                Item item = new PieceItem(material, type,
+                        new Item.Properties().durability(type.getDurability(DURABILITY_FACTOR)), set);
                 Registry.register(BuiltInRegistries.ITEM, pieceId(set, type), item);
             }
         }
@@ -83,6 +90,43 @@ public final class ArmorSetItems {
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(NAMESPACE, set);
         ArmorMaterial material = new ArmorMaterial(defense, ENCHANTABILITY, SoundEvents.ARMOR_EQUIP_DIAMOND,
                 () -> Ingredient.of(Items.DIAMOND), List.of(new ArmorMaterial.Layer(id)), 2.0F, 0.0F);
-        return Registry.registerForHolder(BuiltInRegistries.ARMOR_MATERIAL, id, material);
+        Holder<ArmorMaterial> holder = Registry.registerForHolder(BuiltInRegistries.ARMOR_MATERIAL, id, material);
+        RegistrySyncUtils.setServerEntry(BuiltInRegistries.ARMOR_MATERIAL, material);
+        return holder;
+    }
+
+    /** Server-only piece (P43): clients see dyed leather armor, and the pack's armor shader draws the set's worn texture. */
+    private static final class PieceItem extends ArmorItem implements PolymerItem {
+        private final Item base;
+        private final PolymerArmorModel worn;
+        private final PolymerModelData icon;
+
+        PieceItem(Holder<ArmorMaterial> material, Type type, Properties properties, String set) {
+            super(material, type, properties);
+            this.base = switch (type) {
+                case HELMET -> Items.LEATHER_HELMET;
+                case CHESTPLATE -> Items.LEATHER_CHESTPLATE;
+                case LEGGINGS -> Items.LEATHER_LEGGINGS;
+                default -> Items.LEATHER_BOOTS;
+            };
+            this.worn = PolymerResourcePackUtils.requestArmor(ResourceLocation.fromNamespaceAndPath(NAMESPACE, set));
+            this.icon = PolymerResourcePackUtils.requestModel(base,
+                    ResourceLocation.fromNamespaceAndPath(NAMESPACE, "item/" + set + "_" + SLOT_NAMES.get(type)));
+        }
+
+        @Override
+        public Item getPolymerItem(ItemStack stack, ServerPlayer player) {
+            return base;
+        }
+
+        @Override
+        public int getPolymerCustomModelData(ItemStack stack, ServerPlayer player) {
+            return icon.value();
+        }
+
+        @Override
+        public int getPolymerArmorColor(ItemStack stack, ServerPlayer player) {
+            return worn.color();
+        }
     }
 }
