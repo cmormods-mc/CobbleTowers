@@ -49,6 +49,11 @@ public final class TowerKeys {
         }
 
         @Override
+        public net.minecraft.network.chat.Component getName(ItemStack stack) {
+            return com.cobbletowers.ServerLang.itemName(ID);
+        }
+
+        @Override
         public int getPolymerCustomModelData(ItemStack stack, ServerPlayer player) {
             return model.value();
         }

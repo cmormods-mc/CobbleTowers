@@ -9,7 +9,10 @@ import eu.pb4.polymer.resourcepack.api.PolymerArmorModel;
 import eu.pb4.polymer.resourcepack.api.PolymerModelData;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import eu.pb4.polymer.rsm.api.RegistrySyncUtils;
+import com.cobbletowers.ServerLang;
 import net.minecraft.core.Holder;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -80,6 +83,19 @@ public final class ArmorSetItems {
         }
     }
 
+    private static Map<String, ResourceLocation> wornBy(ServerPlayer player) {
+        Map<String, ResourceLocation> worn = new java.util.LinkedHashMap<>();
+        put(worn, "head", player.getItemBySlot(EquipmentSlot.HEAD));
+        put(worn, "chest", player.getItemBySlot(EquipmentSlot.CHEST));
+        put(worn, "legs", player.getItemBySlot(EquipmentSlot.LEGS));
+        put(worn, "feet", player.getItemBySlot(EquipmentSlot.FEET));
+        return worn;
+    }
+
+    private static void put(Map<String, ResourceLocation> into, String slot, ItemStack stack) {
+        if (!stack.isEmpty()) into.put(slot, BuiltInRegistries.ITEM.getKey(stack.getItem()));
+    }
+
     private static Holder<ArmorMaterial> registerMaterial(String set) {
         Map<ArmorItem.Type, Integer> defense = new EnumMap<>(ArmorItem.Type.class);
         defense.put(ArmorItem.Type.HELMET, 3);
@@ -122,6 +138,22 @@ public final class ArmorSetItems {
         @Override
         public int getPolymerCustomModelData(ItemStack stack, ServerPlayer player) {
             return icon.value();
+        }
+
+        @Override
+        public Component getName(ItemStack stack) {
+            return ServerLang.itemName(BuiltInRegistries.ITEM.getKey(this));
+        }
+
+        /** Set lines under the piece, lit by what the viewer wears (the server-side half of P25; no Shift expansion here). */
+        @Override
+        public void modifyClientTooltip(List<Component> tooltip, ItemStack stack, ServerPlayer player) {
+            ResourceLocation id = BuiltInRegistries.ITEM.getKey(this);
+            for (ArmorSetDefinition set : ArmorSetRegistry.sets()) {
+                if (!set.pieces().containsValue(id)) continue;
+                tooltip.addAll(ArmorTooltipBuilder.build(ArmorSetViews.of(set), wornBy(player), ServerLang::itemName, true));
+                return;
+            }
         }
 
         @Override

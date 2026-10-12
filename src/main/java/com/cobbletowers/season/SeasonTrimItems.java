@@ -37,9 +37,15 @@ public final class SeasonTrimItems {
         if (registered) return;
         registered = true;
         for (int season = 1; season <= MAX_SEASONS; season++) {
+            ResourceLocation id = templateId(season);
             // Server-only (P43): clients see the sentry template; the pattern is found through the datapack's template_item.
             Registry.register(BuiltInRegistries.ITEM, templateId(season),
-                    new SimplePolymerItem(new Item.Properties(), Items.SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE));
+                    new SimplePolymerItem(new Item.Properties(), Items.SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE) {
+                        @Override
+                        public net.minecraft.network.chat.Component getName(net.minecraft.world.item.ItemStack stack) {
+                            return com.cobbletowers.ServerLang.itemName(id);
+                        }
+                    });
         }
     }
 }
