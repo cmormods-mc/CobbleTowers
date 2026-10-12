@@ -11,7 +11,7 @@ export { adaptCard };
 export function RentalCard({ card, cs = 2, flip, delay = 0, pick, kept, onClick }) {
   const face = html`
     <img class="f-field" src=${`assets/gui/byzantine/field_${card.rarity}.png`} alt="" />
-    <${Sprite} class="f-sprite" name=${card.species} s=${cs * 1.5} />
+    <${Sprite} class="f-sprite" name=${card.species} s=${cs * 1.5} at=${[56 * cs, 39 * cs]} />
     <img class="f-frame" src=${`assets/gui/byzantine/frame_${card.rarity}.png`} alt="" />
     <div class="t lv">Lv ${card.level}</div>
     <div class="t ty">${card.types.map((t) => html`<${Gem} type=${t} cat=${0} />`)}</div>

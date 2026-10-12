@@ -2,11 +2,13 @@ import { html } from '../html.js';
 import { ATLAS } from '../gen/atlas.js';
 
 /** A partner sprite from the shared sheet. `s` scales it (the sprites are drawn at 1x = their own pixels). */
-export function Sprite({ name, s = 1, class: cls = '' }) {
-  const at = ATLAS.map[name];
-  if (!at) return html`<span class=${cls} style="font-size:20px">?</span>`;
-  const [x, y, w, h] = at;
-  return html`<span class=${'sprite ' + cls} style=${`--x:${x};--y:${y};--w:${w};--h:${h};--aw:${ATLAS.width};--ah:${ATLAS.height};--s:${s}`}></span>`;
+export function Sprite({ name, s = 1, class: cls = '', at: centre }) {
+  const e = ATLAS.map[name];
+  if (!e) return html`<span class=${cls} style="font-size:20px">?</span>`;
+  const [x, y, w, h, bx, by, bw, bh] = e;
+  // `at` puts the middle of the drawn pixels (not of the canvas) on that point
+  const pos = centre ? `;left:${(centre[0] - (bx + bw / 2) * s).toFixed(2)}px;top:${(centre[1] - (by + bh / 2) * s).toFixed(2)}px` : '';
+  return html`<span class=${'sprite ' + cls} style=${`--x:${x};--y:${y};--w:${w};--h:${h};--aw:${ATLAS.width};--ah:${ATLAS.height};--s:${s}${pos}`}></span>`;
 }
 
 export const Coin = ({ big }) => html`<i class=${'coin' + (big ? ' big' : '')}></i>`;
