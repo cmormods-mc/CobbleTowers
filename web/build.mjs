@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { genData } from './tools/gen-data.mjs';
 import { packAtlas } from './tools/atlas.mjs';
-import { iconSheet, ICON_NAMES, panorama, REGIONS } from './tools/native-art.mjs';
+import { iconSheet, ICON_NAMES } from './tools/native-art.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
@@ -42,7 +42,6 @@ copy(path.join(root, 'src/main/resources/licenses/PixelifySans-OFL.txt'), 'asset
 const put = (to, buf) => { fs.mkdirSync(path.dirname(path.join(out, to)), { recursive: true }); fs.writeFileSync(path.join(out, to), buf); };
 put('assets/gui/icons.png', iconSheet());
 fs.writeFileSync(path.join(here, 'src/gen/icons.js'), 'export const ICONS = ' + JSON.stringify(ICON_NAMES) + ';\n');
-for (const r of REGIONS) for (const [name, w, h] of [['tile', 144, 42], ['hero', 307, 32], ['strip', 307, 28]]) put(`assets/gui/pano/${r}_${name}.png`, panorama(r, w, h));
 
 // ---- the fixtures module: real payloads in a dev build, nothing in a shipped one
 const fixturesPlugin = {

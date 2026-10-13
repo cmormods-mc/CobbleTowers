@@ -1,14 +1,19 @@
-import { useEffect } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import { html } from '../html.js';
 import { act, closeGui } from '../bridge.js';
 import { update } from '../store.js';
 import { begin, goBack, goTo, setPage, setTab, timeout } from '../reducer.js';
 import { canSelect, regionOf } from '../lobby.js';
-import { at, Icon, Label, NB, Panel, Shell } from '../components/native.js';
+import { at, Icon, Label, NB, Panel, screen, Shell, useScreen } from '../components/native.js';
+import { paintPanorama } from '../art/panorama.js';
 
 const WAIT_MS = 8000;
-const CONTENT_X = 108, CONTENT_Y = 43, CONTENT_W = 307, BOTTOM = 176;
-const PER_PAGE = 2; // one row of two, as at the mod's smallest screen
+/** TowerMenuScreen's content box and the rows below it, for the current screen size. */
+function box() {
+  const x = (screen.w < 400 ? 80 : 96) + 12, y = 43, w = screen.w - x - 12, contentH = screen.h - y - 58;
+  const rows = Math.max(1, Math.min(2, Math.floor((contentH - 75) / 52)));
+  return { x, y, w, rows, perPage: rows * 2, rowH: Math.max(38, Math.floor((contentH - 75) / rows)), bottom: screen.h - 64, status: screen.h - 40, foot: screen.h - 29 };
+}
 
 /** One server request at a time: buttons wait for the next state, or give up after 8 s. */
 export function request(action, argument = '', revision = '') {
@@ -23,14 +28,23 @@ const CARDS = {
     ['Hall of Fame', 'Tower legends', 'trophy'], ['Last run report', 'Review your run', 'book'], ['Mastery & boards', 'Measure your growth', 'stairs']],
 };
 
-/** A landscape strip: `kind` tile | hero | strip (the sizes the mod draws), cropped to the box. */
-export const Pano = ({ region, kind, x, y, w, h }) =>
-  html`<div class=${'pano k-' + kind} style=${at(x, y, w, h) + `background-image:url(assets/gui/pano/${region}_${kind}.png)`}></div>`;
+const PANOS = new Map();
+/** A landscape painted once per region and size into a canvas. */
+export function Pano({ region, x, y, w, h }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const key = region + '|' + w + 'x' + h;
+    let data = PANOS.get(key);
+    if (!data) { data = new ImageData(paintPanorama(region, w, h), w, h); PANOS.set(key, data); if (PANOS.size > 24) PANOS.delete(PANOS.keys().next().value); }
+    ref.current.getContext('2d').putImageData(data, 0, 0);
+  }, [region, w, h]);
+  return html`<canvas ref=${ref} class="pano" width=${w} height=${h} style=${at(x, y, w, h)}></canvas>`;
+}
 
 /** DestinationButton: a dark frame holding a landscape and the tower's name. */
 function Tile({ x, y, w, h, region, title, sub, onClick }) {
   return html`<button class="n-btn n-fr n-dark tile" title=${title + '\n' + sub} style=${at(x, y, w, h)} onClick=${onClick}>
-    <${Pano} region=${region} kind=${w > 200 ? 'hero' : 'tile'} x=${-5} y=${-5} w=${w - 6} h=${Math.max(10, h - 18)} />
+    <${Pano} region=${region} x=${-5} y=${-5} w=${w - 6} h=${Math.max(10, h - 18)} />
     <${Label} x=${-3} y=${h - 20} w=${w - 10}>${title}<//><i class="brk"></i></button>`;
 }
 
@@ -42,76 +56,82 @@ function Card({ x, y, w, h, title, sub, icon, onClick, soon }) {
     <${Icon} name=${icon} x=${w - 30} y=${h / 2 - 16} /><i class="brk"></i></button>`;
 }
 
-function Header({ lines, x = CONTENT_X, y = CONTENT_Y, w = CONTENT_W, h = 28 }) {
+function Header({ lines, x, y, w, h = 28 }) {
   return html`<${Panel} x=${x} y=${y} w=${w} h=${h}><${Label} x=${-2} y=${-3} color="bronze">${lines[0]}<//><${Label} x=${-2} y=${9} color="muted">${lines[1]}<//><//>`;
 }
 
 function Footer({ hall, busy, status }) {
+  const b = box();
   const resume = hall.canResume;
   return html`
-    <${Label} x=${CONTENT_X} y=${200} w=${CONTENT_W} color="soft">${status}<//>
-    <${NB} x=${CONTENT_X} y=${211} w=${95} kind="dark" icon="door" label=${resume ? 'Return to run' : 'Lobby'} disabled=${busy} onClick=${() => request(resume ? 'resume' : 'lobby')}>${resume ? 'Return to run' : 'Lobby'}<//>
-    <${NB} x=${CONTENT_X + CONTENT_W - 58} y=${211} w=${58} kind="dark" disabled=${busy} onClick=${() => request('refresh')}>Refresh<//>`;
+    <${Label} x=${b.x} y=${b.status} w=${b.w} color="soft">${status}<//>
+    <${NB} x=${b.x} y=${b.foot} w=${Math.min(95, Math.floor(b.w / 2))} kind="dark" icon="door" label=${resume ? 'Return to run' : 'Lobby'} disabled=${busy} onClick=${() => request(resume ? 'resume' : 'lobby')}>${resume ? 'Return to run' : 'Lobby'}<//>
+    <${NB} x=${b.x + b.w - 58} y=${b.foot} w=${58} kind="dark" disabled=${busy} onClick=${() => request('refresh')}>Refresh<//>`;
 }
 
-function Towers({ hall, busy, page }) {
-  const pages = Math.max(1, Math.ceil(hall.towers.length / PER_PAGE));
+function Towers({ hall, page }) {
+  const b = box();
+  const pages = Math.max(1, Math.ceil(hall.towers.length / b.perPage));
   const cur = Math.min(page, pages - 1);
-  const cw = (CONTENT_W - 6) / 2;
+  const cw = Math.floor((b.w - 6) / 2);
   const trial = (kind) => hall.trials.find((t) => t.kind === kind);
+  const ty = b.y + 38 + b.rows * b.rowH;
   return html`
-    <${Pano} region="tideforge" kind="hero" x=${CONTENT_X} y=${CONTENT_Y} w=${CONTENT_W} h=${32} />
-    <div class="shade" style=${at(CONTENT_X, CONTENT_Y, Math.floor((CONTENT_W * 46) / 100), 32)}></div>
-    <${Label} x=${CONTENT_X + 7} y=${CONTENT_Y + 12} w=${CONTENT_W - 14}>Every ascent begins here.<//>
-    ${hall.towers.slice(cur * PER_PAGE, cur * PER_PAGE + PER_PAGE).map((t, i) => html`<${Tile} key=${t.id} x=${CONTENT_X + i * (cw + 6)} y=${CONTENT_Y + 38} w=${cw} h=${60}
+    <${Pano} region="tideforge" x=${b.x} y=${b.y} w=${b.w} h=${32} />
+    <div class="shade" style=${at(b.x, b.y, Math.floor((b.w * 46) / 100), 32)}></div>
+    <${Label} x=${b.x + 7} y=${b.y + 12} w=${b.w - 14}>Every ascent begins here.<//>
+    ${hall.towers.slice(cur * b.perPage, cur * b.perPage + b.perPage).map((t, i) => html`<${Tile} key=${t.id} x=${b.x + (i % 2) * (cw + 6)} y=${b.y + 38 + Math.floor(i / 2) * b.rowH} w=${cw} h=${b.rowH - 4}
       region=${regionOf(t.id)} title=${t.name} sub=${t.floors + ' floors / cycle'} onClick=${() => update((s) => goTo(s, 'tower', t.id))} />`)}
-    <${NB} x=${CONTENT_X} y=${CONTENT_Y + 102} w=${cw} kind="dark" icon="sun" label="Daily Tower" disabled=${!trial('daily')} onClick=${() => update((s) => goTo(s, 'trial', 'daily'))}>Daily Tower<//>
-    <${NB} x=${CONTENT_X + cw + 6} y=${CONTENT_Y + 102} w=${cw} kind="dark" icon="calendar" label="Weekly Tower" disabled=${!trial('weekly')} onClick=${() => update((s) => goTo(s, 'trial', 'weekly'))}>Weekly Tower<//>
+    <${NB} x=${b.x} y=${ty} w=${cw} kind="dark" icon="sun" label="Daily Tower" disabled=${!trial('daily')} onClick=${() => update((s) => goTo(s, 'trial', 'daily'))}>Daily Tower<//>
+    <${NB} x=${b.x + cw + 6} y=${ty} w=${cw} kind="dark" icon="calendar" label="Weekly Tower" disabled=${!trial('weekly')} onClick=${() => update((s) => goTo(s, 'trial', 'weekly'))}>Weekly Tower<//>
     ${pages > 1 ? html`
-      <${NB} x=${CONTENT_X} y=${BOTTOM} w=${20} kind="dark" onClick=${() => update((s) => setPage(s, (cur - 1 + pages) % pages))}>${'<'}<//>
-      <${NB} x=${CONTENT_X + 24} y=${BOTTOM} w=${20} kind="dark" onClick=${() => update((s) => setPage(s, (cur + 1) % pages))}>${'>'}<//>
-      <${Label} x=${CONTENT_X + 51} y=${182} color="ink">${cur + 1} / ${pages}<//>` : null}`;
+      <${NB} x=${b.x} y=${b.bottom} w=${20} kind="dark" onClick=${() => update((s) => setPage(s, (cur - 1 + pages) % pages))}>${'<'}<//>
+      <${NB} x=${b.x + 24} y=${b.bottom} w=${20} kind="dark" onClick=${() => update((s) => setPage(s, (cur + 1) % pages))}>${'>'}<//>
+      <${Label} x=${b.x + 51} y=${screen.h - 58} color="ink">${cur + 1} / ${pages}<//>` : null}`;
 }
 
 function Trials() {
-  const entry = (kind, title, sub, region, y) => html`<${Tile} x=${CONTENT_X} y=${y} w=${CONTENT_W} h=${49} region=${region}
+  const b = box();
+  const entry = (kind, title, sub, region, y) => html`<${Tile} x=${b.x} y=${y} w=${b.w} h=${49} region=${region}
     title=${title} sub=${sub} onClick=${() => update((s) => goTo(s, 'trial', kind))} />`;
   return html`
-    <${Panel} x=${CONTENT_X} y=${CONTENT_Y} w=${CONTENT_W} h=${28} />
-    ${entry('daily', 'Daily Tower', 'A new daily challenge', 'tideforge', CONTENT_Y + 34)}
-    ${entry('weekly', 'Weekly Tower', 'The week’s expedition', 'duskvale', CONTENT_Y + 88)}`;
+    <${Panel} x=${b.x} y=${b.y} w=${b.w} h=${28} />
+    ${entry('daily', 'Daily Tower', 'A new daily challenge', 'tideforge', b.y + 34)}
+    ${entry('weekly', 'Weekly Tower', 'The week’s expedition', 'duskvale', b.y + 88)}`;
 }
 
 function Cards({ tab }) {
+  const b = box();
   const social = tab === 'social';
   const list = CARDS[tab];
-  const cw = (CONTENT_W - 6) / 2;
-  const cardH = Math.min(57, Math.floor((240 - 47 - (CONTENT_Y + 34)) / (social ? 2 : 3)));
+  const cw = Math.floor((b.w - 6) / 2);
+  const cardH = Math.min(57, Math.floor((screen.h - 47 - (b.y + 34)) / (social ? 2 : 3)));
   return html`
-    <${Header} lines=${social ? ['LINK LOUNGE', 'Great battles begin with good company.'] : ['TRAINER RECORD', 'Every victory leaves a mark.']} />
-    ${list.map(([title, sub, icon, run], i) => html`<${Card} key=${title} x=${CONTENT_X + (i % 2) * (cw + 6)} y=${CONTENT_Y + 34 + Math.floor(i / 2) * cardH} w=${cw} h=${cardH - 4}
+    <${Header} x=${b.x} y=${b.y} w=${b.w} lines=${social ? ['LINK LOUNGE', 'Great battles begin with good company.'] : ['TRAINER RECORD', 'Every victory leaves a mark.']} />
+    ${list.map(([title, sub, icon, run], i) => html`<${Card} key=${title} x=${b.x + (i % 2) * (cw + 6)} y=${b.y + 34 + Math.floor(i / 2) * cardH} w=${cw} h=${cardH - 4}
       title=${title} sub=${sub} icon=${icon} soon=${!run} onClick=${run} />`)}`;
 }
 
 export function Hall({ hall, tab, page, busy, view, pick }) {
+  useScreen();
   const onTab = (id) => update((s) => setTab(s, id));
-  const onBack = () => { update(goBack); };
   const status = hall.runStatus || (hall.play.lobby.role === 0 ? 'Choose a destination to begin.' : 'Your expedition lobby is available.');
   const section = view === 'tower' ? 'Tower briefing' : view === 'trial' ? 'Trial briefing' : { towers: 'Tower Hall', trials: 'Trials', social: 'Social', progress: 'Progress' }[tab];
-  return html`<${Shell} section=${section} tab=${tab} onTab=${onTab} onBack=${() => (view === 'hall' ? closeGui() : onBack())} onClose=${closeGui}>
+  return html`<${Shell} section=${section} tab=${tab} onTab=${onTab} onBack=${() => (view === 'hall' ? closeGui() : update(goBack))} onClose=${closeGui}>
     ${view === 'tower' ? html`<${TowerBriefing} hall=${hall} id=${pick} busy=${busy} />`
       : view === 'trial' ? html`<${TrialBriefing} hall=${hall} kind=${pick} busy=${busy} />`
-      : tab === 'towers' ? html`<${Towers} hall=${hall} busy=${busy} page=${page} />`
+      : tab === 'towers' ? html`<${Towers} hall=${hall} page=${page} />`
       : tab === 'trials' ? html`<${Trials} />` : html`<${Cards} tab=${tab} />`}
     <${Footer} hall=${hall} busy=${busy} status=${status} />
   <//>`;
 }
 
 function Briefing({ region, lines, action }) {
+  const b = box();
   return html`
-    <${Pano} region=${region} kind="strip" x=${CONTENT_X} y=${CONTENT_Y} w=${CONTENT_W} h=${28} />
-    <div class="n-lines" style=${at(CONTENT_X + 7, CONTENT_Y + 35, CONTENT_W - 14, BOTTOM - CONTENT_Y - 40)}>${lines.map((l) => html`<p>${l}</p>`)}</div>
-    ${action ? html`<${NB} x=${CONTENT_X} y=${BOTTOM} w=${CONTENT_W} kind="dark" label=${action[0]} disabled=${!action[2]} onClick=${action[1]}>${action[0]}<//>` : null}`;
+    <${Pano} region=${region} x=${b.x} y=${b.y} w=${b.w} h=${28} />
+    <div class="n-lines" style=${at(b.x + 7, b.y + 35, b.w - 14, b.bottom - b.y - 40)}>${lines.map((l) => html`<p>${l}</p>`)}</div>
+    ${action ? html`<${NB} x=${b.x} y=${b.bottom} w=${b.w} kind="dark" label=${action[0]} disabled=${!action[2]} onClick=${action[1]}>${action[0]}<//>` : null}`;
 }
 
 function TowerBriefing({ hall, id, busy }) {

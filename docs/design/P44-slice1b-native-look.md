@@ -10,3 +10,4 @@ Status: built (2026-10-12). Owner: "this menu looks way different than the base 
 - **Lobby:** the `PlayScreen` layout (tower cards, host controls as buttons, mode cycling, team status, Start). "Choose party" waits for slice 4.
 - **Messages:** toasts now rise from the bottom, where the native screens print them.
 - The bundle stamp now hashes every shipped file, so an art-only change refreshes the installed copy.
+- **Update (same day):** the native screens now fill the window at the same whole GUI scale Minecraft picks (largest scale leaving 320x240 GUI px), so a 1080p window shows 500x281 GUI px at scale 4 with two tower rows, as the mod does, instead of the 720p layout zoomed. Landscapes are painted in the page (`src/art/panorama.js`) at the width needed. Text has a hard one-GUI-pixel black drop shadow (light on parchment).

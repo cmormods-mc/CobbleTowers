@@ -38,7 +38,7 @@ export const SHOTS = {
 
 const browser = await chromium.launch();
 for (const [name, shot] of Object.entries(SHOTS)) {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  const page = await browser.newPage({ viewport: { width: +(process.env.W || 1280), height: +(process.env.H || 720) } });
   page.on('console', (m) => { if (m.type() === 'error') console.log(`[${name}] console error: ${m.text()}`); });
   page.on('pageerror', (e) => console.log(`[${name}] page error: ${e.message}`));
   await page.goto(pathToFileURL(dist).href + (shot.hud ? '#hud' : ''));

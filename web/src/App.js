@@ -52,6 +52,8 @@ export function App() {
   const busyAt = useStore((s) => s.busyAt);
   useBusyTimeout(busyAt);
   useFit();
+  const native = screen === 'hall' && (view === 'lobby' ? !!play : !!hall);
+  useEffect(() => { document.documentElement.classList.toggle('native', native); }, [native]);
   useNoticeTimeout(notice, () => update((s) => (s.notice === notice ? { ...s, notice: null } : s)));
 
   const closeRewardNow = () => { update(closeReward); act('IntermissionAction', { action: 'REFRESH', argument: 0 }); };

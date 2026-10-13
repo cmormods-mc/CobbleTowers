@@ -4,10 +4,9 @@ import { act } from '../bridge.js';
 import { update } from '../store.js';
 import { goBack } from '../reducer.js';
 import { lobbyView, partyLine } from '../lobby.js';
-import { at, Icon, Label, NB, Panel, SH, SW } from '../components/native.js';
+import { at, Icon, Label, NB, Panel, screen, useScreen } from '../components/native.js';
 
 const play = (action, argument = '') => act('PlayAction', { action, argument });
-const STATUS_W = Math.max(104, Math.floor(SW * 0.3));
 
 function Invite({ x, y, w }) {
   const [name, setName] = useState('');
@@ -27,6 +26,8 @@ function TowerCard({ x, y, w, h, name, selected, disabled, onClick }) {
 }
 
 export function Lobby({ state }) {
+  useScreen();
+  const SW = screen.w, SH = screen.h, STATUS_W = Math.max(104, Math.floor(SW * 0.3));
   const lobby = state.lobby;
   const v = lobbyView(state);
   const column = Math.max(96, Math.floor((SW - STATUS_W - 32) / 2));
@@ -62,7 +63,7 @@ export function Lobby({ state }) {
   const teamX = SW - STATUS_W + 7;
   const textW = STATUS_W - 16;
   return html`
-    <div class="ns">
+    <div class="ns" style=${`--g:${screen.g}px`}>
       <${Label} x=${0} y=${14} w=${SW} center>Battle Tower<//>
       <${Label} x=${12} y=${26} w=${SW - STATUS_W - 24} color="muted">Your party: ${partyLine(state.partyLevels)}<//>
       <${Panel} x=${6} y=${34} w=${SW - STATUS_W - 10} h=${SH - 56} />
@@ -74,6 +75,6 @@ export function Lobby({ state }) {
       ${v.team.map((m, i) => html`<${Label} key=${m.name} x=${teamX} y=${55 + i * 10} w=${textW} color=${m.tone === 'good' ? 'sage' : m.host ? 'bronze' : 'muted'}>${m.host ? 'Host: ' : ''}${m.name}  ${m.status === 'host' ? '' : m.status}<//>`)}
       ${v.waitingForHost ? html`<${Label} x=${teamX} y=${55 + v.team.length * 10 + 4} w=${textW} color="muted">Waiting for the host to confirm the mode<//>` : null}
       ${v.start ? html`<${NB} x=${SW - STATUS_W + 6} y=${SH - 48} w=${STATUS_W - 20} h=${22} disabled=${!v.start.enabled} onClick=${() => play('START')}>${v.start.label}<//>` : null}
-      <${NB} x=${SW - 16} y=${4} w=${12} h=${12} kind="dark" onClick=${() => update(goBack)} tip="Back">x<//>
+      <${NB} x=${SW - 16} y=${4} w=${12} h=${12} kind="dark" onClick=${() => update(goBack)} tip="Back">X<//>
     </div>`;
 }
