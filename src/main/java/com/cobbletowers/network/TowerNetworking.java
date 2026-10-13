@@ -102,6 +102,7 @@ public final class TowerNetworking {
         else if (action instanceof PlayActionPayload a) handlePlayAction(server, player, a);
         else if (action instanceof RentalDraftActionPayload a) com.cobbletowers.lobby.RentalDraftService.handle(server, player, a);
         else if (action instanceof TowerHallActionPayload a) com.cobbletowers.menu.TowerHallService.handle(server, player, a);
+        else if (action instanceof TowerFeatureRequest a) com.cobbletowers.menu.TowerFeatureService.handle(server, player, a);
         else if (action instanceof TrackActionPayload a) com.cobbletowers.track.TrackService.handle(server, player, a);
         else if (action instanceof VendorPurchasePayload a) handlePurchase(server, player, a);
         else if (action instanceof MasteryRequestPayload a) MasteryScreens.send(player,
