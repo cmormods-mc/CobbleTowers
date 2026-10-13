@@ -38,6 +38,7 @@ def main() -> None:
                                                                "Cobblemon and CobbleRaids")
     parser.add_argument("--java", type=Path, default=Path(os.environ.get("SMOKE_JAVA", "java")))
     parser.add_argument("--jar", type=Path, default=None, help="the CobbleTowers jar (default: the one in build/libs)")
+    parser.add_argument("--extra-mod", type=Path, action="append", default=[], help="another jar for the client (the Polymer jar, since P43)")
     parser.add_argument("--gui-scale", type=int, default=3)
     parser.add_argument("--timeout", type=int, default=600, help="seconds to wait for the client to finish")
     args = parser.parse_args()
@@ -47,7 +48,7 @@ def main() -> None:
     for old in out.glob("*.png"):
         old.unlink()
     game = out.parent / "clientrig"
-    client_launch.prepare(game, args.rig.resolve(), args.jar, args.gui_scale)
+    client_launch.prepare(game, args.rig.resolve(), args.jar, args.gui_scale, [m.resolve() for m in args.extra_mod])
     command = client_launch.command(args.java, game, [])
     env = dict(os.environ, COBBLETOWERS_SCREENSHOTS=str(out))
     print(f"Launching the client, pictures to {out}")

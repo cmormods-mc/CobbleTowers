@@ -13,6 +13,7 @@ export const initial = Object.freeze({
   play: null,        // PlayState (also carried inside TowerHallState)
   view: 'hall',      // inside the hall screen: 'hall' | 'tower' | 'trial' | 'lobby'
   tab: 'towers',     // hall tab: 'towers' | 'trials' | 'social' | 'progress'
+  page: 0,           // tower tile page in the hall
   pick: '',          // the tower id or trial kind a briefing shows
   stack: [],         // views to go back to
   busyAt: 0,         // when a hall request went out and was not answered yet (0 = none)
@@ -66,7 +67,8 @@ function showLobby(state) {
 export const goTo = (state, view, pick = '') => ({ ...state, view, pick, stack: [...state.stack, state.view] });
 export const goBack = (state) => (state.stack.length
   ? { ...state, view: state.stack[state.stack.length - 1], stack: state.stack.slice(0, -1) } : { ...state, view: 'hall' });
-export const setTab = (state, tab) => ({ ...state, tab });
+export const setTab = (state, tab) => ({ ...state, tab, view: 'hall', stack: [], page: 0 });
+export const setPage = (state, page) => ({ ...state, page });
 /** A hall request went out; the next hall or lobby state (or the timeout) clears it. */
 export const begin = (state, now) => (state.busyAt ? state : { ...state, busyAt: now });
 export const timeout = (state) => (state.busyAt ? { ...state, busyAt: 0, notice: { text: 'No response. Refresh to check the latest state.', id: state.noticeId + 1 }, noticeId: state.noticeId + 1 } : state);

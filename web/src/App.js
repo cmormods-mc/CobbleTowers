@@ -7,7 +7,7 @@ import { Toast } from './components/ui.js';
 import { Intermission } from './screens/Intermission.js';
 import { Draft } from './screens/Draft.js';
 import { Hud } from './screens/Hud.js';
-import { Hall, TowerBriefing, TrialBriefing, useBusyTimeout } from './screens/Hall.js';
+import { Hall, useBusyTimeout } from './screens/Hall.js';
 import { Lobby } from './screens/Lobby.js';
 import { RewardModal, VendorModal } from './screens/Modals.js';
 
@@ -48,6 +48,7 @@ export function App() {
   const view = useStore((s) => s.view);
   const tab = useStore((s) => s.tab);
   const pick = useStore((s) => s.pick);
+  const page = useStore((s) => s.page);
   const busyAt = useStore((s) => s.busyAt);
   useBusyTimeout(busyAt);
   useFit();
@@ -60,9 +61,7 @@ export function App() {
       ${screen === 'intermission' && inter ? html`<${Intermission} inter=${inter} at=${interAt} />`
         : screen === 'draft' && draft ? html`<${Draft} draft=${draft} />`
         : screen === 'hall' && view === 'lobby' && play ? html`<${Lobby} state=${play} />`
-        : screen === 'hall' && view === 'tower' && hall ? html`<${TowerBriefing} hall=${hall} id=${pick} busy=${!!busyAt} />`
-        : screen === 'hall' && view === 'trial' && hall ? html`<${TrialBriefing} hall=${hall} kind=${pick} busy=${!!busyAt} />`
-        : screen === 'hall' && hall ? html`<${Hall} hall=${hall} tab=${tab} busy=${!!busyAt} />`
+        : screen === 'hall' && hall ? html`<${Hall} hall=${hall} tab=${tab} page=${page} view=${view} pick=${pick} busy=${!!busyAt} />`
         : html`<${Waiting} />`}
       ${reward ? html`<${RewardModal} reward=${reward} onClose=${closeRewardNow} />`
         : vendorOpen && vendor ? html`<${VendorModal} vendor=${vendor} onClose=${() => update((s) => openVendor(s, false))} />` : null}

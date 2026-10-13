@@ -34,6 +34,6 @@
 
 .veil { position: absolute; inset: 0; background: rgba(10, 5, 3, .72); display: grid; place-items: center; z-index: 20; animation: veil .18s ease-out both; }
 @keyframes veil { from { opacity: 0; } }
-.toast { position: absolute; left: 50%; top: 14px; transform: translate(-50%, -140px); z-index: 40; transition: transform .25s; pointer-events: none; max-width: 760px; text-align: center; }
+.toast { position: absolute; left: 50%; bottom: 10px; transform: translate(-50%, 140px); z-index: 40; transition: transform .25s; pointer-events: none; max-width: 760px; text-align: center; }
 .toast.show { transform: translate(-50%, 0); }
 @keyframes glow { 50% { box-shadow: 0 0 0 4px var(--gold), 0 0 30px var(--gold); } }

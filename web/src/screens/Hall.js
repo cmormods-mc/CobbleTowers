@@ -1,13 +1,14 @@
 import { useEffect } from 'preact/hooks';
 import { html } from '../html.js';
-import { Button, Chip } from '../components/ui.js';
-import { act } from '../bridge.js';
+import { act, closeGui } from '../bridge.js';
 import { update } from '../store.js';
-import { begin, goBack, goTo, setTab, timeout } from '../reducer.js';
+import { begin, goBack, goTo, setPage, setTab, timeout } from '../reducer.js';
 import { canSelect, regionOf } from '../lobby.js';
+import { at, Icon, Label, NB, Panel, Shell } from '../components/native.js';
 
-const TABS = [['towers', 'Towers'], ['trials', 'Trials'], ['social', 'Social'], ['progress', 'Progress']];
 const WAIT_MS = 8000;
+const CONTENT_X = 108, CONTENT_Y = 43, CONTENT_W = 307, BOTTOM = 176;
+const PER_PAGE = 2; // one row of two, as at the mod's smallest screen
 
 /** One server request at a time: buttons wait for the next state, or give up after 8 s. */
 export function request(action, argument = '', revision = '') {
@@ -15,88 +16,115 @@ export function request(action, argument = '', revision = '') {
   act('TowerHallAction', { action, argument, revision });
 }
 
-/** `ready` cards open a screen that exists; the rest are shown as "Soon" until their slice lands. */
+/** Cards of the Social and Progress tabs; `run` marks the ones whose screen exists in the web UI. */
 const CARDS = {
-  social: [['Party & invites', 'Gather your team', true, () => request('lobby')], ['Club lodge', 'Your community'], ['Spectate', 'Watch challengers'], ['Run codes', 'Scout an expedition']],
-  progress: [['Season & rewards', 'Your next milestone'], ['Cosmetics & titles', 'Wear your victories'], ['Contracts', 'Accept a challenge'],
-    ['Hall of Fame', 'Tower legends'], ['Last run report', 'Review your run'], ['Mastery & boards', 'Measure your growth']],
+  social: [['Party & invites', 'Gather your team', 'group', () => request('lobby')], ['Club lodge', 'Your community', 'flag'], ['Spectate', 'Watch challengers', 'eye'], ['Run codes', 'Scout an expedition', 'scroll']],
+  progress: [['Season & rewards', 'Your next milestone', 'star'], ['Cosmetics & titles', 'Wear your victories', 'crown'], ['Contracts', 'Accept a challenge', 'scroll'],
+    ['Hall of Fame', 'Tower legends', 'trophy'], ['Last run report', 'Review your run', 'book'], ['Mastery & boards', 'Measure your growth', 'stairs']],
 };
 
-export function Banner({ region, tall }) {
-  return html`<div class=${'banner r-' + region + (tall ? ' tall' : '')}><i class="tw"></i></div>`;
+/** A landscape strip: `kind` tile | hero | strip (the sizes the mod draws), cropped to the box. */
+export const Pano = ({ region, kind, x, y, w, h }) =>
+  html`<div class=${'pano k-' + kind} style=${at(x, y, w, h) + `background-image:url(assets/gui/pano/${region}_${kind}.png)`}></div>`;
+
+/** DestinationButton: a dark frame holding a landscape and the tower's name. */
+function Tile({ x, y, w, h, region, title, sub, onClick }) {
+  return html`<button class="n-btn n-fr n-dark tile" title=${title + '\n' + sub} style=${at(x, y, w, h)} onClick=${onClick}>
+    <${Pano} region=${region} kind=${w > 200 ? 'hero' : 'tile'} x=${-5} y=${-5} w=${w - 6} h=${Math.max(10, h - 18)} />
+    <${Label} x=${-3} y=${h - 20} w=${w - 10}>${title}<//><i class="brk"></i></button>`;
 }
 
-function Tile({ region, title, sub, onClick, disabled, chip }) {
-  return html`<button class=${'tile'} disabled=${disabled} onClick=${onClick}>
-    <${Banner} region=${region} />
-    <div class="cap"><b>${title}</b>${chip ? html`<${Chip} color="var(--brown)">${chip}<//>` : null}</div><div class="sub">${sub}</div></button>`;
+/** TrainerCardButton: a dark card with a title, a caption and a picture. */
+function Card({ x, y, w, h, title, sub, icon, onClick, soon }) {
+  return html`<button class=${'n-btn n-fr n-dark card' + (soon ? ' soon' : '')} disabled=${soon} title=${soon ? 'Coming soon' : ''} style=${at(x, y, w, h)} onClick=${onClick}>
+    <${Label} x=${-2} y=${-2} w=${w - 30} color="text">${title}<//>
+    <${Label} x=${-2} y=${11} w=${w - 30} color="muted">${soon ? 'Coming soon' : sub}<//>
+    <${Icon} name=${icon} x=${w - 30} y=${h / 2 - 16} /><i class="brk"></i></button>`;
 }
 
-function TowerGrid({ hall, busy }) {
-  const open = (t) => update((s) => goTo(s, 'tower', t.id));
+function Header({ lines, x = CONTENT_X, y = CONTENT_Y, w = CONTENT_W, h = 28 }) {
+  return html`<${Panel} x=${x} y=${y} w=${w} h=${h}><${Label} x=${-2} y=${-3} color="bronze">${lines[0]}<//><${Label} x=${-2} y=${9} color="muted">${lines[1]}<//><//>`;
+}
+
+function Footer({ hall, busy, status }) {
+  const resume = hall.canResume;
   return html`
-    <div class="grid3 scroll">${hall.towers.map((t) => html`<${Tile} key=${t.id} region=${regionOf(t.id)} title=${t.name} sub=${t.floors + ' floors / cycle'} onClick=${() => open(t)} />`)}</div>
-    <div class="grid3" style="flex:none">
-      ${hall.trials.map((t) => html`<${Tile} key=${t.kind} region=${regionOf(t.tower)} title=${t.kind === 'daily' ? 'Daily Tower' : 'Weekly Tower'}
-        sub=${t.title} onClick=${() => update((s) => goTo(s, 'trial', t.kind))} />`)}
-    </div>`;
+    <${Label} x=${CONTENT_X} y=${200} w=${CONTENT_W} color="soft">${status}<//>
+    <${NB} x=${CONTENT_X} y=${211} w=${95} kind="dark" icon="door" label=${resume ? 'Return to run' : 'Lobby'} disabled=${busy} onClick=${() => request(resume ? 'resume' : 'lobby')}>${resume ? 'Return to run' : 'Lobby'}<//>
+    <${NB} x=${CONTENT_X + CONTENT_W - 58} y=${211} w=${58} kind="dark" disabled=${busy} onClick=${() => request('refresh')}>Refresh<//>`;
 }
 
-function TrialGrid({ hall }) {
-  return html`<div class="grid3 scroll">${hall.trials.length ? hall.trials.map((t) => html`<${Tile} key=${t.kind} region=${regionOf(t.tower)}
-      title=${t.kind === 'daily' ? 'Daily Tower' : 'Weekly Tower'} sub=${t.title} onClick=${() => update((s) => goTo(s, 'trial', t.kind))} />`)
-    : html`<div class="nine dark"><b class="gold">No trial is running right now.</b></div>`}</div>`;
+function Towers({ hall, busy, page }) {
+  const pages = Math.max(1, Math.ceil(hall.towers.length / PER_PAGE));
+  const cur = Math.min(page, pages - 1);
+  const cw = (CONTENT_W - 6) / 2;
+  const trial = (kind) => hall.trials.find((t) => t.kind === kind);
+  return html`
+    <${Pano} region="tideforge" kind="hero" x=${CONTENT_X} y=${CONTENT_Y} w=${CONTENT_W} h=${32} />
+    <div class="shade" style=${at(CONTENT_X, CONTENT_Y, Math.floor((CONTENT_W * 46) / 100), 32)}></div>
+    <${Label} x=${CONTENT_X + 7} y=${CONTENT_Y + 12} w=${CONTENT_W - 14}>Every ascent begins here.<//>
+    ${hall.towers.slice(cur * PER_PAGE, cur * PER_PAGE + PER_PAGE).map((t, i) => html`<${Tile} key=${t.id} x=${CONTENT_X + i * (cw + 6)} y=${CONTENT_Y + 38} w=${cw} h=${60}
+      region=${regionOf(t.id)} title=${t.name} sub=${t.floors + ' floors / cycle'} onClick=${() => update((s) => goTo(s, 'tower', t.id))} />`)}
+    <${NB} x=${CONTENT_X} y=${CONTENT_Y + 102} w=${cw} kind="dark" icon="sun" label="Daily Tower" disabled=${!trial('daily')} onClick=${() => update((s) => goTo(s, 'trial', 'daily'))}>Daily Tower<//>
+    <${NB} x=${CONTENT_X + cw + 6} y=${CONTENT_Y + 102} w=${cw} kind="dark" icon="calendar" label="Weekly Tower" disabled=${!trial('weekly')} onClick=${() => update((s) => goTo(s, 'trial', 'weekly'))}>Weekly Tower<//>
+    ${pages > 1 ? html`
+      <${NB} x=${CONTENT_X} y=${BOTTOM} w=${20} kind="dark" onClick=${() => update((s) => setPage(s, (cur - 1 + pages) % pages))}>${'<'}<//>
+      <${NB} x=${CONTENT_X + 24} y=${BOTTOM} w=${20} kind="dark" onClick=${() => update((s) => setPage(s, (cur + 1) % pages))}>${'>'}<//>
+      <${Label} x=${CONTENT_X + 51} y=${182} color="ink">${cur + 1} / ${pages}<//>` : null}`;
 }
 
-function CardGrid({ tab, busy }) {
-  return html`<div class="grid2">${CARDS[tab].map(([title, sub, ready, run]) => html`
-    <button class="nine dark card-tab" disabled=${!ready || busy} onClick=${run}>
-      <b>${title}</b>${ready ? null : html`<${Chip} color="var(--brown)">SOON<//>`}<div class="sub">${sub}</div></button>`)}</div>`;
+function Trials() {
+  const entry = (kind, title, sub, region, y) => html`<${Tile} x=${CONTENT_X} y=${y} w=${CONTENT_W} h=${49} region=${region}
+    title=${title} sub=${sub} onClick=${() => update((s) => goTo(s, 'trial', kind))} />`;
+  return html`
+    <${Panel} x=${CONTENT_X} y=${CONTENT_Y} w=${CONTENT_W} h=${28} />
+    ${entry('daily', 'Daily Tower', 'A new daily challenge', 'tideforge', CONTENT_Y + 34)}
+    ${entry('weekly', 'Weekly Tower', 'The week’s expedition', 'duskvale', CONTENT_Y + 88)}`;
 }
 
-export function Hall({ hall, tab, busy }) {
+function Cards({ tab }) {
+  const social = tab === 'social';
+  const list = CARDS[tab];
+  const cw = (CONTENT_W - 6) / 2;
+  const cardH = Math.min(57, Math.floor((240 - 47 - (CONTENT_Y + 34)) / (social ? 2 : 3)));
+  return html`
+    <${Header} lines=${social ? ['LINK LOUNGE', 'Great battles begin with good company.'] : ['TRAINER RECORD', 'Every victory leaves a mark.']} />
+    ${list.map(([title, sub, icon, run], i) => html`<${Card} key=${title} x=${CONTENT_X + (i % 2) * (cw + 6)} y=${CONTENT_Y + 34 + Math.floor(i / 2) * cardH} w=${cw} h=${cardH - 4}
+      title=${title} sub=${sub} icon=${icon} soon=${!run} onClick=${run} />`)}`;
+}
+
+export function Hall({ hall, tab, page, busy, view, pick }) {
+  const onTab = (id) => update((s) => setTab(s, id));
+  const onBack = () => { update(goBack); };
   const status = hall.runStatus || (hall.play.lobby.role === 0 ? 'Choose a destination to begin.' : 'Your expedition lobby is available.');
-  return html`
-    <div class="row center">
-      <div class="grow"><h1>Tower Hall</h1><div class="sub">Every ascent begins here.</div></div>
-      <div class="row" style="gap:8px">${TABS.map(([id, label]) => html`<${Button} small kind=${tab === id ? 'on' : ''} onClick=${() => update((s) => setTab(s, id))}>${label}<//>`)}</div>
-    </div>
-    <div class="col grow">
-      ${tab === 'towers' ? html`<${TowerGrid} hall=${hall} busy=${busy} />` : tab === 'trials' ? html`<${TrialGrid} hall=${hall} />` : html`<${CardGrid} tab=${tab} busy=${busy} />`}
-    </div>
-    <div class="row center">
-      <div class="grow sub" style="font-size:17px">${status}</div>
-      <${Button} kind="sec" disabled=${busy} onClick=${() => request(hall.canResume ? 'resume' : 'lobby')}>${hall.canResume ? 'Return to run' : 'Lobby'}<//>
-      <${Button} kind="sec" disabled=${busy} onClick=${() => request('refresh')}>Refresh<//>
-    </div>`;
+  const section = view === 'tower' ? 'Tower briefing' : view === 'trial' ? 'Trial briefing' : { towers: 'Tower Hall', trials: 'Trials', social: 'Social', progress: 'Progress' }[tab];
+  return html`<${Shell} section=${section} tab=${tab} onTab=${onTab} onBack=${() => (view === 'hall' ? closeGui() : onBack())} onClose=${closeGui}>
+    ${view === 'tower' ? html`<${TowerBriefing} hall=${hall} id=${pick} busy=${busy} />`
+      : view === 'trial' ? html`<${TrialBriefing} hall=${hall} kind=${pick} busy=${busy} />`
+      : tab === 'towers' ? html`<${Towers} hall=${hall} busy=${busy} page=${page} />`
+      : tab === 'trials' ? html`<${Trials} />` : html`<${Cards} tab=${tab} />`}
+    <${Footer} hall=${hall} busy=${busy} status=${status} />
+  <//>`;
 }
 
-export function TowerBriefing({ hall, id, busy }) {
+function Briefing({ region, lines, action }) {
+  return html`
+    <${Pano} region=${region} kind="strip" x=${CONTENT_X} y=${CONTENT_Y} w=${CONTENT_W} h=${28} />
+    <div class="n-lines" style=${at(CONTENT_X + 7, CONTENT_Y + 35, CONTENT_W - 14, BOTTOM - CONTENT_Y - 40)}>${lines.map((l) => html`<p>${l}</p>`)}</div>
+    ${action ? html`<${NB} x=${CONTENT_X} y=${BOTTOM} w=${CONTENT_W} kind="dark" label=${action[0]} disabled=${!action[2]} onClick=${action[1]}>${action[0]}<//>` : null}`;
+}
+
+function TowerBriefing({ hall, id, busy }) {
   const t = hall.towers.find((x) => x.id === id);
-  const lines = t ? [t.floors + ' floors per cycle / ' + t.milestones + ' milestones', t.ascends ? 'Ascension continues into harder cycles.' : 'The tower ends after its final floor.',
+  const lines = t ? [t.name, t.floors + ' floors per cycle / ' + t.milestones + ' milestones', t.ascends ? 'Ascension continues into harder cycles.' : 'The tower ends after its final floor.',
     'Select this tower to create or update your lobby. Review mode, party registration and invitations before starting.'] : ['This tower is no longer available. Refresh the Hall.'];
-  return html`<${Briefing} region=${regionOf(id)} title=${t ? t.name : 'Tower'} lines=${lines} busy=${busy}
-    action=${t ? ['Select tower & open lobby', () => request('tower', id), canSelect(hall, busy)] : null} />`;
+  return html`<${Briefing} region=${regionOf(id)} lines=${lines} action=${t ? ['Select tower & open lobby', () => request('tower', id), canSelect(hall, busy)] : null} />`;
 }
 
-export function TrialBriefing({ hall, kind, busy }) {
+function TrialBriefing({ hall, kind, busy }) {
   const t = hall.trials.find((x) => x.kind === kind);
-  const lines = t ? [...t.rules, 'Preparing does not launch a run. Trial rules will be checked again by the server.'] : ['No ' + kind + ' trial is currently available.'];
-  return html`<${Briefing} region=${t ? regionOf(t.tower) : 'tideforge'} title=${t ? t.title : 'Trial'} lines=${lines} busy=${busy}
-    action=${t ? ['Prepare trial lobby', () => request('trial', kind, t.revision), canSelect(hall, busy)] : null} />`;
-}
-
-function Briefing({ region, title, lines, action }) {
-  return html`
-    <div class="row center">
-      <${Button} small kind="sec" onClick=${() => update(goBack)}>Back<//>
-      <div class="grow"><h1>${title}</h1></div>
-    </div>
-    <div class="col grow">
-      <${Banner} region=${region} tall />
-      <div class="nine parch grow scroll">${lines.map((l, i) => html`<p class=${i === 0 ? 'lead' : ''}>${l}</p>`)}</div>
-      ${action ? html`<${Button} disabled=${!action[2]} onClick=${action[1]}>${action[0]}<//>` : null}
-    </div>`;
+  const lines = t ? [t.title, ...t.rules, 'Preparing does not launch a run. Trial rules will be checked again by the server.'] : ['No ' + kind + ' trial is currently available.'];
+  return html`<${Briefing} region=${t ? regionOf(t.tower) : 'tideforge'} lines=${lines} action=${t ? ['Prepare trial lobby', () => request('trial', kind, t.revision), canSelect(hall, busy)] : null} />`;
 }
 
 /** Gives up waiting for the server after a while, so a lost reply does not leave the buttons dead. */

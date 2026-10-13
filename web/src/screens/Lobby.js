@@ -1,61 +1,79 @@
 import { useState } from 'preact/hooks';
 import { html } from '../html.js';
-import { Button, Chip } from '../components/ui.js';
 import { act } from '../bridge.js';
 import { update } from '../store.js';
 import { goBack } from '../reducer.js';
-import { lobbyView, partyLine, regionOf } from '../lobby.js';
-import { Banner } from './Hall.js';
+import { lobbyView, partyLine } from '../lobby.js';
+import { at, Icon, Label, NB, Panel, SH, SW } from '../components/native.js';
 
 const play = (action, argument = '') => act('PlayAction', { action, argument });
+const STATUS_W = Math.max(104, Math.floor(SW * 0.3));
 
-function Invite() {
+function Invite({ x, y, w }) {
   const [name, setName] = useState('');
   const send = () => { if (name.trim()) { play('INVITE', name.trim()); setName(''); } };
-  return html`<div class="row"><input class="field grow" maxlength="16" placeholder="Player name" value=${name} onInput=${(e) => setName(e.target.value)}
-    onKeyDown=${(e) => { e.stopPropagation(); if (e.key === 'Enter') send(); }} /><${Button} small onClick=${send}>Invite<//></div>`;
+  return html`
+    <input class="n-edit" style=${at(x, y, w - 70, 20)} maxlength="16" placeholder="Name" value=${name} onInput=${(e) => setName(e.target.value)}
+      onKeyDown=${(e) => { e.stopPropagation(); if (e.key === 'Enter') send(); }} />
+    <${NB} x=${x + w - 66} y=${y} w=${66} onClick=${send}>Invite<//>`;
+}
+
+/** TrainerCardButton for a tower: name, "Open expedition" or "Selected", and a picture. */
+function TowerCard({ x, y, w, h, name, selected, disabled, onClick }) {
+  return html`<button class=${'n-btn n-fr n-dark card' + (selected ? ' sel' : '')} disabled=${disabled} style=${at(x, y, w, h)} onClick=${onClick}>
+    <${Label} x=${-2} y=${h > 26 ? -2 : -5} w=${w - 30}>${name}<//>
+    <${Label} x=${-2} y=${h > 26 ? 11 : 4} w=${w - 30} color="muted">${selected ? 'Selected' : 'Open expedition'}<//>
+    <${Icon} name="tower" x=${w - 30} y=${h / 2 - 16} /><i class="brk"></i></button>`;
 }
 
 export function Lobby({ state }) {
   const lobby = state.lobby;
   const v = lobbyView(state);
+  const column = Math.max(96, Math.floor((SW - STATUS_W - 32) / 2));
+  const half = Math.floor((column - 4) / 2);
+  const leftX = 12, rightX = 18 + column;
+  const step = Math.max(18, Math.min(40, Math.floor((SH - 66) / Math.max(1, state.towers.length))));
+  let ry = 40;
+  const next = () => { const y = ry; ry += 22; return y; };
+
+  const controls = [];
+  if (v.invite) controls.push(html`<${Invite} x=${rightX} y=${next()} w=${column} />`);
+  if (v.depth) controls.push(html`<${NB} x=${rightX} y=${next()} w=${column} disabled=${!v.depth.enabled} onClick=${() => play('SET_ASCENSION', String(v.depth.next))}>Start at: ${v.depth.label}${v.depth.none ? ' (none reached)' : ''}<//>`);
+  if (v.modes) {
+    const i = v.modes.ids.indexOf(v.modes.chosen);
+    const nextId = v.modes.ids[(i + 1) % v.modes.ids.length];
+    controls.push(html`<${NB} x=${rightX} y=${next()} w=${column} disabled=${!v.modes.enabled} onClick=${() => play('SET_PLAYLIST', nextId)}>Mode: ${v.modes.names[Math.max(0, i)]}<//>`);
+  }
+  if (v.confirm) controls.push(html`<${NB} x=${rightX} y=${next()} w=${column} onClick=${() => play('CONFIRM_MODE')}>Confirm mode<//>`);
+  if (v.draft) {
+    controls.push(html`<${NB} x=${rightX} y=${next()} w=${column} onClick=${() => act('RentalDraftAction', { action: 'OPEN', a: 0, b: 0 })}>Draft your team<//>`);
+    controls.push(html`<${NB} x=${rightX} y=${next()} w=${column} disabled=${!v.ready.enabled} onClick=${() => play(v.ready.mine ? 'UNREADY' : 'READY')}>${v.ready.mine ? 'Ready (click to undo)' : 'Ready up'}<//>`);
+  }
+  if (v.answer) {
+    const y = next();
+    controls.push(html`<${NB} x=${rightX} y=${y} w=${half} onClick=${() => play('ACCEPT', lobby.hostName)}>Accept<//>`);
+    controls.push(html`<${NB} x=${rightX + half + 4} y=${y} w=${half} onClick=${() => play('DECLINE', lobby.hostName)}>Decline<//>`);
+  }
+  if (v.leave) {
+    const host = v.role === 1;
+    controls.push(html`<${NB} x=${host ? rightX + half + 4 : rightX} y=${next()} w=${host ? half : column} onClick=${() => play('LEAVE')}>${v.leave}<//>`);
+  } else controls.push(html`<${NB} x=${rightX} y=${next()} w=${column} onClick=${() => update(goBack)}>Close<//>`);
+
+  const teamX = SW - STATUS_W + 7;
+  const textW = STATUS_W - 16;
   return html`
-    <div class="row center">
-      <${Button} small kind="sec" onClick=${() => update(goBack)}>Back<//>
-      <div class="grow"><h1>Expedition Lobby</h1><div class="sub">Your party: ${partyLine(state.partyLevels)}</div></div>
-    </div>
-    <div class="row grow">
-      <div class="col grow">
-        <div class="nine dark grow scroll"><h3>Towers</h3>
-          <div class="grid2" style="margin-top:8px">${state.towers.map((t) => html`
-            <button key=${t.id} class=${'tile sm' + (t.id === lobby.selected ? ' sel' : '')} disabled=${!v.canChoose} onClick=${() => play('SELECT_TOWER', t.id)}>
-              <${Banner} region=${regionOf(t.id)} /><div class="cap"><b>${t.displayName}</b>${t.id === lobby.selected ? html`<${Chip} color="var(--green)">SELECTED<//>` : null}</div></button>`)}</div>
-        </div>
-      </div>
-      <div class="col" style="width:430px">
-        <div class="nine dark" style="flex:none;min-height:150px">
-          <h3>Team status</h3>
-          ${v.team.length ? v.team.map((m) => html`<div class="eff"><span class="grow">${m.name}</span><${Chip} color=${m.tone === 'good' ? 'var(--green)' : 'var(--brown)'}>${m.status.toUpperCase()}<//></div>`)
-            : html`<div class="sub">You are not in a lobby yet. Select a tower to start one.</div>`}
-          ${v.waitingForHost ? html`<div class="sub" style="margin-top:6px">Waiting for the host to confirm the mode.</div>` : null}
-        </div>
-        ${v.invite || v.modes || v.depth ? html`<div class="nine dark grow scroll">
-          ${v.invite ? html`<div ><${Invite} /></div>` : null}
-          ${v.modes ? html`<div ><div class="sub">Mode</div><div class="wrap">${v.modes.ids.map((id, i) => html`
-            <${Button} small kind=${id === v.modes.chosen ? 'on' : ''} disabled=${!v.modes.enabled} onClick=${() => play('SET_PLAYLIST', id)}>${v.modes.names[i]}<//>`)}</div></div>` : null}
-          ${v.depth ? html`<div ><${Button} small kind="sec" disabled=${!v.depth.enabled} onClick=${() => play('SET_ASCENSION', String(v.depth.next))}>
-            Start at: ${v.depth.label}${v.depth.none ? ' (none reached)' : ''}<//></div>` : null}
-        </div>` : null}
-        <div class="nine dark">
-          <div class="col" style="gap:8px">
-            ${v.confirm ? html`<${Button} kind="sec" onClick=${() => play('CONFIRM_MODE')}>Confirm mode<//>` : null}
-            ${v.draft ? html`<div class="row"><${Button} class="grow" kind="sec" onClick=${() => act('RentalDraftAction', { action: 'OPEN', a: 0, b: 0 })}>Draft your team<//>
-              <${Button} class="grow" kind="sec" disabled=${!v.ready.enabled} onClick=${() => play(v.ready.mine ? 'UNREADY' : 'READY')}>${v.ready.mine ? 'Unready' : 'Ready up'}<//></div>` : null}
-            ${v.answer ? html`<div class="row"><${Button} class="grow" onClick=${() => play('ACCEPT', lobby.hostName)}>Accept<//><${Button} kind="sec" class="grow" onClick=${() => play('DECLINE', lobby.hostName)}>Decline<//></div>` : null}
-            <div class="row">${v.start ? html`<${Button} class="grow" disabled=${!v.start.enabled} onClick=${() => play('START')}>${v.start.label}<//>` : null}
-              ${v.leave ? html`<${Button} class="grow" kind="sec" onClick=${() => play('LEAVE')}>${v.leave}<//>` : null}</div>
-          </div>
-        </div>
-      </div>
+    <div class="ns">
+      <${Label} x=${0} y=${14} w=${SW} center>Battle Tower<//>
+      <${Label} x=${12} y=${26} w=${SW - STATUS_W - 24} color="muted">Your party: ${partyLine(state.partyLevels)}<//>
+      <${Panel} x=${6} y=${34} w=${SW - STATUS_W - 10} h=${SH - 56} />
+      <${Panel} x=${SW - STATUS_W} y=${34} w=${STATUS_W - 8} h=${SH - 56} />
+      <${Label} x=${teamX} y=${42} color="muted">TEAM STATUS<//>
+      ${state.towers.map((t, i) => html`<${TowerCard} key=${t.id} x=${leftX} y=${40 + i * step} w=${column} h=${step - 4} name=${t.displayName} selected=${t.id === lobby.selected}
+        disabled=${!v.canChoose} onClick=${() => play('SELECT_TOWER', t.id)} />`)}
+      ${controls}
+      ${v.team.map((m, i) => html`<${Label} key=${m.name} x=${teamX} y=${55 + i * 10} w=${textW} color=${m.tone === 'good' ? 'sage' : m.host ? 'bronze' : 'muted'}>${m.host ? 'Host: ' : ''}${m.name}  ${m.status === 'host' ? '' : m.status}<//>`)}
+      ${v.waitingForHost ? html`<${Label} x=${teamX} y=${55 + v.team.length * 10 + 4} w=${textW} color="muted">Waiting for the host to confirm the mode<//>` : null}
+      ${v.start ? html`<${NB} x=${SW - STATUS_W + 6} y=${SH - 48} w=${STATUS_W - 20} h=${22} disabled=${!v.start.enabled} onClick=${() => play('START')}>${v.start.label}<//>` : null}
+      <${NB} x=${SW - 16} y=${4} w=${12} h=${12} kind="dark" onClick=${() => update(goBack)} tip="Back">x<//>
     </div>`;
 }

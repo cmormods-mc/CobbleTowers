@@ -2,6 +2,7 @@
    below about 30px, which reads badly on a page. size-adjust makes Jersey's smaller body match the sizes the layout was drawn at. */
 @font-face { font-family: "Jersey"; src: url(assets/font/Jersey15-Regular.ttf); size-adjust: 125%; font-display: block; }
 
+@font-face { font-family: "Pixelify"; src: url(assets/font/Pixelify.ttf); font-display: block; }
 :root {
   --dark: #211510; --brown: #67452c; --bronze: #a77b46; --burg: #773c38; --parch: #e5cca1; --cream: #f8e7c2;
   --ink: #3a2616; --gold: #ddab3c; --minor: #5f9a3c; --moderate: #d9a02f; --severe: #b8382f; --green: #6fbf4a; --blue: #4a8fd6;

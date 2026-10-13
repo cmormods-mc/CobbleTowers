@@ -1,0 +1,45 @@
+/* The native screens' look (docs/design/P44-slice1b-native-look.md): positioned in GUI pixels, 1 GUI px = 3 CSS px */
+.ns { position: absolute; inset: 0; z-index: 1; overflow: hidden; font-size: 24px; line-height: 27px; font-family: "Pixelify", var(--font); letter-spacing: 3.9px;
+  background: linear-gradient(rgba(184, 122, 51, .15), rgba(184, 122, 51, 0)) 0 0 / 100% 120px no-repeat, linear-gradient(rgba(0, 0, 0, .4), rgba(0, 0, 0, .4)), url(assets/gui/pixel/tile_oak.png) 0 0 / 48px 48px; }
+.n-fr { position: absolute; box-sizing: border-box; margin: 0; padding: 0; border: var(--b, 24px) solid transparent; border-image-slice: 16 fill; border-image-width: var(--b, 24px); border-image-repeat: stretch; background: none; }
+.n-dark { border-image-source: url(assets/gui/pixel/frame_dark.png); }
+.n-parch { border-image-source: url(assets/gui/pixel/frame_parchment.png); }
+.n-t { position: absolute; white-space: nowrap; overflow: hidden; text-overflow: clip; pointer-events: none; }
+.n-t.ctr { text-align: center; }
+.c-text { color: #f0dfbf; } .c-muted { color: #c6ac87; } .c-bronze { color: #e3bd7f; } .c-ink { color: #40291e; } .c-soft { color: #6b4a33; } .c-sage { color: #a9b781; }
+
+.n-btn { letter-spacing: inherit; display: flex; align-items: center; justify-content: center; white-space: nowrap; cursor: pointer; font: inherit; color: #f0dfbf; text-align: left; }
+.n-btn .lb { pointer-events: none; } .n-btn .lb.clip { overflow: hidden; max-width: 100%; }
+.n-btn.k-primary { border-image-source: url(assets/gui/pixel/button_normal.png); }
+.n-btn.k-primary:hover:not(:disabled) { border-image-source: url(assets/gui/pixel/button_hover.png); }
+.n-btn.k-primary:active:not(:disabled) { border-image-source: url(assets/gui/pixel/button_pressed.png); }
+.n-btn.k-dark { border-image-source: url(assets/gui/pixel/frame_dark.png); color: #c6ac87; }
+.n-btn.k-dark:hover:not(:disabled) { color: #f0dfbf; }
+.n-btn.k-tab { border-image-source: url(assets/gui/pixel/tab_active.png); color: #f0dfbf; opacity: 1; }
+.n-btn.k-off { border-image-source: url(assets/gui/pixel/button_disabled.png); color: #8f7a5e; cursor: default; }
+.n-btn.k-dark.off { border-image-source: url(assets/gui/pixel/frame_dark.png); }
+.n-btn.k-off.off.card { border-image-source: url(assets/gui/pixel/frame_dark.png); }
+.n-btn:focus-visible { outline: 3px solid #e3bd7f; outline-offset: 0; }
+
+.ic { position: absolute; background-image: url(assets/gui/icons.png); background-repeat: no-repeat; pointer-events: none; }
+.pano { position: absolute; background-repeat: no-repeat; pointer-events: none; }
+.pano.k-tile { background-size: 432px 126px; } .pano.k-hero { background-size: 921px 96px; } .pano.k-strip { background-size: 921px 84px; }
+.shade { position: absolute; background: rgba(42, 26, 18, .627); pointer-events: none; }
+
+/* hover brackets on dark tiles and cards (PixelUi.brackets: 5 GUI px arms, 2 GUI px inside the edge) */
+.brk { position: absolute; inset: -18px; opacity: 0; pointer-events: none;
+  background:
+    linear-gradient(#e3bd7f, #e3bd7f) 0 0 / 15px 3px, linear-gradient(#e3bd7f, #e3bd7f) 0 0 / 3px 15px,
+    linear-gradient(#e3bd7f, #e3bd7f) 100% 0 / 15px 3px, linear-gradient(#e3bd7f, #e3bd7f) 100% 0 / 3px 15px,
+    linear-gradient(#e3bd7f, #e3bd7f) 0 100% / 15px 3px, linear-gradient(#e3bd7f, #e3bd7f) 0 100% / 3px 15px,
+    linear-gradient(#e3bd7f, #e3bd7f) 100% 100% / 15px 3px, linear-gradient(#e3bd7f, #e3bd7f) 100% 100% / 3px 15px;
+  background-repeat: no-repeat; }
+.n-btn.k-dark:hover:not(:disabled) .brk, .tile:hover .brk, .card:hover:not(:disabled) .brk { opacity: 1; }
+.tile, .card { display: block; color: #f0dfbf; }
+.card.soon { cursor: default; } .card.soon .n-t { color: #8f7a5e; } .card.soon .ic { opacity: .55; }
+.card.sel .n-t.c-muted { color: #a9b781; }
+
+.n-lines { position: absolute; overflow: hidden; color: #40291e; }
+.n-lines p { margin: 0 0 3px; line-height: 33px; white-space: normal; }
+.n-edit { position: absolute; background: #000; border: 3px solid #a0a0a0; color: #fff; font: inherit; font-size: 24px; padding: 0 9px; box-sizing: border-box; }
+.n-edit::placeholder { color: #808080; } .n-edit:focus { outline: 0; border-color: #fff; }
