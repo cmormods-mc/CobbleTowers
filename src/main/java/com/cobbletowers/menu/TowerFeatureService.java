@@ -14,7 +14,6 @@ import com.cobbletowers.season.*;
 import com.cobbletowers.spectator.Watching;
 import java.util.*;
 import java.util.stream.Stream;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -31,20 +30,20 @@ public final class TowerFeatureService {
     private static String limit(String s,int max){return s.length()>max?s.substring(0,max-3)+"...":s;}
 
     public static void handle(MinecraftServer server,ServerPlayer player,TowerFeatureRequest request) {
-        if(!SECTIONS.contains(request.section())||!ServerPlayNetworking.canSend(player,TowerFeatureState.TYPE))return;
+        if(!SECTIONS.contains(request.section())||!com.cobbletowers.network.ClientUi.canShow(player,TowerFeatureState.TYPE))return;
         if(com.cobbletowers.battle.cobblemon.PartyStorage.inBattle(player)) {
-            ServerPlayNetworking.send(player,new TowerFeatureState(request.requestId(),request.section(),"Battle in progress",List.of(),List.of(),"Finish your battle before using these menus."));
+            com.cobbletowers.network.ClientUi.send(player,new TowerFeatureState(request.requestId(),request.section(),"Battle in progress",List.of(),List.of(),"Finish your battle before using these menus."));
             return;
         }
         TowerFeatureState before=view(server,player,request,"");
-        if(request.action().equals("open")){ServerPlayNetworking.send(player,before);return;}
+        if(request.action().equals("open")){com.cobbletowers.network.ClientUi.send(player,before);return;}
         String message="";
         if(!request.action().equals("open")) {
             boolean offered=isOffered(before,request);
             if(!offered)message="That action is no longer available. The menu has been refreshed.";
             else message=apply(server,player,request);
         }
-        ServerPlayNetworking.send(player,view(server,player,request,limit(message,512)));
+        com.cobbletowers.network.ClientUi.send(player,view(server,player,request,limit(message,512)));
     }
 
     /** The player's live run: where it stands, what it carries (a locked-in modifier says so) and the relics, each with what it does. */

@@ -53,8 +53,8 @@ export function NB({ x, y, w, h = 20, kind = 'primary', icon, disabled, onClick,
     <span class=${showIcon ? 'lb' : 'lb clip'} style=${showIcon ? `margin-left:${u(20)}` : ''}>${children}</span></button>`;
 }
 
-const TABS = [['Tower Hall', 'tower', 'towers'], ['Trials', 'hourglass', 'trials'], ['Codex', 'book', null], ['Progress', 'stairs', 'progress'],
-  ['Echoes', 'echo', null], ['Social', 'group', 'social'], ['Collection', 'cards', null]];
+const TABS = [['Tower Hall', 'tower', 'towers'], ['Trials', 'hourglass', 'trials'], ['Codex', 'book', 'codex'], ['Progress', 'stairs', 'progress'],
+  ['Echoes', 'echo', 'echoes'], ['Social', 'group', 'social'], ['Collection', 'cards', null]];
 
 /** Header, tab rail and parchment sheet; `children` are the content, positioned in GUI pixels. */
 export function Shell({ section, tab, onTab, onBack, onClose, children }) {
@@ -74,3 +74,19 @@ export function Shell({ section, tab, onTab, onBack, onClose, children }) {
       ${children}
     </div>`;
 }
+
+/** TowerMenuScreen's content box and the rows below it, for the current screen size. */
+export function box() {
+  const x = (screen.w < 400 ? 80 : 96) + 12, y = 43, w = screen.w - x - 12, contentH = screen.h - y - 58;
+  const rows = Math.max(1, Math.min(2, Math.floor((contentH - 75) / 52)));
+  return { x, y, w, rows, perPage: rows * 2, rowH: Math.max(38, Math.floor((contentH - 75) / rows)), bottom: screen.h - 64, status: screen.h - 40, foot: screen.h - 29 };
+}
+
+/** TrainerCardButton: a dark card with a title, a caption and a picture. */
+export function Card({ x, y, w, h, title, sub, icon, onClick, soon }) {
+  return html`<button class=${'n-btn n-fr n-dark card' + (soon ? ' soon' : '')} disabled=${soon} title=${soon ? 'Coming soon' : ''} style=${at(x, y, w, h)} onClick=${onClick}>
+    <${Label} x=${-2} y=${-2} w=${w - 30} color="text">${title}<//>
+    ${soon || sub ? html`<${Label} x=${-2} y=${11} w=${w - 30} color="muted">${soon ? 'Coming soon' : sub}<//>` : null}
+    <${Icon} name=${icon} x=${w - 30} y=${h / 2 - 16} /><i class="brk"></i></button>`;
+}
+

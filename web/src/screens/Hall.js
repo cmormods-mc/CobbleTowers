@@ -1,20 +1,14 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { html } from '../html.js';
 import { act, closeGui } from '../bridge.js';
-import { update } from '../store.js';
+import { get, update, useStore } from '../store.js';
 import { begin, goBack, goTo, setPage, setTab, timeout } from '../reducer.js';
 import { canSelect, regionOf } from '../lobby.js';
-import { at, Icon, Label, NB, Panel, screen, Shell, useScreen } from '../components/native.js';
+import { Features, sectionTitle, sendFeature, stepBack } from './Features.js';
+import { at, box, Card, Label, NB, Panel, screen, Shell, useScreen } from '../components/native.js';
 import { paintPanorama } from '../art/panorama.js';
 
 const WAIT_MS = 8000;
-/** TowerMenuScreen's content box and the rows below it, for the current screen size. */
-function box() {
-  const x = (screen.w < 400 ? 80 : 96) + 12, y = 43, w = screen.w - x - 12, contentH = screen.h - y - 58;
-  const rows = Math.max(1, Math.min(2, Math.floor((contentH - 75) / 52)));
-  return { x, y, w, rows, perPage: rows * 2, rowH: Math.max(38, Math.floor((contentH - 75) / rows)), bottom: screen.h - 64, status: screen.h - 40, foot: screen.h - 29 };
-}
-
 /** One server request at a time: buttons wait for the next state, or give up after 8 s. */
 export function request(action, argument = '', revision = '') {
   update((s) => begin(s, Date.now()));
@@ -23,9 +17,11 @@ export function request(action, argument = '', revision = '') {
 
 /** Cards of the Social and Progress tabs; `run` marks the ones whose screen exists in the web UI. */
 const CARDS = {
-  social: [['Party & invites', 'Gather your team', 'group', () => request('lobby')], ['Club lodge', 'Your community', 'flag'], ['Spectate', 'Watch challengers', 'eye'], ['Run codes', 'Scout an expedition', 'scroll']],
-  progress: [['Season & rewards', 'Your next milestone', 'star'], ['Cosmetics & titles', 'Wear your victories', 'crown'], ['Contracts', 'Accept a challenge', 'scroll'],
-    ['Hall of Fame', 'Tower legends', 'trophy'], ['Last run report', 'Review your run', 'book'], ['Mastery & boards', 'Measure your growth', 'stairs']],
+  social: [['Party & invites', 'Gather your team', 'group', () => request('lobby')], ['Club lodge', 'Your community', 'flag', () => sendFeature('club')],
+    ['Spectate', 'Watch challengers', 'eye', () => sendFeature('watch')], ['Run codes', 'Scout an expedition', 'scroll', () => sendFeature('codes')]],
+  progress: [['Season & rewards', 'Your next milestone', 'star', () => sendFeature('season')], ['Cosmetics & titles', 'Wear your victories', 'crown', () => sendFeature('cosmetics')],
+    ['Contracts', 'Accept a challenge', 'scroll', () => sendFeature('contracts')], ['Hall of Fame', 'Tower legends', 'trophy', () => sendFeature('hall')],
+    ['Last run report', 'Review your run', 'book', () => sendFeature('report')], ['Mastery & boards', 'Measure your growth', 'stairs']],
 };
 
 const PANOS = new Map();
@@ -46,14 +42,6 @@ function Tile({ x, y, w, h, region, title, sub, onClick }) {
   return html`<button class="n-btn n-fr n-dark tile" title=${title + '\n' + sub} style=${at(x, y, w, h)} onClick=${onClick}>
     <${Pano} region=${region} x=${-5} y=${-5} w=${w - 6} h=${Math.max(10, h - 18)} />
     <${Label} x=${-3} y=${h - 20} w=${w - 10}>${title}<//><i class="brk"></i></button>`;
-}
-
-/** TrainerCardButton: a dark card with a title, a caption and a picture. */
-function Card({ x, y, w, h, title, sub, icon, onClick, soon }) {
-  return html`<button class=${'n-btn n-fr n-dark card' + (soon ? ' soon' : '')} disabled=${soon} title=${soon ? 'Coming soon' : ''} style=${at(x, y, w, h)} onClick=${onClick}>
-    <${Label} x=${-2} y=${-2} w=${w - 30} color="text">${title}<//>
-    <${Label} x=${-2} y=${11} w=${w - 30} color="muted">${soon ? 'Coming soon' : sub}<//>
-    <${Icon} name=${icon} x=${w - 30} y=${h / 2 - 16} /><i class="brk"></i></button>`;
 }
 
 function Header({ lines, x, y, w, h = 28 }) {
@@ -114,15 +102,18 @@ function Cards({ tab }) {
 
 export function Hall({ hall, tab, page, busy, view, pick }) {
   useScreen();
-  const onTab = (id) => update((s) => setTab(s, id));
-  const status = hall.runStatus || (hall.play.lobby.role === 0 ? 'Choose a destination to begin.' : 'Your expedition lobby is available.');
-  const section = view === 'tower' ? 'Tower briefing' : view === 'trial' ? 'Trial briefing' : { towers: 'Tower Hall', trials: 'Trials', social: 'Social', progress: 'Progress' }[tab];
-  return html`<${Shell} section=${section} tab=${tab} onTab=${onTab} onBack=${() => (view === 'hall' ? closeGui() : update(goBack))} onClose=${closeGui}>
-    ${view === 'tower' ? html`<${TowerBriefing} hall=${hall} id=${pick} busy=${busy} />`
+  const feature = useStore((s) => s.feature);
+  const fSection = useStore((s) => s.fSection);
+  const onTab = (id) => (id === 'codex' ? sendFeature('modifiers') : id === 'echoes' ? sendFeature('echoes') : update((s) => setTab(s, id)));
+  const status = !hall ? '' : hall.runStatus || (hall.play.lobby.role === 0 ? 'Choose a destination to begin.' : 'Your expedition lobby is available.');
+  const section = view === 'feature' ? sectionTitle(feature, fSection) : view === 'tower' ? 'Tower briefing' : view === 'trial' ? 'Trial briefing' : { towers: 'Tower Hall', trials: 'Trials', social: 'Social', progress: 'Progress' }[tab];
+  return html`<${Shell} section=${section} tab=${tab} onTab=${onTab} onBack=${() => (view === 'hall' ? closeGui() : view === 'feature' ? stepBack(get().fui) : update(goBack))} onClose=${closeGui}>
+    ${view === 'feature' ? html`<${Features} />`
+      : view === 'tower' ? html`<${TowerBriefing} hall=${hall} id=${pick} busy=${busy} />`
       : view === 'trial' ? html`<${TrialBriefing} hall=${hall} kind=${pick} busy=${busy} />`
       : tab === 'towers' ? html`<${Towers} hall=${hall} page=${page} />`
       : tab === 'trials' ? html`<${Trials} />` : html`<${Cards} tab=${tab} />`}
-    <${Footer} hall=${hall} busy=${busy} status=${status} />
+    ${view === 'feature' ? null : html`<${Footer} hall=${hall} busy=${busy} status=${status} />`}
   <//>`;
 }
 

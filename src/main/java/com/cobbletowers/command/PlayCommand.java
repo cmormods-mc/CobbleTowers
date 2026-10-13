@@ -38,6 +38,12 @@ public final class PlayCommand {
                 .then(playRoot
                         .executes(PlayCommand::open)
                         .then(Commands.literal("menu").executes(PlayCommand::hall))
+                        .then(Commands.literal("run").executes(context -> {
+                            var player = context.getSource().getPlayerOrException();
+                            com.cobbletowers.menu.TowerFeatureService.handle(context.getSource().getServer(), player,
+                                    new com.cobbletowers.network.TowerFeatureRequest(0, "run", "open", ""));
+                            return 1;
+                        }))
                         .then(Commands.literal("lobby").executes(PlayCommand::open))
                         .then(Commands.literal("vote")
                                 .then(Commands.argument("card", IntegerArgumentType.integer(1, 9))

@@ -128,6 +128,22 @@ class PayloadJsonTest {
         assertEquals(me.toString(), data.getAsJsonArray("team").get(0).getAsJsonObject().get("id").getAsString());
     }
 
+    @Test
+    @DisplayName("a feature menu keeps its entries, their lines and the actions on both levels")
+    void featureMenu() throws IOException {
+        var buy = new com.cobbletowers.network.TowerFeatureState.Action("title-wear", "Wear this title", "champion", "Wear Champion?", "");
+        var sample = new com.cobbletowers.network.TowerFeatureState(7, "cosmetics", "Cosmetics & titles", List.of(
+                new com.cobbletowers.network.TowerFeatureState.Entry("title:champion", "Champion", List.of("[+] Unlocked at Gold.", "Shows next to your name."), List.of(buy))),
+                List.of(new com.cobbletowers.network.TowerFeatureState.Action("page", "This run", "run", "", "")), "Saved.");
+        fixture("TowerFeatureState", sample);
+        JsonObject data = PayloadJson.envelope(sample).getAsJsonObject("data");
+        assertEquals(7, data.get("requestId").getAsInt());
+        JsonObject entry = data.getAsJsonArray("entries").get(0).getAsJsonObject();
+        assertEquals(2, entry.getAsJsonArray("lines").size());
+        assertEquals("title-wear", entry.getAsJsonArray("actions").get(0).getAsJsonObject().get("id").getAsString());
+        assertEquals("run", data.getAsJsonArray("actions").get(0).getAsJsonObject().get("argument").getAsString());
+    }
+
     private static List<RentalSetDefinition> pool() throws IOException {
         List<RentalSetDefinition> all = new ArrayList<>();
         Path dir = Paths.get("src/main/resources/data/cobbletowers/cobbletowers/rental_sets");

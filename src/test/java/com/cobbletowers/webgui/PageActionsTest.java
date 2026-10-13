@@ -7,6 +7,7 @@ import com.cobbletowers.network.IntermissionActionPayload;
 import com.cobbletowers.network.MasteryRequestPayload;
 import com.cobbletowers.network.PlayActionPayload;
 import com.cobbletowers.network.RentalDraftActionPayload;
+import com.cobbletowers.network.TowerFeatureRequest;
 import com.cobbletowers.network.TowerHallActionPayload;
 import com.cobbletowers.network.TrackActionPayload;
 import com.cobbletowers.network.VendorPurchasePayload;
@@ -35,6 +36,8 @@ class PageActionsTest {
                 PageActions.decode(json("{\"kind\":\"PlayAction\",\"action\":\"SET_PLAYLIST\",\"argument\":\"hardcore\"}")).orElseThrow());
         assertEquals(new TowerHallActionPayload("open", "tideforge", "r1"),
                 PageActions.decode(json("{\"kind\":\"TowerHallAction\",\"action\":\"open\",\"argument\":\"tideforge\",\"revision\":\"r1\"}")).orElseThrow());
+        assertEquals(new TowerFeatureRequest(12, "club", "open", ""),
+                PageActions.decode(json("{\"kind\":\"TowerFeatureRequest\",\"requestId\":12,\"section\":\"club\",\"action\":\"open\"}")).orElseThrow());
         assertEquals(new TrackActionPayload("claim", "season", "", 7),
                 PageActions.decode(json("{\"kind\":\"TrackAction\",\"action\":\"claim\",\"lane\":\"season\",\"number\":7}")).orElseThrow());
         assertEquals(new MasteryRequestPayload("cobbletowers:rootvale", "mastery"),
@@ -58,6 +61,8 @@ class PageActionsTest {
                 "{\"kind\":\"VendorPurchase\",\"serviceId\":\"cobbletowers:full_heal\",\"targetPlayerId\":\"not-a-uuid\"}",
                 "{\"kind\":\"VendorPurchase\",\"serviceId\":\"Not Valid!\",\"targetPlayerId\":\"00000000-0000-0000-0000-000000000001\"}",
                 "{\"kind\":\"TowerHallAction\"}",
+                "{\"kind\":\"TowerFeatureRequest\",\"requestId\":-5,\"section\":\"club\",\"action\":\"open\"}",
+                "{\"kind\":\"TowerFeatureRequest\",\"section\":\"club\"}",
         };
         for (String message : bad) assertTrue(PageActions.decode(json(message)).isEmpty(), message);
     }

@@ -52,7 +52,7 @@ export function App() {
   const busyAt = useStore((s) => s.busyAt);
   useBusyTimeout(busyAt);
   useFit();
-  const native = screen === 'hall' && (view === 'lobby' ? !!play : !!hall);
+  const native = screen === 'hall' && (view === 'lobby' ? !!play : !!hall || view === 'feature');
   useEffect(() => { document.documentElement.classList.toggle('native', native); }, [native]);
   useNoticeTimeout(notice, () => update((s) => (s.notice === notice ? { ...s, notice: null } : s)));
 
@@ -63,7 +63,7 @@ export function App() {
       ${screen === 'intermission' && inter ? html`<${Intermission} inter=${inter} at=${interAt} />`
         : screen === 'draft' && draft ? html`<${Draft} draft=${draft} />`
         : screen === 'hall' && view === 'lobby' && play ? html`<${Lobby} state=${play} />`
-        : screen === 'hall' && hall ? html`<${Hall} hall=${hall} tab=${tab} page=${page} view=${view} pick=${pick} busy=${!!busyAt} />`
+        : screen === 'hall' && (hall || view === 'feature') ? html`<${Hall} hall=${hall} tab=${tab} page=${page} view=${view} pick=${pick} busy=${!!busyAt} />`
         : html`<${Waiting} />`}
       ${reward ? html`<${RewardModal} reward=${reward} onClose=${closeRewardNow} />`
         : vendorOpen && vendor ? html`<${VendorModal} vendor=${vendor} onClose=${() => update((s) => openVendor(s, false))} />` : null}

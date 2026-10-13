@@ -8,6 +8,7 @@ import com.cobbletowers.network.RentalDraftPayload;
 import com.cobbletowers.network.RewardRevealPayload;
 import com.cobbletowers.network.RunEffectsPayload;
 import com.cobbletowers.network.ScoutingRevealPayload;
+import com.cobbletowers.network.TowerFeatureState;
 import com.cobbletowers.network.TowerHallStatePayload;
 import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.network.TrackStatePayload;
@@ -51,7 +52,7 @@ public final class WebGuiBridge {
      */
     private static final Set<CustomPacketPayload.Type<?>> SUPPORTED = Set.of(
             IntermissionStatePayload.TYPE, RentalDraftPayload.TYPE, RewardRevealPayload.TYPE, VendorCatalogPayload.TYPE,
-            RunEffectsPayload.TYPE, TowerHallStatePayload.TYPE, PlayStatePayload.TYPE);
+            RunEffectsPayload.TYPE, TowerHallStatePayload.TYPE, PlayStatePayload.TYPE, TowerFeatureState.TYPE);
 
     private static volatile WebGuiConfig config = WebGuiConfig.OFF;
     private static volatile boolean linked;

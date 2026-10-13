@@ -1,6 +1,8 @@
 // The whole page state as a pure function of what the server sent. No DOM, no timers: unit-tested in test/reducer.test.js.
 // The rules mirror docs/design/webgui-bridge.md ("What a payload does when it arrives").
 
+import { freshUi, uiAfterReply } from './features.js';
+
 export const initial = Object.freeze({
   screen: null,      // 'intermission' | 'draft' | 'hall' | null (nothing to show yet)
   inter: null, interAt: 0,
@@ -17,6 +19,12 @@ export const initial = Object.freeze({
   pick: '',          // the tower id or trial kind a briefing shows
   stack: [],         // views to go back to
   busyAt: 0,         // when a hall request went out and was not answered yet (0 = none)
+  feature: null,     // TowerFeatureState
+  fSection: '',      // the section last asked for
+  fReq: 0,           // the page's own request counter
+  fPending: 0,       // when a feature request went out and was not answered (0 = none)
+  fUncertain: false, // no reply in time: refresh before another action
+  fui: freshUi(),
   notice: null,      // {text, id}: the last message the server attached to a payload
   noticeId: 0,
 });
@@ -46,6 +54,15 @@ export function reduce(state, kind, data, now) {
       const base = { ...state, play: data, busyAt: 0 };
       return withNotice(data.open ? { ...showLobby(base) } : base, data.message);
     }
+    case 'TowerFeatureState': {
+      // A reply for another request is a late one; id 0 is the server opening the menu itself (a command).
+      if (data.requestId !== 0 && (data.requestId !== state.fReq || data.section !== state.fSection)) return state;
+      const same = state.feature && state.feature.section === data.section;
+      const open = state.screen === 'hall' && state.view === 'feature';
+      const next = { ...state, feature: data, fSection: data.section, fPending: 0, fUncertain: false, screen: 'hall', view: 'feature',
+        stack: open ? state.stack : state.screen === 'hall' ? [...state.stack, state.view] : [], fui: uiAfterReply(same ? state.fui : freshUi(), data) };
+      return withNotice(next, data.message);
+    }
     case 'RunEffects':
       return { ...state, fx: data };
     default:
@@ -72,3 +89,13 @@ export const setPage = (state, page) => ({ ...state, page });
 /** A hall request went out; the next hall or lobby state (or the timeout) clears it. */
 export const begin = (state, now) => (state.busyAt ? state : { ...state, busyAt: now });
 export const timeout = (state) => (state.busyAt ? { ...state, busyAt: 0, notice: { text: 'No response. Refresh to check the latest state.', id: state.noticeId + 1 }, noticeId: state.noticeId + 1 } : state);
+
+/** The page asks for a menu section (or an action in it). The new request number is `state.fReq`. */
+export function beginFeature(state, section, now) {
+  const changed = section !== state.fSection;
+  const open = state.view === 'feature';
+  return { ...state, fReq: state.fReq + 1, fSection: section, fPending: now, fUncertain: false, view: 'feature',
+    stack: open ? state.stack : [...state.stack, state.view], feature: changed ? null : state.feature, fui: changed ? freshUi() : state.fui };
+}
+export const featureDelayed = (state) => (state.fPending ? { ...state, fPending: 0, fUncertain: true } : state);
+export const setFui = (state, patch) => ({ ...state, fui: { ...state.fui, ...patch } });
