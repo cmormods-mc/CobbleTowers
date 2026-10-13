@@ -36,6 +36,8 @@ export const SHOTS = {
   feature_list: { payloads: [fixture('TowerHallState'), fixture('TowerFeatureState', (d) => { d.requestId = 0; })] },
   feature_entry: { payloads: [fixture('TowerFeatureState', (d) => { d.requestId = 0; })], steps: async (page) => { await page.click('button:has-text("Champion")'); } },
   feature_review: { payloads: [fixture('TowerFeatureState', (d) => { d.requestId = 0; })], steps: async (page) => { await page.click('button:has-text("Club banner")'); await page.click('button:has-text("Set banner")'); } },
+  tracks: { payloads: [fixture('TowerHallState'), fixture('TrackState')], steps: async (page) => { await page.click('button:has-text("Progress")'); await page.click('.slot >> nth=4'); } },
+  tracks_season: { payloads: [fixture('TowerHallState'), fixture('TrackState')], steps: async (page) => { await page.click('button:has-text("Progress")'); await page.click('button:has-text("Season")'); await page.click('.slot >> nth=2'); } },
   hud: { payloads: [fixture('RunEffects')], hud: true },
 };
 

@@ -19,6 +19,11 @@ export const initial = Object.freeze({
   pick: '',          // the tower id or trial kind a briefing shows
   stack: [],         // views to go back to
   busyAt: 0,         // when a hall request went out and was not answered yet (0 = none)
+  tracks: null,      // TrackState (the Progress tab's battle tracks)
+  tracksAt: 0,       // when it arrived: the season timer counts down from it
+  lane: 'mastery',   // which lane shows
+  records: false,    // the Progress card grid instead of the tracks
+  tSel: {},          // selected tile per lane
   feature: null,     // TowerFeatureState
   fSection: '',      // the section last asked for
   fReq: 0,           // the page's own request counter
@@ -53,6 +58,10 @@ export function reduce(state, kind, data, now) {
       // Only a flagged state opens the lobby; an unflagged one just refreshes it.
       const base = { ...state, play: data, busyAt: 0 };
       return withNotice(data.open ? { ...showLobby(base) } : base, data.message);
+    }
+    case 'TrackState': {
+      const towerMoved = state.tracks && state.tracks.selectedTower !== data.selectedTower;
+      return withNotice({ ...state, tracks: data, tracksAt: now, tSel: towerMoved ? { ...state.tSel, mastery: null } : state.tSel }, data.message);
     }
     case 'TowerFeatureState': {
       // A reply for another request is a late one; id 0 is the server opening the menu itself (a command).
@@ -99,3 +108,7 @@ export function beginFeature(state, section, now) {
 }
 export const featureDelayed = (state) => (state.fPending ? { ...state, fPending: 0, fUncertain: true } : state);
 export const setFui = (state, patch) => ({ ...state, fui: { ...state.fui, ...patch } });
+
+export const setLane = (state, lane) => ({ ...state, lane, records: false });
+export const setRecords = (state, records) => ({ ...state, records });
+export const selectNode = (state, kind, index) => ({ ...state, tSel: { ...state.tSel, [kind]: index } });

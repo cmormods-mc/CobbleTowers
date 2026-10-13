@@ -45,10 +45,11 @@ export const Label = ({ x, y, w, color = 'text', center, children, class: cls = 
  * TowerButton. kind: dark | primary | tab. A tab (the page you are on) is not clickable. An icon shows beside the label only when
  * the whole label still fits, as in the mod.
  */
-export function NB({ x, y, w, h = 20, kind = 'primary', icon, disabled, onClick, children, label, tip }) {
+export function NB({ x, y, w, h = 20, kind = 'primary', icon, iconOnly, disabled, onClick, children, label, tip }) {
   const cls = ['n-btn', 'n-fr', 'k-' + (disabled && kind !== 'tab' ? 'off' : kind), disabled ? 'off' : ''].join(' ');
   const showIcon = icon && h >= 18 && (label || '').length * 5 + 26 <= w;
   return html`<button class=${cls} title=${tip || ''} disabled=${disabled || kind === 'tab'} onClick=${onClick} style=${at(x, y, w, h) + border(w, h)}>
+    ${iconOnly ? html`<${Icon} name=${iconOnly} x=${(w - 16) / 2 - Math.min(8, Math.floor(Math.min(w, h) / 2))} y=${(h - 16) / 2 - Math.min(8, Math.floor(Math.min(w, h) / 2))} />` : null}
     ${showIcon ? html`<${Icon} name=${icon} x=${-4} y=${(h - 16) / 2 - 8} />` : null}
     <span class=${showIcon ? 'lb' : 'lb clip'} style=${showIcon ? `margin-left:${u(20)}` : ''}>${children}</span></button>`;
 }

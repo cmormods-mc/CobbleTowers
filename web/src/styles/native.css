@@ -52,3 +52,26 @@
 /* a native screen fills the window; the other pages keep the scaled 1280x720 stage */
 html.native #stage { left: 0; top: 0; width: 100%; height: 100%; transform: none; box-shadow: none; background: none; }
 .n-lines .ln-benefit { color: #2f7a2f; } .n-lines .ln-cost { color: #b02424; } .n-lines i { font-style: normal; }
+
+/* battle tracks */
+.n-bframe { border-image-source: url(assets/gui/pixel/button_normal.png); }
+.strip { position: absolute; overflow-x: auto; overflow-y: hidden; background: rgba(0, 0, 0, .4); scrollbar-width: none; cursor: grab; outline-offset: calc(var(--g) * -1); }
+.strip::-webkit-scrollbar { display: none; }
+.rail { position: relative; height: 100%; }
+.slot { position: absolute; top: calc(var(--g) * 2); width: calc(var(--g) * 38); height: calc(var(--g) * 46); }
+.tk { position: absolute; box-sizing: border-box; border: calc(var(--g) * 8) solid transparent; border-image-slice: 16 fill; border-image-width: calc(var(--g) * 8); border-image-repeat: stretch;
+  background: none; padding: 0; margin: 0; cursor: pointer; font: inherit; color: #f0dfbf; }
+.tk-open { border-image-source: url(assets/gui/pixel/button_normal.png); } .tk-done { border-image-source: url(assets/gui/pixel/button_secondary.png); } .tk-shut { border-image-source: url(assets/gui/pixel/frame_dark.png); }
+.tk .num { position: absolute; left: calc(var(--g) * -3); top: calc(var(--g) * -4); }
+.tk.lock .num { color: #c6ac87; }
+.tk .bang { position: absolute; left: calc(var(--g) * 21); top: calc(var(--g) * -4); color: #e3bd7f; }
+.tk.lock::after { content: ""; position: absolute; inset: calc(var(--g) * -5); background: rgba(0, 0, 0, .47); pointer-events: none; }
+.tk.cur::before { content: ""; position: absolute; left: calc(var(--g) * -5); top: calc(var(--g) * 33); width: calc(var(--g) * 32); height: calc(var(--g) * 2); background: #e3bd7f; }
+.tk .ic { z-index: 1; } .tk.lock .ic { z-index: 2; }
+.tk .brk { inset: calc(var(--g) * -8); }
+.tk:hover .brk { opacity: 1; } .tk.sel .brk { opacity: 1; filter: brightness(1.25) saturate(.4); }
+.tk-open:not(.sel) .brk { animation: pulse 1s steps(1) infinite; }
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0; } }
+.ic.raid { background-image: url(assets/gui/raid_points.png); background-size: 100% 100%; }
+.tbar { position: absolute; background: #211510; } .tbar i { display: block; height: 100%; background: #e3bd7f; }
+.ns .n-lines.light, .ns .n-lines.hint { color: #f0dfbf; text-shadow: var(--g) var(--g) 0 rgba(0, 0, 0, .8); } .ns .n-lines.hint { color: #c6ac87; } .n-lines .mu { color: #c6ac87; }

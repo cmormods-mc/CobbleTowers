@@ -2,8 +2,9 @@ import { useEffect, useRef } from 'preact/hooks';
 import { html } from '../html.js';
 import { act, closeGui } from '../bridge.js';
 import { get, update, useStore } from '../store.js';
-import { begin, goBack, goTo, setPage, setTab, timeout } from '../reducer.js';
+import { begin, goBack, goTo, setPage, setRecords, setTab, timeout } from '../reducer.js';
 import { canSelect, regionOf } from '../lobby.js';
+import { Tracks, sendTrack } from './Tracks.js';
 import { Features, sectionTitle, sendFeature, stepBack } from './Features.js';
 import { at, box, Card, Label, NB, Panel, screen, Shell, useScreen } from '../components/native.js';
 import { paintPanorama } from '../art/panorama.js';
@@ -90,12 +91,14 @@ function Trials() {
 
 function Cards({ tab }) {
   const b = box();
+  const tracks = useStore((s) => s.tracks);
   const social = tab === 'social';
   const list = CARDS[tab];
   const cw = Math.floor((b.w - 6) / 2);
   const cardH = Math.min(57, Math.floor((screen.h - 47 - (b.y + 34)) / (social ? 2 : 3)));
   return html`
     <${Header} x=${b.x} y=${b.y} w=${b.w} lines=${social ? ['LINK LOUNGE', 'Great battles begin with good company.'] : ['TRAINER RECORD', 'Every victory leaves a mark.']} />
+    ${!social && tracks ? html`<${NB} x=${b.x + b.w - 64} y=${b.y + 5} w=${58} h=${18} kind="dark" icon="stairs" label="Tracks" onClick=${() => update((s) => setRecords(s, false))}>Tracks<//>` : null}
     ${list.map(([title, sub, icon, run], i) => html`<${Card} key=${title} x=${b.x + (i % 2) * (cw + 6)} y=${b.y + 34 + Math.floor(i / 2) * cardH} w=${cw} h=${cardH - 4}
       title=${title} sub=${sub} icon=${icon} soon=${!run} onClick=${run} />`)}`;
 }
@@ -103,8 +106,16 @@ function Cards({ tab }) {
 export function Hall({ hall, tab, page, busy, view, pick }) {
   useScreen();
   const feature = useStore((s) => s.feature);
+  const tracks = useStore((s) => s.tracks);
+  const records = useStore((s) => s.records);
   const fSection = useStore((s) => s.fSection);
-  const onTab = (id) => (id === 'codex' ? sendFeature('modifiers') : id === 'echoes' ? sendFeature('echoes') : update((s) => setTab(s, id)));
+  const onTab = (id) => {
+    if (id === 'codex') return sendFeature('modifiers');
+    if (id === 'echoes') return sendFeature('echoes');
+    update((s) => setRecords(setTab(s, id), false));
+    if (id === 'progress') sendTrack('refresh');
+    return undefined;
+  };
   const status = !hall ? '' : hall.runStatus || (hall.play.lobby.role === 0 ? 'Choose a destination to begin.' : 'Your expedition lobby is available.');
   const section = view === 'feature' ? sectionTitle(feature, fSection) : view === 'tower' ? 'Tower briefing' : view === 'trial' ? 'Trial briefing' : { towers: 'Tower Hall', trials: 'Trials', social: 'Social', progress: 'Progress' }[tab];
   return html`<${Shell} section=${section} tab=${tab} onTab=${onTab} onBack=${() => (view === 'hall' ? closeGui() : view === 'feature' ? stepBack(get().fui) : update(goBack))} onClose=${closeGui}>
@@ -112,7 +123,8 @@ export function Hall({ hall, tab, page, busy, view, pick }) {
       : view === 'tower' ? html`<${TowerBriefing} hall=${hall} id=${pick} busy=${busy} />`
       : view === 'trial' ? html`<${TrialBriefing} hall=${hall} kind=${pick} busy=${busy} />`
       : tab === 'towers' ? html`<${Towers} hall=${hall} page=${page} />`
-      : tab === 'trials' ? html`<${Trials} />` : html`<${Cards} tab=${tab} />`}
+      : tab === 'trials' ? html`<${Trials} />`
+      : tab === 'progress' && tracks && !records ? html`<${Tracks} onRecords=${() => update((s) => setRecords(s, true))} />` : html`<${Cards} tab=${tab} />`}
     ${view === 'feature' ? null : html`<${Footer} hall=${hall} busy=${busy} status=${status} />`}
   <//>`;
 }
