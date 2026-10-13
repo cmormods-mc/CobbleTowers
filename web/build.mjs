@@ -35,8 +35,6 @@ for (const dir of ['pixel', 'byzantine']) {
 copy(path.join(res, 'textures/gui/raid_points.png'), 'assets/gui/raid_points.png');
 copy(path.join(here, 'fonts/Jersey15-Regular.ttf'), 'assets/font/Jersey15-Regular.ttf');
 copy(path.join(here, 'fonts/Jersey15-OFL.txt'), 'assets/font/Jersey15-OFL.txt');
-copy(path.join(res, 'font/pixelify.ttf'), 'assets/font/Pixelify.ttf');
-copy(path.join(root, 'src/main/resources/licenses/PixelifySans-OFL.txt'), 'assets/font/Pixelify-OFL.txt');
 
 // ---- the mod's procedural art (icons, landscapes), drawn here the way the native screens draw it
 const put = (to, buf) => { fs.mkdirSync(path.dirname(path.join(out, to)), { recursive: true }); fs.writeFileSync(path.join(out, to), buf); };

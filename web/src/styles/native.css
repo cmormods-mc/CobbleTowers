@@ -1,5 +1,5 @@
 /* The native screens' look (docs/design/P44-slice1b-native-look.md): positioned in GUI pixels, 1 GUI px = 3 CSS px */
-.ns { --g: 3px; position: absolute; inset: 0; z-index: 1; overflow: hidden; font-size: calc(var(--g) * 8); line-height: calc(var(--g) * 9); font-family: "Pixelify", var(--font); letter-spacing: calc(var(--g) * 1.3);
+.ns { --g: 3px; position: absolute; inset: 0; z-index: 1; overflow: hidden; font-size: calc(var(--g) * 8); line-height: calc(var(--g) * 9); font-family: var(--font); letter-spacing: calc(var(--g) * .35);
   background: linear-gradient(rgba(184, 122, 51, .15), rgba(184, 122, 51, 0)) 0 0 / 100% calc(var(--g) * 40) no-repeat, linear-gradient(rgba(0, 0, 0, .4), rgba(0, 0, 0, .4)), url(assets/gui/pixel/tile_oak.png) 0 0 / calc(var(--g) * 16) calc(var(--g) * 16); }
 .n-fr { position: absolute; box-sizing: border-box; margin: 0; padding: 0; border: var(--b, calc(var(--g) * 8)) solid transparent; border-image-slice: 16 fill; border-image-width: var(--b, calc(var(--g) * 8)); border-image-repeat: stretch; background: none; }
 .n-dark { border-image-source: url(assets/gui/pixel/frame_dark.png); }
