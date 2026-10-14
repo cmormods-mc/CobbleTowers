@@ -50,6 +50,17 @@ class PageSessionTest {
     }
 
     @Test
+    @DisplayName("an open request reopens a page closed with Esc after 3 s; a plain update still waits out the heartbeat")
+    void openRequestDistrustsHeartbeat() {
+        offer("IntermissionState", "{a}", false, UPDATE_OR_OPEN_IF_FLAGGED, true, 0);
+        session.hello(false, 500);
+        session.ping(false, 2_000);
+        assertEquals(EMIT, offer("IntermissionState", "{b}", false, UPDATE_OR_OPEN_IF_FLAGGED, true, 3_500), "1.5 s since the ping: open");
+        assertEquals(EMIT, offer("IntermissionState", "{c}", false, UPDATE_OR_OPEN_IF_FLAGGED, false, 6_000), "4 s: an update still emits");
+        assertEquals(OPEN, offer("IntermissionState", "{d}", false, UPDATE_OR_OPEN_IF_FLAGGED, true, 6_000), "4 s: an open request reopens");
+    }
+
+    @Test
     @DisplayName("a page that stops pinging is closed after the heartbeat, and the next open payload opens it again")
     void heartbeatLapses() {
         offer("RentalDraft", "{d}", false, UPDATE_OR_OPEN, true, 0);

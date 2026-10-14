@@ -40,6 +40,9 @@ final class PageSession {
     /** "Has not happened", distinct from time 0 so the clock may read anything. */
     private static final long NEVER = -1;
 
+    /** Two missed pings (the page pings every 1.5 s) and an open request treats the page as closed. */
+    private static final int OPEN_BEAT_SECONDS = 3;
+
     private final Map<String, Stamped> latest = new LinkedHashMap<>();
     private long guiOpenedAt = NEVER;
     private long hudOpenedAt = NEVER;
@@ -52,7 +55,10 @@ final class PageSession {
     /** Records a payload (so a late page can be caught up) and says what to do with it. */
     Action offer(String kind, String json, boolean hud, Policy policy, boolean flagged, long now, int heartbeatSeconds, long loadMillis) {
         latest.put(kind, new Stamped(now, json));
-        if (alive(hud, now, heartbeatSeconds) && policy != Policy.REPLACE) return Action.EMIT;
+        // A payload that asks to open the page (a /tower or the key) trusts the heartbeat less: Esc sends no goodbye, so
+        // a page closed a moment ago still looks alive for the whole heartbeat and the open would be swallowed.
+        int beat = flagged && policy == Policy.UPDATE_OR_OPEN_IF_FLAGGED ? Math.min(heartbeatSeconds, OPEN_BEAT_SECONDS) : heartbeatSeconds;
+        if (alive(hud, now, beat) && policy != Policy.REPLACE) return Action.EMIT;
         // A page opened a moment ago is still loading and will ask for everything it missed; opening again would only
         // restart it, and what arrives meanwhile is already stored for that replay.
         if (loading(hud, now, loadMillis)) return Action.NOTHING;
