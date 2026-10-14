@@ -1,6 +1,7 @@
 // The mod's own procedural pictures (MenuIcons.java, TowerPanorama.java) redrawn here pixel for pixel, so the web pages carry the same art
 // as the native screens without a client jar. Keep in step with those two files; the ports are checked by test/art.test.js.
 import { PNG } from 'pngjs';
+import { SPECS } from '../src/itemart.js';
 
 // ---- icons: 16x16, one sheet
 const O = 0xFF211510, B = 0xFFB8935A, BL = 0xFFE3BD7F, W = 0xFF6B4A33, WL = 0xFF9A7448, C = 0xFFF0DFBF, S = 0xFF8C95A0, SD = 0xFF5A5E66,
@@ -68,6 +69,23 @@ const ICONS = {
   right: (p) => { p.line(5, 3, 10, 8, BL); p.line(5, 4, 10, 9, BL); p.line(10, 8, 5, 13, BL); p.line(10, 7, 5, 12, BL); },
   coin: (p) => { p.disc(8, 8, 5.5, Y); p.ring(8, 8, 4, 0.5, BL); p.r(7, 5, 8, 11, B); },
 };
+
+// ---- item pictures: a few shapes in many colours, for items the page has no art of its own for (src/itemart.js picks one)
+const shade = (c, k) => { const f = (s) => Math.max(0, Math.min(255, Math.round(((c >>> s) & 255) * k))); return ((0xFF << 24) | (f(16) << 16) | (f(8) << 8) | f(0)) >>> 0; };
+const dk = (c) => shade(c, 0.7), lt = (c) => shade(c, 1.25);
+const SHAPES = {
+  candy: (p, c) => { p.r(5, 5, 10, 10, c); p.r(4, 6, 11, 9, c); p.r(5, 5, 7, 6, lt(c)); p.r(5, 10, 10, 10, dk(c)); p.r(4, 9, 11, 9, dk(c)); p.r(2, 6, 3, 9, C); p.r(12, 6, 13, 9, C); },
+  ball: (p, c) => { for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) { const d = Math.hypot(x - 7.5, y - 7.5); if (d > 6) continue; p.px(x, y, Math.abs(y - 7.5) < 1 ? O : y < 7.5 ? c : C); } p.disc(7.5, 7.5, 2.2, O); p.disc(7.5, 7.5, 1.4, C); p.r(4, 3, 6, 4, lt(c)); },
+  bottle: (p, c) => { p.r(6, 2, 9, 3, WL); p.r(7, 4, 8, 5, C); p.r(5, 6, 10, 13, c); p.r(4, 8, 11, 12, c); p.r(5, 7, 5, 11, lt(c)); p.r(5, 13, 10, 13, dk(c)); p.r(4, 12, 11, 12, dk(c)); },
+  berry: (p, c) => { p.disc(8, 9, 4.8, c); p.disc(6, 7, 1.5, lt(c)); p.r(8, 2, 10, 3, G); p.r(7, 3, 8, 5, G); },
+  nut: (p, c) => { p.disc(8, 9, 4.8, c); p.r(5, 3, 10, 5, W); p.r(7, 2, 8, 3, W); p.disc(6, 8, 1.4, lt(c)); },
+  gem: (p, c) => { p.r(5, 3, 10, 4, lt(c)); p.r(3, 5, 12, 7, c); p.r(4, 8, 11, 8, c); p.r(5, 9, 10, 9, dk(c)); p.r(6, 10, 9, 11, dk(c)); p.r(7, 12, 8, 12, dk(c)); p.r(4, 5, 6, 5, lt(c)); },
+  apple: (p, c) => { p.disc(8, 9, 4.8, c); p.disc(5.5, 6.5, 1.4, lt(c)); p.r(8, 2, 8, 4, W); p.r(9, 3, 11, 4, G); },
+  pack: (p, c) => { p.r(4, 2, 11, 14, c); p.r(4, 2, 11, 3, lt(c)); p.r(4, 13, 11, 14, lt(c)); p.r(7, 6, 8, 10, C); p.r(6, 7, 9, 9, C); },
+  ticket: (p, c) => { p.r(2, 5, 13, 11, c); p.px(2, 5, 0); p.px(13, 5, 0); p.px(2, 11, 0); p.px(13, 11, 0); p.r(4, 7, 11, 8, R); p.r(4, 9, 8, 9, SD); },
+  banner: (p, c) => { p.r(3, 1, 12, 2, WL); p.r(4, 3, 11, 10, c); p.r(5, 11, 10, 12, c); p.r(6, 13, 9, 13, c); p.r(4, 6, 11, 7, C); },
+};
+for (const [name, [shape, colour]] of Object.entries(SPECS)) ICONS[name] = (p) => SHAPES[shape](p, colour);
 export const ICON_NAMES = Object.keys(ICONS);
 
 function toPng(pen) {

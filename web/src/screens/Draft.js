@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { html } from '../html.js';
-import { Button } from '../components/ui.js';
 import { RentalCard, adaptCard } from '../components/RentalCard.js';
 import { act } from '../bridge.js';
 import { RARITIES } from '../util.js';
+import { at, Label, NB, Panel, screen, useScreen } from '../components/native.js';
 
 const MAX_BIG = 2;
+/** How big a card is drawn: five across with gaps, and no taller than about half the window. */
+const cardScale = () => Math.max(0.8, Math.min((window.innerWidth - 60) / (5 * 112 + 4 * 8), (window.innerHeight * 0.52) / 160, 1.9));
 const isBig = (card) => card.rarity === 'legendary' || card.rarity === 'mythic';
 
 /** Cards the team has kept so far, across the finished packs. */
@@ -15,12 +17,13 @@ export function keptCards(draft) {
   return out;
 }
 
-function Dots({ current, complete }) {
-  return html`<div class="dots">${[0, 1, 2].map((i) => html`<i class=${(i < current || complete ? 'on' : '') + (i === current && !complete ? ' cur' : '')}></i>`)}</div>`;
+function Dots({ current, complete, x, y }) {
+  return html`<div class="dots" style=${at(x, y)}>${[0, 1, 2].map((i) => html`<i class=${(i < current || complete ? 'on' : '') + (i === current && !complete ? ' cur' : '')}></i>`)}</div>`;
 }
 
 /** sealed -> tearing -> revealing -> choosing, per pack. The server holds the packs and checks every pick; this only presents. */
 function PackStage({ draft }) {
+  const cs = cardScale();
   const cards = useMemo(() => draft.packs[draft.current].cards.map(adaptCard), [draft.current, draft.packs[draft.current]]);
   const [phase, setPhase] = useState('sealed');
   const [picks, setPicks] = useState([]);
@@ -48,45 +51,51 @@ function PackStage({ draft }) {
   };
 
   if (phase === 'sealed' || phase === 'tearing') {
-    return html`<div class="grow" style="display:grid;place-items:center"><div style="text-align:center">
-      <button class=${'pack' + (phase === 'tearing' ? ' tear' : '')} onClick=${open} aria-label="Open the pack"><div class="ptop"></div><div class="body"></div></button>
-      <div style="margin-top:14px;font-size:20px" class="gold">${phase === 'tearing' ? '…' : 'Click the pack to open it'}</div>
-      <div class="sub">Pack ${draft.current + 1} of 3</div></div></div>`;
+    return html`<button class=${'pack' + (phase === 'tearing' ? ' tear' : '')} onClick=${open} aria-label="Open the pack"><div class="ptop"></div><div class="body"></div></button>
+      <div class="fl c-bronze">${phase === 'tearing' ? '…' : 'Click the pack to open it'}</div>
+      <div class="fl c-muted">Pack ${draft.current + 1} of 3</div>`;
   }
   const revealing = phase === 'revealing';
-  return html`<div class="grow" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px">
+  return html`
     <div style="display:flex;gap:14px;align-items:flex-end;margin-top:14px">${cards.map((c, i) => revealing
-      ? html`<${RentalCard} card=${c} cs=${1.8} flip delay=${i * 0.3} />`
-      : html`<div style="position:relative"><${RentalCard} card=${c} cs=${1.8} pick kept=${picks.includes(i)} onClick=${() => toggle(i)} /><div class="num">${i + 1}</div></div>`)}</div>
-    <div style="display:flex;align-items:center;gap:20px;margin-top:6px">
-      <span style="font-size:20px" class="gold">${revealing ? 'Click to skip the reveal' : `Choose two cards to keep (${picks.length} of 2)`}</span>
+      ? html`<${RentalCard} card=${c} cs=${cs} flip delay=${i * 0.3} />`
+      : html`<div style="position:relative"><${RentalCard} card=${c} cs=${cs} pick kept=${picks.includes(i)} onClick=${() => toggle(i)} /><div class="num">${i + 1}</div></div>`)}</div>
+    <div style="display:flex;align-items:center;gap:20px">
+      <span class="fl c-bronze">${revealing ? 'Click to skip the reveal' : `Choose two cards to keep (${picks.length} of 2)`}</span>
       ${revealing
-        ? html`<${Button} kind="sec" onClick=${() => setPhase('choosing')}>Skip<//>`
-        : html`<${Button} disabled=${picks.length !== 2} onClick=${() => act('RentalDraftAction', { action: 'PICK', a: picks[0], b: picks[1] })}>Keep these two<//>`}
+        ? html`<${NB} flow w=${60} kind="dark" onClick=${() => setPhase('choosing')}>Skip<//>`
+        : html`<${NB} flow w=${100} disabled=${picks.length !== 2} onClick=${() => act('RentalDraftAction', { action: 'PICK', a: picks[0], b: picks[1] })}>Keep these two<//>`}
     </div>
-    <div class="sub">A team may keep at most ${MAX_BIG} legendary or mythic Pokémon.</div></div>`;
+    <div class="fl c-muted">A team may keep at most ${MAX_BIG} legendary or mythic Pokémon.</div>`;
 }
 
 function Done({ draft }) {
   const team = useMemo(() => keptCards(draft), [draft.packs]);
-  return html`<div class="grow" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px">
-    <h2 class="gold">Your rental team</h2>
-    <div style="display:flex;gap:10px">${team.map((c) => html`<${RentalCard} card=${c} cs=${1.38} />`)}</div>
-    <div style="font-size:18px">Your team is drafted.</div>
+  const cs = Math.min(1.38, cardScale());
+  return html`
+    <div class="fl c-bronze">Your rental team</div>
+    <div style="display:flex;gap:10px">${team.map((c) => html`<${RentalCard} card=${c} cs=${cs} />`)}</div>
+    <div class="fl c-text">Your team is drafted.</div>
     <div style="display:flex;gap:12px">
-      <${Button} kind="sec" onClick=${() => act('RentalDraftAction', { action: 'RESTART', a: 0, b: 0 })}>Draft again<//>
-      <${Button} kind="sec" onClick=${() => act('RentalDraftAction', { action: 'LOBBY', a: 0, b: 0 })}>Lobby<//>
-      <${Button} onClick=${() => act('RentalDraftAction', { action: 'READY', a: 0, b: 0 })}>Ready up<//></div></div>`;
+      <${NB} flow w=${80} kind="dark" onClick=${() => act('RentalDraftAction', { action: 'RESTART', a: 0, b: 0 })}>Draft again<//>
+      <${NB} flow w=${60} kind="dark" onClick=${() => act('RentalDraftAction', { action: 'LOBBY', a: 0, b: 0 })}>Lobby<//>
+      <${NB} flow w=${80} onClick=${() => act('RentalDraftAction', { action: 'READY', a: 0, b: 0 })}>Ready up<//></div>`;
 }
 
 export function Draft({ draft }) {
+  useScreen();
+  const SW = screen.w, SH = screen.h;
   return html`
-    <div class="row center"><div class="grow"><h2>Rental Draft</h2>
-      <div class="sub">Everyone drafts a borrowed team from three packs: keep two cards from each. Your own Pokémon stay safe in your boxes.</div></div>
-      <${Dots} current=${draft.current} complete=${draft.complete} />
-      <${Button} kind="sec" onClick=${() => act('RentalDraftAction', { action: 'RESTART', a: 0, b: 0 })}>Start over<//></div>
-    <div class="nine dark grow" style="display:flex;flex-direction:column;min-height:0;padding:0">
-      ${draft.complete ? html`<${Done} draft=${draft} />` : html`<${PackStage} draft=${draft} />`}</div>`;
+    <div class="ns" style=${`--g:${screen.g}px`}>
+      <${Panel} x=${6} y=${6} w=${SW - 12} h=${31} />
+      <${Label} x=${15} y=${12} color="bronze">RENTAL DRAFT<//>
+      <${Label} x=${15} y=${25} w=${SW - 150} color="muted">Keep two cards from each of three packs.<//>
+      <${Dots} current=${draft.current} complete=${draft.complete} x=${SW - 140} y=${17} />
+      <${NB} x=${SW - 72} y=${10} w=${60} kind="dark" onClick=${() => act('RentalDraftAction', { action: 'RESTART', a: 0, b: 0 })}>Start over<//>
+      <${Panel} x=${6} y=${40} w=${SW - 12} h=${SH - 46} />
+      <div class="dstage" style=${at(12, 46, SW - 24, SH - 58)}>
+        ${draft.complete ? html`<${Done} draft=${draft} />` : html`<${PackStage} draft=${draft} />`}</div>
+    </div>`;
 }
 
 export { RARITIES };

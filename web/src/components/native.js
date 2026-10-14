@@ -4,6 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { html } from '../html.js';
 import { ICONS } from '../gen/icons.js';
 import { ITEMS } from '../gen/items.js';
+import { itemPicture } from '../itemart.js';
 
 // The screen is as big as the window, in whole GUI scales like Minecraft's own "auto": the largest scale that leaves at least 320x240 GUI pixels.
 export const screen = { w: 427, h: 240, g: 3 };
@@ -25,7 +26,7 @@ export function useScreen() {
 
 const u = (n) => `calc(var(--g) * ${n})`;
 /** Position and size in GUI pixels. */
-export const at = (x, y, w, h) => `left:${u(x)};top:${u(y)};` + (w != null ? `width:${u(w)};` : '') + (h != null ? `height:${u(h)};` : '');
+export const at = (x, y, w, h) => (x != null ? `left:${u(x)};` : '') + (y != null ? `top:${u(y)};` : '') + (w != null ? `width:${u(w)};` : '') + (h != null ? `height:${u(h)};` : '');
 const border = (w, h) => `--b:${u(Math.max(1, Math.min(8, Math.floor(Math.min(w, h) / 2))))};`;
 
 export function Icon({ name, x, y, size = 16 }) {
@@ -34,10 +35,10 @@ export function Icon({ name, x, y, size = 16 }) {
   return html`<i class="ic" style=${`left:${u(x)};top:${u(y)};width:${u(size)};height:${u(size)};background-size:${u(ICONS.length * 16 * k)} ${u(16 * k)};background-position:${u(-i * 16 * k)} 0`}></i>`;
 }
 
-/** The mod's own item picture, or a gift for any other item. `size` is in GUI pixels. */
+/** The mod's own item picture, else a shape and colour matched to the item's name, else a gift. `size` is in GUI pixels. */
 export function ItemIcon({ id, x, y, size = 16 }) {
   const e = ITEMS.map[id];
-  if (!e) return html`<${Icon} name="gift" x=${x} y=${y} size=${size} />`;
+  if (!e) return html`<${Icon} name=${itemPicture(id) || 'gift'} x=${x} y=${y} size=${size} />`;
   const k = size / 16;
   return html`<i class="ic item" style=${`left:${u(x)};top:${u(y)};width:${u(size)};height:${u(size)};background-size:${u(ITEMS.width * k)} ${u(ITEMS.height * k)};background-position:${u(-e[0] * k)} ${u(-e[1] * k)}`}></i>`;
 }
@@ -54,8 +55,8 @@ export const Label = ({ x, y, w, color = 'text', center, children, class: cls = 
  * TowerButton. kind: dark | primary | tab. A tab (the page you are on) is not clickable. An icon shows beside the label only when
  * the whole label still fits, as in the mod.
  */
-export function NB({ x, y, w, h = 20, kind = 'primary', icon, iconOnly, disabled, onClick, children, label, tip }) {
-  const cls = ['n-btn', 'n-fr', 'k-' + (disabled && kind !== 'tab' ? 'off' : kind), disabled ? 'off' : ''].join(' ');
+export function NB({ x, y, w, h = 20, kind = 'primary', icon, iconOnly, disabled, onClick, children, label, tip, flow }) {
+  const cls = ['n-btn', 'n-fr', 'k-' + (disabled && kind !== 'tab' ? 'off' : kind), disabled ? 'off' : '', flow ? 'flow' : ''].join(' ');
   const showIcon = icon && h >= 18 && (label || '').length * 5 + 26 <= w;
   return html`<button class=${cls} title=${tip || ''} disabled=${disabled || kind === 'tab'} onClick=${onClick} style=${at(x, y, w, h) + border(w, h)}>
     ${iconOnly ? html`<${Icon} name=${iconOnly} x=${(w - 16) / 2 - Math.min(8, Math.floor(Math.min(w, h) / 2))} y=${(h - 16) / 2 - Math.min(8, Math.floor(Math.min(w, h) / 2))} />` : null}

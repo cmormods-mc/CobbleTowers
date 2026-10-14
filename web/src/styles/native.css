@@ -106,3 +106,9 @@ html.plainfont { --font: "Lucida Console", "Courier New", monospace; }
 .run-scroll p.ln { margin: 0 0 calc(var(--g) * 1.5); } .run-scroll p.ln.head { color: #e3bd7f; margin-top: calc(var(--g) * 3); }
 .run-scroll p.ln.title { color: #f0dfbf; margin-top: calc(var(--g) * 2); } .run-scroll p.ln.muted { color: #c6ac87; }
 .run-scroll p.ln.neutral { color: #c6ac87; }
+
+/* In-flow pieces (the Rental Draft lays its cards out in a column, not at fixed GUI positions) */
+.n-fr.flow { position: relative; flex: none; }
+.ns .fl { text-shadow: var(--g) var(--g) 0 rgba(0, 0, 0, .8); text-align: center; }
+.ns .dstage { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--g) * 6); }
+.ns .dots { position: absolute; }

@@ -58,7 +58,7 @@ export function App() {
   const busyAt = useStore((s) => s.busyAt);
   useBusyTimeout(busyAt);
   useFit();
-  const native = screen === 'scout' || screen === 'intermission' || screen === 'hall' && (view === 'lobby' ? !!play : view === 'party' ? !!reg : view === 'mastery' ? !!mast : !!hall || view === 'feature');
+  const native = screen === 'scout' || screen === 'intermission' || screen === 'draft' || screen === 'hall' && (view === 'lobby' ? !!play : view === 'party' ? !!reg : view === 'mastery' ? !!mast : !!hall || view === 'feature');
   useEffect(() => { document.documentElement.classList.toggle('native', native); }, [native]);
   useNoticeTimeout(notice, () => update((s) => (s.notice === notice ? { ...s, notice: null } : s)));
 
