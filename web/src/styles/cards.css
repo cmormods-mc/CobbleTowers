@@ -32,3 +32,4 @@
 .pack.tear .ptop { animation: tear .6s ease-in forwards; } .pack.tear .body { animation: fade .7s .5s ease forwards; }
 @keyframes tear { to { transform: translate(40px, -90px) rotate(18deg); opacity: 0; } } @keyframes fade { to { opacity: 0; transform: translateY(30px); } }
 .dots { display: flex; gap: 8px; } .dots i { width: 18px; height: 18px; border: 3px solid var(--dark); background: var(--brown); } .dots i.on { background: var(--gold); } .dots i.cur { outline: 3px solid var(--cream); }
+.card .l1, .card .l2, .card .mv { color: #2a1a10; text-shadow: 0 calc(.6px * var(--cs)) 0 rgba(255, 244, 214, .6); }
