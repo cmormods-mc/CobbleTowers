@@ -44,6 +44,8 @@ Still open, for the owner or the next session:
 - [x] Mastery lane with no towers loaded sends an empty lane; the client should say "No towers" instead of an empty strip. DONE 2026-10-08: the player is told "No towers are installed on this server."
 - [ ] `TowerUi.wrapped` has no line limit, so a long reward text can overflow the detail panel on a 240 px GUI.
 
+- [ ] **Server-only deployment (P43).** Steps done 2026-10-14: `-Pserveronly` jar builds, boots and loads; Polymer auto-host serves the resource pack on the game port; `ci_local.sh` and the workflow check the committed web bundle. Setup notes: `docs/SERVER-ONLY-SETUP.md`. Still to verify with a stock client (Cobblemon + WebGUI + Rinku only): pack download, worn armor, a full run, every page.
+
 ## Should be refined before players see it
 
 - [ ] **UI polish.** The pixel font is wider than vanilla and clips some labels (`Selected destina`); check every screen at scale 2 and 3. Spectator HUD in game, hover tooltips and keyboard-only navigation are owner-deferred. Modifier-card sprites are to be replaced (owner: later). Mastery-level cosmetics are recorded (`m:<name>`) but shown nowhere.

@@ -26,6 +26,7 @@ export function genData(root) {
     for (const j of readJson(path.join(data, 'regional_themes', f)).jersey_signatures ?? []) species.add(String(j.species).split(':').pop());
   }
 
-  const version = readJson(path.join(root, 'src/main/resources/fabric.mod.json')).version;
+  // fabric.mod.json is a Gradle template: the one unquoted placeholder (the optional client entrypoint) is dropped before parsing.
+  const version = JSON.parse(fs.readFileSync(path.join(root, 'src/main/resources/fabric.mod.json'), 'utf8').replace('${clientEntrypoint}', '')).version;
   return { rental, species: [...species].sort(), version };
 }

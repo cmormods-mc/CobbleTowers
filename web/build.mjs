@@ -1,4 +1,5 @@
 // Builds the web UI.   node build.mjs          -> src/main/resources/web/cobbletowers/  (what the jar ships)
+//                      WEB_OUT=<dir> node build.mjs -> the release bundle somewhere else (ci_local compares it with the committed one)
 //                      node build.mjs --dev    -> web/dist-dev/  (unminified, with the fixtures, for a browser and the screenshot tests)
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +13,7 @@ import { iconSheet, ICON_NAMES } from './tools/native-art.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..');
 const dev = process.argv.includes('--dev');
-const out = dev ? path.join(here, 'dist-dev') : path.join(root, 'src/main/resources/web/cobbletowers');
+const out = dev ? path.join(here, 'dist-dev') : process.env.WEB_OUT ? path.resolve(process.env.WEB_OUT) : path.join(root, 'src/main/resources/web/cobbletowers');
 const res = path.join(root, 'src/main/resources/assets/cobbletowers');
 
 fs.rmSync(out, { recursive: true, force: true });

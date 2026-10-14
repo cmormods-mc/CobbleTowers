@@ -5,8 +5,12 @@ plugins {
 // `-Pdev` builds the test jar: the Test Tower, the test commands and the client screenshot/remote tooling are in it, and
 // the name ends in -dev. The default build is the release and leaves them out.
 def devBuild = project.hasProperty('dev')
+// `-Pserveronly` builds the server jar of the P43 goal: no client classes and a mod file that says "server", so it can sit on a
+// server that players join with Cobblemon and WebGUI alone. The default build still carries the native client screens.
+def serverOnly = project.hasProperty('serveronly')
 version = '0.25.0-p42-run-view'
 if (devBuild) version = version + '-dev'
+if (serverOnly) version = version + '-server'
 group = 'com.cobbletowers'
 
 base {
@@ -108,6 +112,7 @@ def devOnlyData = ['data/cobbletowers/cobbletowers/towers/test.json', 'data/cobb
 
 tasks.named('jar') {
     if (!devBuild) exclude devOnlyClasses
+    if (serverOnly) exclude 'com/cobbletowers/client/**'
 }
 
 processResources {
@@ -116,7 +121,10 @@ processResources {
     // which Gradle deprecates and the configuration cache forbids.
     def modVersion = project.version
     inputs.property 'version', modVersion
+    def modEnvironment = serverOnly ? 'server' : '*'
+    def clientEntrypoint = serverOnly ? '' : ', "client": ["com.cobbletowers.client.CobbleTowersClient"]'
+    inputs.property 'environment', modEnvironment
     filesMatching('fabric.mod.json') {
-        expand version: modVersion
+        expand version: modVersion, environment: modEnvironment, clientEntrypoint: clientEntrypoint
     }
 }

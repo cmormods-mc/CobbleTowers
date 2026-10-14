@@ -54,7 +54,12 @@ export const SHOTS = {
     { id: 'mod:b', title: 'Modifier: Glass Cannon (floor 5)', lines: ['[+] Start battles with +2 Attack and Sp. Atk.', '[-] Start battles at 60% HP.'], actions: [] },
     { id: 'relic:a:0', title: 'Relic: Ember Brand (floor 5)', lines: ['[+] Your Fire moves deal 25% more damage.', 'Tags: offense', 'Held for this run; not permanent equipment.'], actions: [] },
     { id: 'relic:b:1', title: 'Relic: Guardian Ward (floor 5)', lines: ['[+] Your side takes 10% less damage.', 'Tags: sustain'], actions: [] },
-    { id: 'bonus:s', title: 'Set bonus: Offense Set (2)', lines: ['[+] Your side deals 5% more damage.', 'Set bonus: while you hold 2 or more offense relics.'], actions: [] }]; })], steps: async (page) => { await page.click('button:has-text("Current Run") >> nth=0'); } },
+    { id: 'bonus:s', title: 'Set bonus: Offense Set (2)', lines: ['[+] Your side deals 5% more damage.', 'Set bonus: while you hold 2 or more offense relics.'], actions: [] }]; })] },
+  collection: { payloads: [fixture('TowerHallState'), fixture('TowerFeatureState', (d) => { d.requestId = 0; d.section = 'collection'; d.title = 'Collection'; d.actions = [];
+    const sets = ['Recruit’s Gear', 'Challenger’s Regalia', 'Paragon’s Aegis', 'Tidewalker’s Garb', 'Tideforged Plate', 'Leviathan Mail', 'Sprout Garb', 'Rootwoven Mail', 'Heartwood Bulwark', 'Dusk Wanderer’s Cloak', 'Duskbound Guard', 'Nightfall Carapace'];
+    d.entries = sets.map((n, i) => ({ id: 'cobbletowers:set' + i, title: n, lines: ['4 pieces: head, chest, legs, feet', '2 pieces: +6% EXP, +1 max health', '4 pieces: -3% damage taken, vendor -5%'], actions: [] })); })] },
+  collection_entry: { payloads: [fixture('TowerHallState'), fixture('TowerFeatureState', (d) => { d.requestId = 0; d.section = 'collection'; d.title = 'Collection'; d.actions = [];
+    d.entries = [{ id: 'cobbletowers:recruit', title: 'Recruit’s Gear', lines: ['4 pieces: head, chest, legs, feet', '2 pieces: +6% EXP, +1 max health', '4 pieces: -3% damage taken, vendor -5%'], actions: [] }]; })], steps: async (page) => { await page.click('button:has-text("Recruit")'); } },
   feature_list: { payloads: [fixture('TowerHallState'), fixture('TowerFeatureState', (d) => { d.requestId = 0; })] },
   feature_entry: { payloads: [fixture('TowerFeatureState', (d) => { d.requestId = 0; })], steps: async (page) => { await page.click('button:has-text("Champion")'); } },
   feature_review: { payloads: [fixture('TowerFeatureState', (d) => { d.requestId = 0; })], steps: async (page) => { await page.click('button:has-text("Club banner")'); await page.click('button:has-text("Set banner")'); } },

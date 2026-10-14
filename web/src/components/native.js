@@ -68,7 +68,7 @@ const TABS = [['Tower Hall', 'tower', 'towers'], ['Trials', 'hourglass', 'trials
   ['Echoes', 'echo', 'echoes'], ['Social', 'group', 'social'], ['Collection', 'cards', 'collection']];
 
 /** Header, tab rail and parchment sheet; `children` are the content, positioned in GUI pixels. */
-export function Shell({ section, tab, onTab, onBack, onClose, onSettings, children }) {
+export function Shell({ section, tab, active, onTab, onBack, onClose, onSettings, children }) {
   const SW = screen.w, SH = screen.h, rail = SW < 400 ? 80 : 96;
   return html`
     <div class="ns" style=${`--g:${screen.g}px`}>
@@ -78,7 +78,7 @@ export function Shell({ section, tab, onTab, onBack, onClose, onSettings, childr
       <${NB} x=${SW - 100} y=${10} w=${42} kind="dark" onClick=${onBack}>Back<//>
       <${NB} x=${SW - 54} y=${10} w=${42} kind="dark" onClick=${onClose}>Close<//>
       <${Panel} x=${6} y=${40} w=${rail - 2} h=${SH - 46} />
-      ${TABS.map(([label, icon, id], i) => html`<${NB} key=${label} x=${9} y=${43 + i * 20} h=${18} w=${rail - 10} kind=${id && id === tab && section === label ? 'tab' : 'dark'}
+      ${TABS.map(([label, icon, id], i) => html`<${NB} key=${label} x=${9} y=${43 + i * 20} h=${18} w=${rail - 10} kind=${id && (active !== undefined ? id === active : id === tab && section === label) ? 'tab' : 'dark'}
         icon=${icon} label=${label} disabled=${!id} tip=${id ? '' : 'Coming soon'} onClick=${() => onTab(id)}>${label}<//>`)}
       <${NB} x=${9} y=${SH - 30} w=${rail - 10} kind=${section === 'Settings' ? 'tab' : 'dark'} icon="gear" label="Settings" onClick=${onSettings}>Settings<//>
       <${Panel} x=${rail + 7} y=${39} w=${SW - rail - 14} h=${SH - 45} kind="parch" />

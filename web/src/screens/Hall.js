@@ -126,7 +126,9 @@ export function Hall({ hall, tab, page, busy, view, pick }) {
   };
   const status = !hall ? '' : hall.runStatus || (hall.play.lobby.role === 0 ? 'Choose a destination to begin.' : 'Your expedition lobby is available.');
   const section = view === 'settings' ? 'Settings' : view === 'feature' ? sectionTitle(feature, fSection) : view === 'tower' ? 'Tower briefing' : view === 'trial' ? 'Trial briefing' : { towers: 'Tower Hall', trials: 'Trials', social: 'Social', progress: 'Progress' }[tab];
-  return html`<${Shell} section=${section} tab=${tab} onTab=${onTab} onBack=${() => (view === 'hall' ? closeGui() : view === 'feature' ? stepBack(get().fui) : update(goBack))} onClose=${closeGui} onSettings=${() => update((s) => (s.view === 'settings' ? s : goTo(s, 'settings')))}>
+  // A feature menu lights the rail tab it belongs to (Current Run, Codex, Echoes, Collection); the others are not on the rail.
+  const active = view === 'feature' ? { run: 'run', modifiers: 'codex', relics: 'codex', echoes: 'echoes', collection: 'collection' }[fSection] || null : undefined;
+  return html`<${Shell} section=${section} tab=${tab} active=${active} onTab=${onTab} onBack=${() => (view === 'hall' ? closeGui() : view === 'feature' ? stepBack(get().fui) : update(goBack))} onClose=${closeGui} onSettings=${() => update((s) => (s.view === 'settings' ? s : goTo(s, 'settings')))}>
     ${view === 'settings' ? html`<${Settings} />`
       : view === 'feature' ? html`<${Features} />`
       : view === 'tower' ? html`<${TowerBriefing} hall=${hall} id=${pick} busy=${busy} />`

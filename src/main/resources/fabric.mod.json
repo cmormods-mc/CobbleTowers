@@ -11,11 +11,10 @@
     "issues": "https://github.com/cmormods-mc/CobbleTowers/issues"
   },
   "license": "MIT",
-  "environment": "*",
+  "environment": "${environment}",
   "entrypoints": {
     "preLaunch": ["com.cobbletowers.TowerPreLaunch"],
-    "main": ["com.cobbletowers.CobbleTowers"],
-    "client": ["com.cobbletowers.client.CobbleTowersClient"]
+    "main": ["com.cobbletowers.CobbleTowers"]${clientEntrypoint}
   },
   "accessWidener": "cobbletowers.accesswidener",
   "mixins": ["mixins/cobbletowers.mixins.json"],

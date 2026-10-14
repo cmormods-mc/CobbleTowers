@@ -74,6 +74,22 @@ step "Validate the bundled tower definitions"
 # fail here rather than be skipped at runtime by the registry's malformed-file safety net.
 "$py" validation/validate_definitions.py
 
+step "Check the committed web UI bundle is current"
+# The jar ships src/main/resources/web/cobbletowers, built from web/. An edit to web/src without a rebuild would ship the old page.
+if command -v node >/dev/null 2>&1 && [ -d web/node_modules ]; then
+  web_tmp="$(mktemp -d)"
+  WEB_OUT="$web_tmp/cobbletowers" node web/build.mjs >/dev/null
+  if ! diff -r -q "$web_tmp/cobbletowers" src/main/resources/web/cobbletowers >/dev/null; then
+    echo "ci_local: src/main/resources/web/cobbletowers is stale; run 'node build.mjs' in web/ and commit the result." >&2
+    diff -r -q "$web_tmp/cobbletowers" src/main/resources/web/cobbletowers >&2 || true
+    rm -rf "$web_tmp"
+    exit 1
+  fi
+  rm -rf "$web_tmp"
+else
+  echo "ci_local: node or web/node_modules is missing; skipping the web bundle check (run 'npm install' in web/)."
+fi
+
 step "Compile, test and remap"
 ./gradlew clean build --stacktrace --warning-mode all
 

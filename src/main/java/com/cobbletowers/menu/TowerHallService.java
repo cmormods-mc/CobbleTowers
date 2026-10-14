@@ -50,7 +50,7 @@ public final class TowerHallService {
                     .map(p -> p.displayName()).orElse("Standard"));
             rules.add(t.entry().enemyLevel() > 0 ? "Enemy level: " + t.entry().enemyLevel() : "Enemy level follows tower rules");
             rules.add("Starting modifiers: " + (t.entry().modifiers().isEmpty() ? "None" :
-                    String.join(", ", t.entry().modifiers().stream().map(Object::toString).toList())));
+                    String.join(", ", t.entry().modifiers().stream().map(id -> modifierName(id)).toList())));
             rules.add("First launch is scored; later attempts are practice. Team eligibility is checked in the lobby.");
             trials.add(new TowerHallStatePayload.Trial(kind.name().toLowerCase(Locale.ROOT), revision(t),
                     t.title(), t.entry().tower(), rules));
@@ -102,5 +102,10 @@ public final class TowerHallService {
             }
             default -> { /* Unknown actions are never interpreted as commands. */ }
         }
+    }
+
+    /** A modifier's display name, or its id when it is not loaded. */
+    private static String modifierName(net.minecraft.resources.ResourceLocation id) {
+        return TowerDefinitionRegistry.content().modifier(id).map(m -> m.displayName()).orElse(id.toString());
     }
 }
