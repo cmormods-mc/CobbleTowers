@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "kyurem",
+  "level": 50,
+  "ability": "pressure",
+  "nature": "modest",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "dragon",
+    "ice"
+  ],
+  "item": "cobblemon:choice_specs",
+  "moves": [
+    "icebeam",
+    "dracometeor",
+    "earthpower",
+    "freezedry"
+  ],
+  "role": "special attacker",
+  "rarity": "legendary"
+}

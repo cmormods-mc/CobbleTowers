@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "hypno",
+  "level": 50,
+  "ability": "insomnia",
+  "nature": "calm",
+  "evs": [
+    252,
+    0,
+    4,
+    0,
+    252,
+    0
+  ],
+  "types": [
+    "psychic"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "psychic",
+    "wish",
+    "protect",
+    "seismictoss"
+  ],
+  "role": "support",
+  "rarity": "common"
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "nidoqueen",
+  "level": 50,
+  "ability": "poisonpoint",
+  "nature": "bold",
+  "evs": [
+    252,
+    0,
+    0,
+    252,
+    4,
+    0
+  ],
+  "types": [
+    "poison",
+    "ground"
+  ],
+  "item": "cobblemon:black_sludge",
+  "moves": [
+    "earthpower",
+    "sludgewave",
+    "icebeam",
+    "stealthrock"
+  ],
+  "role": "bulky attacker",
+  "rarity": "common"
+}

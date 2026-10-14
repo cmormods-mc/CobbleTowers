@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "kangaskhan",
+  "level": 50,
+  "ability": "scrappy",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "normal"
+  ],
+  "item": "cobblemon:silk_scarf",
+  "moves": [
+    "doubleedge",
+    "suckerpunch",
+    "earthquake",
+    "poweruppunch"
+  ],
+  "role": "physical bruiser",
+  "rarity": "rare"
+}

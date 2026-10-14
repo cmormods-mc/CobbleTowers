@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "houndoom",
+  "level": 50,
+  "ability": "flashfire",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "dark",
+    "fire"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "flamethrower",
+    "darkpulse",
+    "sludgebomb",
+    "nastyplot"
+  ],
+  "role": "special sweeper",
+  "rarity": "uncommon"
+}

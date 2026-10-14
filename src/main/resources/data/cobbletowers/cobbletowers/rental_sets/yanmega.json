@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "yanmega",
+  "level": 50,
+  "ability": "speedboost",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "bug",
+    "flying"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "bugbuzz",
+    "airslash",
+    "gigadrain",
+    "protect"
+  ],
+  "role": "special sweeper",
+  "rarity": "rare"
+}

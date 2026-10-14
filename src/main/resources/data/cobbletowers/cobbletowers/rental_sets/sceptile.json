@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "sceptile",
+  "level": 50,
+  "ability": "overgrow",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "grass"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "leafstorm",
+    "dragonpulse",
+    "focusblast",
+    "earthquake"
+  ],
+  "role": "fast attacker",
+  "rarity": "common"
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "beartic",
+  "level": 50,
+  "ability": "slushrush",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "ice"
+  ],
+  "item": "cobblemon:choice_band",
+  "moves": [
+    "iciclecrash",
+    "superpower",
+    "aquajet",
+    "stoneedge"
+  ],
+  "role": "physical attacker",
+  "rarity": "common"
+}

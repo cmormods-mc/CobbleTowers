@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "reuniclus",
+  "level": 50,
+  "ability": "magicguard",
+  "nature": "modest",
+  "evs": [
+    252,
+    0,
+    0,
+    252,
+    4,
+    0
+  ],
+  "types": [
+    "psychic"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "psychic",
+    "focusblast",
+    "shadowball",
+    "trickroom"
+  ],
+  "role": "special attacker",
+  "rarity": "uncommon"
+}

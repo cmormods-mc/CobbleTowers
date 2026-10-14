@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "diancie",
+  "level": 50,
+  "ability": "clearbody",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "rock",
+    "fairy"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "diamondstorm",
+    "moonblast",
+    "rockslide",
+    "protect"
+  ],
+  "role": "physical attacker",
+  "rarity": "epic"
+}

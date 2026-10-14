@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "cramorant",
+  "level": 50,
+  "ability": "gulpmissile",
+  "nature": "modest",
+  "evs": [
+    252,
+    0,
+    0,
+    252,
+    4,
+    0
+  ],
+  "types": [
+    "flying",
+    "water"
+  ],
+  "item": "cobblemon:choice_specs",
+  "moves": [
+    "surf",
+    "airslash",
+    "roost",
+    "defog"
+  ],
+  "role": "special attacker",
+  "rarity": "common"
+}

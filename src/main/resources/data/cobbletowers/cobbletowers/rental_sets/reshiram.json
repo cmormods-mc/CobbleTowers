@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "reshiram",
+  "level": 50,
+  "ability": "turboblaze",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "dragon",
+    "fire"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "blueflare",
+    "dracometeor",
+    "flamecharge",
+    "roost"
+  ],
+  "role": "special sweeper",
+  "rarity": "legendary"
+}

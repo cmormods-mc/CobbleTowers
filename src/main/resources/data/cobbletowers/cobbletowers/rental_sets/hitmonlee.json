@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "hitmonlee",
+  "level": 50,
+  "ability": "reckless",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "fighting"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "highjumpkick",
+    "knockoff",
+    "stoneedge",
+    "machpunch"
+  ],
+  "role": "physical attacker",
+  "rarity": "common"
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "baxcalibur",
+  "level": 50,
+  "ability": "thermalexchange",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "dragon",
+    "ice"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "glaiverush",
+    "iciclespear",
+    "earthquake",
+    "swordsdance"
+  ],
+  "role": "physical sweeper",
+  "rarity": "epic"
+}

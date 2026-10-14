@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "lapras",
+  "level": 50,
+  "ability": "waterabsorb",
+  "nature": "modest",
+  "evs": [
+    252,
+    0,
+    0,
+    252,
+    4,
+    0
+  ],
+  "types": [
+    "water",
+    "ice"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "freezedry",
+    "surf",
+    "thunderbolt",
+    "iceshard"
+  ],
+  "role": "special wall",
+  "rarity": "uncommon"
+}

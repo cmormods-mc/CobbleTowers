@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "conkeldurr",
+  "level": 50,
+  "ability": "guts",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "fighting"
+  ],
+  "item": "cobblemon:flame_orb",
+  "moves": [
+    "drainpunch",
+    "machpunch",
+    "knockoff",
+    "icepunch"
+  ],
+  "role": "physical bruiser",
+  "rarity": "uncommon"
+}

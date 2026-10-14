@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "crobat",
+  "level": 50,
+  "ability": "infiltrator",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "poison",
+    "flying"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "bravebird",
+    "crosspoison",
+    "uturn",
+    "taunt"
+  ],
+  "role": "fast attacker",
+  "rarity": "rare"
+}

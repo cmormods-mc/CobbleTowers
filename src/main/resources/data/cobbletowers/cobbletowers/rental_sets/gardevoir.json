@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "gardevoir",
+  "level": 50,
+  "ability": "trace",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "psychic",
+    "fairy"
+  ],
+  "item": "cobblemon:choice_scarf",
+  "moves": [
+    "moonblast",
+    "psychic",
+    "shadowball",
+    "trick"
+  ],
+  "role": "special attacker",
+  "rarity": "rare"
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "sawk",
+  "level": 50,
+  "ability": "sturdy",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "fighting"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "closecombat",
+    "knockoff",
+    "icepunch",
+    "bulkup"
+  ],
+  "role": "physical attacker",
+  "rarity": "common"
+}

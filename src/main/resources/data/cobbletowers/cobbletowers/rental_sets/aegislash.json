@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "aegislash",
+  "level": 50,
+  "ability": "stancechange",
+  "nature": "adamant",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "steel",
+    "ghost"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "kingsshield",
+    "shadowsneak",
+    "ironhead",
+    "swordsdance"
+  ],
+  "role": "physical wall",
+  "rarity": "rare"
+}

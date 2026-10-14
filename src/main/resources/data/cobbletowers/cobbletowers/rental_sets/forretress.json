@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "forretress",
+  "level": 50,
+  "ability": "sturdy",
+  "nature": "relaxed",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "bug",
+    "steel"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "stealthrock",
+    "spikes",
+    "rapidspin",
+    "toxic"
+  ],
+  "role": "hazard setter",
+  "rarity": "uncommon"
+}

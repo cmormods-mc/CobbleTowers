@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "bronzong",
+  "level": 50,
+  "ability": "levitate",
+  "nature": "sassy",
+  "evs": [
+    252,
+    0,
+    4,
+    0,
+    252,
+    0
+  ],
+  "types": [
+    "steel",
+    "psychic"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "gyroball",
+    "psychic",
+    "stealthrock",
+    "toxic"
+  ],
+  "role": "special wall",
+  "rarity": "common"
+}

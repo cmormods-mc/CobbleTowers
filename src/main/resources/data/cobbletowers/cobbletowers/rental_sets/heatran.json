@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "heatran",
+  "level": 50,
+  "ability": "flashfire",
+  "nature": "modest",
+  "evs": [
+    252,
+    0,
+    0,
+    252,
+    4,
+    0
+  ],
+  "types": [
+    "fire",
+    "steel"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "magmastorm",
+    "earthpower",
+    "flashcannon",
+    "taunt"
+  ],
+  "role": "special wall breaker",
+  "rarity": "epic"
+}

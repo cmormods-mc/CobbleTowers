@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "mienshao",
+  "level": 50,
+  "ability": "regenerator",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "fighting"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "highjumpkick",
+    "uturn",
+    "knockoff",
+    "stoneedge"
+  ],
+  "role": "fast attacker",
+  "rarity": "uncommon"
+}

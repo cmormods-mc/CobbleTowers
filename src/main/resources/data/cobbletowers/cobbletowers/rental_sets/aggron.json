@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "aggron",
+  "level": 50,
+  "ability": "sturdy",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "steel",
+    "rock"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "earthquake",
+    "heavyslam",
+    "rockslide",
+    "stealthrock"
+  ],
+  "role": "physical bruiser",
+  "rarity": "common"
+}

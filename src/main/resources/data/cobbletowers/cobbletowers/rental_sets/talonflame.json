@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "talonflame",
+  "level": 50,
+  "ability": "galewings",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "fire",
+    "flying"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "bravebird",
+    "flareblitz",
+    "roost",
+    "uturn"
+  ],
+  "role": "fast attacker",
+  "rarity": "common"
+}

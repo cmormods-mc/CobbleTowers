@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "polteageist",
+  "level": 50,
+  "ability": "cursedbody",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "ghost"
+  ],
+  "item": "cobblemon:focus_sash",
+  "moves": [
+    "gigadrain",
+    "shadowball",
+    "strengthsap",
+    "willowisp"
+  ],
+  "role": "special attacker",
+  "rarity": "rare"
+}

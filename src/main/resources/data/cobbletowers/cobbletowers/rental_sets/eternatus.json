@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "eternatus",
+  "level": 50,
+  "ability": "pressure",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "poison",
+    "dragon"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "dynamaxcannon",
+    "flamethrower",
+    "sludgebomb",
+    "recover"
+  ],
+  "role": "special attacker",
+  "rarity": "legendary"
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "espeon",
+  "level": 50,
+  "ability": "synchronize",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "psychic"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "psychic",
+    "shadowball",
+    "dazzlinggleam",
+    "morningsun"
+  ],
+  "role": "special attacker",
+  "rarity": "common"
+}

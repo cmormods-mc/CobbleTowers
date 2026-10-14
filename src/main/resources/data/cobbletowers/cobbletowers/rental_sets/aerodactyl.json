@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "aerodactyl",
+  "level": 50,
+  "ability": "unnerve",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "rock",
+    "flying"
+  ],
+  "item": "cobblemon:focus_sash",
+  "moves": [
+    "stoneedge",
+    "earthquake",
+    "taunt",
+    "roost"
+  ],
+  "role": "fast attacker",
+  "rarity": "rare"
+}

@@ -57,8 +57,13 @@ class RentalDraftTest {
     @DisplayName("the shipped sets parse, each species appears once, and there are enough of each rarity to draw from")
     void sets() throws IOException {
         List<RentalSetDefinition> all = pool();
-        assertEquals(44, all.size());
-        assertEquals(44, all.stream().map(RentalSetDefinition::species).distinct().count(), "one set per species");
+        assertTrue(all.size() >= 100, "a wide pool: " + all.size());
+        assertEquals(all.size(), all.stream().map(RentalSetDefinition::species).distinct().count(), "one set per species");
+        // Types stay evenly spread: every one of the eighteen leads at least six sets.
+        for (String type : RentalSetDefinition.TYPE_NAMES) {
+            long n = all.stream().filter(set -> set.types().get(0).equals(type)).count();
+            assertTrue(n >= 6, type + " leads only " + n + " set(s)");
+        }
         for (Rarity rarity : List.of(Rarity.COMMON, Rarity.UNCOMMON, Rarity.RARE, Rarity.EPIC, Rarity.LEGENDARY)) {
             long n = all.stream().filter(set -> set.rarity() == rarity).count();
             assertTrue(n >= 4, rarity + " has " + n);

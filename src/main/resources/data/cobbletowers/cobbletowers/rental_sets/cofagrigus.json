@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "cofagrigus",
+  "level": 50,
+  "ability": "mummy",
+  "nature": "bold",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "ghost"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "shadowball",
+    "toxicspikes",
+    "painsplit",
+    "willowisp"
+  ],
+  "role": "physical wall",
+  "rarity": "common"
+}

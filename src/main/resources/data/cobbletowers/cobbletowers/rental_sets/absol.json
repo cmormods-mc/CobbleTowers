@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "absol",
+  "level": 50,
+  "ability": "superluck",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "dark"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "knockoff",
+    "suckerpunch",
+    "swordsdance",
+    "playrough"
+  ],
+  "role": "physical sweeper",
+  "rarity": "common"
+}

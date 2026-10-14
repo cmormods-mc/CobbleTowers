@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "blissey",
+  "level": 50,
+  "ability": "naturalcure",
+  "nature": "bold",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "normal"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "softboiled",
+    "seismictoss",
+    "toxic",
+    "protect"
+  ],
+  "role": "special wall",
+  "rarity": "uncommon"
+}

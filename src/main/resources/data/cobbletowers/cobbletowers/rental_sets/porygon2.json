@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "porygon2",
+  "level": 50,
+  "ability": "trace",
+  "nature": "bold",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "normal"
+  ],
+  "item": "cobblemon:eviolite",
+  "moves": [
+    "triattack",
+    "recover",
+    "icebeam",
+    "toxic"
+  ],
+  "role": "bulky support",
+  "rarity": "uncommon"
+}

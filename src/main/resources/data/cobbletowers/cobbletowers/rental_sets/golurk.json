@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "golurk",
+  "level": 50,
+  "ability": "ironfist",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "ground",
+    "ghost"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "earthquake",
+    "shadowpunch",
+    "stealthrock",
+    "rockpolish"
+  ],
+  "role": "physical bruiser",
+  "rarity": "uncommon"
+}

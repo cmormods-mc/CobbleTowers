@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "zoroark",
+  "level": 50,
+  "ability": "illusion",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "dark"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "nastyplot",
+    "darkpulse",
+    "flamethrower",
+    "sludgebomb"
+  ],
+  "role": "special sweeper",
+  "rarity": "uncommon"
+}

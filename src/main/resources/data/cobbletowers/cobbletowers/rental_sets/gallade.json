@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "gallade",
+  "level": 50,
+  "ability": "justified",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "psychic",
+    "fighting"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "swordsdance",
+    "closecombat",
+    "psychocut",
+    "knockoff"
+  ],
+  "role": "physical sweeper",
+  "rarity": "rare"
+}

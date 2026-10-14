@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "pinsir",
+  "level": 50,
+  "ability": "moldbreaker",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "bug"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "xscissor",
+    "earthquake",
+    "closecombat",
+    "knockoff"
+  ],
+  "role": "physical attacker",
+  "rarity": "common"
+}

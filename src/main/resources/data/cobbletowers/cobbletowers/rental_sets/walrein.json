@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "walrein",
+  "level": 50,
+  "ability": "thickfat",
+  "nature": "bold",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "ice",
+    "water"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "surf",
+    "icebeam",
+    "protect",
+    "toxic"
+  ],
+  "role": "bulky attacker",
+  "rarity": "uncommon"
+}

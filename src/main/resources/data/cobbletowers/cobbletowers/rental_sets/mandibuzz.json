@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "mandibuzz",
+  "level": 50,
+  "ability": "overcoat",
+  "nature": "impish",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "dark",
+    "flying"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "foulplay",
+    "roost",
+    "defog",
+    "toxic"
+  ],
+  "role": "physical wall",
+  "rarity": "uncommon"
+}

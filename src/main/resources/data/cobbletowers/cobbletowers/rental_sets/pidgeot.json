@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "pidgeot",
+  "level": 50,
+  "ability": "keeneye",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "normal",
+    "flying"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "hurricane",
+    "heatwave",
+    "roost",
+    "uturn"
+  ],
+  "role": "special attacker",
+  "rarity": "common"
+}

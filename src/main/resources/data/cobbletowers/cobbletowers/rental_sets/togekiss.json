@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "togekiss",
+  "level": 50,
+  "ability": "serenegrace",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "fairy",
+    "flying"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "airslash",
+    "roost",
+    "nastyplot",
+    "thunderwave"
+  ],
+  "role": "special attacker",
+  "rarity": "rare"
+}

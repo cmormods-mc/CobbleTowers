@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "tinkaton",
+  "level": 50,
+  "ability": "moldbreaker",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "fairy",
+    "steel"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "gigatonhammer",
+    "playrough",
+    "knockoff",
+    "stealthrock"
+  ],
+  "role": "physical bruiser",
+  "rarity": "epic"
+}

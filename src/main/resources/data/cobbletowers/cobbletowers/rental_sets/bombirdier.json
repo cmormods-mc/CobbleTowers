@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "bombirdier",
+  "level": 50,
+  "ability": "rockypayload",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "flying",
+    "dark"
+  ],
+  "item": "cobblemon:choice_band",
+  "moves": [
+    "bravebird",
+    "stoneedge",
+    "knockoff",
+    "suckerpunch"
+  ],
+  "role": "physical attacker",
+  "rarity": "common"
+}

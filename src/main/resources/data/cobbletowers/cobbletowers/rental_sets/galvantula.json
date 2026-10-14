@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "galvantula",
+  "level": 50,
+  "ability": "compoundeyes",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "bug",
+    "electric"
+  ],
+  "item": "cobblemon:focus_sash",
+  "moves": [
+    "bugbuzz",
+    "thunder",
+    "stickyweb",
+    "voltswitch"
+  ],
+  "role": "support",
+  "rarity": "uncommon"
+}

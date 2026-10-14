@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "zapdos",
+  "level": 50,
+  "ability": "pressure",
+  "nature": "timid",
+  "evs": [
+    252,
+    0,
+    0,
+    252,
+    4,
+    0
+  ],
+  "types": [
+    "electric",
+    "flying"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "thunderbolt",
+    "hurricane",
+    "roost",
+    "heatwave"
+  ],
+  "role": "special attacker",
+  "rarity": "legendary"
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "pikachu",
+  "level": 50,
+  "ability": "static",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "electric"
+  ],
+  "item": "cobblemon:light_ball",
+  "moves": [
+    "fakeout",
+    "volttackle",
+    "surf",
+    "irontail"
+  ],
+  "role": "fast attacker",
+  "rarity": "common"
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "mismagius",
+  "level": 50,
+  "ability": "levitate",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "ghost"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "shadowball",
+    "dazzlinggleam",
+    "thunderbolt",
+    "willowisp"
+  ],
+  "role": "special attacker",
+  "rarity": "uncommon"
+}

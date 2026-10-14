@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "mrrime",
+  "level": 50,
+  "ability": "screencleaner",
+  "nature": "bold",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "ice",
+    "psychic"
+  ],
+  "item": "cobblemon:light_clay",
+  "moves": [
+    "freezedry",
+    "psychic",
+    "reflect",
+    "lightscreen"
+  ],
+  "role": "screen setter",
+  "rarity": "rare"
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "toxicroak",
+  "level": 50,
+  "ability": "dryskin",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "poison",
+    "fighting"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "drainpunch",
+    "gunkshot",
+    "suckerpunch",
+    "swordsdance"
+  ],
+  "role": "physical sweeper",
+  "rarity": "rare"
+}

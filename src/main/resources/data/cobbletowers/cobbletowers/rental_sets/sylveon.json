@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "sylveon",
+  "level": 50,
+  "ability": "pixilate",
+  "nature": "modest",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "fairy"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "hypervoice",
+    "psyshock",
+    "shadowball",
+    "wish"
+  ],
+  "role": "special attacker",
+  "rarity": "common"
+}

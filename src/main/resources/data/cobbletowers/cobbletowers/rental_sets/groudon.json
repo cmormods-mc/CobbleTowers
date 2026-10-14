@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "groudon",
+  "level": 50,
+  "ability": "drought",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "ground"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "precipiceblades",
+    "firepunch",
+    "swordsdance",
+    "stoneedge"
+  ],
+  "role": "physical sweeper",
+  "rarity": "legendary"
+}

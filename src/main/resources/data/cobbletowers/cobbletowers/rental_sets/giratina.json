@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "giratina",
+  "level": 50,
+  "ability": "pressure",
+  "nature": "adamant",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "ghost",
+    "dragon"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "shadowforce",
+    "dragontail",
+    "willowisp",
+    "rest"
+  ],
+  "role": "physical wall",
+  "rarity": "legendary"
+}

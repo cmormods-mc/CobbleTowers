@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "toxapex",
+  "level": 50,
+  "ability": "regenerator",
+  "nature": "bold",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "poison",
+    "water"
+  ],
+  "item": "cobblemon:black_sludge",
+  "moves": [
+    "toxicspikes",
+    "recover",
+    "banefulbunker",
+    "scald"
+  ],
+  "role": "physical wall",
+  "rarity": "uncommon"
+}

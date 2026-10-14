@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "xerneas",
+  "level": 50,
+  "ability": "fairyaura",
+  "nature": "modest",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "fairy"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "moonblast",
+    "geomancy",
+    "focusblast",
+    "thunder"
+  ],
+  "role": "special sweeper",
+  "rarity": "legendary"
+}

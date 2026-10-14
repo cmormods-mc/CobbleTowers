@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "gigalith",
+  "level": 50,
+  "ability": "sandstream",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "rock"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "stoneedge",
+    "earthquake",
+    "stealthrock",
+    "explosion"
+  ],
+  "role": "physical bruiser",
+  "rarity": "uncommon"
+}

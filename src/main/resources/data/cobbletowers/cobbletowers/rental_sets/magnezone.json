@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "magnezone",
+  "level": 50,
+  "ability": "magnetpull",
+  "nature": "modest",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "electric",
+    "steel"
+  ],
+  "item": "cobblemon:choice_specs",
+  "moves": [
+    "thunderbolt",
+    "flashcannon",
+    "voltswitch",
+    "thunderwave"
+  ],
+  "role": "special attacker",
+  "rarity": "uncommon"
+}

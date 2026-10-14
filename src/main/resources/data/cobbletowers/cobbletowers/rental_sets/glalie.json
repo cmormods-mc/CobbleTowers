@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "glalie",
+  "level": 50,
+  "ability": "icebody",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "ice"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "freezedry",
+    "earthquake",
+    "spikes",
+    "protect"
+  ],
+  "role": "hazard setter",
+  "rarity": "common"
+}

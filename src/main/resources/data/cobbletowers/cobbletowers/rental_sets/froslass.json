@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "froslass",
+  "level": 50,
+  "ability": "cursedbody",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "ice",
+    "ghost"
+  ],
+  "item": "cobblemon:focus_sash",
+  "moves": [
+    "icebeam",
+    "shadowball",
+    "spikes",
+    "willowisp"
+  ],
+  "role": "hazard setter",
+  "rarity": "rare"
+}

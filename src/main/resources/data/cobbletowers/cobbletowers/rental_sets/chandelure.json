@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "chandelure",
+  "level": 50,
+  "ability": "flashfire",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "ghost",
+    "fire"
+  ],
+  "item": "cobblemon:choice_scarf",
+  "moves": [
+    "shadowball",
+    "flamethrower",
+    "energyball",
+    "trick"
+  ],
+  "role": "special attacker",
+  "rarity": "rare"
+}

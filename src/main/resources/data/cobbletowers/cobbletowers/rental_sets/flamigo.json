@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "flamigo",
+  "level": 50,
+  "ability": "scrappy",
+  "nature": "adamant",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "flying",
+    "fighting"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "closecombat",
+    "bravebird",
+    "throatchop",
+    "roost"
+  ],
+  "role": "physical attacker",
+  "rarity": "uncommon"
+}

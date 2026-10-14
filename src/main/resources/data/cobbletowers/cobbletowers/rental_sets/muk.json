@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "muk",
+  "level": 50,
+  "ability": "poisontouch",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "poison"
+  ],
+  "item": "cobblemon:black_sludge",
+  "moves": [
+    "poisonjab",
+    "gunkshot",
+    "shadowsneak",
+    "icepunch"
+  ],
+  "role": "physical bruiser",
+  "rarity": "common"
+}

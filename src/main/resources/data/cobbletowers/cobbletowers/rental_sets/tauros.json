@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "tauros",
+  "level": 50,
+  "ability": "intimidate",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "normal"
+  ],
+  "item": "cobblemon:choice_band",
+  "moves": [
+    "doubleedge",
+    "earthquake",
+    "zenheadbutt",
+    "closecombat"
+  ],
+  "role": "physical attacker",
+  "rarity": "common"
+}

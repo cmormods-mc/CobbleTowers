@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "lycanroc",
+  "level": 50,
+  "ability": "sandrush",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "rock"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "stoneedge",
+    "accelerock",
+    "closecombat",
+    "swordsdance"
+  ],
+  "role": "physical sweeper",
+  "rarity": "uncommon"
+}

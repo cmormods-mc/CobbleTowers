@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "noivern",
+  "level": 50,
+  "ability": "infiltrator",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "flying",
+    "dragon"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "boomburst",
+    "dracometeor",
+    "flamethrower",
+    "roost"
+  ],
+  "role": "special attacker",
+  "rarity": "rare"
+}

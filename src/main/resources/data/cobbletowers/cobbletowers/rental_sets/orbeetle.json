@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "orbeetle",
+  "level": 50,
+  "ability": "swarm",
+  "nature": "bold",
+  "evs": [
+    252,
+    0,
+    0,
+    252,
+    4,
+    0
+  ],
+  "types": [
+    "bug",
+    "psychic"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "bugbuzz",
+    "psychic",
+    "uturn",
+    "lightscreen"
+  ],
+  "role": "bulky attacker",
+  "rarity": "common"
+}

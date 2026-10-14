@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "spiritomb",
+  "level": 50,
+  "ability": "infiltrator",
+  "nature": "calm",
+  "evs": [
+    252,
+    0,
+    4,
+    0,
+    252,
+    0
+  ],
+  "types": [
+    "ghost",
+    "dark"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "foulplay",
+    "willowisp",
+    "poltergeist",
+    "painsplit"
+  ],
+  "role": "support",
+  "rarity": "uncommon"
+}

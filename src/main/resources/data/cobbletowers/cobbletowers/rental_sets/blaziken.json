@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "blaziken",
+  "level": 50,
+  "ability": "speedboost",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "fire",
+    "fighting"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "flareblitz",
+    "closecombat",
+    "swordsdance",
+    "knockoff"
+  ],
+  "role": "physical sweeper",
+  "rarity": "epic"
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "grimmsnarl",
+  "level": 50,
+  "ability": "prankster",
+  "nature": "adamant",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "dark",
+    "fairy"
+  ],
+  "item": "cobblemon:light_clay",
+  "moves": [
+    "reflect",
+    "lightscreen",
+    "thunderwave",
+    "spiritbreak"
+  ],
+  "role": "screen setter",
+  "rarity": "rare"
+}

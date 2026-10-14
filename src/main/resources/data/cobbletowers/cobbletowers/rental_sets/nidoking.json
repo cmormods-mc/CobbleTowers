@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "nidoking",
+  "level": 50,
+  "ability": "sheerforce",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "poison",
+    "ground"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "sludgewave",
+    "earthpower",
+    "icebeam",
+    "thunderbolt"
+  ],
+  "role": "special attacker",
+  "rarity": "epic"
+}

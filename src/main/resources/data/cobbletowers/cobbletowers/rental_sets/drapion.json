@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "drapion",
+  "level": 50,
+  "ability": "sniper",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "poison",
+    "dark"
+  ],
+  "item": "cobblemon:choice_band",
+  "moves": [
+    "knockoff",
+    "crosspoison",
+    "earthquake",
+    "icefang"
+  ],
+  "role": "physical attacker",
+  "rarity": "uncommon"
+}

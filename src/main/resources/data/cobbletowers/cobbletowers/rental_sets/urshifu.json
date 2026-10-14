@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "urshifu",
+  "level": 50,
+  "ability": "unseenfist",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "fighting",
+    "dark"
+  ],
+  "item": "cobblemon:choice_band",
+  "moves": [
+    "wickedblow",
+    "closecombat",
+    "suckerpunch",
+    "uturn"
+  ],
+  "role": "physical sweeper",
+  "rarity": "epic"
+}

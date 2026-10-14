@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "hariyama",
+  "level": 50,
+  "ability": "thickfat",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "fighting"
+  ],
+  "item": "cobblemon:assault_vest",
+  "moves": [
+    "closecombat",
+    "knockoff",
+    "icepunch",
+    "bulletpunch"
+  ],
+  "role": "physical bruiser",
+  "rarity": "common"
+}

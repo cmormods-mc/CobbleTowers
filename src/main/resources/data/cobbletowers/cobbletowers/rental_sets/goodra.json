@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "goodra",
+  "level": 50,
+  "ability": "sapsipper",
+  "nature": "modest",
+  "evs": [
+    252,
+    0,
+    0,
+    252,
+    4,
+    0
+  ],
+  "types": [
+    "dragon"
+  ],
+  "item": "cobblemon:assault_vest",
+  "moves": [
+    "dracometeor",
+    "sludgebomb",
+    "fireblast",
+    "thunderbolt"
+  ],
+  "role": "special attacker",
+  "rarity": "uncommon"
+}

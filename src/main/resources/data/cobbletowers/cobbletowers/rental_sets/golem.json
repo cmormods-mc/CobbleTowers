@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "golem",
+  "level": 50,
+  "ability": "sturdy",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "rock",
+    "ground"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "stoneedge",
+    "earthquake",
+    "explosion",
+    "stealthrock"
+  ],
+  "role": "physical bruiser",
+  "rarity": "common"
+}

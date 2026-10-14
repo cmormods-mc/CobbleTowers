@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "duraludon",
+  "level": 50,
+  "ability": "lightmetal",
+  "nature": "modest",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "steel",
+    "dragon"
+  ],
+  "item": "cobblemon:choice_specs",
+  "moves": [
+    "flashcannon",
+    "dracometeor",
+    "thunderbolt",
+    "stealthrock"
+  ],
+  "role": "special attacker",
+  "rarity": "common"
+}

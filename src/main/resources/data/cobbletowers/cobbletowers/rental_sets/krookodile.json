@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "krookodile",
+  "level": 50,
+  "ability": "intimidate",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "ground",
+    "dark"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "earthquake",
+    "knockoff",
+    "stoneedge",
+    "pursuit"
+  ],
+  "role": "physical attacker",
+  "rarity": "uncommon"
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "rhyperior",
+  "level": 50,
+  "ability": "solidrock",
+  "nature": "adamant",
+  "evs": [
+    252,
+    252,
+    0,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "ground",
+    "rock"
+  ],
+  "item": "cobblemon:weakness_policy",
+  "moves": [
+    "earthquake",
+    "rockblast",
+    "megahorn",
+    "icepunch"
+  ],
+  "role": "physical bruiser",
+  "rarity": "rare"
+}

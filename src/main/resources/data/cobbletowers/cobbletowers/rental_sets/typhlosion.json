@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "typhlosion",
+  "level": 50,
+  "ability": "flashfire",
+  "nature": "timid",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "fire"
+  ],
+  "item": "cobblemon:choice_specs",
+  "moves": [
+    "eruption",
+    "focusblast",
+    "extrasensory",
+    "flamethrower"
+  ],
+  "role": "special sweeper",
+  "rarity": "rare"
+}

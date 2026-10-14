@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "luxray",
+  "level": 50,
+  "ability": "intimidate",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "electric"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "wildcharge",
+    "crunch",
+    "icefang",
+    "facade"
+  ],
+  "role": "physical attacker",
+  "rarity": "uncommon"
+}

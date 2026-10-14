@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "species": "avalugg",
+  "level": 50,
+  "ability": "sturdy",
+  "nature": "impish",
+  "evs": [
+    252,
+    0,
+    252,
+    0,
+    4,
+    0
+  ],
+  "types": [
+    "ice"
+  ],
+  "item": "cobblemon:leftovers",
+  "moves": [
+    "iciclecrash",
+    "earthquake",
+    "recover",
+    "rapidspin"
+  ],
+  "role": "physical wall",
+  "rarity": "common"
+}

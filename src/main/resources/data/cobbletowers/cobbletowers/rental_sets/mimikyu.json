@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "mimikyu",
+  "level": 50,
+  "ability": "disguise",
+  "nature": "jolly",
+  "evs": [
+    4,
+    252,
+    0,
+    0,
+    0,
+    252
+  ],
+  "types": [
+    "ghost",
+    "fairy"
+  ],
+  "item": "cobblemon:life_orb",
+  "moves": [
+    "playrough",
+    "shadowsneak",
+    "shadowclaw",
+    "swordsdance"
+  ],
+  "role": "physical sweeper",
+  "rarity": "epic"
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "species": "omastar",
+  "level": 50,
+  "ability": "shellarmor",
+  "nature": "modest",
+  "evs": [
+    4,
+    0,
+    0,
+    252,
+    0,
+    252
+  ],
+  "types": [
+    "rock",
+    "water"
+  ],
+  "item": "cobblemon:choice_specs",
+  "moves": [
+    "surf",
+    "icebeam",
+    "earthpower",
+    "hydropump"
+  ],
+  "role": "special attacker",
+  "rarity": "common"
+}
