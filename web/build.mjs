@@ -27,6 +27,12 @@ const sheet = packAtlas(sprites.map((s) => ({ name: s, file: path.join(res, 'tex
 fs.writeFileSync(path.join(out, 'assets/partners.png'), sheet.png);
 fs.writeFileSync(path.join(here, 'src/gen/atlas.js'), 'export const ATLAS = ' + JSON.stringify({ width: sheet.width, height: sheet.height, map: sheet.map }) + ';\n');
 
+// ---- the mod's own item pictures (armor, key, trim template): third-party items (Cobblemon, vanilla) are not redistributed and show a gift
+const itemFiles = fs.readdirSync(path.join(res, 'textures/item')).filter((n) => n.endsWith('.png'));
+const items = packAtlas(itemFiles.map((f) => ({ name: 'cobbletowers:' + f.replace(/\.png$/, ''), file: path.join(res, 'textures/item', f) })), 256);
+fs.writeFileSync(path.join(out, 'assets/items.png'), items.png);
+fs.writeFileSync(path.join(here, 'src/gen/items.js'), 'export const ITEMS = ' + JSON.stringify({ width: items.width, height: items.height, map: items.map }) + ';\n');
+
 // ---- the texture kit
 const copy = (from, to) => { fs.mkdirSync(path.dirname(path.join(out, to)), { recursive: true }); fs.copyFileSync(from, path.join(out, to)); };
 for (const dir of ['pixel', 'byzantine']) {

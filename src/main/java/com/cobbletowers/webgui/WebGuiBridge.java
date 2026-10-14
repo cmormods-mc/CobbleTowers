@@ -5,6 +5,7 @@ import com.cobbletowers.network.IntermissionStatePayload;
 import com.cobbletowers.network.MasteryScreenPayload;
 import com.cobbletowers.network.PlayStatePayload;
 import com.cobbletowers.network.RegistrationStatePayload;
+import com.cobbletowers.network.SpectatorPanelPayload;
 import com.cobbletowers.network.RentalDraftPayload;
 import com.cobbletowers.network.RewardRevealPayload;
 import com.cobbletowers.network.RunEffectsPayload;
@@ -54,7 +55,8 @@ public final class WebGuiBridge {
     private static final Set<CustomPacketPayload.Type<?>> SUPPORTED = Set.of(
             IntermissionStatePayload.TYPE, RentalDraftPayload.TYPE, RewardRevealPayload.TYPE, VendorCatalogPayload.TYPE,
             RunEffectsPayload.TYPE, TowerHallStatePayload.TYPE, PlayStatePayload.TYPE, TowerFeatureState.TYPE, TrackStatePayload.TYPE,
-            RegistrationStatePayload.TYPE);
+            RegistrationStatePayload.TYPE, MasteryScreenPayload.TYPE,
+            ScoutingRevealPayload.TYPE, SpectatorPanelPayload.TYPE);
 
     private static volatile WebGuiConfig config = WebGuiConfig.OFF;
     private static volatile boolean linked;
@@ -101,8 +103,8 @@ public final class WebGuiBridge {
     private static PageSession.Policy policyOf(CustomPacketPayload payload) {
         if (payload instanceof RewardRevealPayload || payload instanceof ScoutingRevealPayload) return PageSession.Policy.REPLACE;
         if (payload instanceof IntermissionStatePayload || payload instanceof PlayStatePayload
-                || payload instanceof RegistrationStatePayload) return PageSession.Policy.UPDATE_OR_OPEN_IF_FLAGGED;
-        if (payload instanceof TrackStatePayload) return PageSession.Policy.UPDATE_ONLY;
+                || payload instanceof RegistrationStatePayload || payload instanceof MasteryScreenPayload) return PageSession.Policy.UPDATE_OR_OPEN_IF_FLAGGED;
+        if (payload instanceof TrackStatePayload || payload instanceof SpectatorPanelPayload) return PageSession.Policy.UPDATE_ONLY;
         if (payload instanceof RunEffectsPayload effects) {
             return effects.floor() > 0 ? PageSession.Policy.UPDATE_OR_OPEN : PageSession.Policy.UPDATE_ONLY;
         }
@@ -113,6 +115,7 @@ public final class WebGuiBridge {
         if (payload instanceof IntermissionStatePayload p) return p.open();
         if (payload instanceof PlayStatePayload p) return p.open();
         if (payload instanceof RegistrationStatePayload p) return p.open();
+        if (payload instanceof MasteryScreenPayload p) return p.open();
         return true;
     }
 
@@ -133,7 +136,7 @@ public final class WebGuiBridge {
         }
         long now = System.currentTimeMillis();
         PageSession session = SESSIONS.computeIfAbsent(player.getUUID(), id -> new PageSession());
-        boolean hud = payload instanceof RunEffectsPayload;
+        boolean hud = payload instanceof RunEffectsPayload || payload instanceof SpectatorPanelPayload;
         switch (session.offer(PayloadJson.kindOf(payload.getClass()), json, hud, policyOf(payload), flagged(payload), now,
                 config.heartbeatSeconds(), LOAD_MILLIS)) {
             case EMIT -> WebGuiLink.emit(player, json);

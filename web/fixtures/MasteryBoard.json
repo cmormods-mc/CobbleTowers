@@ -1,0 +1,52 @@
+{
+  "kind": "MasteryScreen",
+  "data": {
+    "towers": [
+      {
+        "id": "cobbletowers:neutral",
+        "displayName": "Neutral Tower",
+        "level": 7,
+        "rank": "Veteran"
+      },
+      {
+        "id": "cobbletowers:tideforge",
+        "displayName": "Tideforge",
+        "level": 3,
+        "rank": "Challenger"
+      },
+      {
+        "id": "cobbletowers:rootvale",
+        "displayName": "Rootvale",
+        "level": 0,
+        "rank": "Novice"
+      },
+      {
+        "id": "cobbletowers:duskvale",
+        "displayName": "Duskvale",
+        "level": 12,
+        "rank": "Expert"
+      }
+    ],
+    "selected": "cobbletowers:neutral",
+    "tab": "speed",
+    "open": false,
+    "mastery": {
+      "progress": "",
+      "perks": "",
+      "achievements": []
+    },
+    "board": {
+      "title": "Fastest cycle - Neutral Tower",
+      "split": true,
+      "solo": [
+        "#1 Ash 14:32",
+        "#2 Misty 15:10",
+        "#3 Brock 16:45"
+      ],
+      "team": [
+        "#1 Ash + Misty 11:20",
+        "#2 Brock + Gary 12:05"
+      ]
+    }
+  }
+}

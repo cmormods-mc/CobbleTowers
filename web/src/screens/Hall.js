@@ -5,6 +5,8 @@ import { get, update, useStore } from '../store.js';
 import { begin, goBack, goTo, setPage, setRecords, setTab, timeout } from '../reducer.js';
 import { canSelect, regionOf } from '../lobby.js';
 import { Tracks, sendTrack } from './Tracks.js';
+import { Settings } from './Settings.js';
+import { requestMastery } from './Mastery.js';
 import { Features, sectionTitle, sendFeature, stepBack } from './Features.js';
 import { at, box, Card, Label, NB, Panel, screen, Shell, useScreen } from '../components/native.js';
 import { paintPanorama } from '../art/panorama.js';
@@ -22,7 +24,7 @@ const CARDS = {
     ['Spectate', 'Watch challengers', 'eye', () => sendFeature('watch')], ['Run codes', 'Scout an expedition', 'scroll', () => sendFeature('codes')]],
   progress: [['Season & rewards', 'Your next milestone', 'star', () => sendFeature('season')], ['Cosmetics & titles', 'Wear your victories', 'crown', () => sendFeature('cosmetics')],
     ['Contracts', 'Accept a challenge', 'scroll', () => sendFeature('contracts')], ['Hall of Fame', 'Tower legends', 'trophy', () => sendFeature('hall')],
-    ['Last run report', 'Review your run', 'book', () => sendFeature('report')], ['Mastery & boards', 'Measure your growth', 'stairs']],
+    ['Last run report', 'Review your run', 'book', () => sendFeature('report')], ['Mastery & boards', 'Measure your growth', 'stairs', () => { update((st) => goTo(st, 'mastery')); requestMastery('', 'mastery'); }]],
 };
 
 const PANOS = new Map();
@@ -112,20 +114,22 @@ export function Hall({ hall, tab, page, busy, view, pick }) {
   const onTab = (id) => {
     if (id === 'codex') return sendFeature('modifiers');
     if (id === 'echoes') return sendFeature('echoes');
+    if (id === 'collection') return sendFeature('collection');
     update((s) => setRecords(setTab(s, id), false));
     if (id === 'progress') sendTrack('refresh');
     return undefined;
   };
   const status = !hall ? '' : hall.runStatus || (hall.play.lobby.role === 0 ? 'Choose a destination to begin.' : 'Your expedition lobby is available.');
-  const section = view === 'feature' ? sectionTitle(feature, fSection) : view === 'tower' ? 'Tower briefing' : view === 'trial' ? 'Trial briefing' : { towers: 'Tower Hall', trials: 'Trials', social: 'Social', progress: 'Progress' }[tab];
-  return html`<${Shell} section=${section} tab=${tab} onTab=${onTab} onBack=${() => (view === 'hall' ? closeGui() : view === 'feature' ? stepBack(get().fui) : update(goBack))} onClose=${closeGui}>
-    ${view === 'feature' ? html`<${Features} />`
+  const section = view === 'settings' ? 'Settings' : view === 'feature' ? sectionTitle(feature, fSection) : view === 'tower' ? 'Tower briefing' : view === 'trial' ? 'Trial briefing' : { towers: 'Tower Hall', trials: 'Trials', social: 'Social', progress: 'Progress' }[tab];
+  return html`<${Shell} section=${section} tab=${tab} onTab=${onTab} onBack=${() => (view === 'hall' ? closeGui() : view === 'feature' ? stepBack(get().fui) : update(goBack))} onClose=${closeGui} onSettings=${() => update((s) => (s.view === 'settings' ? s : goTo(s, 'settings')))}>
+    ${view === 'settings' ? html`<${Settings} />`
+      : view === 'feature' ? html`<${Features} />`
       : view === 'tower' ? html`<${TowerBriefing} hall=${hall} id=${pick} busy=${busy} />`
       : view === 'trial' ? html`<${TrialBriefing} hall=${hall} kind=${pick} busy=${busy} />`
       : tab === 'towers' ? html`<${Towers} hall=${hall} page=${page} />`
       : tab === 'trials' ? html`<${Trials} />`
       : tab === 'progress' && tracks && !records ? html`<${Tracks} onRecords=${() => update((s) => setRecords(s, true))} />` : html`<${Cards} tab=${tab} />`}
-    ${view === 'feature' ? null : html`<${Footer} hall=${hall} busy=${busy} status=${status} />`}
+    ${view === 'feature' || view === 'settings' ? null : html`<${Footer} hall=${hall} busy=${busy} status=${status} />`}
   <//>`;
 }
 

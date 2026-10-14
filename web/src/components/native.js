@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { html } from '../html.js';
 import { ICONS } from '../gen/icons.js';
+import { ITEMS } from '../gen/items.js';
 
 // The screen is as big as the window, in whole GUI scales like Minecraft's own "auto": the largest scale that leaves at least 320x240 GUI pixels.
 export const screen = { w: 427, h: 240, g: 3 };
@@ -33,6 +34,14 @@ export function Icon({ name, x, y, size = 16 }) {
   return html`<i class="ic" style=${`left:${u(x)};top:${u(y)};width:${u(size)};height:${u(size)};background-size:${u(ICONS.length * 16 * k)} ${u(16 * k)};background-position:${u(-i * 16 * k)} 0`}></i>`;
 }
 
+/** The mod's own item picture, or a gift for any other item. `size` is in GUI pixels. */
+export function ItemIcon({ id, x, y, size = 16 }) {
+  const e = ITEMS.map[id];
+  if (!e) return html`<${Icon} name="gift" x=${x} y=${y} size=${size} />`;
+  const k = size / 16;
+  return html`<i class="ic item" style=${`left:${u(x)};top:${u(y)};width:${u(size)};height:${u(size)};background-size:${u(ITEMS.width * k)} ${u(ITEMS.height * k)};background-position:${u(-e[0] * k)} ${u(-e[1] * k)}`}></i>`;
+}
+
 /** A framed box: kind is dark | parch. */
 export const Panel = ({ x, y, w, h, kind = 'dark', class: cls = '', children }) =>
   html`<div class=${'n-fr n-' + kind + ' ' + cls} style=${at(x, y, w, h) + border(w, h)}>${children}</div>`;
@@ -55,10 +64,10 @@ export function NB({ x, y, w, h = 20, kind = 'primary', icon, iconOnly, disabled
 }
 
 const TABS = [['Tower Hall', 'tower', 'towers'], ['Trials', 'hourglass', 'trials'], ['Codex', 'book', 'codex'], ['Progress', 'stairs', 'progress'],
-  ['Echoes', 'echo', 'echoes'], ['Social', 'group', 'social'], ['Collection', 'cards', null]];
+  ['Echoes', 'echo', 'echoes'], ['Social', 'group', 'social'], ['Collection', 'cards', 'collection']];
 
 /** Header, tab rail and parchment sheet; `children` are the content, positioned in GUI pixels. */
-export function Shell({ section, tab, onTab, onBack, onClose, children }) {
+export function Shell({ section, tab, onTab, onBack, onClose, onSettings, children }) {
   const SW = screen.w, SH = screen.h, rail = SW < 400 ? 80 : 96;
   return html`
     <div class="ns" style=${`--g:${screen.g}px`}>
@@ -70,7 +79,7 @@ export function Shell({ section, tab, onTab, onBack, onClose, children }) {
       <${Panel} x=${6} y=${40} w=${rail - 2} h=${SH - 46} />
       ${TABS.map(([label, icon, id], i) => html`<${NB} key=${label} x=${9} y=${43 + i * 22} w=${rail - 10} kind=${id && id === tab && section === label ? 'tab' : 'dark'}
         icon=${icon} label=${label} disabled=${!id} tip=${id ? '' : 'Coming soon'} onClick=${() => onTab(id)}>${label}<//>`)}
-      <${NB} x=${9} y=${SH - 30} w=${rail - 10} kind="dark" icon="gear" label="Settings" disabled tip="Coming soon">Settings<//>
+      <${NB} x=${9} y=${SH - 30} w=${rail - 10} kind=${section === 'Settings' ? 'tab' : 'dark'} icon="gear" label="Settings" onClick=${onSettings}>Settings<//>
       <${Panel} x=${rail + 7} y=${39} w=${SW - rail - 14} h=${SH - 45} kind="parch" />
       ${children}
     </div>`;

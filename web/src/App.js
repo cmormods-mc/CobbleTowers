@@ -10,6 +10,8 @@ import { Hud } from './screens/Hud.js';
 import { Hall, useBusyTimeout } from './screens/Hall.js';
 import { Lobby } from './screens/Lobby.js';
 import { Party } from './screens/Party.js';
+import { Mastery } from './screens/Mastery.js';
+import { Scouting } from './screens/Scouting.js';
 import { RewardModal, VendorModal } from './screens/Modals.js';
 
 /** Fits the 1280x720 stage to the window with a single scale. */
@@ -47,6 +49,8 @@ export function App() {
   const hall = useStore((s) => s.hall);
   const play = useStore((s) => s.play);
   const reg = useStore((s) => s.reg);
+  const mast = useStore((s) => s.mast);
+  const scout = useStore((s) => s.scout);
   const view = useStore((s) => s.view);
   const tab = useStore((s) => s.tab);
   const pick = useStore((s) => s.pick);
@@ -54,7 +58,7 @@ export function App() {
   const busyAt = useStore((s) => s.busyAt);
   useBusyTimeout(busyAt);
   useFit();
-  const native = screen === 'hall' && (view === 'lobby' ? !!play : view === 'party' ? !!reg : !!hall || view === 'feature');
+  const native = screen === 'scout' || screen === 'intermission' || screen === 'hall' && (view === 'lobby' ? !!play : view === 'party' ? !!reg : view === 'mastery' ? !!mast : !!hall || view === 'feature');
   useEffect(() => { document.documentElement.classList.toggle('native', native); }, [native]);
   useNoticeTimeout(notice, () => update((s) => (s.notice === notice ? { ...s, notice: null } : s)));
 
@@ -62,8 +66,10 @@ export function App() {
 
   return html`
     <div class="main">
-      ${screen === 'intermission' && inter ? html`<${Intermission} inter=${inter} at=${interAt} />`
+      ${screen === 'scout' && scout ? html`<${Scouting} scout=${scout} />`
+        : screen === 'intermission' && inter ? html`<${Intermission} inter=${inter} at=${interAt} />`
         : screen === 'draft' && draft ? html`<${Draft} draft=${draft} />`
+        : screen === 'hall' && view === 'mastery' && mast ? html`<${Mastery} state=${mast} />`
         : screen === 'hall' && view === 'party' && reg ? html`<${Party} reg=${reg} />`
         : screen === 'hall' && view === 'lobby' && play ? html`<${Lobby} state=${play} />`
         : screen === 'hall' && (hall || view === 'feature') ? html`<${Hall} hall=${hall} tab=${tab} page=${page} view=${view} pick=${pick} busy=${!!busyAt} />`
@@ -76,7 +82,8 @@ export function App() {
 
 export function HudApp() {
   const fx = useStore((s) => s.fx);
-  return html`<${Hud} fx=${fx} />`;
+  const spec = useStore((s) => s.spec);
+  return html`<${Hud} fx=${fx} spec=${spec} />`;
 }
 
 export { isHud };

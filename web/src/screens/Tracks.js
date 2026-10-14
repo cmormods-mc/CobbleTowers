@@ -4,7 +4,7 @@ import { act } from '../bridge.js';
 import { update, useStore } from '../store.js';
 import { selectNode, setLane, setRecords } from '../reducer.js';
 import { anyClaimable, CLAIMABLE, CLAIMED, centreOn, currentIndex, detail, laneOf, LOCKED, neighbour, subtitle, tileIcon, timeLeft } from '../tracks.js';
-import { at, box, Icon, Label, NB, Panel, screen } from '../components/native.js';
+import { at, box, Icon, ItemIcon, Label, NB, Panel, screen } from '../components/native.js';
 
 const TILE_W = 38, TILE_H = 46, GAP = 4, PITCH = TILE_W + GAP;
 
@@ -19,7 +19,7 @@ function Tile({ node, selected, current, onPick }) {
   return html`<button class=${'tk tk-' + frame + (selected ? ' sel' : '') + (current ? ' cur' : '') + (node.state === LOCKED ? ' lock' : '')}
     style=${at(0, 0, TILE_W, TILE_H)} data-i=${node.number} onClick=${onPick} tabindex="-1">
     <span class="num">${node.number}</span>
-    ${icon ? (icon.kind === 'raid' ? html`<i class="ic raid" style=${at(3, 7, 16, 16)}></i>` : icon.kind === 'ui' ? html`<${Icon} name=${icon.name} x=${3} y=${7} />` : html`<${Icon} name="gift" x=${3} y=${7} />`) : null}
+    ${icon ? (icon.kind === 'raid' ? html`<i class="ic raid" style=${at(3, 7, 16, 16)}></i>` : icon.kind === 'ui' ? html`<${Icon} name=${icon.name} x=${3} y=${7} />` : icon.kind === 'item' ? html`<${ItemIcon} id=${icon.id} x=${3} y=${7} />` : html`<${Icon} name="gift" x=${3} y=${7} />`) : null}
     ${node.state === CLAIMED ? html`<${Icon} name="check" x=${11} y=${19} />` : null}
     ${node.state === LOCKED ? html`<${Icon} name="lock" x=${11} y=${19} />` : null}
     ${node.state === CLAIMABLE ? html`<span class="bang">!</span>` : null}

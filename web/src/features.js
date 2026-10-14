@@ -1,6 +1,6 @@
 // The feature menus (TowerFeatureState): what the page shows and which buttons work, as pure functions. Mirrors TowerFeatureScreen.
 
-export const FEATURE_ICON = { echoes: 'echo', club: 'flag', 'club-top': 'flag', 'club-alltime': 'flag', contracts: 'scroll', cosmetics: 'crown', season: 'star', hall: 'trophy', report: 'book' };
+export const FEATURE_ICON = { echoes: 'echo', club: 'flag', 'club-top': 'flag', 'club-alltime': 'flag', contracts: 'scroll', cosmetics: 'crown', season: 'star', hall: 'trophy', report: 'book', collection: 'cards' };
 export const iconOf = (section) => FEATURE_ICON[section] || 'book';
 
 /** The view state kept beside a menu: which entry is open, a review in progress, the typed text, the list page. */

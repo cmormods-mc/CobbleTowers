@@ -75,3 +75,26 @@ html.native #stage { left: 0; top: 0; width: 100%; height: 100%; transform: none
 .ic.raid { background-image: url(assets/gui/raid_points.png); background-size: 100% 100%; }
 .tbar { position: absolute; background: #211510; } .tbar i { display: block; height: 100%; background: #e3bd7f; }
 .ns .n-lines.light, .ns .n-lines.hint { color: #f0dfbf; text-shadow: var(--g) var(--g) 0 rgba(0, 0, 0, .8); } .ns .n-lines.hint { color: #c6ac87; } .n-lines .mu { color: #c6ac87; }
+
+/* Mastery boards */
+.c-gold { color: #ffd700; } .c-plain { color: #f0dfbf; }
+.ns > .scroll { position: absolute; }
+.n-row { height: calc(var(--g) * 11); white-space: pre; overflow: hidden; }
+.n-lines b { font-weight: normal; } .n-lines.lit b { color: #f0dfbf; }
+.n-lines.lit { color: #f0dfbf; }
+
+/* Settings: reduced motion and the system font */
+html.calm *, html.calm *::before, html.calm *::after { animation: none !important; transition: none !important; }
+html.plainfont { --font: "Lucida Console", "Courier New", monospace; }
+
+/* Intermission cards and parchment lines */
+.mcard.sel, .mcard.chosen { filter: brightness(1.12) saturate(1.2); outline: calc(var(--g) * 1) solid #e3bd7f; outline-offset: calc(var(--g) * -2); }
+.mcard:disabled { cursor: default; }
+.n-lines p.ln { margin: 0 0 calc(var(--g) * 2); } .n-lines p.ln.benefit { color: #35602a; } .n-lines p.ln.cost { color: #8a2c1f; }
+.n-lines.lit p.ln.benefit { color: #a9b781; } .n-lines.lit p.ln.cost { color: #e08c78; }
+
+/* A native-look screen laid over another (reward and vendor) */
+.ns.over { z-index: 20; background: rgba(10, 5, 3, .78); }
+.c-burg { color: #7a2a22; }
+.ns.top { z-index: 20; }
+.ic.item { background-image: url(assets/items.png); image-rendering: pixelated; }

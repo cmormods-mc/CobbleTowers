@@ -109,3 +109,13 @@ test('an opening RegistrationState shows the chooser; Done (the lobby state) ret
   assert.equal(back.view, 'lobby');
   assert.equal(back.stack.length, lobby.stack.length);
 });
+
+test('the mastery screen opens only when flagged; a reply fills it without opening', async () => {
+  const { reduce, initial, goTo } = await import('../src/reducer.js');
+  const hall = reduce(initial, 'TowerHallState', { play: {}, towers: [] }, 1);
+  const reply = reduce(hall, 'MasteryScreen', { open: false, towers: [], selected: '', tab: 'mastery' }, 2);
+  assert.equal(reply.view, 'hall');
+  assert.equal(goTo(reply, 'mastery').view, 'mastery');
+  const opened = reduce(hall, 'MasteryScreen', { open: true, towers: [], selected: '', tab: 'mastery' }, 3);
+  assert.equal(opened.view, 'mastery');
+});

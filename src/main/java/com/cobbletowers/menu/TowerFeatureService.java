@@ -20,7 +20,7 @@ import net.minecraft.server.level.ServerPlayer;
 /** Menu adapters for the existing gameplay services. No chat parsing or arbitrary command execution. */
 public final class TowerFeatureService {
     private static final Set<String> SECTIONS=Set.of("cosmetics","season","hall","echoes","club","club-top","club-alltime",
-            "watch","codes","contracts","report","modifiers","relics","run");
+            "watch","codes","contracts","report","modifiers","relics","run","collection");
     private TowerFeatureService() {}
     static Action action(String id,String label,String argument,String confirmation,String input) {return new Action(id,label,argument,confirmation,input);}
     static Action link(String label,String section) {return action("page",label,section,"","");}
@@ -145,6 +145,16 @@ public final class TowerFeatureService {
                 }
                 if(!store.selectedTitle(id).isEmpty())actions.add(action("title-off","Remove title","","",""));
                 actions.add(link("Season rewards","season"));
+            }
+            case "collection" -> {
+                title="Collection";
+                for(var set:com.cobbletowers.armor.ArmorSetRegistry.sets()) {
+                    var view=com.cobbletowers.armor.ArmorSetViews.of(set);List<String> lines=new ArrayList<>();
+                    lines.add(view.pieces().size()+" pieces: "+view.pieces().stream().map(piece->piece.slot()).collect(java.util.stream.Collectors.joining(", ")));
+                    for(var tier:view.tiers())for(String line:tier.lines())lines.add(tier.pieces()+" pieces: "+line);
+                    entries.add(entry(set.id().toString(),view.name(),lines));
+                }
+                if(entries.isEmpty())entries.add(entry("empty","No armor sets",List.of("No armor sets are loaded on this server.")));
             }
             case "season" -> {
                 title="Season & rewards";entries.add(entry("status","Current season",SeasonService.status()));

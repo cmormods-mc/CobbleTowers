@@ -1,0 +1,86 @@
+{
+  "kind": "MasteryScreen",
+  "data": {
+    "towers": [
+      {
+        "id": "cobbletowers:neutral",
+        "displayName": "Neutral Tower",
+        "level": 7,
+        "rank": "Veteran"
+      },
+      {
+        "id": "cobbletowers:tideforge",
+        "displayName": "Tideforge",
+        "level": 3,
+        "rank": "Challenger"
+      },
+      {
+        "id": "cobbletowers:rootvale",
+        "displayName": "Rootvale",
+        "level": 0,
+        "rank": "Novice"
+      },
+      {
+        "id": "cobbletowers:duskvale",
+        "displayName": "Duskvale",
+        "level": 12,
+        "rank": "Expert"
+      }
+    ],
+    "selected": "cobbletowers:neutral",
+    "tab": "mastery",
+    "open": true,
+    "mastery": {
+      "progress": "Level 7 Veteran; 14 cycle(s) cleared, deepest Ascension 2",
+      "perks": "+4% payout, 1 extra reroll",
+      "achievements": [
+        {
+          "name": "First Steps",
+          "description": "Clear floor 1 of this tower.",
+          "held": true
+        },
+        {
+          "name": "Ten Floors Down",
+          "description": "Clear a full 10 floor cycle.",
+          "held": true
+        },
+        {
+          "name": "Flawless",
+          "description": "Clear a floor without a Pokemon fainting.",
+          "held": true
+        },
+        {
+          "name": "Speed Runner",
+          "description": "Clear a cycle in under 20 minutes.",
+          "held": false
+        },
+        {
+          "name": "Team Player",
+          "description": "Clear a cycle with a full team of four.",
+          "held": false
+        },
+        {
+          "name": "Ascendant",
+          "description": "Reach Ascension 3.",
+          "held": false
+        },
+        {
+          "name": "Iron Will",
+          "description": "Clear a cycle without using the vendor.",
+          "held": false
+        },
+        {
+          "name": "Collector",
+          "description": "Earn every armor piece of one set.",
+          "held": false
+        }
+      ]
+    },
+    "board": {
+      "title": "",
+      "split": false,
+      "solo": [],
+      "team": []
+    }
+  }
+}

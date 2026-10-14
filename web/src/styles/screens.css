@@ -19,3 +19,4 @@
 #hudbox .row1 { display: flex; justify-content: space-between; gap: 8px; }
 #hudbox .it { padding: 3px 0; border-bottom: 2px dashed rgba(248, 231, 194, .22); } #hudbox .it small { display: block; font-size: 13px; opacity: .75; }
 #hudbox .it img { width: 15px; height: 15px; vertical-align: -2px; }
+#specbox { position: fixed; left: 16px; top: 16px; pointer-events: none; font-size: 16px; color: var(--cream); padding: 10px 14px; }

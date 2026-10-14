@@ -3,10 +3,12 @@ import { html } from './html.js';
 import { App, HudApp } from './App.js';
 import { connect, isHud } from './bridge.js';
 import { dispatch } from './store.js';
+import { apply, load } from './settings.js';
 import './styles/main.css';
 
 window.addEventListener('error', (e) => { document.title = 'ERR: ' + e.message; });
 
+apply(load());
 if (isHud) document.documentElement.classList.add('hud-mode');
 render(isHud ? html`<${HudApp} />` : html`<${App} />`, document.getElementById(isHud ? 'hud-root' : 'main-root'));
 connect(dispatch);

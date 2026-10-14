@@ -4,7 +4,7 @@
 import { freshUi, uiAfterReply } from './features.js';
 
 export const initial = Object.freeze({
-  screen: null,      // 'intermission' | 'draft' | 'hall' | null (nothing to show yet)
+  screen: null,      // 'intermission' | 'draft' | 'hall' | 'scout' | null (nothing to show yet)
   inter: null, interAt: 0,
   draft: null,
   reward: null,      // shown over any screen until dismissed
@@ -13,8 +13,11 @@ export const initial = Object.freeze({
   fx: null,          // RunEffects, for the HUD page
   hall: null,        // TowerHallState
   play: null,        // PlayState (also carried inside TowerHallState)
+  scout: null,       // ScoutingReveal (screen 'scout')
+  spec: null,        // SpectatorPanel, for the HUD page
+  mast: null,        // MasteryScreen (view 'mastery')
   reg: null,         // RegistrationState (the party chooser, view 'party')
-  view: 'hall',      // inside the hall screen: 'hall' | 'tower' | 'trial' | 'lobby' | 'party'
+  view: 'hall',      // inside the hall screen: 'hall' | 'tower' | 'trial' | 'lobby' | 'party' | 'mastery' | 'settings'
   tab: 'towers',     // hall tab: 'towers' | 'trials' | 'social' | 'progress'
   page: 0,           // tower tile page in the hall
   pick: '',          // the tower id or trial kind a briefing shows
@@ -30,6 +33,7 @@ export const initial = Object.freeze({
   fReq: 0,           // the page's own request counter
   fPending: 0,       // when a feature request went out and was not answered (0 = none)
   fUncertain: false, // no reply in time: refresh before another action
+  ret: null,         // the screen a feature menu was opened over (e.g. 'intermission'), returned to when it closes
   fui: freshUi(),
   notice: null,      // {text, id}: the last message the server attached to a payload
   noticeId: 0,
@@ -54,7 +58,7 @@ export function reduce(state, kind, data, now) {
     case 'VendorCatalog':
       return withNotice({ ...state, vendor: data, vendorOpen: !state.reward }, data.message);
     case 'TowerHallState':
-      return withNotice({ ...state, hall: data, play: data.play, screen: 'hall', busyAt: 0, view: state.screen === 'hall' ? state.view : 'hall', stack: state.screen === 'hall' ? state.stack : [] }, data.play.message);
+      return withNotice({ ...state, ret: null, hall: data, play: data.play, screen: 'hall', busyAt: 0, view: state.screen === 'hall' ? state.view : 'hall', stack: state.screen === 'hall' ? state.stack : [] }, data.play.message);
     case 'PlayState': {
       // Only a flagged state opens the lobby; an unflagged one just refreshes it.
       const base = { ...state, play: data, busyAt: 0 };
@@ -65,6 +69,11 @@ export function reduce(state, kind, data, now) {
       const base = { ...state, reg: data, busyAt: 0 };
       return withNotice(data.open ? showParty(base) : base, data.message);
     }
+    case 'MasteryScreen': {
+      // Only a flagged one (the command) opens the screen; a reply to the page's own request fills the open one.
+      const base = { ...state, mast: data };
+      return data.open ? showView(base, 'mastery') : base;
+    }
     case 'TrackState': {
       const towerMoved = state.tracks && state.tracks.selectedTower !== data.selectedTower;
       return withNotice({ ...state, tracks: data, tracksAt: now, tSel: towerMoved ? { ...state.tSel, mastery: null } : state.tSel }, data.message);
@@ -74,10 +83,14 @@ export function reduce(state, kind, data, now) {
       if (data.requestId !== 0 && (data.requestId !== state.fReq || data.section !== state.fSection)) return state;
       const same = state.feature && state.feature.section === data.section;
       const open = state.screen === 'hall' && state.view === 'feature';
-      const next = { ...state, feature: data, fSection: data.section, fPending: 0, fUncertain: false, screen: 'hall', view: 'feature',
+      const next = { ...state, ret: state.screen !== 'hall' ? (state.ret || state.screen) : state.ret, feature: data, fSection: data.section, fPending: 0, fUncertain: false, screen: 'hall', view: 'feature',
         stack: open ? state.stack : state.screen === 'hall' ? [...state.stack, state.view] : [], fui: uiAfterReply(same ? state.fui : freshUi(), data) };
       return withNotice(next, data.message);
     }
+    case 'ScoutingReveal':
+      return { ...state, scout: data, screen: 'scout' };
+    case 'SpectatorPanel':
+      return { ...state, spec: data };
     case 'RunEffects':
       return { ...state, fx: data };
     default:
@@ -85,15 +98,19 @@ export function reduce(state, kind, data, now) {
   }
 }
 
+/** The player dismissed the scouting report. */
+export const closeScout = (state) => ({ ...state, scout: null, screen: state.screen === 'scout' ? null : state.screen });
+
 /** The player dismissed the reward reveal. */
 export const closeReward = (state) => ({ ...state, reward: null });
 export const openVendor = (state, open) => ({ ...state, vendorOpen: open });
 
-function showParty(state) {
-  if (state.screen === 'hall' && state.view === 'party') return state;
+function showView(state, view) {
+  if (state.screen === 'hall' && state.view === view) return state;
   const stack = state.screen === 'hall' ? [...state.stack, state.view] : [];
-  return { ...state, screen: 'hall', view: 'party', stack };
+  return { ...state, screen: 'hall', view, stack };
 }
+const showParty = (state) => showView(state, 'party');
 
 function showLobby(state) {
   if (state.screen === 'hall' && state.view === 'lobby') return state;
@@ -121,6 +138,8 @@ export function beginFeature(state, section, now) {
     stack: open ? state.stack : [...state.stack, state.view], feature: changed ? null : state.feature, fui: changed ? freshUi() : state.fui };
 }
 export const featureDelayed = (state) => (state.fPending ? { ...state, fPending: 0, fUncertain: true } : state);
+/** A feature menu closed with nowhere to step back to inside the hall: return to the screen it was opened over, if any. */
+export const leaveFeature = (state) => (state.ret ? { ...state, screen: state.ret, ret: null, view: 'hall', stack: [] } : null);
 export const setFui = (state, patch) => ({ ...state, fui: { ...state.fui, ...patch } });
 
 export const setLane = (state, lane) => ({ ...state, lane, records: false });

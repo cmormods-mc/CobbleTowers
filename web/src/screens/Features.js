@@ -2,7 +2,7 @@ import { useEffect } from 'preact/hooks';
 import { html } from '../html.js';
 import { act, closeGui } from '../bridge.js';
 import { get, update, useStore } from '../store.js';
-import { beginFeature, featureDelayed, goBack, setFui } from '../reducer.js';
+import { beginFeature, featureDelayed, goBack, leaveFeature, setFui } from '../reducer.js';
 import { actionPlan, featureView, iconOf } from '../features.js';
 import { parseLine } from '../lines.js';
 import { at, box, Card, Label, NB, Panel, screen } from '../components/native.js';
@@ -23,7 +23,9 @@ export const sectionTitle = (feature, section) => (feature && feature.section ==
 export function stepBack(ui) {
   if (ui.review) { update((s) => setFui(s, { review: null, typed: '' })); return false; }
   if (ui.sel != null) { update((s) => setFui(s, { sel: null })); return false; }
-  if (get().stack.length) update(goBack); else closeGui();
+  if (get().stack.length) update(goBack);
+  else if (get().ret) update((s) => leaveFeature(s));
+  else closeGui();
   return true;
 }
 

@@ -36,7 +36,7 @@ export function connect(onPayload) {
   const deliver = (envelope) => {
     if (!envelope || typeof envelope.kind !== 'string') return;
     // The server sends every emit to every open page of the player (GUI and HUD), so the HUD takes only what is meant for it.
-    if (isHud && envelope.kind !== 'RunEffects') return;
+    if (isHud && envelope.kind !== 'RunEffects' && envelope.kind !== 'SpectatorPanel') return;
     try { onPayload(envelope.kind, envelope.data); } catch (e) { console.error('[tower] handler for ' + envelope.kind, e); }
   };
   if (typeof W.on === 'function') W.on('tower', deliver);
