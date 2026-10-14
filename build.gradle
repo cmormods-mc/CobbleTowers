@@ -2,7 +2,11 @@ plugins {
     id 'fabric-loom' version '1.13.6'
 }
 
+// `-Pdev` builds the test jar: the Test Tower, the test commands and the client screenshot/remote tooling are in it, and
+// the name ends in -dev. The default build is the release and leaves them out.
+def devBuild = project.hasProperty('dev')
 version = '0.25.0-p42-run-view'
+if (devBuild) version = version + '-dev'
 group = 'com.cobbletowers'
 
 base {
@@ -96,7 +100,18 @@ java {
     withSourcesJar()
 }
 
+// Test-only code and data, left out of a release: see Dev.java.
+def devOnlyClasses = ['com/cobbletowers/dev/**', 'com/cobbletowers/client/ClientDevTools*', 'com/cobbletowers/client/ScreenshotHarness*',
+        'com/cobbletowers/client/ClientRemote*', 'com/cobbletowers/client/FeatureScreenSamples*', 'com/cobbletowers/client/FrameSampler*']
+def devOnlyData = ['data/cobbletowers/cobbletowers/towers/test.json', 'data/cobbletowers/cobbletowers/floors/test/**',
+        'data/cobbletowers/structure/poke_tower.nbt']
+
+tasks.named('jar') {
+    if (!devBuild) exclude devOnlyClasses
+}
+
 processResources {
+    if (!devBuild) exclude devOnlyData
     // Read at configuration time: touching `project` inside filesMatching runs during execution,
     // which Gradle deprecates and the configuration cache forbids.
     def modVersion = project.version

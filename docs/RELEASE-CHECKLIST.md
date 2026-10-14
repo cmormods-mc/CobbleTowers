@@ -5,6 +5,8 @@ Ordered by how badly each blocks a release.
 
 ## Blockers
 
+- [x] **Test elements out of the release jar** (2026-10-13). The default build is the release; `./gradlew build -Pdev` makes `CobbleTowers-<version>-dev.jar` with the Test Tower, `com.cobbletowers.dev`, the client screenshot/remote/frame tooling and the bot-only commands (`runs create|earn|allocate|encounter|watchdog|advance|fx|validate`, `vendor credit|buy`, `draft force`, `echoes add|record|endbattle`). Smoke and rig scripts need the dev jar. Verify a release with `unzip -l` for `dev/`, `ScreenshotHarness`, `towers/test.json`.
+
 - [ ] **P37 battle tracks builds and passes tests.** The code (design: `docs/design/P37-tracks.md`) was written without ever being compiled or tested.
   - [x] `./gradlew build` is green, including `MasteryTrackTest` (the shipped `mastery_tracks/default.json` must match the old rank and perk table at every level 0..30).
     - Done 2026-10-08: build, unit tests and `ci_local` pass; `MasteryTrackTest` 6/6.

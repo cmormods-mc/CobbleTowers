@@ -1,4 +1,4 @@
-package com.cobbletowers.command;
+package com.cobbletowers.dev;
 
 import com.cobbletowers.definition.RentalSetRegistry;
 import com.cobbletowers.network.ClientUi;

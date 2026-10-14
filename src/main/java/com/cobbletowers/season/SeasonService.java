@@ -113,7 +113,7 @@ public final class SeasonService {
             store.stepDone(number, 1);
             store.checkpoint(server);
             TowerLog.info("Season {} finalisation: step 1 done (the Hall season is written)", number);
-            testOnlyCrashAfter(1);
+            com.cobbletowers.Dev.afterSeasonStep(1);
         }
         if (done < 2) {
             // The podium is read from what the Hall froze in step 1, so a resume awards the same clubs whatever
@@ -126,7 +126,7 @@ public final class SeasonService {
             store.stepDone(number, 2);
             store.checkpoint(server);
             TowerLog.info("Season {} finalisation: step 2 done (old seasonal boards pruned)", number);
-            testOnlyCrashAfter(2);
+            com.cobbletowers.Dev.afterSeasonStep(2);
         }
         if (done < 3) {
             store.finalized(number);
@@ -139,17 +139,6 @@ public final class SeasonService {
             }
         }
         return List.of("Season " + number + " finalised.");
-    }
-
-    /**
-     * Test seam: with {@code -Dcobbletowers.testOnlyCrashAfterSeasonStep=N} the JVM halts right after finalisation
-     * step N is written, like a real crash. Never set in production.
-     */
-    private static void testOnlyCrashAfter(int step) {
-        if (Integer.getInteger("cobbletowers.testOnlyCrashAfterSeasonStep", 0) == step) {
-            TowerLog.warn("TEST ONLY: halting the JVM after season finalisation step {}", step);
-            Runtime.getRuntime().halt(137);
-        }
     }
 
     // ---- words ---------------------------------------------------------------------------------------

@@ -35,28 +35,32 @@ public final class EchoCommand {
 
     /** {@code /cobbletowers echoes ...}: operator only. */
     public static void registerAdmin(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("cobbletowers").then(Commands.literal("echoes")
+        var echoes = Commands.literal("echoes")
                 .requires(source -> source.hasPermission(2))
                 .executes(EchoCommand::list)
                 .then(Commands.literal("list").executes(EchoCommand::list))
                 .then(Commands.literal("clear").executes(context -> {
                     TowerEchoStore.get(context.getSource().getServer()).clear();
                     return say(context, "Every Echo and opt-out cleared.");
-                }))
-                .then(Commands.literal("add")
-                        .then(Commands.argument("name", com.mojang.brigadier.arguments.StringArgumentType.word())
-                                .then(Commands.argument("tower", ResourceLocationArgument.id())
-                                        .then(Commands.argument("pokemon", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
-                                                .executes(EchoCommand::add)))))
-                .then(Commands.literal("endbattle")
-                        .then(Commands.argument("player", EntityArgument.player())
-                                .executes(context -> say(context, com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter
-                                        .endBattleOf(EntityArgument.getPlayer(context, "player"))
-                                        ? "Ended the player's battle." : "The player is not in a battle."))))
-                .then(Commands.literal("record")
-                        .then(Commands.argument("player", EntityArgument.player())
-                                .then(Commands.argument("tower", ResourceLocationArgument.id())
-                                        .executes(EchoCommand::record))))));
+                }));
+        // Seams for live tests: dev build only.
+        if (com.cobbletowers.Dev.present()) {
+            echoes.then(Commands.literal("add")
+                    .then(Commands.argument("name", com.mojang.brigadier.arguments.StringArgumentType.word())
+                            .then(Commands.argument("tower", ResourceLocationArgument.id())
+                                    .then(Commands.argument("pokemon", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+                                            .executes(EchoCommand::add)))));
+            echoes.then(Commands.literal("endbattle")
+                    .then(Commands.argument("player", EntityArgument.player())
+                            .executes(context -> say(context, com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter
+                                    .endBattleOf(EntityArgument.getPlayer(context, "player"))
+                                    ? "Ended the player's battle." : "The player is not in a battle."))));
+            echoes.then(Commands.literal("record")
+                    .then(Commands.argument("player", EntityArgument.player())
+                            .then(Commands.argument("tower", ResourceLocationArgument.id())
+                                    .executes(EchoCommand::record))));
+        }
+        dispatcher.register(Commands.literal("cobbletowers").then(echoes));
     }
 
     private static int show(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {

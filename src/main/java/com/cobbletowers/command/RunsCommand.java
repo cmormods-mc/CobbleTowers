@@ -1,5 +1,6 @@
 package com.cobbletowers.command;
 
+import com.cobbletowers.Dev;
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobbletowers.TowerLog;
@@ -100,25 +101,29 @@ public final class RunsCommand {
         // Cashing out is the party's decision; not blocked by an open draft.
         group.then(Commands.literal("cashout").executes(RunsCommand::cashout));
         group.then(Commands.literal("reward").then(Commands.literal("show").executes(RunsCommand::rewardShow)));
-        // INTERMISSION-only is enforced by VendorPurchaseService; credit and buy are operator test tools.
-        group.then(Commands.literal("vendor").executes(RunsCommand::vendor)
-                .then(op("credit")
-                        .then(Commands.argument("player", EntityArgument.player())
-                                .then(Commands.argument("amount", IntegerArgumentType.integer(1))
-                                        .executes(RunsCommand::vendorCredit))))
-                .then(op("buy")
-                        .then(runArg()
-                                .then(Commands.argument("service", ResourceLocationArgument.id())
-                                        .then(Commands.argument("payer", EntityArgument.player())
-                                                .then(Commands.argument("target", EntityArgument.player())
-                                                        .executes(RunsCommand::vendorBuy)))))));
-        // {@code force} puts a modifier on a run without a draw (operator).
-        group.then(Commands.literal("draft")
+        // INTERMISSION-only is enforced by VendorPurchaseService; credit and buy are dev-build test tools.
+        group.then(Commands.literal("vendor").executes(RunsCommand::vendor));
+        if (Dev.present()) {
+            group.then(Commands.literal("vendor")
+                    .then(op("credit")
+                            .then(Commands.argument("player", EntityArgument.player())
+                                    .then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                                            .executes(RunsCommand::vendorCredit))))
+                    .then(op("buy")
+                            .then(runArg()
+                                    .then(Commands.argument("service", ResourceLocationArgument.id())
+                                            .then(Commands.argument("payer", EntityArgument.player())
+                                                    .then(Commands.argument("target", EntityArgument.player())
+                                                            .executes(RunsCommand::vendorBuy)))))));
+        }
+        // {@code force} puts a modifier on a run without a draw (dev build).
+        LiteralArgumentBuilder<CommandSourceStack> draft = Commands.literal("draft")
                 .then(Commands.literal("show").executes(RunsCommand::draftShow))
                 .then(Commands.literal("vote")
                         .then(Commands.argument("card", IntegerArgumentType.integer(1, 9))
-                                .executes(RunsCommand::draftVote)))
-                .then(opOnRun("force", RunsCommand::draftForce)));
+                                .executes(RunsCommand::draftVote)));
+        if (Dev.present()) draft.then(opOnRun("force", RunsCommand::draftForce));
+        group.then(draft);
         return group;
     }
 
@@ -131,33 +136,36 @@ public final class RunsCommand {
                                 .executes(RunsCommand::grant))));
         group.then(op("list").executes(RunsCommand::list));
         group.then(opOnRun("show", RunsCommand::show));
-        group.then(op("create")
-                .then(Commands.argument("tower", ResourceLocationArgument.id())
-                        .then(Commands.argument("players", EntityArgument.players())
-                                .executes(RunsCommand::create))));
-        group.then(opOnRun("validate", RunsCommand::validate));
-        // Queues battle effects (P23) for a player's next tower battle; `fx <player> clear` empties the queue.
-        group.then(op("fx")
-                .then(Commands.argument("player", EntityArgument.player())
-                        .then(Commands.argument("json", StringArgumentType.greedyString())
-                                .executes(RunsCommand::fx))));
-        group.then(op("earn")
-                .then(runArg()
-                        .then(Commands.argument("kind", StringArgumentType.word())
-                                .suggests(suggesting(List.of("opponent", "boss", "floor", "milestone")))
-                                .executes(RunsCommand::earn))));
-        group.then(opOnRun("allocate", RunsCommand::allocate));
-        group.then(opOnRun("encounter", RunsCommand::encounter));
-        group.then(op("watchdog")
-                .then(Commands.argument("cap", StringArgumentType.word())
-                        .suggests(suggesting(List.of("player", "floor")))
-                        .executes(RunsCommand::watchdog)));
-        group.then(op("advance")
-                .then(runArg()
-                        .then(Commands.argument("event", StringArgumentType.word())
-                                .suggests(suggesting(Arrays.stream(RunEvent.values())
-                                        .map(event -> event.name().toLowerCase(Locale.ROOT)).toList()))
-                                .executes(RunsCommand::advance))));
+        // Test tooling that drives the run machine by hand: dev build only.
+        if (Dev.present()) {
+            group.then(op("create")
+                    .then(Commands.argument("tower", ResourceLocationArgument.id())
+                            .then(Commands.argument("players", EntityArgument.players())
+                                    .executes(RunsCommand::create))));
+            group.then(opOnRun("validate", RunsCommand::validate));
+            // Queues battle effects (P23) for a player's next tower battle; `fx <player> clear` empties the queue.
+            group.then(op("fx")
+                    .then(Commands.argument("player", EntityArgument.player())
+                            .then(Commands.argument("json", StringArgumentType.greedyString())
+                                    .executes(RunsCommand::fx))));
+            group.then(op("earn")
+                    .then(runArg()
+                            .then(Commands.argument("kind", StringArgumentType.word())
+                                    .suggests(suggesting(List.of("opponent", "boss", "floor", "milestone")))
+                                    .executes(RunsCommand::earn))));
+            group.then(opOnRun("allocate", RunsCommand::allocate));
+            group.then(opOnRun("encounter", RunsCommand::encounter));
+            group.then(op("watchdog")
+                    .then(Commands.argument("cap", StringArgumentType.word())
+                            .suggests(suggesting(List.of("player", "floor")))
+                            .executes(RunsCommand::watchdog)));
+            group.then(op("advance")
+                    .then(runArg()
+                            .then(Commands.argument("event", StringArgumentType.word())
+                                    .suggests(suggesting(Arrays.stream(RunEvent.values())
+                                            .map(event -> event.name().toLowerCase(Locale.ROOT)).toList()))
+                                    .executes(RunsCommand::advance))));
+        }
         return group;
     }
 

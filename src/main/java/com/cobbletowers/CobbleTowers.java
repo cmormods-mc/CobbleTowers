@@ -63,7 +63,7 @@ public final class CobbleTowers implements ModInitializer {
                 com.cobbletowers.command.CosmeticsCommand.registerAdmin(dispatcher);
                 CellsCommand.register(dispatcher);
                 DiagnosticsCommand.register(dispatcher);
-                com.cobbletowers.command.WebPreviewCommand.register(dispatcher);
+                Dev.registerCommands(dispatcher);
             } catch (RuntimeException ex) {
                 TowerLog.error("Could not register the CobbleTowers commands", ex);
             }
