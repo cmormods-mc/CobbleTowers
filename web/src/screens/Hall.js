@@ -62,16 +62,20 @@ function Footer({ hall, busy, status }) {
 
 function Towers({ hall, page }) {
   const b = box();
-  const pages = Math.max(1, Math.ceil(hall.towers.length / b.perPage));
+  // Up to four towers fill two rows with no pager, and the Daily/Weekly row sits at the bottom.
+  const compact = hall.towers.length <= 4 && b.bottom - 4 - (b.y + 38) >= 2 * 38;
+  const perPage = compact ? 4 : b.perPage;
+  const rowH = compact ? Math.floor((b.bottom - 4 - (b.y + 38)) / 2) : b.rowH;
+  const pages = Math.max(1, Math.ceil(hall.towers.length / perPage));
   const cur = Math.min(page, pages - 1);
   const cw = Math.floor((b.w - 6) / 2);
   const trial = (kind) => hall.trials.find((t) => t.kind === kind);
-  const ty = b.y + 38 + b.rows * b.rowH;
+  const ty = compact ? b.bottom : b.y + 38 + b.rows * rowH;
   return html`
     <${Pano} region="tideforge" x=${b.x} y=${b.y} w=${b.w} h=${32} />
     <div class="shade" style=${at(b.x, b.y, Math.floor((b.w * 46) / 100), 32)}></div>
     <${Label} x=${b.x + 7} y=${b.y + 12} w=${b.w - 14}>Every ascent begins here.<//>
-    ${hall.towers.slice(cur * b.perPage, cur * b.perPage + b.perPage).map((t, i) => html`<${Tile} key=${t.id} x=${b.x + (i % 2) * (cw + 6)} y=${b.y + 38 + Math.floor(i / 2) * b.rowH} w=${cw} h=${b.rowH - 4}
+    ${hall.towers.slice(cur * perPage, cur * perPage + perPage).map((t, i) => html`<${Tile} key=${t.id} x=${b.x + (i % 2) * (cw + 6)} y=${b.y + 38 + Math.floor(i / 2) * rowH} w=${cw} h=${rowH - 4}
       region=${regionOf(t.id)} title=${t.name} sub=${t.floors + ' floors / cycle'} onClick=${() => update((s) => goTo(s, 'tower', t.id))} />`)}
     <${NB} x=${b.x} y=${ty} w=${cw} kind="dark" icon="sun" label="Daily Tower" disabled=${!trial('daily')} onClick=${() => update((s) => goTo(s, 'trial', 'daily'))}>Daily Tower<//>
     <${NB} x=${b.x + cw + 6} y=${ty} w=${cw} kind="dark" icon="calendar" label="Weekly Tower" disabled=${!trial('weekly')} onClick=${() => update((s) => goTo(s, 'trial', 'weekly'))}>Weekly Tower<//>
@@ -138,7 +142,7 @@ function Briefing({ region, lines, action }) {
   const b = box();
   return html`
     <${Pano} region=${region} x=${b.x} y=${b.y} w=${b.w} h=${28} />
-    <div class="n-lines" style=${at(b.x + 7, b.y + 35, b.w - 14, b.bottom - b.y - 40)}>${lines.map((l) => html`<p>${l}</p>`)}</div>
+    <div class="n-lines scroll" style=${at(b.x + 7, b.y + 35, b.w - 14, b.bottom - b.y - 40)}>${lines.map((l) => html`<p>${l}</p>`)}</div>
     ${action ? html`<${NB} x=${b.x} y=${b.bottom} w=${b.w} kind="dark" label=${action[0]} disabled=${!action[2]} onClick=${action[1]}>${action[0]}<//>` : null}`;
 }
 
@@ -151,7 +155,7 @@ function TowerBriefing({ hall, id, busy }) {
 
 function TrialBriefing({ hall, kind, busy }) {
   const t = hall.trials.find((x) => x.kind === kind);
-  const lines = t ? [t.title, ...t.rules, 'Preparing does not launch a run. Trial rules will be checked again by the server.'] : ['No ' + kind + ' trial is currently available.'];
+  const lines = t ? [t.title, ...t.rules, 'Preparing opens a lobby; nothing launches yet.'] : ['No ' + kind + ' trial is currently available.'];
   return html`<${Briefing} region=${t ? regionOf(t.tower) : 'tideforge'} lines=${lines} action=${t ? ['Prepare trial lobby', () => request('trial', kind, t.revision), canSelect(hall, busy)] : null} />`;
 }
 

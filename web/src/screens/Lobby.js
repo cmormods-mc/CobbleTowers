@@ -39,7 +39,7 @@ export function Lobby({ state }) {
 
   const controls = [];
   if (v.invite) controls.push(html`<${Invite} x=${rightX} y=${next()} w=${column} />`);
-  if (v.depth) controls.push(html`<${NB} x=${rightX} y=${next()} w=${column} disabled=${!v.depth.enabled} onClick=${() => play('SET_ASCENSION', String(v.depth.next))}>Start at: ${v.depth.label}${v.depth.none ? ' (none reached)' : ''}<//>`);
+  if (v.depth) controls.push(html`<${NB} x=${rightX} y=${next()} w=${column} disabled=${!v.depth.enabled} tip=${v.depth.none ? 'No Ascension reached yet' : ''} onClick=${() => play('SET_ASCENSION', String(v.depth.next))}>Start at: ${v.depth.label}<//>`);
   if (v.modes) {
     const i = v.modes.ids.indexOf(v.modes.chosen);
     const nextId = v.modes.ids[(i + 1) % v.modes.ids.length];

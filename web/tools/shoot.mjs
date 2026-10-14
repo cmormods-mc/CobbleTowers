@@ -33,6 +33,7 @@ export const SHOTS = {
   draft_sealed: { payloads: [fixture('RentalDraft', openDraft)] },
   draft_choose: { payloads: [fixture('RentalDraft', openDraft)], steps: async (page) => { await page.click('.pack'); await page.waitForSelector('.card.pick', { timeout: 8000 }); await page.click('.card.pick >> nth=1'); } },
   hall: { payloads: [fixture('TowerHallState')] },
+  hall_four: { payloads: [fixture('TowerHallState', (d) => { d.towers = d.towers.slice(0, 4); })] },
   hall_social: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.click('text=Social >> nth=0'); } },
   hall_trials: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.click('button:has-text("Trials")'); } },
   hall_progress: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.click('button:has-text("Progress")'); } },

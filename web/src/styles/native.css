@@ -39,6 +39,7 @@
 .n-btn.card.sel .n-t.c-muted { color: #a9b781; }
 
 .n-lines { position: absolute; overflow: hidden; color: #40291e; }
+.n-lines.scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--bronze) transparent; }
 .n-lines p { margin: 0 0 var(--g); line-height: calc(var(--g) * 11); white-space: normal; }
 .n-edit { position: absolute; background: #000; border: var(--g) solid #a0a0a0; color: #fff; font: inherit; font-size: calc(var(--g) * 8); padding: 0 calc(var(--g) * 3); box-sizing: border-box; }
 .n-edit::placeholder { color: #808080; } .n-edit:focus { outline: 0; border-color: #fff; }
