@@ -20,7 +20,6 @@ public record RulesetDefinition(
         int maxEnemyLevel,
         int registeredPartySize,
         boolean requiresBattleReadyParty,
-        int itemActionBudget,
         boolean carriesHealthBetweenFloors,
         boolean carriesPpBetweenFloors,
         boolean playerHeldItems,
@@ -35,10 +34,10 @@ public record RulesetDefinition(
 
     /** A ruleset with no region rules (held items work, no drain, no floor status). */
     public RulesetDefinition(ResourceLocation id, int schemaVersion, int revision, int minEnemyLevel, int maxEnemyLevel,
-                             int registeredPartySize, boolean requiresBattleReadyParty, int itemActionBudget,
+                             int registeredPartySize, boolean requiresBattleReadyParty,
                              boolean carriesHealthBetweenFloors, boolean carriesPpBetweenFloors) {
         this(id, schemaVersion, revision, minEnemyLevel, maxEnemyLevel, registeredPartySize, requiresBattleReadyParty,
-                itemActionBudget, carriesHealthBetweenFloors, carriesPpBetweenFloors, true, 0, 0, List.of());
+                carriesHealthBetweenFloors, carriesPpBetweenFloors, true, 0, 0, List.of());
     }
 
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
@@ -64,9 +63,6 @@ public record RulesetDefinition(
             throw new IllegalArgumentException("registered_party_size must be 1.." + MAX_REGISTERED_PARTY_SIZE
                     + ", got " + registeredPartySize);
         }
-        if (itemActionBudget < 0) {
-            throw new IllegalArgumentException("item_action_budget must be >= 0, got " + itemActionBudget);
-        }
         if (enemyDrainStart < 0 || enemyDrainStart > MAX_DRAIN_PERCENT || enemyDrainEnd < 0 || enemyDrainEnd > MAX_DRAIN_PERCENT) {
             throw new IllegalArgumentException("enemy_drain start and end must be 0.." + MAX_DRAIN_PERCENT
                     + ", got " + enemyDrainStart + " and " + enemyDrainEnd);
@@ -82,7 +78,7 @@ public record RulesetDefinition(
     /** The same rules with other enemy levels and party size (a trial's lock, a playlist's narrowing). */
     public RulesetDefinition withLevelsAndParty(int min, int max, int partySize) {
         return new RulesetDefinition(id, schemaVersion, revision, min, max, partySize, requiresBattleReadyParty,
-                itemActionBudget, carriesHealthBetweenFloors, carriesPpBetweenFloors, playerHeldItems, enemyDrainStart,
+                carriesHealthBetweenFloors, carriesPpBetweenFloors, playerHeldItems, enemyDrainStart,
                 enemyDrainEnd, floorStatuses);
     }
 
@@ -109,7 +105,6 @@ public record RulesetDefinition(
                 TowerJson.integer(levels, "max", TowerLevelSnapshot.MAX_LEVEL),
                 TowerJson.integer(root, "registered_party_size", MAX_REGISTERED_PARTY_SIZE),
                 TowerJson.bool(root, "requires_battle_ready_party", true),
-                TowerJson.integer(root, "item_action_budget", 0),
                 // On by default: the tower's own rule is that healing is bought, not given (TDS #16).
                 TowerJson.bool(carryover, "health", true),
                 TowerJson.bool(carryover, "pp", true),

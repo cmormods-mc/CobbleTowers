@@ -79,6 +79,7 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 - The final payout of a run is now larger when the party held modifiers (see the risk bonus above). If you tuned reward amounts against the old payouts, expect them to rise.
 
 **Rulesets and counters (P38)**
+- The ruleset field `item_action_budget` and the API method `RulesetView.itemActionBudget()` are removed: nothing ever enforced them. A datapack that still sets the field is ignored.
 - A ruleset may now set `player_held_items` (false to disable the player's items), `enemy_drain` (`start` and `end` percent, each 0 to 50) and `floor_status` (a list of `psn`, `brn`, `par`, `slp`, `frz`, `tox`). All are off by default, so existing rulesets and saved runs are unchanged.
 - `/cobbletowers masteryadmin counters` prints balance tallies (track claims, season points, contract completions, modifier pick rates, the risk bonus, floor times).
 - The warm pool and a finished run's cell are now built and cleared a slice per tick, so a run start or end no longer holds the server for a third of a second or more when a warm cell is ready.

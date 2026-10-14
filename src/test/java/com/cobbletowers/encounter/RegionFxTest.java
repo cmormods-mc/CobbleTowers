@@ -16,7 +16,7 @@ class RegionFxTest {
     private static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("cobbletowers", "test");
 
     private static RulesetDefinition rules(boolean heldItems, int drainStart, int drainEnd, List<String> statuses) {
-        return new RulesetDefinition(ID, 1, 1, 5, 100, 6, true, 0, true, true, heldItems, drainStart, drainEnd, statuses);
+        return new RulesetDefinition(ID, 1, 1, 5, 100, 6, true, true, true, heldItems, drainStart, drainEnd, statuses);
     }
 
     @Test

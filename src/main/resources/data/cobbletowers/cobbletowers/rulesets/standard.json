@@ -7,7 +7,6 @@
   },
   "registered_party_size": 6,
   "requires_battle_ready_party": true,
-  "item_action_budget": 0,
   "carryover": {
     "health": true,
     "pp": true

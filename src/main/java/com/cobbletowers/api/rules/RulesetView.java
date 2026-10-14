@@ -16,9 +16,6 @@ public interface RulesetView {
     /** Standard mode requires every registered Pokemon to be battle-ready at entry (TDS #46). */
     boolean requiresBattleReadyParty();
 
-    /** How many battle items may be used per encounter (TDS #47). */
-    int itemActionBudget();
-
     /** Whether battle damage is carried back to the real party between floors (TDS #16). */
     boolean carriesHealthBetweenFloors();
 

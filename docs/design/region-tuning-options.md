@@ -5,7 +5,7 @@ Status (2026-10-08): nothing here is built. It needs your picks; each option is 
 
 ## Where things stand
 
-* All four towers use the one ruleset `cobbletowers:standard` (`enemy_level` 5 to 100, party of 6, health and PP carry over, `item_action_budget` 0). The regions
+* All four towers use the one ruleset `cobbletowers:standard` (`enemy_level` 5 to 100, party of 6, health and PP carry over). The regions
   differ in encounter pools, boss pools, themed reward tables and armor sets, not in rules.
 * The four reward tables share the same shape: `growth_percent_per_floor` 8, three tiers, and an F5 `boss` and F10 `champion` milestone each with 1 XL candy, a pack, Raid Points
   (25 at F5, 75 at F10) and a bonus pool. The themed part is item flavour (berries, balls, stones, held items).
@@ -36,7 +36,7 @@ Today a region is only a theme. Cheap ways to make each one play differently, al
 | Neutral | unchanged `standard` | none |
 
 These change difficulty, so pick deliberately; `docs/design/tuning-with-real-data.md` and `masteryadmin counters` (floor time, risk bonus, claim rates) are how to see whether a region is too hard once players are in it.
-`item_action_budget` is still not enforced, so it is not an option here.
+An item-use limit does not exist (the old `item_action_budget` field was removed 2026-10-14), so it is not an option here.
 
 ## 3. Reward balance (nothing to pick yet)
 

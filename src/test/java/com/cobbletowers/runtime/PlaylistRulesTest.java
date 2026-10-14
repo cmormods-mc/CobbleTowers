@@ -133,7 +133,7 @@ class PlaylistRulesTest {
         assertEquals(3, solo.registeredPartySize());
         assertEquals(base.maxEnemyLevel(), solo.maxEnemyLevel());
         assertSame(base, shipped("hardcore").narrow(base), "nothing to narrow returns the same ruleset");
-        RulesetDefinition lowCeiling = new RulesetDefinition(base.id(), 1, 1, 5, 30, 2, true, 0, true, true);
+        RulesetDefinition lowCeiling = new RulesetDefinition(base.id(), 1, 1, 5, 30, 2, true, true, true);
         assertEquals(30, shipped("level_cap_50").narrow(lowCeiling).maxEnemyLevel(), "a cap above the ruleset's own changes nothing");
         assertEquals(2, shipped("solo_gauntlet").narrow(lowCeiling).registeredPartySize());
     }
