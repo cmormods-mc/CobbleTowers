@@ -5,6 +5,7 @@ import { fmtClock, RISK } from '../util.js';
 import { parseLine } from '../lines.js';
 import { at, Label, NB, Panel, screen, useScreen } from '../components/native.js';
 import { sendFeature } from './Features.js';
+import { cardView, offerHint } from '../rooms.js';
 
 const send = (action, argument = 0) => act('IntermissionAction', { action, argument });
 const RISK_NAME = ['Minor', 'Moderate', 'Severe'];
@@ -30,12 +31,14 @@ function Countdown({ from, at: arrived }) {
 }
 
 function Card({ x, y, w, h, card, selected, chosen, enabled, onPick, onHover }) {
+  const v = cardView(card);
   return html`<button class=${'n-btn n-fr n-parch mcard' + (selected ? ' sel' : '') + (chosen ? ' chosen' : '')} disabled=${!enabled} style=${at(x, y, w, h)}
     onClick=${onPick} onMouseEnter=${() => onHover(true)} onMouseLeave=${() => onHover(false)}>
-    <${Label} x=${-1} y=${-1} w=${w - 14} color="ink">${card.displayName}<//>
-    <${Label} x=${-1} y=${11} w=${w - 14} color="soft">${riskLabel(card.risk)}<//>
-    <${Label} x=${-1} y=${h - 26} w=${w - 14} color="soft">${chosen ? 'Chosen' : selected ? 'Selected' : ''}<//>
-    <${Label} x=${-1} y=${h - 17} w=${w - 14} color="ink">${card.votes} ${card.votes === 1 ? 'vote' : 'votes'}<//>
+    <${Label} x=${-1} y=${-1} w=${w - 14} color="ink">${v.title}<//>
+    ${v.kind === 'event' ? html`<div class="n-lines wrap" style=${at(-1, 11, w - 14, h - 40)}>${v.sub}</div>` : html`<${Label} x=${-1} y=${11} w=${w - 14} color="soft">${v.sub}<//>`}
+    ${v.kind === 'relic' ? html`<div class="n-lines wrap" style=${at(-1, 23, w - 14, h - 52)}>${v.lines.filter((l) => !l.startsWith('Tags: ')).slice(0, 2).map((l) => parseLine(l).text).join(' ')}</div>` : null}
+    <${Label} x=${-1} y=${h - 30} w=${w - 14} color="soft">${chosen ? 'Chosen' : selected ? 'Selected' : ''}<//>
+    <${Label} x=${-1} y=${h - 21} w=${w - 14} color="ink">${card.votes} ${card.votes === 1 ? 'vote' : 'votes'}<//>
   </button>`;
 }
 
@@ -67,11 +70,12 @@ export function Intermission({ inter, at: arrived }) {
   const sheetX = panelX + 6, sheetW = panelW - 12, sheetY = (n === 0 ? cardsTop : cardsTop + cardH) + 6, sheetH = Math.max(36, actionsTop - 6 - sheetY);
   const rowW = panelW - 12, confirmW = Math.floor(rowW * 0.58) - 2, third = Math.floor((rowW - 8) / 3);
   const inspected = hover >= 0 && hover < n ? hover : selected >= 0 && selected < n ? selected : n ? 0 : -1;
-  const hint = inter.countdown >= 0 ? 'Next floor in ' : inter.message || (draft.state === 1 ? (pending ? 'Sending your vote...' : 'Choose a modifier for the next floor') : draft.state === 2 ? 'Modifier chosen' : 'No modifier this floor');
+  const hint = inter.countdown >= 0 ? 'Next floor in ' : inter.message || (draft.state === 1 ? (pending ? 'Sending your vote...' : offerHint(draft.cards)) : draft.state === 2 ? 'Modifier chosen' : 'No modifier this floor');
   const confirm = () => { if (pending || selected < 0 || !open) return; setPendingAt(Date.now()); send('PICK_CARD', selected); };
   const card = inspected >= 0 ? draft.cards[inspected] : null;
+  const cv = card ? cardView(card) : null;
   const perPage = Math.max(1, Math.floor((sheetH - 26) / 10));
-  const pages = card ? Math.max(1, Math.ceil(card.lines.length / perPage)) : 1;
+  const pages = cv ? Math.max(1, Math.ceil(cv.lines.length / perPage)) : 1;
   const shown = Math.min(page, pages - 1);
 
   return html`
@@ -84,8 +88,8 @@ export function Intermission({ inter, at: arrived }) {
         selected=${open && i === selected} chosen=${draft.state === 2 && i === draft.chosen} enabled=${open && idle && !pending}
         onPick=${() => setView({ offer, selected: i })} onHover=${(on) => setHover(on ? i : -1)} />`)}
       <${Panel} x=${sheetX} y=${sheetY} w=${sheetW} h=${sheetH} kind="parch">
-        ${card ? html`<${Label} x=${0} y=${0} w=${sheetW - 22} color="ink">${card.displayName}  -  ${riskLabel(card.risk)}<//>
-          <div class="n-lines" style=${at(0, 12, sheetW - 22, sheetH - 24)}>${card.lines.slice(shown * perPage, (shown + 1) * perPage).map(parseLine).map((l) => html`<p class=${'ln ' + l.tone}>${l.sign ? l.sign + ' ' : ''}${l.text}</p>`)}</div>
+        ${cv ? html`<${Label} x=${0} y=${0} w=${sheetW - 22} color="ink">${cv.kind === 'event' ? cv.title : cv.title + '  -  ' + cv.sub}<//>
+          <div class="n-lines" style=${at(0, 12, sheetW - 22, sheetH - 24)}>${cv.lines.slice(shown * perPage, (shown + 1) * perPage).map(parseLine).map((l) => html`<p class=${'ln ' + l.tone}>${l.sign ? l.sign + ' ' : ''}${l.text}</p>`)}</div>
           ${pages > 1 ? html`<${Label} x=${sheetW - 86} y=${sheetH - 24} color="soft">${shown + 1}/${pages}<//>` : null}`
         : html`<${Label} x=${0} y=${0} w=${sheetW - 22} color="ink">No modifier is on offer this floor.<//>
           <${Label} x=${0} y=${12} w=${sheetW - 22} color="soft">You can still visit the vendor, ready up or cash out.<//>`}

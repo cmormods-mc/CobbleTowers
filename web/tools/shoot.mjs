@@ -21,6 +21,13 @@ export const SHOTS = {
   intermission: { payloads: [fixture('IntermissionState')] },
   reward: { payloads: [fixture('IntermissionState'), fixture('RewardReveal')] },
   reward_armor: { payloads: [fixture('IntermissionState'), fixture('RewardReveal', (d) => { d.grants.reverse(); })] },
+  relic_draft: { payloads: [fixture('IntermissionState', (d) => { d.draft.cards = [
+    { id: 'cobbletowers:ember_brand', displayName: 'Ember Brand', votes: 0, risk: 0, theme: 'custom:', lines: ['[+] Your Fire moves deal 25% more damage.', 'Tags: offense', 'Held for this run; not permanent equipment.'] },
+    { id: 'cobbletowers:guardian_ward', displayName: 'Guardian Ward', votes: 1, risk: 0, theme: 'custom:', lines: ['[+] Your side takes 10% less damage.', 'Tags: sustain', 'Held for this run; not permanent equipment.'] },
+    { id: 'cobbletowers:pacemaker', displayName: 'Pacemaker', votes: 0, risk: 1, theme: 'custom:', lines: ['[+] Your lead starts with +2 Speed.', '[-] Your lead starts at 85% HP.', 'Tags: tempo, risk', 'Held for this run; not permanent equipment.'] }]; d.floor = 5; })] },
+  room_forge: { payloads: [fixture('IntermissionState', (d) => { d.draft.cards = [
+    { id: 'cobbletowers:event/forge_pay', displayName: 'Forge: every player pays 175 CobbleDollars for a battle relic', votes: 0, risk: -1, theme: 'event', lines: ['Forge: every player pays 175 CobbleDollars for a battle relic'] },
+    { id: 'cobbletowers:event/forge_leave', displayName: 'Forge: walk away', votes: 0, risk: -1, theme: 'event', lines: ['Forge: walk away'] }]; d.floor = 3; })] },
   vendor: { payloads: [fixture('IntermissionState'), fixture('VendorCatalog')] },
   draft_done: { payloads: [fixture('RentalDraft')] },
   draft_sealed: { payloads: [fixture('RentalDraft', openDraft)] },

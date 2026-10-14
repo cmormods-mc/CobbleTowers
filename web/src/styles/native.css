@@ -98,3 +98,4 @@ html.plainfont { --font: "Lucida Console", "Courier New", monospace; }
 .c-burg { color: #7a2a22; }
 .ns.top { z-index: 20; }
 .ic.item { background-image: url(assets/items.png); image-rendering: pixelated; }
+.n-btn .n-lines.wrap { white-space: normal; overflow: hidden; text-align: left; }
