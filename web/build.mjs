@@ -74,7 +74,10 @@ const result = await build({
 const stamp = crypto.createHash('sha256');
 (function hashTree(d) { for (const e of fs.readdirSync(d, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
   const p = path.join(d, e.name);
-  if (e.isDirectory()) hashTree(p); else stamp.update(e.name).update(fs.readFileSync(p));
+  // text files hash the same whether a checkout gave them LF or CRLF line endings
+  const text = /\.(txt|js|css|html)$/.test(e.name);
+  const bytes = e.isDirectory() ? null : text ? Buffer.from(fs.readFileSync(p, 'utf8').split(String.fromCharCode(13, 10)).join(String.fromCharCode(10))) : fs.readFileSync(p);
+  if (e.isDirectory()) hashTree(p); else stamp.update(e.name).update(bytes);
 } })(out); // every shipped file, so an art-only change still refreshes the installed copy
 const version = stamp.digest('hex').slice(0, 12);
 fs.writeFileSync(path.join(out, 'index.html'), `<!DOCTYPE html>

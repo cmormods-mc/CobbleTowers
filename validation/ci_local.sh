@@ -79,13 +79,23 @@ step "Check the committed web UI bundle is current"
 if command -v node >/dev/null 2>&1 && [ -d web/node_modules ]; then
   web_tmp="$(mktemp -d)"
   WEB_OUT="$web_tmp/cobbletowers" node web/build.mjs >/dev/null
-  if ! diff -r -q "$web_tmp/cobbletowers" src/main/resources/web/cobbletowers >/dev/null; then
-    echo "ci_local: src/main/resources/web/cobbletowers is stale; run 'node build.mjs' in web/ and commit the result." >&2
-    diff -r -q "$web_tmp/cobbletowers" src/main/resources/web/cobbletowers >&2 || true
-    rm -rf "$web_tmp"
+  # Compared with what is committed (the index), not the working copy: with core.autocrlf git rewrites a checked-out file with
+  # CRLF, which would differ from a fresh build though the commit is right.
+  stale=""
+  built="$(cd "$web_tmp/cobbletowers" && find . -type f | sed 's#^\./##' | sort)"
+  for rel in $built; do
+    want="$(git rev-parse ":src/main/resources/web/cobbletowers/$rel" 2>/dev/null || echo missing)"
+    have="$(git hash-object "$web_tmp/cobbletowers/$rel")"
+    [ "$want" = "$have" ] || stale="$stale $rel"
+  done
+  for rel in $(git ls-files src/main/resources/web/cobbletowers | sed 's#^src/main/resources/web/cobbletowers/##'); do
+    [ -f "$web_tmp/cobbletowers/$rel" ] || stale="$stale $rel(not built any more)"
+  done
+  rm -rf "$web_tmp"
+  if [ -n "$stale" ]; then
+    echo "ci_local: src/main/resources/web/cobbletowers is stale; run 'node build.mjs' in web/ and commit the result. Differs:$stale" >&2
     exit 1
   fi
-  rm -rf "$web_tmp"
 else
   echo "ci_local: node or web/node_modules is missing; skipping the web bundle check (run 'npm install' in web/)."
 fi
