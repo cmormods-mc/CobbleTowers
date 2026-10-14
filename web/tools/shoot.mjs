@@ -45,14 +45,20 @@ export const SHOTS = {
   mastery: { payloads: [fixture('TowerHallState'), fixture('MasteryScreen')] },
   mastery_board: { payloads: [fixture('TowerHallState'), fixture('MasteryScreen'), ['MasteryScreen', fixture('MasteryBoard')[1]]] },
   scouting: { payloads: [fixture('ScoutingReveal')] },
-  spectator: { payloads: [fixture('RunEffects'), fixture('SpectatorPanel')], hud: true },
+  spectator: { payloads: [fixture('SpectatorPanel')], hud: true },
   settings: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.click('button:has-text("Settings")'); } },
+  current_run: { payloads: [fixture('TowerHallState'), fixture('TowerFeatureState', (d) => { d.requestId = 0; d.section = 'run'; d.title = 'Current Run'; d.actions = []; d.entries = [
+    { id: 'run', title: 'This run', lines: ['Neutral Tower, floor 6 (Ascension 1)', 'Difficulty rating: Hard (7): 3 challenges, Ascension 1', '[+] Risk carried: +20% to your final payout.', '3 modifiers, 2 relics (room for 6).'], actions: [] },
+    { id: 'mod:a', title: 'Modifier: Sharpened Claws x2 (floor 3)', lines: ['[+] Moderate risk  *  +8% to your final payout', '[-] Foes rise 2 levels above the tower.', 'The risk you carry is paid out when the tower ends.'], actions: [] },
+    { id: 'mod:b', title: 'Modifier: Glass Cannon (floor 5)', lines: ['[+] Start battles with +2 Attack and Sp. Atk.', '[-] Start battles at 60% HP.'], actions: [] },
+    { id: 'relic:a:0', title: 'Relic: Ember Brand (floor 5)', lines: ['[+] Your Fire moves deal 25% more damage.', 'Tags: offense', 'Held for this run; not permanent equipment.'], actions: [] },
+    { id: 'relic:b:1', title: 'Relic: Guardian Ward (floor 5)', lines: ['[+] Your side takes 10% less damage.', 'Tags: sustain'], actions: [] },
+    { id: 'bonus:s', title: 'Set bonus: Offense Set (2)', lines: ['[+] Your side deals 5% more damage.', 'Set bonus: while you hold 2 or more offense relics.'], actions: [] }]; })], steps: async (page) => { await page.click('button:has-text("Current Run") >> nth=0'); } },
   feature_list: { payloads: [fixture('TowerHallState'), fixture('TowerFeatureState', (d) => { d.requestId = 0; })] },
   feature_entry: { payloads: [fixture('TowerFeatureState', (d) => { d.requestId = 0; })], steps: async (page) => { await page.click('button:has-text("Champion")'); } },
   feature_review: { payloads: [fixture('TowerFeatureState', (d) => { d.requestId = 0; })], steps: async (page) => { await page.click('button:has-text("Club banner")'); await page.click('button:has-text("Set banner")'); } },
   tracks: { payloads: [fixture('TowerHallState'), fixture('TrackState')], steps: async (page) => { await page.click('button:has-text("Progress")'); await page.click('.slot >> nth=4'); } },
   tracks_season: { payloads: [fixture('TowerHallState'), fixture('TrackState')], steps: async (page) => { await page.click('button:has-text("Progress")'); await page.click('button:has-text("Season")'); await page.click('.slot >> nth=2'); } },
-  hud: { payloads: [fixture('RunEffects')], hud: true },
 };
 
 const browser = await chromium.launch();

@@ -5,7 +5,6 @@ import com.cobbletowers.network.ClientUi;
 import com.cobbletowers.network.IntermissionStatePayload;
 import com.cobbletowers.network.RentalDraftPayload;
 import com.cobbletowers.network.RewardRevealPayload;
-import com.cobbletowers.network.RunEffectsPayload;
 import com.cobbletowers.network.VendorCatalogPayload;
 import com.cobbletowers.rental.RentalDraft;
 import com.cobbletowers.rental.RentalDraw;
@@ -28,7 +27,7 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class WebPreviewCommand {
 
-    private static final List<String> SCREENS = List.of("intermission", "reward", "vendor", "draft", "hud");
+    private static final List<String> SCREENS = List.of("intermission", "reward", "vendor", "draft", "spectator");
 
     private WebPreviewCommand() {}
 
@@ -58,9 +57,7 @@ public final class WebPreviewCommand {
             case "draft" -> RentalSetRegistry.all().isEmpty() ? null
                     : RentalDraftPayload.of(new RentalDraft(RentalDraw.draw(RentalSetRegistry.all(), player.getRandom().nextLong(), true)),
                             "", com.cobbletowers.battle.cobblemon.CobblemonMoves::resolve);
-            case "hud" -> new RunEffectsPayload(4, 20, List.of(
-                    new RunEffectsPayload.Item("Lucky Charm", true, 1, 2, List.of("Loot swells to x1.25")),
-                    new RunEffectsPayload.Item("Glass Cannon", false, 1, 3, List.of("+2 Attack, start at 60% HP"))));
+            case "spectator" -> new com.cobbletowers.network.SpectatorPanelPayload("Ash", 4, 6, 7, "In battle");
             default -> null;
         };
         if (payload == null) {

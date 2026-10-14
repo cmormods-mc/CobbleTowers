@@ -10,11 +10,10 @@ export const initial = Object.freeze({
   reward: null,      // shown over any screen until dismissed
   vendor: null,      // the vendor catalog; vendorOpen says whether it is showing
   vendorOpen: false,
-  fx: null,          // RunEffects, for the HUD page
   hall: null,        // TowerHallState
   play: null,        // PlayState (also carried inside TowerHallState)
   scout: null,       // ScoutingReveal (screen 'scout')
-  spec: null,        // SpectatorPanel, for the HUD page
+  spec: null, specAt: 0, // SpectatorPanel, for the HUD page, and when it last arrived
   mast: null,        // MasteryScreen (view 'mastery')
   reg: null,         // RegistrationState (the party chooser, view 'party')
   view: 'hall',      // inside the hall screen: 'hall' | 'tower' | 'trial' | 'lobby' | 'party' | 'mastery' | 'settings'
@@ -90,9 +89,7 @@ export function reduce(state, kind, data, now) {
     case 'ScoutingReveal':
       return { ...state, scout: data, screen: 'scout' };
     case 'SpectatorPanel':
-      return { ...state, spec: data };
-    case 'RunEffects':
-      return { ...state, fx: data };
+      return { ...state, spec: data, specAt: now };
     default:
       return state;
   }

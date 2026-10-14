@@ -132,7 +132,6 @@ public final class TowerBossAdapter {
         }
 
         UUID started = ((StartResult.Started) result).encounterId();
-        for (ServerPlayer fighter : players) com.cobbletowers.menu.RunEffectsService.send(fighter, runId);
         Binding binding = new Binding(runId, floorIndex, boss.definition(), boss.level());
         BY_ENCOUNTER.put(started, binding);
         ENCOUNTER_BY_RUN.put(runId, started);

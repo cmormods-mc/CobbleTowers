@@ -41,9 +41,10 @@ test('a rental draft opens its screen and its message becomes a notice', () => {
   assert.notEqual(t.notice.id, s.notice.id, 'the same text again is a new notice');
 });
 
-test('run effects only feed the HUD slice', () => {
-  const s = reduce(initial, 'RunEffects', { floor: 4, riskPercent: 20, items: [] }, 1);
-  assert.equal(s.fx.floor, 4);
+test('a spectator panel only feeds the HUD slice, and remembers when it arrived', () => {
+  const s = reduce(initial, 'SpectatorPanel', { teammateName: 'Ash', remainingCount: 4, totalCount: 6, floorIndex: 7, runStateLabel: 'In battle' }, 1234);
+  assert.equal(s.spec.teammateName, 'Ash');
+  assert.equal(s.specAt, 1234);
   assert.equal(s.screen, null);
 });
 

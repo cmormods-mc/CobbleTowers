@@ -1,21 +1,18 @@
 import { useEffect } from 'preact/hooks';
 import { html } from '../html.js';
 import { closeGui } from '../bridge.js';
-import { load } from '../settings.js';
 
-/** The run-effects overlay (the HUD page, opened with #hud). Click-through; closes itself when the run is over. */
-export function Hud({ fx, spec }) {
-  const over = !fx || fx.floor === 0;
-  useEffect(() => { if (fx && fx.floor === 0) closeGui(); }, [fx]);
-  const panel = spec ? html`<div id="specbox" class="nine dark"><b class="gold">Following ${spec.teammateName}</b>
-    <div>${spec.remainingCount}/${spec.totalCount} Pokemon remaining</div><div class="sub">Floor ${spec.floorIndex} - ${spec.runStateLabel}</div></div>` : null;
-  if (over || !load().hud) return panel;
-  return html`${panel}<div id="hudbox"><div class="nine dark">
-    <div class="row1"><b>Run effects</b><span class="gold">floor ${fx.floor}</span></div>
-    <div class="sub">risk ${fx.riskPercent}%</div>
-    ${fx.items.length
-      ? fx.items.map((i) => html`<div class="it">${i.name}${i.count > 1 ? ` ×${i.count}` : ''}${i.relic ? html` <img src="assets/gui/byzantine/seal.png" alt="" />` : null}
-          ${i.lines && i.lines[0] ? html`<small>${i.lines[0]}</small>` : null}</div>`)
-      : html`<div class="sub">No modifiers or relics yet.</div>`}
-  </div></div>`;
+/** How long a spectator panel stays up with no update before it hides and the page closes. */
+export const STALE_MS = 120_000;
+
+/** The HUD page (opened with #hud): only the spectator panel, click-through. */
+export function Hud({ spec, specAt }) {
+  useEffect(() => {
+    if (!spec) return undefined;
+    const id = setTimeout(closeGui, Math.max(0, specAt + STALE_MS - Date.now()));
+    return () => clearTimeout(id);
+  }, [spec, specAt]);
+  if (!spec) return null;
+  return html`<div id="specbox" class="nine dark"><b class="gold">Following ${spec.teammateName}</b>
+    <div>${spec.remainingCount}/${spec.totalCount} Pokemon remaining</div><div class="sub">Floor ${spec.floorIndex} - ${spec.runStateLabel}</div></div>`;
 }

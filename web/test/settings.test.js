@@ -9,8 +9,8 @@ test('defaults when nothing or junk is stored; a saved choice comes back', () =>
   assert.deepEqual(load(store({ 'cobbletowers.ui': 'not json' })), DEFAULTS);
   assert.deepEqual(load(store({ 'cobbletowers.ui': '{"motion":"yes"}' })), DEFAULTS);
   const s = store({});
-  save({ motion: false, pixelFont: true, hud: false }, s);
-  assert.deepEqual(load(s), { motion: false, pixelFont: true, hud: false });
+  save({ motion: false, pixelFont: true }, s);
+  assert.deepEqual(load(s), { motion: false, pixelFont: true });
 });
 
 test('apply sets the root classes', () => {

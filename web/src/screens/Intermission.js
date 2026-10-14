@@ -83,7 +83,7 @@ export function Intermission({ inter, at: arrived }) {
       <${Panel} x=${panelX} y=${4} w=${panelW} h=${SH - 8} />
       <${Label} x=${0} y=${12} w=${SW} center>Floor ${inter.floor} cleared<//>
       <${Label} x=${panelX + 12} y=${22} w=${panelW - 24} color=${inter.countdown >= 0 ? 'bronze' : 'muted'}>${hint}${inter.countdown >= 0 ? html`<${Countdown} from=${inter.countdown} at=${arrived} />` : ''}<//>
-      <${NB} x=${panelX + panelW - 70} y=${9} w=${62} h=${16} kind="dark" onClick=${() => sendFeature('run')}>This run<//>
+      <${NB} x=${panelX + panelW - 86} y=${9} w=${78} h=${16} kind="dark" onClick=${() => sendFeature('run')}>Current Run<//>
       ${draft.cards.map((c, i) => html`<${Card} key=${c.id} x=${cardsLeft + i * (cardW + gap)} y=${cardsTop} w=${cardW} h=${cardH} card=${c}
         selected=${open && i === selected} chosen=${draft.state === 2 && i === draft.chosen} enabled=${open && idle && !pending}
         onPick=${() => setView({ offer, selected: i })} onHover=${(on) => setHover(on ? i : -1)} />`)}

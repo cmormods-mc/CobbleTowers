@@ -32,10 +32,6 @@ public final class CobbleTowersClient implements ClientModInitializer {
     private static final KeyMapping CYCLE_PREVIOUS = new KeyMapping("key.cobbletowers.cycle_previous",
             InputConstants.Type.KEYSYM, InputConstants.KEY_COMMA, KeyMapping.CATEGORY_MISC);
 
-    /** Shows or hides what the run is carrying, over a fight (P41). */
-    static final KeyMapping RUN_EFFECTS = new KeyMapping("key.cobbletowers.run_effects",
-            InputConstants.Type.KEYSYM, InputConstants.KEY_K, KeyMapping.CATEGORY_MISC);
-
     private static final KeyMapping OPEN_MENU = new KeyMapping("key.cobbletowers.open_menu",
             InputConstants.Type.KEYSYM, InputConstants.KEY_J, KeyMapping.CATEGORY_MISC);
 
@@ -43,10 +39,6 @@ public final class CobbleTowersClient implements ClientModInitializer {
     public void onInitializeClient() {
         TowerUiSettings.load();
         KeyBindingHelper.registerKeyBinding(OPEN_MENU);
-        KeyBindingHelper.registerKeyBinding(RUN_EFFECTS);
-        ClientPlayNetworking.registerGlobalReceiver(com.cobbletowers.network.RunEffectsPayload.TYPE,
-                (payload, context) -> context.client().execute(() -> RunEffectsHud.update(payload)));
-        HudRenderCallback.EVENT.register(RunEffectsHud.INSTANCE);
         KeyBindingHelper.registerKeyBinding(PRESENTATION);
         KeyBindingHelper.registerKeyBinding(CYCLE_NEXT);
         KeyBindingHelper.registerKeyBinding(CYCLE_PREVIOUS);
@@ -161,7 +153,6 @@ public final class CobbleTowersClient implements ClientModInitializer {
             while (OPEN_MENU.consumeClick()) {
                 if (client.player != null) client.player.connection.sendCommand("tower menu");
             }
-            while (RUN_EFFECTS.consumeClick()) if (RunEffectsHud.available()) RunEffectsHud.toggle();
             while (CYCLE_NEXT.consumeClick()) sendCycle(true);
             while (CYCLE_PREVIOUS.consumeClick()) sendCycle(false);
         });

@@ -46,3 +46,16 @@ export function actionPlan(action) {
   if (action.id === 'page') return 'page';
   return action.confirmation || action.inputHint ? 'review' : 'send';
 }
+
+/** The Current Run page's content, from the "run" menu's entries: a summary, then modifiers, relics and set bonuses. */
+export function runPage(data) {
+  const group = (prefix) => data.entries.filter((e) => e.id.startsWith(prefix)).map((e) => ({
+    title: e.title.replace(/^(Modifier|Relic|Set bonus): /, ''),
+    lines: e.lines.filter((l) => !l.startsWith('Tags: ') && !l.startsWith('The risk you carry') && !l.startsWith('Held for this run')),
+  }));
+  return {
+    none: data.entries.find((e) => e.id === 'none') || null,
+    summary: data.entries.find((e) => e.id === 'run') || null,
+    modifiers: group('mod:'), relics: group('relic:'), bonuses: group('bonus:'),
+  };
+}

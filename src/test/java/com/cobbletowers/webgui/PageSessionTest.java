@@ -100,11 +100,11 @@ class PageSessionTest {
     @Test
     @DisplayName("the HUD page is tracked apart from the full-screen page")
     void hudIsSeparate() {
-        assertEquals(OPEN, offer("RunEffects", "{fx}", true, UPDATE_OR_OPEN, true, 0));
+        assertEquals(OPEN, offer("SpectatorPanel", "{fx}", true, UPDATE_OR_OPEN, true, 0));
         assertEquals(OPEN, offer("IntermissionState", "{i}", false, UPDATE_OR_OPEN_IF_FLAGGED, true, 10));
         assertEquals(List.of("{fx}"), session.hello(true, 100));
         assertEquals(List.of("{i}"), session.hello(false, 120));
-        assertEquals(EMIT, offer("RunEffects", "{fx2}", true, UPDATE_OR_OPEN, true, 1_000));
+        assertEquals(EMIT, offer("SpectatorPanel", "{fx2}", true, UPDATE_OR_OPEN, true, 1_000));
         assertEquals(EMIT, offer("IntermissionState", "{i2}", false, UPDATE_OR_OPEN_IF_FLAGGED, false, 1_000));
     }
 

@@ -99,3 +99,9 @@ html.plainfont { --font: "Lucida Console", "Courier New", monospace; }
 .ns.top { z-index: 20; }
 .ic.item { background-image: url(assets/items.png); image-rendering: pixelated; }
 .n-btn .n-lines.wrap { white-space: normal; overflow: hidden; text-align: left; }
+
+/* Current Run page */
+.run-scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: #8c6a3a transparent; padding-right: calc(var(--g) * 3); }
+.run-scroll p.ln { margin: 0 0 calc(var(--g) * 1.5); } .run-scroll p.ln.head { color: #e3bd7f; margin-top: calc(var(--g) * 3); }
+.run-scroll p.ln.title { color: #f0dfbf; margin-top: calc(var(--g) * 2); } .run-scroll p.ln.muted { color: #c6ac87; }
+.run-scroll p.ln.neutral { color: #c6ac87; }

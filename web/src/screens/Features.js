@@ -3,7 +3,7 @@ import { html } from '../html.js';
 import { act, closeGui } from '../bridge.js';
 import { get, update, useStore } from '../store.js';
 import { beginFeature, featureDelayed, goBack, leaveFeature, setFui } from '../reducer.js';
-import { actionPlan, featureView, iconOf } from '../features.js';
+import { actionPlan, featureView, iconOf, runPage } from '../features.js';
 import { parseLine } from '../lines.js';
 import { at, box, Card, Label, NB, Panel, screen } from '../components/native.js';
 
@@ -37,6 +37,28 @@ function choose(section, action) {
   else sendFeature(section, action.id, action.argument);
 }
 
+/** The Current Run tab: what the run carries, at a glance. */
+function RunPage({ data, b, H }) {
+  const v = runPage(data);
+  const empty = (list, text) => (list.length ? null : html`<p class="ln muted">${text}</p>`);
+  const block = (name, list, none) => html`
+    <p class="ln head">${name} (${list.length})</p>
+    ${empty(list, none)}
+    ${list.map((m) => html`<p class="ln title">${m.title}</p>${m.lines.map(parseLine).map((l) => html`<p class=${'ln ' + l.tone}>${l.sign ? l.sign + ' ' : ''}${l.text}</p>`)}`)}`;
+  if (v.none) return html`<${Panel} x=${b.x} y=${b.y} w=${b.w} h=${40}><${Label} x=${0} y=${2} w=${b.w - 14}>${v.none.title}<//><//>
+    <div class="n-lines lit" style=${at(b.x + 7, b.y + 48, b.w - 14, 40)}>${v.none.lines.join(' ')}</div>`;
+  return html`
+    <${Panel} x=${b.x} y=${b.y} w=${b.w} h=${62}>
+      <div class="n-lines lit" style=${at(0, 0, b.w - 16, 56)}>${(v.summary ? v.summary.lines : []).map(parseLine).map((l) => html`<p class=${'ln ' + l.tone}>${l.sign ? l.sign + ' ' : ''}${l.text}</p>`)}</div>
+    <//>
+    <${Panel} x=${b.x} y=${b.y + 66} w=${b.w} h=${H - 46 - (b.y + 66)} />
+    <div class="scroll n-lines lit run-scroll" style=${at(b.x + 7, b.y + 71, b.w - 14, H - 56 - (b.y + 66))}>
+      ${block('Modifiers', v.modifiers, 'No modifiers yet.')}
+      ${block('Relics', v.relics, 'No relics yet.')}
+      ${v.bonuses.length ? block('Set bonuses', v.bonuses, '') : null}
+    </div>`;
+}
+
 function Lines({ lines, x, y, w, h }) {
   return html`<div class="n-lines" style=${at(x, y, w, h)}>${lines.map(parseLine).map((l) => html`<p class=${'ln-' + l.tone}>${l.sign ? html`<i>${l.sign}</i> ` : null}${l.text}</p>`)}</div>`;
 }
@@ -65,6 +87,7 @@ export function Features() {
     return html`<${Panel} x=${b.x} y=${b.y} w=${b.w} h=${26} /><${Label} x=${b.x + 7} y=${b.y + 9}>Loading...<//>${footer}`;
   }
 
+  if (data.section === 'run') return html`<${RunPage} data=${data} b=${b} H=${H} />${footer}`;
   const v = featureView(data, ui, H, b.y);
   return html`
     <${Panel} x=${b.x} y=${b.y} w=${b.w} h=${26} />

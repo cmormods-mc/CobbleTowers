@@ -81,9 +81,9 @@ export function App() {
 }
 
 export function HudApp() {
-  const fx = useStore((s) => s.fx);
   const spec = useStore((s) => s.spec);
-  return html`<${Hud} fx=${fx} spec=${spec} />`;
+  const specAt = useStore((s) => s.specAt);
+  return html`<${Hud} spec=${spec} specAt=${specAt} />`;
 }
 
 export { isHud };

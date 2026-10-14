@@ -1,14 +1,13 @@
 // The page's own presentation settings (the native TowerUiSettings): kept in the browser, applied as classes on <html>.
 
 const KEY = 'cobbletowers.ui';
-export const DEFAULTS = Object.freeze({ motion: true, pixelFont: true, hud: true });
+export const DEFAULTS = Object.freeze({ motion: true, pixelFont: true });
 
 /** Reads what is stored; anything unreadable or missing falls back to the default. */
 export function load(storage = globalThis.localStorage) {
   try {
     const saved = JSON.parse(storage.getItem(KEY) || '{}');
-    return { motion: typeof saved.motion === 'boolean' ? saved.motion : DEFAULTS.motion, pixelFont: typeof saved.pixelFont === 'boolean' ? saved.pixelFont : DEFAULTS.pixelFont,
-      hud: typeof saved.hud === 'boolean' ? saved.hud : DEFAULTS.hud };
+    return { motion: typeof saved.motion === 'boolean' ? saved.motion : DEFAULTS.motion, pixelFont: typeof saved.pixelFont === 'boolean' ? saved.pixelFont : DEFAULTS.pixelFont };
   } catch (e) {
     return { ...DEFAULTS };
   }

@@ -18,7 +18,7 @@ import java.util.Map;
 final class PageSession {
 
     /** The one kind shown on the HUD page; everything else belongs to the full-screen page. */
-    static final String HUD_KIND = "RunEffects";
+    static final String HUD_KIND = "SpectatorPanel";
 
     /** What a payload does when it reaches a page, mirroring what the native client does with the same payload. */
     enum Policy {

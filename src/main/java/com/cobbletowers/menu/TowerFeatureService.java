@@ -54,6 +54,7 @@ public final class TowerFeatureService {
         List<String> head=new ArrayList<>();
         head.add((tower==null?run.towerId().toString():tower.displayName())+", floor "+run.floorIndex()+(tower!=null&&tower.ascension()&&tower.ascensionOf(run.floorIndex())>0?" (Ascension "+tower.ascensionOf(run.floorIndex())+")":""));
         int risk=com.cobbletowers.reward.RewardBankService.riskBonusPercent(content,run);
+        head.add(com.cobbletowers.modifier.RunDifficulty.of(content,run.modifiers(),com.cobbletowers.modifier.DraftService.ascensionOf(run)).line().replaceFirst("^","Difficulty rating: "));
         head.add(ModifierMenuText.GOOD+"Risk carried: +"+risk+"% to your final payout.");
         var held=com.cobbletowers.modifier.DraftService.held(content,run.modifiers());
         var relics=com.cobbletowers.modifier.DraftService.relicsHeld(content,run.modifiers());
@@ -229,7 +230,7 @@ public final class TowerFeatureService {
                 actions.add(link("This run","run"));
             }
             case "run" -> {
-                title="Current run";
+                title="Current Run";
                 runView(entries,id);
                 actions.add(link("Modifier codex","modifiers"));
                 actions.add(link("Relic codex","relics"));

@@ -5,7 +5,7 @@ import { box, Label, NB, Panel, at } from '../components/native.js';
 
 const TABS = ['General', 'Audio', 'Keybinds'];
 const NOTES = {
-  General: 'Reduced motion keeps every choice available. The plain font uses your system font instead of the pixel font. The run effects overlay is the panel of modifiers and relics shown during a run; /tower run opens the full list.',
+  General: 'Reduced motion keeps every choice available. The plain font uses your system font instead of the pixel font. What your run carries is on the Current Run tab.',
   Audio: 'Game volume remains in Minecraft sound settings. The tower pages make no sounds of their own.',
   Keybinds: 'Tower keys are set in Minecraft\'s controls screen, under Miscellaneous.',
 };
@@ -22,7 +22,6 @@ export function Settings() {
     <${Panel} x=${b.x + rail + 6} y=${b.y + 4} w=${b.w - rail - 6} h=${b.bottom - b.y - 4} kind="dark" />
     ${tab === 'General' ? html`
       <${NB} x=${b.x + rail + 14} y=${b.y + 14} w=${b.w - rail - 22} kind=${s.motion ? 'primary' : 'dark'} onClick=${() => flip('motion')}>Animations: ${s.motion ? 'On' : 'Off'}<//>
-      <${NB} x=${b.x + rail + 14} y=${b.y + 40} w=${b.w - rail - 22} kind=${s.pixelFont ? 'primary' : 'dark'} onClick=${() => flip('pixelFont')}>Pixel font: ${s.pixelFont ? 'On' : 'Off'}<//>
-      <${NB} x=${b.x + rail + 14} y=${b.y + 66} w=${b.w - rail - 22} kind=${s.hud ? 'primary' : 'dark'} onClick=${() => flip('hud')}>Run effects overlay: ${s.hud ? 'On' : 'Off'}<//>` : null}
-    <div class="n-lines lit" style=${at(b.x + rail + 14, b.y + (tab === 'General' ? 96 : 16), b.w - rail - 22, 80)}>${NOTES[tab]}</div>`;
+      <${NB} x=${b.x + rail + 14} y=${b.y + 40} w=${b.w - rail - 22} kind=${s.pixelFont ? 'primary' : 'dark'} onClick=${() => flip('pixelFont')}>Pixel font: ${s.pixelFont ? 'On' : 'Off'}<//>` : null}
+    <div class="n-lines lit" style=${at(b.x + rail + 14, b.y + (tab === 'General' ? 70 : 16), b.w - rail - 22, 80)}>${NOTES[tab]}</div>`;
 }

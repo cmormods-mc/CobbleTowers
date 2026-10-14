@@ -7,7 +7,7 @@ import com.cobbletowers.definition.RentalSetDefinition;
 import com.cobbletowers.network.IntermissionStatePayload;
 import com.cobbletowers.network.RentalDraftPayload;
 import com.cobbletowers.network.RewardRevealPayload;
-import com.cobbletowers.network.RunEffectsPayload;
+import com.cobbletowers.network.SpectatorPanelPayload;
 import com.cobbletowers.network.VendorCatalogPayload;
 import com.cobbletowers.rental.RentalDraft;
 import com.cobbletowers.rental.RentalDraw;
@@ -114,9 +114,9 @@ class PayloadJsonTest {
         assertEquals("cobblemon:super_potion", grant.get("item").getAsString());
         assertEquals(2, grant.get("amount").getAsInt());
 
-        var effects = new RunEffectsPayload(4, 20, List.of(new RunEffectsPayload.Item("Lucky Charm", true, 1, 2, List.of("Loot swells to x1.25"))));
-        fixture("RunEffects", effects);
-        assertEquals("Lucky Charm", PayloadJson.envelope(effects).getAsJsonObject("data").getAsJsonArray("items").get(0).getAsJsonObject().get("name").getAsString());
+        var panel = new SpectatorPanelPayload("Ash", 4, 6, 7, "In battle");
+        fixture("SpectatorPanel", panel);
+        assertEquals("Ash", PayloadJson.envelope(panel).getAsJsonObject("data").get("teammateName").getAsString());
 
         UUID me = UUID.fromString("00000000-0000-0000-0000-000000000001");
         var vendor = new VendorCatalogPayload(180, List.of(new VendorCatalogPayload.Entry(

@@ -115,6 +115,7 @@ export function Hall({ hall, tab, page, busy, view, pick }) {
     if (id === 'codex') return sendFeature('modifiers');
     if (id === 'echoes') return sendFeature('echoes');
     if (id === 'collection') return sendFeature('collection');
+    if (id === 'run') return sendFeature('run');
     update((s) => setRecords(setTab(s, id), false));
     if (id === 'progress') sendTrack('refresh');
     return undefined;
