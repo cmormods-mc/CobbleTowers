@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "reward",
+  "display_name": "Economy Set (4)",
+  "risk": "minor",
+  "weight": 1,
+  "stack_limit": 1,
+  "tag_bonus": {
+    "tag": "economy",
+    "count": 4
+  },
+  "effect": {
+    "reward_percent": 115
+  }
+}

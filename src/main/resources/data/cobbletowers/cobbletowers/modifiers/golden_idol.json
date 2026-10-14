@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "reward",
+  "display_name": "Golden Idol",
+  "risk": "moderate",
+  "weight": 30,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "economy",
+    "risk"
+  ],
+  "effect": {
+    "reward_percent": 140,
+    "level_offset": 2
+  }
+}

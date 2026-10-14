@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Tempo Set (4)",
+  "risk": "minor",
+  "weight": 1,
+  "stack_limit": 1,
+  "tag_bonus": {
+    "tag": "tempo",
+    "count": 4
+  },
+  "effect": {
+    "battle": [
+      {
+        "op": "boost",
+        "side": "self",
+        "stat": "spe",
+        "stages": 1
+      },
+      {
+        "op": "sidecondition",
+        "side": "self",
+        "id": "tailwind",
+        "duration": 3
+      }
+    ]
+  }
+}

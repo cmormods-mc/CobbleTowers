@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Offense Set (4)",
+  "risk": "minor",
+  "weight": 1,
+  "stack_limit": 1,
+  "tag_bonus": {
+    "tag": "offense",
+    "count": 4
+  },
+  "effect": {
+    "battle": [
+      {
+        "op": "damage",
+        "side": "self",
+        "percent": 110
+      },
+      {
+        "op": "boost",
+        "side": "self",
+        "stat": "atk",
+        "stages": 1
+      },
+      {
+        "op": "boost",
+        "side": "self",
+        "stat": "spa",
+        "stages": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Verdant Seed",
+  "risk": "minor",
+  "weight": 40,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "offense"
+  ],
+  "effect": {
+    "battle": [
+      {
+        "op": "damage",
+        "side": "self",
+        "percent": 125,
+        "type": "Grass"
+      }
+    ]
+  }
+}

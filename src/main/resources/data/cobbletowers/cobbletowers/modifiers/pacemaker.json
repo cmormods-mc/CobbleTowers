@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Pacemaker",
+  "risk": "moderate",
+  "weight": 35,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "tempo",
+    "risk"
+  ],
+  "effect": {
+    "battle": [
+      {
+        "op": "boost",
+        "side": "self",
+        "stat": "spe",
+        "stages": 2
+      },
+      {
+        "op": "hp",
+        "side": "self",
+        "percent": 85
+      }
+    ]
+  }
+}

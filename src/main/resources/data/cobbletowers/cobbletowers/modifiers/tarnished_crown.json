@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Tarnished Crown",
+  "risk": "minor",
+  "weight": 45,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "offense"
+  ],
+  "effect": {
+    "battle": [
+      {
+        "op": "hp",
+        "side": "foe",
+        "percent": 85
+      }
+    ]
+  }
+}

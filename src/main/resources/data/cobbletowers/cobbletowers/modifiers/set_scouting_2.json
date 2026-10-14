@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "scouting",
+  "display_name": "Scouting Set (2)",
+  "risk": "minor",
+  "weight": 1,
+  "stack_limit": 1,
+  "tag_bonus": {
+    "tag": "scouting",
+    "count": 2
+  },
+  "effect": {
+    "scouting_bonus": 1
+  }
+}

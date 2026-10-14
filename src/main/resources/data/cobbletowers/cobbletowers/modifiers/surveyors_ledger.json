@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "scouting",
+  "display_name": "Surveyor's Ledger",
+  "risk": "minor",
+  "weight": 35,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "scouting",
+    "economy"
+  ],
+  "effect": {
+    "scouting_bonus": 2
+  }
+}

@@ -78,13 +78,14 @@ public final class RunEffectsService {
             ModifierDefinition relic = content.modifier(state.relics().get(i)).orElse(null);
             if (relic != null) items.add(item(relic, true, 1, state.relicFloor(i)));
         }
+        for (ModifierDefinition bonus : com.cobbletowers.modifier.DraftService.setBonusesActive(content, state)) items.add(item(bonus, true, 1, 0));
         if (items.size() > RunEffectsPayload.MAX_ITEMS) items = new ArrayList<>(items.subList(0, RunEffectsPayload.MAX_ITEMS));
         return new RunEffectsPayload(run.floorIndex(), RewardBankService.riskBonusPercent(content, run), items);
     }
 
     private static RunEffectsPayload.Item item(ModifierDefinition m, boolean relic, int count, int floor) {
         List<String> lines = new ArrayList<>();
-        boolean first = true;
+        boolean first = !relic;
         for (String line : ModifierMenuText.lines(m)) {
             // The first marked line is the risk payout, which the overlay's header already totals.
             boolean marked = line.startsWith(ModifierMenuText.GOOD) || line.startsWith(ModifierMenuText.BAD);

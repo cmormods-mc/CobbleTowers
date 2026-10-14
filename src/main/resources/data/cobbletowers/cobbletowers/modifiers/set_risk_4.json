@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "reward",
+  "display_name": "Risk Set (4)",
+  "risk": "minor",
+  "weight": 1,
+  "stack_limit": 1,
+  "tag_bonus": {
+    "tag": "risk",
+    "count": 4
+  },
+  "effect": {
+    "reward_percent": 125
+  }
+}

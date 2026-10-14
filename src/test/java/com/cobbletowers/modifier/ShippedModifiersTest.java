@@ -38,10 +38,29 @@ class ShippedModifiersTest {
     }
 
     @Test
-    @DisplayName("forty-one modifiers ship (25 ordinary, 4 custom, 12 relics), and every one parses and does something its type applies")
-    void twentyFiveShip() throws IOException {
-        assertEquals(41, load().size());
-        assertEquals(12, load().values().stream().filter(ModifierDefinition::relic).count());
+    @DisplayName("eighty-one modifiers ship (29 ordinary, 38 relics, 14 tag bonuses), and every one parses and does something its type applies")
+    void allShip() throws IOException {
+        assertEquals(81, load().size());
+        assertEquals(38, load().values().stream().filter(ModifierDefinition::relic).count());
+        assertEquals(14, load().values().stream().filter(m -> m.tagBonus().isPresent()).count());
+    }
+
+    @Test
+    @DisplayName("every relic tag has at least four relics and a 2-set and a 4-set bonus, so a four-set can be reached")
+    void tagsAreDeepEnoughForTheirBonuses() throws IOException {
+        Map<ResourceLocation, ModifierDefinition> all = load();
+        java.util.Set<String> tags = new java.util.TreeSet<>();
+        for (ModifierDefinition m : all.values()) if (m.relic()) tags.addAll(m.tags());
+        assertEquals(java.util.Set.of("sustain", "economy", "tempo", "offense", "scouting", "boss", "risk"), tags);
+        for (String tag : tags) {
+            long relics = all.values().stream().filter(m -> m.relic() && m.tags().contains(tag)).count();
+            assertTrue(relics >= 4, tag + " has only " + relics + " relics");
+            for (int count : new int[] {2, 4}) {
+                assertTrue(all.values().stream().anyMatch(m -> m.tagBonus().map(b -> b.tag().equals(tag) && b.count() == count).orElse(false)),
+                        tag + " has no " + count + "-set bonus");
+            }
+        }
+        assertTrue(all.values().stream().filter(m -> m.tagBonus().isPresent()).noneMatch(ModifierDefinition::relic));
     }
 
     @Test

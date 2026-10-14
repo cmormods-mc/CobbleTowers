@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Vampiric Fang",
+  "risk": "moderate",
+  "weight": 35,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "sustain",
+    "offense"
+  ],
+  "effect": {
+    "battle": [
+      {
+        "op": "drain",
+        "side": "self",
+        "percent": 10
+      }
+    ]
+  }
+}

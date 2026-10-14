@@ -57,6 +57,23 @@ public final class DraftService {
         return List.copyOf(held);
     }
 
+    /**
+     * The tag set bonuses (P45) a run has earned: each applies while the run holds at least its count of relics with its
+     * tag. In stable (id) order; a bonus is never drafted and never counts as a challenge.
+     */
+    public static List<ModifierDefinition> setBonusesActive(TowerContent content, RunModifierState state) {
+        java.util.Map<String, Integer> byTag = new java.util.HashMap<>();
+        for (ModifierDefinition relic : relicsHeld(content, state)) {
+            for (String tag : relic.tags()) byTag.merge(tag, 1, Integer::sum);
+        }
+        List<ModifierDefinition> active = new ArrayList<>();
+        for (ModifierDefinition bonus : content.tagBonuses()) {
+            var need = bonus.tagBonus().orElseThrow();
+            if (byTag.getOrDefault(need.tag(), 0) >= need.count()) active.add(bonus);
+        }
+        return List.copyOf(active);
+    }
+
     /** The seed a relic draft at this floor is drawn from, and its tie is broken with. */
     public static long relicSeed(PersistedRun run, int floorIndex) {
         return EncounterSeed.of(run.seed(), floorIndex, DraftDraw.RELIC_ORDINAL_BASE);
@@ -80,6 +97,7 @@ public final class DraftService {
             content.modifier(locked).ifPresent(counted::add);
         }
         counted.addAll(relicsHeld(content, state));
+        counted.addAll(setBonusesActive(content, state));
         return ModifierEffects.of(counted);
     }
 
@@ -90,6 +108,7 @@ public final class DraftService {
         TowerContent content = TowerDefinitionRegistry.content();
         List<ModifierDefinition> all = new ArrayList<>(held(content, run.modifiers()));
         all.addAll(relicsHeld(content, run.modifiers()));
+        all.addAll(setBonusesActive(content, run.modifiers()));
         return CustomEffects.of(all);
     }
 
@@ -240,7 +259,8 @@ public final class DraftService {
             // A regional milestone may also offer an Echo Duel, once the relic is chosen.
             Optional<com.cobbletowers.intermission.IntermissionEvents.Room> duel =
                     com.cobbletowers.intermission.IntermissionEvents.roomFor(TowerDefinitionRegistry.content(), afterRelic,
-                            draft.floorIndex(), com.cobbletowers.echo.EchoService.duelAvailable(server, afterRelic, draft.floorIndex()));
+                            draft.floorIndex(), com.cobbletowers.echo.EchoService.duelAvailable(server, afterRelic, draft.floorIndex()),
+                            balances(server));
             if (duel.isPresent()) {
                 afterRelic = afterRelic.withModifiers(next.withDraft(PersistedDraft.openingEvent(draft.floorIndex(),
                         com.cobbletowers.intermission.IntermissionEvents.cardsOf(duel.get()))), now);
@@ -262,7 +282,7 @@ public final class DraftService {
             // No relic to give: a non-milestone floor may have an event room instead.
             Optional<com.cobbletowers.intermission.IntermissionEvents.Room> room =
                     com.cobbletowers.intermission.IntermissionEvents.roomFor(content, after, draft.floorIndex(),
-                            com.cobbletowers.echo.EchoService.duelAvailable(server, after, draft.floorIndex()));
+                            com.cobbletowers.echo.EchoService.duelAvailable(server, after, draft.floorIndex()), balances(server));
             if (room.isPresent()) {
                 after = after.withModifiers(next.withDraft(PersistedDraft.openingEvent(draft.floorIndex(),
                         com.cobbletowers.intermission.IntermissionEvents.cardsOf(room.get()))), now);
@@ -278,12 +298,18 @@ public final class DraftService {
         return resolved;
     }
 
+    /** What each player has in their CobbleDollars wallet, for the rooms that charge (P45). */
+    private static java.util.function.ToLongFunction<UUID> balances(MinecraftServer server) {
+        var wallets = com.cobbletowers.persistence.TowerWalletStore.get(server);
+        return wallets::balanceOf;
+    }
+
     /** Applies the option an event room's vote chose (P34b). */
     private static PersistedDraft settleEvent(MinecraftServer server, PersistedRun run, UUID runId,
                                               PersistedDraft resolved, ResourceLocation won, boolean tie, long now) {
         var outcome = com.cobbletowers.intermission.IntermissionEvents.Option.fromCard(won).map(option ->
                 com.cobbletowers.intermission.IntermissionEvents.resolve(TowerDefinitionRegistry.content(), run,
-                        resolved.floorIndex(), option));
+                        resolved.floorIndex(), option, balances(server)));
         RunModifierState base = outcome.map(com.cobbletowers.intermission.IntermissionEvents.Outcome::state)
                 .orElse(run.modifiers());
         TowerRuns.save(server, run.withModifiers(base.withDraft(resolved), now), true);
@@ -294,6 +320,15 @@ public final class DraftService {
                     resolved.floorIndex());
             return resolved;
         }
+        // The run is saved first: a crash between the two leaves a free relic, never a paid-for nothing.
+        outcome.filter(o -> o.walletEach() != 0).ifPresent(o -> {
+            var wallets = com.cobbletowers.persistence.TowerWalletStore.get(server);
+            for (PersistedParticipant participant : run.participants()) {
+                if (o.walletEach() > 0) wallets.credit(participant.playerId(), o.walletEach());
+                else wallets.debit(participant.playerId(), -o.walletEach());
+            }
+            wallets.checkpoint(server);
+        });
         outcome.ifPresent(o -> {
             for (PersistedParticipant participant : run.participants()) {
                 net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());

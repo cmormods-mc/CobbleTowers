@@ -12,9 +12,13 @@ import java.util.Set;
  * What a run's CUSTOM modifiers add up to (P29): typed parameters their coded behaviors reduce to. Consumers read a
  * number or flag: battle adapters, intermission healing, reward valuation, vendor price. Pure.
  */
-public record CustomEffects(Set<CustomBehavior> behaviors) {
+public record CustomEffects(Set<CustomBehavior> behaviors, JsonArray ops) {
 
-    public static final CustomEffects NONE = new CustomEffects(Set.of());
+    public static final CustomEffects NONE = new CustomEffects(Set.of(), new JsonArray());
+
+    public CustomEffects(Set<CustomBehavior> behaviors) {
+        this(behaviors, new JsonArray());
+    }
 
     /** The odds and multipliers of the Wheel, in percent: a 30% jackpot at x4, otherwise x0.5. */
     static final int WHEEL_JACKPOT_CHANCE = 30;
@@ -24,14 +28,18 @@ public record CustomEffects(Set<CustomBehavior> behaviors) {
 
     public CustomEffects {
         behaviors = Set.copyOf(behaviors);
+        ops = ops.deepCopy();
     }
 
     public static CustomEffects of(List<ModifierDefinition> modifiers) {
         Set<CustomBehavior> held = EnumSet.noneOf(CustomBehavior.class);
+        JsonArray ops = new JsonArray();
         for (ModifierDefinition modifier : modifiers) {
             modifier.effect().custom().flatMap(CustomBehavior::fromId).ifPresent(held::add);
+            // Battle operations a modifier declares as data (P45); the run's cap on operations is the battle layer's.
+            ops.addAll(modifier.effect().battle());
         }
-        return new CustomEffects(held);
+        return new CustomEffects(held, ops);
     }
 
     public boolean has(CustomBehavior behavior) {
@@ -78,6 +86,7 @@ public record CustomEffects(Set<CustomBehavior> behaviors) {
             ops.add(op("boost", "stat", "atk", "stages", 1));
             ops.add(op("boost", "stat", "spa", "stages", 1));
         }
+        ops.addAll(this.ops);
         return ops;
     }
 

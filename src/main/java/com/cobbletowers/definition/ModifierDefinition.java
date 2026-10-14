@@ -3,6 +3,8 @@ package com.cobbletowers.definition;
 import com.cobbletowers.api.modifier.ModifierType;
 import com.cobbletowers.api.modifier.ModifierView;
 import com.cobbletowers.api.modifier.RiskTier;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Locale;
@@ -29,7 +31,19 @@ public record ModifierDefinition(
         int stackLimit,
         Effect effect,
         boolean relic,
-        List<String> tags) implements ModifierView {
+        List<String> tags,
+        Optional<TagBonus> tagBonus) implements ModifierView {
+
+    /**
+     * A set bonus (P45): never drafted or held; it applies while a run holds at least {@code count} relics carrying
+     * {@code tag}.
+     */
+    public record TagBonus(String tag, int count) {
+        public TagBonus {
+            if (tag == null || tag.isBlank()) throw new IllegalArgumentException("tag_bonus needs a tag");
+            if (count < 2 || count > 6) throw new IllegalArgumentException("tag_bonus count must be 2..6, got " + count);
+        }
+    }
 
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
 
@@ -47,6 +61,7 @@ public record ModifierDefinition(
      * @param weather Showdown weather id (FIELD)
      * @param terrain Showdown terrain id (FIELD)
      * @param custom id of a coded {@link CustomBehavior} (CUSTOM)
+     * @param battle P23 battle operations, validated at load (CUSTOM)
      * @param scoutingBonus floors added to a scouting category's concealment threshold (SCOUTING)
      */
     public record Effect(
@@ -61,19 +76,28 @@ public record ModifierDefinition(
             Optional<String> weather,
             Optional<String> terrain,
             int scoutingBonus,
-            Optional<String> custom) {
+            Optional<String> custom,
+            JsonArray battle) {
 
         /** Changes nothing: the baseline every field is measured against. */
         public static final Effect NEUTRAL =
                 new Effect(0, 0, 0, 100, 100, List.of(), true, true, Optional.empty(), Optional.empty(), 0,
-                        Optional.empty());
+                        Optional.empty(), new JsonArray());
+
+        /** Everything except battle operations, which is what every modifier before P45 declared. */
+        public Effect(int levelOffset, int extraOpponents, int bossLevelOffset, int bossHealthPercent,
+                      int rewardPercent, List<String> bannedMoves, boolean allowSwitching, boolean allowItems,
+                      Optional<String> weather, Optional<String> terrain, int scoutingBonus, Optional<String> custom) {
+            this(levelOffset, extraOpponents, bossLevelOffset, bossHealthPercent, rewardPercent, bannedMoves,
+                    allowSwitching, allowItems, weather, terrain, scoutingBonus, custom, new JsonArray());
+        }
 
         /** Everything except a coded behavior, which is what every modifier before P29 declared. */
         public Effect(int levelOffset, int extraOpponents, int bossLevelOffset, int bossHealthPercent,
                       int rewardPercent, List<String> bannedMoves, boolean allowSwitching, boolean allowItems,
                       Optional<String> weather, Optional<String> terrain, int scoutingBonus) {
             this(levelOffset, extraOpponents, bossLevelOffset, bossHealthPercent, rewardPercent, bannedMoves,
-                    allowSwitching, allowItems, weather, terrain, scoutingBonus, Optional.empty());
+                    allowSwitching, allowItems, weather, terrain, scoutingBonus, Optional.empty(), new JsonArray());
         }
 
         public Effect {
@@ -81,6 +105,8 @@ public record ModifierDefinition(
             Objects.requireNonNull(weather, "weather");
             Objects.requireNonNull(terrain, "terrain");
             Objects.requireNonNull(custom, "custom");
+            Objects.requireNonNull(battle, "battle");
+            battle = battle.deepCopy();
             custom.ifPresent(id -> {
                 if (CustomBehavior.fromId(id).isEmpty()) {
                     throw new IllegalArgumentException("custom '" + id + "' is not a coded behavior; known: "
@@ -124,7 +150,7 @@ public record ModifierDefinition(
         }
 
         public boolean touchesCustom() {
-            return custom.isPresent();
+            return custom.isPresent() || !battle.isEmpty();
         }
 
         public static Effect fromJson(JsonObject root) {
@@ -141,7 +167,20 @@ public record ModifierDefinition(
                     optionalString(root, "weather"),
                     optionalString(root, "terrain"),
                     TowerJson.integer(root, "scouting_bonus", 0),
-                    optionalString(root, "custom"));
+                    optionalString(root, "custom"),
+                    battleOf(root));
+        }
+
+        /** The {@code battle} array, every operation run through the validator the armor sets and playlists use. */
+        private static JsonArray battleOf(JsonObject root) {
+            JsonArray out = new JsonArray();
+            if (!root.has("battle")) return out;
+            if (!root.get("battle").isJsonArray()) throw new IllegalArgumentException("effect.battle must be an array");
+            for (JsonElement element : root.getAsJsonArray("battle")) {
+                out.add(com.cobbletowers.showdown.TowerBattleFx.validate(element).orElseThrow(() ->
+                        new IllegalArgumentException("effect.battle has an operation that is not valid: " + element)));
+            }
+            return out;
         }
 
         private static Optional<String> optionalString(JsonObject root, String key) {
@@ -169,6 +208,8 @@ public record ModifierDefinition(
         }
         if (weight < 1) throw new IllegalArgumentException("weight must be >= 1, got " + weight);
         if (stackLimit < 1) throw new IllegalArgumentException("stack_limit must be >= 1, got " + stackLimit);
+        Objects.requireNonNull(tagBonus, "tagBonus");
+        if (tagBonus.isPresent() && relic) throw new IllegalArgumentException(id + " is a tag bonus and cannot also be a relic");
         if (excludes.contains(id)) {
             throw new IllegalArgumentException(id + " excludes itself");
         }
@@ -228,7 +269,14 @@ public record ModifierDefinition(
                 TowerJson.integer(root, "stack_limit", 1),
                 Effect.fromJson(TowerJson.object(root, "effect")),
                 TowerJson.bool(root, "relic", false),
-                TowerJson.strings(root, "tags"));
+                TowerJson.strings(root, "tags"),
+                tagBonusOf(root));
+    }
+
+    private static Optional<TagBonus> tagBonusOf(JsonObject root) {
+        JsonObject bonus = TowerJson.object(root, "tag_bonus");
+        if (bonus == null || !root.has("tag_bonus")) return Optional.empty();
+        return Optional.of(new TagBonus(TowerJson.requireString(bonus, "tag"), TowerJson.requireInt(bonus, "count")));
     }
 
     private static <E extends Enum<E>> E parseEnum(Class<E> type, String raw, String key) {

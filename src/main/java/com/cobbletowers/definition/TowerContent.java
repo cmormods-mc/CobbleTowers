@@ -315,6 +315,16 @@ public record TowerContent(
         return List.copyOf(pool);
     }
 
+    /** Every loaded tag set bonus (P45), in a stable order. */
+    public List<ModifierDefinition> tagBonuses() {
+        List<ModifierDefinition> bonuses = new ArrayList<>();
+        for (ModifierDefinition modifier : modifiers.values()) {
+            if (modifier.tagBonus().isPresent()) bonuses.add(modifier);
+        }
+        bonuses.sort(Comparator.comparing(modifier -> modifier.id().toString()));
+        return List.copyOf(bonuses);
+    }
+
     public List<ModifierDefinition> draftablePool(ResourceLocation towerId, int floorIndex) {
         List<ResourceLocation> named = floorAt(towerId, floorIndex)
                 .map(FloorDefinition::modifierIds)
@@ -330,6 +340,7 @@ public record TowerContent(
         }
         // A relic (P34) is found after a milestone boss, never drafted as an ordinary challenge.
         pool.removeIf(ModifierDefinition::relic);
+        pool.removeIf(modifier -> modifier.tagBonus().isPresent());
         // Sorted because a map's iteration order is not a contract and a draw walks this list.
         pool.sort(Comparator.comparing(modifier -> modifier.id().toString()));
         return List.copyOf(pool);

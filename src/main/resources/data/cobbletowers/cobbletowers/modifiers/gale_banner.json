@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Gale Banner",
+  "risk": "minor",
+  "weight": 45,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "tempo"
+  ],
+  "effect": {
+    "battle": [
+      {
+        "op": "sidecondition",
+        "side": "self",
+        "id": "tailwind",
+        "duration": 4
+      }
+    ]
+  }
+}

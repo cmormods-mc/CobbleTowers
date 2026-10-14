@@ -153,8 +153,10 @@ def check_modifiers(content: dict, problems: list[str]) -> None:
         "field": ("weather", "terrain"),
         "reward": ("reward_percent",),
         "scouting": ("scouting_bonus",),
-        "custom": ("custom",),
+        "custom": ("custom", "battle"),
     }
+    battle_ops = ("weather", "terrain", "boost", "evs", "hp", "status", "sidecondition", "suppress_items", "drain",
+                  "damage", "resist")
     known_customs = ("glass_cannon", "field_hospital", "fortunes_wheel", "black_market",
                      "swift_start", "iron_hide", "war_banner")
     for modifier_id, modifier in content["modifiers"].items():
@@ -191,6 +193,16 @@ def check_modifiers(content: dict, problems: list[str]) -> None:
         if custom is not None and custom not in known_customs:
             problems.append(f"{modifier_id} names custom behavior '{custom}', which is not coded "
                             f"(known: {', '.join(known_customs)})")
+
+        for op in modifier.get("effect", {}).get("battle", []):
+            if not isinstance(op, dict) or op.get("op") not in battle_ops:
+                problems.append(f"{modifier_id} has a battle operation the game does not know: {op}")
+        bonus = modifier.get("tag_bonus")
+        if bonus is not None:
+            if modifier.get("relic"):
+                problems.append(f"{modifier_id} is both a relic and a tag bonus")
+            if not bonus.get("tag") or not 2 <= bonus.get("count", 0) <= 6:
+                problems.append(f"{modifier_id} has a tag_bonus that needs a tag and a count of 2..6")
 
         # The mistake content actually makes: copy a modifier, change its type, keep the payload.
         effect = modifier.get("effect", {})

@@ -72,6 +72,7 @@ public final class TowerFeatureService {
             var relic=content.modifier(state.relics().get(i)).orElse(null);if(relic==null)continue;
             entries.add(entry("relic:"+relic.id()+":"+i,"Relic: "+relic.displayName()+whenTaken(List.of(state.relicFloor(i))),ModifierMenuText.lines(relic)));
         }
+        for(var bonus:com.cobbletowers.modifier.DraftService.setBonusesActive(content,state))entries.add(entry("bonus:"+bonus.id(),"Set bonus: "+bonus.displayName(),ModifierMenuText.lines(bonus)));
     }
 
     /** " (from floor 3)" or " (floors 3, 7)"; nothing for an older run that never recorded it. */
@@ -222,7 +223,7 @@ public final class TowerFeatureService {
             case "report" -> {title="Last run report";RunSummaries.lastReportOf(id).ifPresentOrElse(report->entries.add(entry("report",report.tower(),report.lines())),()->entries.add(entry("empty","No completed run",List.of("Finish a run to see its report here."))));}
             case "modifiers","relics" -> {
                 boolean relic=r.section().equals("relics");title=relic?"Relic codex":"Modifier codex";
-                TowerDefinitionRegistry.content().modifiers().values().stream().filter(m->m.relic()==relic).sorted(Comparator.comparing(ModifierDefinition::displayName))
+                TowerDefinitionRegistry.content().modifiers().values().stream().filter(m->relic?(m.relic()||m.tagBonus().isPresent()):(!m.relic()&&m.tagBonus().isEmpty())).sorted(Comparator.comparing(ModifierDefinition::displayName))
                         .forEach(m->entries.add(entry(m.id().toString(),m.displayName(),ModifierMenuText.lines(m))));
                 actions.add(link(relic?"Modifiers":"Relics",relic?"modifiers":"relics"));
                 actions.add(link("This run","run"));

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Berserker's Mask",
+  "risk": "moderate",
+  "weight": 30,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "offense",
+    "risk"
+  ],
+  "effect": {
+    "battle": [
+      {
+        "op": "boost",
+        "side": "self",
+        "stat": "atk",
+        "stages": 2
+      },
+      {
+        "op": "boost",
+        "side": "self",
+        "stat": "spa",
+        "stages": 2
+      },
+      {
+        "op": "hp",
+        "side": "self",
+        "percent": 75
+      }
+    ]
+  }
+}

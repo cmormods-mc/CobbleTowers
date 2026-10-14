@@ -22,6 +22,32 @@ public final class ModifierMenuText {
     /** A line that hurts the player: drawn red. */
     public static final String BAD = "[-] ";
 
+    /**
+     * Whether a battle operation helps or hurts the player, as the marker its line starts with: your own side gaining
+     * (boosts, damage, resistance, drain, a side condition) is good, your own side losing, or the foe gaining, is bad.
+     */
+    static String opTone(com.google.gson.JsonObject op){
+        String name=op.has("op")?op.get("op").getAsString():"";String side=op.has("side")?op.get("side").getAsString():"both";
+        int stages=op.has("stages")?op.get("stages").getAsInt():0;int percent=op.has("percent")?op.get("percent").getAsInt():100;
+        boolean mine=side.equals("self"),theirs=side.equals("foe");
+        boolean up=switch(name){
+            case "boost"->stages>0;
+            case "damage"->percent>100;
+            case "resist"->percent<100;
+            case "hp"->percent>=100;
+            case "drain","sidecondition"->true;
+            case "status"->false;
+            default->true;
+        };
+        if(!mine&&!theirs)return "";
+        if(name.equals("status"))return theirs?GOOD:BAD;
+        if(name.equals("resist")&&theirs)return up?BAD:GOOD;
+        if(name.equals("damage")&&theirs)return up?BAD:GOOD;
+        if(name.equals("hp")&&theirs)return up?BAD:GOOD;
+        if(name.equals("boost")&&theirs)return up?BAD:GOOD;
+        return up?(mine?GOOD:BAD):BAD;
+    }
+
     /** The text without its marker, for anything that cannot colour. */
     public static String plain(String line) {
         return line.startsWith(GOOD) || line.startsWith(BAD) ? line.substring(GOOD.length()) : line;
@@ -34,7 +60,9 @@ public final class ModifierMenuText {
     public static List<String> lines(ModifierDefinition m) {
         List<String> lines=new ArrayList<>();var e=m.effect();
         String risk=m.risk().name().toLowerCase(Locale.ROOT);
-        lines.add(GOOD+Character.toUpperCase(risk.charAt(0))+risk.substring(1)+" risk  *  +"+com.cobbletowers.reward.RiskReward.percentOf(m.risk())+"% to your final payout"+(m.stackLimit()>1?"  *  stacks "+m.stackLimit()+"x":""));
+        // A relic or set bonus pays no risk bonus (only held challenges do), so it does not claim one.
+        boolean pays=!m.relic()&&m.tagBonus().isEmpty();
+        if(pays)lines.add(GOOD+Character.toUpperCase(risk.charAt(0))+risk.substring(1)+" risk  *  +"+com.cobbletowers.reward.RiskReward.percentOf(m.risk())+"% to your final payout"+(m.stackLimit()>1?"  *  stacks "+m.stackLimit()+"x":""));
         if(e.levelOffset()>0)lines.add(BAD+"Foes rise "+e.levelOffset()+(e.levelOffset()==1?" level":" levels")+" above the tower.");
         if(e.levelOffset()<0)lines.add(GOOD+"Foes fall "+(-e.levelOffset())+(e.levelOffset()==-1?" level":" levels")+" below the tower.");
         if(e.bossLevelOffset()>0)lines.add(BAD+"The champion stands "+e.bossLevelOffset()+" levels taller.");
@@ -62,10 +90,12 @@ public final class ModifierMenuText {
                 default -> lines.add("Custom behavior: "+v);
             }
         });
+        for(var element:e.battle())if(element.isJsonObject())lines.add(opTone(element.getAsJsonObject())+com.cobbletowers.armor.SetBonusDescriber.effectLine(element.getAsJsonObject())+".");
+        m.tagBonus().ifPresent(b->lines.add("Set bonus: while you hold "+b.count()+" or more "+b.tag()+" relics."));
         if(!m.requires().isEmpty())lines.add("Requires: "+String.join(", ",m.requires().stream().map(Object::toString).toList()));
         if(!m.excludes().isEmpty())lines.add("Conflicts: "+String.join(", ",m.excludes().stream().map(Object::toString).toList()));
         if(!m.tags().isEmpty())lines.add("Tags: "+String.join(", ",m.tags()));
-        lines.add("The risk you carry is paid out when the tower ends.");
+        if(pays)lines.add("The risk you carry is paid out when the tower ends.");
         if(m.relic())lines.add("Held for this run; not permanent equipment.");
         return lines;
     }

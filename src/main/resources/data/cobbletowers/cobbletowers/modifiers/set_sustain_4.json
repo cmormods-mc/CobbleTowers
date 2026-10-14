@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Sustain Set (4)",
+  "risk": "minor",
+  "weight": 1,
+  "stack_limit": 1,
+  "tag_bonus": {
+    "tag": "sustain",
+    "count": 4
+  },
+  "effect": {
+    "battle": [
+      {
+        "op": "resist",
+        "side": "self",
+        "percent": 90
+      },
+      {
+        "op": "drain",
+        "side": "self",
+        "percent": 5
+      }
+    ]
+  }
+}

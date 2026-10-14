@@ -93,7 +93,7 @@ public final class SetBonusDescriber {
     // ---- battle effects
     // ---------------------------------------------------------------------------------------------
 
-    static String effectLine(JsonObject op) {
+    public static String effectLine(JsonObject op) {
         String name = string(op, "op");
         String side = sideOf(op);
         return switch (name) {

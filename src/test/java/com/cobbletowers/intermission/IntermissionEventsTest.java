@@ -160,4 +160,106 @@ class IntermissionEventsTest {
         assertTrue(IntermissionEvents.resolve(content(), run, 1, Option.REST_HEAL).healParty());
         assertFalse(IntermissionEvents.resolve(content(), run, 1, Option.REST_PRESS_ON).healParty());
     }
+
+    // ---- P45 rooms ---------------------------------------------------------------------------------
+
+    private static ModifierDefinition tagged(String path, String tag) {
+        return TestRuns.modifier(path, "reward", "\"reward_percent\":125", "\"relic\":true", "\"tags\":[\"" + tag + "\"]");
+    }
+
+    @Test
+    @DisplayName("the Forge gives a battle relic and charges every player; it needs one to give, room, and everyone able to pay")
+    void forge() {
+        ModifierDefinition blade = tagged("blade", "offense");
+        ModifierDefinition purse = tagged("purse", "economy");
+        PersistedRun run = run(7, 3, RunModifierState.EMPTY);
+        int cost = IntermissionEvents.forgeCost(3);
+        assertEquals(175, cost);
+
+        TowerContent economyOnly = content(purse);
+        assertFalse(IntermissionEvents.eligible(economyOnly, run, 3, Room.FORGE), "an economy relic is not a battle relic");
+        TowerContent content = content(blade, purse);
+        assertTrue(IntermissionEvents.eligible(content, run, 3, Room.FORGE, id -> cost));
+        assertFalse(IntermissionEvents.eligible(content, run, 3, Room.FORGE, id -> cost - 1), "everyone must afford it");
+
+        var paid = IntermissionEvents.resolve(content, run, 3, Option.FORGE_PAY, id -> cost);
+        assertEquals(java.util.List.of(blade.id()), paid.state().relics());
+        assertEquals(-cost, paid.walletEach());
+        var broke = IntermissionEvents.resolve(content, run, 3, Option.FORGE_PAY, id -> 0);
+        assertEquals(run.modifiers(), broke.state(), "someone who can no longer pay makes the forge do nothing");
+        assertEquals(0, broke.walletEach());
+        var left = IntermissionEvents.resolve(content, run, 3, Option.FORGE_LEAVE, id -> cost);
+        assertEquals(run.modifiers(), left.state());
+        assertEquals(0, left.walletEach());
+    }
+
+    @Test
+    @DisplayName("the Library gives a scouting relic and nothing else")
+    void library() {
+        ModifierDefinition lens = tagged("lens", "scouting");
+        ModifierDefinition blade = tagged("blade", "offense");
+        PersistedRun run = run(5, 1, RunModifierState.EMPTY);
+        assertFalse(IntermissionEvents.eligible(content(blade), run, 1, Room.LIBRARY));
+        TowerContent content = content(lens, blade);
+        assertTrue(IntermissionEvents.eligible(content, run, 1, Room.LIBRARY));
+        assertEquals(java.util.List.of(lens.id()), IntermissionEvents.resolve(content, run, 1, Option.LIBRARY_STUDY).state().relics());
+        assertEquals(run.modifiers(), IntermissionEvents.resolve(content, run, 1, Option.LIBRARY_SKIP).state());
+    }
+
+    @Test
+    @DisplayName("the Vault pays a purse or springs an ambush, by seed, both deterministic; leaving changes nothing")
+    void vault() {
+        ModifierDefinition harder = curse("harder");
+        TowerContent content = content(harder);
+        assertFalse(IntermissionEvents.eligible(content(), run(1, 1, RunModifierState.EMPTY), 1, Room.VAULT), "no ambush to spring");
+        boolean purse = false;
+        boolean ambush = false;
+        for (long seed = 0; seed < 60 && !(purse && ambush); seed++) {
+            PersistedRun run = run(seed, 2, RunModifierState.EMPTY);
+            var first = IntermissionEvents.resolve(content, run, 2, Option.VAULT_CRACK);
+            assertEquals(first, IntermissionEvents.resolve(content, run, 2, Option.VAULT_CRACK));
+            if (first.walletEach() > 0) {
+                purse = true;
+                assertEquals(IntermissionEvents.vaultPurse(2), first.walletEach());
+                assertEquals(run.modifiers(), first.state());
+            } else {
+                ambush = true;
+                assertEquals(java.util.List.of(harder.id()), first.state().accumulated());
+            }
+            assertEquals(run.modifiers(), IntermissionEvents.resolve(content, run, 2, Option.VAULT_LEAVE).state());
+        }
+        assertTrue(purse && ambush, "both outcomes occur across seeds");
+    }
+
+    @Test
+    @DisplayName("the Mystic Pool swaps a held relic for a different one and needs one to swap")
+    void pool() {
+        ModifierDefinition a = tagged("a", "offense");
+        ModifierDefinition b = tagged("b", "sustain");
+        TowerContent content = content(a, b);
+        PersistedRun empty = run(3, 1, RunModifierState.EMPTY);
+        assertFalse(IntermissionEvents.eligible(content, empty, 1, Room.POOL), "nothing to give");
+        PersistedRun holding = run(3, 1, RunModifierState.EMPTY.withRelic(a.id()));
+        assertTrue(IntermissionEvents.eligible(content, holding, 1, Room.POOL));
+        var dived = IntermissionEvents.resolve(content, holding, 1, Option.POOL_DIVE);
+        assertEquals(java.util.List.of(b.id()), dived.state().relics());
+        assertEquals(holding.modifiers(), IntermissionEvents.resolve(content, holding, 1, Option.POOL_STAY).state());
+        assertFalse(IntermissionEvents.eligible(content(a), holding, 1, Room.POOL), "no other relic to swap for");
+    }
+
+    @Test
+    @DisplayName("every ordinary room can be the one an eligible floor gets, and rooms stay about as likely as their weights")
+    void everyRoomIsReachable() {
+        TowerContent content = content(tagged("blade", "offense"), tagged("lens", "scouting"), tagged("held", "economy"), curse("harder"));
+        java.util.Map<Room, Integer> seen = new java.util.EnumMap<>(Room.class);
+        for (long seed = 0; seed < 4000; seed++) {
+            PersistedRun run = run(seed, 1, RunModifierState.EMPTY.withRelic(ResourceLocation.fromNamespaceAndPath("cobbletowers", "held")));
+            IntermissionEvents.roomFor(content, run, 1, false, id -> 10_000).ifPresent(room -> seen.merge(room, 1, Integer::sum));
+        }
+        for (Room room : Room.values()) {
+            if (room == Room.ECHO_DUEL || room == Room.SHRINE) continue;   // the shrine needs relic room and a relic to give: covered above
+            assertTrue(seen.getOrDefault(room, 0) > 0, room + " never came up: " + seen);
+        }
+        assertTrue(seen.getOrDefault(Room.REST, 0) > seen.getOrDefault(Room.LIBRARY, 0), "Rest is the most common room: " + seen);
+    }
 }

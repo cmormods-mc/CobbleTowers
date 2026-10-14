@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Guardian Ward",
+  "risk": "minor",
+  "weight": 50,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "sustain"
+  ],
+  "effect": {
+    "battle": [
+      {
+        "op": "resist",
+        "side": "self",
+        "percent": 90
+      }
+    ]
+  }
+}

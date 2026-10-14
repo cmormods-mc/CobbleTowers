@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Numbing Frost",
+  "risk": "moderate",
+  "weight": 35,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "tempo"
+  ],
+  "effect": {
+    "battle": [
+      {
+        "op": "status",
+        "side": "foe",
+        "status": "par"
+      }
+    ]
+  }
+}

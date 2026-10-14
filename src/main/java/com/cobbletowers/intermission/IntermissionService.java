@@ -292,7 +292,7 @@ public final class IntermissionService {
             int index = i;
             int votes = (int) draft.votes().values().stream().filter(vote -> vote == index).count();
             String name = modifier != null ? modifier.displayName()
-                    : IntermissionEvents.Option.fromCard(draft.cards().get(i)).map(IntermissionEvents.Option::label)
+                    : IntermissionEvents.Option.fromCard(draft.cards().get(i)).map(o -> IntermissionEvents.labelAt(o, draft.floorIndex()))
                             .orElse(draft.cards().get(i).toString());
             var option = modifier != null ? java.util.Optional.<IntermissionEvents.Option>empty()
                     : IntermissionEvents.Option.fromCard(draft.cards().get(i));

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "custom",
+  "display_name": "Prism Shard",
+  "risk": "minor",
+  "weight": 40,
+  "stack_limit": 1,
+  "relic": true,
+  "tags": [
+    "sustain"
+  ],
+  "effect": {
+    "battle": [
+      {
+        "op": "sidecondition",
+        "side": "self",
+        "id": "lightscreen",
+        "duration": 4
+      }
+    ]
+  }
+}

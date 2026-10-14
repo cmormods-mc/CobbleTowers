@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "type": "enemy",
+  "display_name": "Boss Set (4)",
+  "risk": "minor",
+  "weight": 1,
+  "stack_limit": 1,
+  "tag_bonus": {
+    "tag": "boss",
+    "count": 4
+  },
+  "effect": {
+    "boss_health_percent": 85,
+    "boss_level_offset": -1
+  }
+}
