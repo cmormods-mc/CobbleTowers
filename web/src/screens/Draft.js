@@ -51,7 +51,7 @@ function PackStage({ draft }) {
   };
 
   if (phase === 'sealed' || phase === 'tearing') {
-    return html`<button class=${'pack' + (phase === 'tearing' ? ' tear' : '')} onClick=${open} aria-label="Open the pack"><div class="ptop"></div><div class="body"></div></button>
+    return html`<button class=${'pack' + (phase === 'tearing' ? ' tear' : '')} style=${`--ps:${cs}`} onClick=${open} aria-label="Open the pack"><div class="ptop"></div><div class="body"></div></button>
       <div class="fl c-bronze">${phase === 'tearing' ? '…' : 'Click the pack to open it'}</div>
       <div class="fl c-muted">Pack ${draft.current + 1} of 3</div>`;
   }

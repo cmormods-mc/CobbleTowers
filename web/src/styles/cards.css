@@ -25,10 +25,10 @@
 .flip .face { transform: rotateY(-90deg); animation: flipf .5s ease forwards; animation-delay: calc(var(--d, 0s) + .4s); }
 @keyframes flipb { to { transform: rotateY(90deg); opacity: 0; } } @keyframes flipf { to { transform: rotateY(0); } }
 
-.pack { position: relative; width: 224px; height: 320px; cursor: pointer; filter: drop-shadow(0 8px 0 rgba(0, 0, 0, .4)); transition: transform .15s; background: none; border: 0; padding: 0; }
+.pack { position: relative; width: calc(112px * var(--ps, 2)); height: calc(160px * var(--ps, 2)); cursor: pointer; filter: drop-shadow(0 8px 0 rgba(0, 0, 0, .4)); transition: transform .15s; background: none; border: 0; padding: 0; }
 .pack:hover { transform: scale(1.03) rotate(-1deg); }
-.pack .ptop { position: absolute; left: 0; top: 0; width: 224px; height: 32px; background: url(assets/gui/byzantine/pack_top.png) 0 0 / 100% 100%; }
-.pack .body { position: absolute; left: 0; top: 32px; width: 224px; height: 288px; background: url(assets/gui/byzantine/pack_body.png) 0 0 / 100% 100%; }
+.pack .ptop { position: absolute; left: 0; top: 0; width: 100%; height: calc(16px * var(--ps, 2)); background: url(assets/gui/byzantine/pack_top.png) 0 0 / 100% 100%; }
+.pack .body { position: absolute; left: 0; top: calc(16px * var(--ps, 2)); width: 100%; height: calc(144px * var(--ps, 2)); background: url(assets/gui/byzantine/pack_body.png) 0 0 / 100% 100%; }
 .pack.tear .ptop { animation: tear .6s ease-in forwards; } .pack.tear .body { animation: fade .7s .5s ease forwards; }
 @keyframes tear { to { transform: translate(40px, -90px) rotate(18deg); opacity: 0; } } @keyframes fade { to { opacity: 0; transform: translateY(30px); } }
 .dots { display: flex; gap: 8px; } .dots i { width: 18px; height: 18px; border: 3px solid var(--dark); background: var(--brown); } .dots i.on { background: var(--gold); } .dots i.cur { outline: 3px solid var(--cream); }

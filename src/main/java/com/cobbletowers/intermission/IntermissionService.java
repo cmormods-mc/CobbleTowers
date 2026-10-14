@@ -267,6 +267,8 @@ public final class IntermissionService {
     }
 
     private static void send(MinecraftServer server, PersistedRun run, ServerPlayer viewer, String message, boolean open) {
+        // A screen that opens by itself (a floor cleared) must show even if the player's page looks open from its pings.
+        if (open) com.cobbletowers.webgui.WebGuiBridge.userAsked(viewer);
         IntermissionRound round = ROUNDS.computeIfAbsent(run.runId(), id -> new IntermissionRound());
         IntermissionStatePayload.Draft draft = draftOf(run, viewer.getUUID());
 
