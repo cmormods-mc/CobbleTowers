@@ -134,6 +134,7 @@ public final class PlayCommand {
 
     private static int hall(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        com.cobbletowers.webgui.WebGuiBridge.userAsked(player);
         // A team that is forming (or at an intermission) wants to see that, not the tower picker; /tower menu is the
         // picker.
         if (IntermissionService.isAtIntermission(player)) {
@@ -148,6 +149,7 @@ public final class PlayCommand {
 
     private static int open(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        com.cobbletowers.webgui.WebGuiBridge.userAsked(player);
         // A team at an intermission wants that menu, not the tower picker.
         if (IntermissionService.isAtIntermission(player)) {
             IntermissionService.openScreen(context.getSource().getServer(), player, "");

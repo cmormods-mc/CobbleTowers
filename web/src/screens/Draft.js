@@ -6,8 +6,8 @@ import { RARITIES } from '../util.js';
 import { at, Label, NB, Panel, screen, useScreen } from '../components/native.js';
 
 const MAX_BIG = 2;
-/** How big a card is drawn: five across with gaps, and no taller than about half the window. */
-const cardScale = () => Math.max(0.8, Math.min((window.innerWidth - 60) / (5 * 112 + 4 * 8), (window.innerHeight * 0.52) / 160, 1.9));
+/** How big a card is drawn: in step with the GUI scale (so it grows with the window like the rest), five across, at most half the height. */
+const cardScale = () => Math.max(0.8, Math.min(screen.g * 0.65, (window.innerWidth - 60) / (5 * 112 + 4 * 14), (window.innerHeight * 0.5) / 160));
 const isBig = (card) => card.rarity === 'legendary' || card.rarity === 'mythic';
 
 /** Cards the team has kept so far, across the finished packs. */
@@ -71,7 +71,7 @@ function PackStage({ draft }) {
 
 function Done({ draft }) {
   const team = useMemo(() => keptCards(draft), [draft.packs]);
-  const cs = Math.min(1.38, cardScale());
+  const cs = cardScale() * 0.73;
   return html`
     <div class="fl c-bronze">Your rental team</div>
     <div style="display:flex;gap:10px">${team.map((c) => html`<${RentalCard} card=${c} cs=${cs} />`)}</div>

@@ -118,6 +118,12 @@ public final class WebGuiBridge {
     // ---- server to page
     // ----------------------------------------------------------------------------------------------
 
+    /** The player asked for a screen by command: the next screen payload opens their page even if it looks open. */
+    public static void userAsked(ServerPlayer player) {
+        if (!linked) return;
+        SESSIONS.computeIfAbsent(player.getUUID(), id -> new PageSession()).askOpen(System.currentTimeMillis());
+    }
+
     /**
      * Sends a state payload to the player's page if the page is to show it. Returns {@code true} when the bridge handled it
      * (including when it deliberately dropped it), so the caller sends nothing natively.
@@ -133,8 +139,10 @@ public final class WebGuiBridge {
         long now = System.currentTimeMillis();
         PageSession session = SESSIONS.computeIfAbsent(player.getUUID(), id -> new PageSession());
         boolean hud = payload instanceof SpectatorPanelPayload;
-        switch (session.offer(PayloadJson.kindOf(payload.getClass()), json, hud, policyOf(payload), flagged(payload), now,
-                config.heartbeatSeconds(), LOAD_MILLIS)) {
+        PageSession.Action action = session.offer(PayloadJson.kindOf(payload.getClass()), json, hud, policyOf(payload), flagged(payload), now,
+                config.heartbeatSeconds(), LOAD_MILLIS);
+        if (flagged(payload) && !hud) TowerLog.info("WebGUI {} for {}: {}", PayloadJson.kindOf(payload.getClass()), player.getGameProfile().getName(), action);
+        switch (action) {
             case EMIT -> WebGuiLink.emit(player, json);
             // The page is not loaded when the open arrives, so nothing is emitted now: it asks for what it missed with a
             // `hello` as soon as it has loaded (see onPage).

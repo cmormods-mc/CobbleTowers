@@ -45,8 +45,10 @@ export function connect(onPayload) {
   // Say the page has loaded (the server replies with what it missed), then keep proving it is open: WebGUI gives the server
   // no "closed" event, so silence means closed.
   post({ kind: 'hello', hud: isHud });
-  setInterval(() => post({ kind: 'ping', hud: isHud }), 1500);
+  // A page closed with Esc may stay alive but hidden: it stops pinging (and says goodbye) while hidden, so the server can tell.
+  setInterval(() => { if (document.visibilityState !== 'hidden') post({ kind: 'ping', hud: isHud }); }, 1500);
   window.addEventListener('pagehide', () => post({ kind: 'bye', hud: isHud }));
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') post({ kind: 'bye', hud: isHud }); });
 
   const mock = /[?#&|]mock=([A-Za-z,]+)/.exec(decodeURIComponent(location.search + location.hash));
   if (mock && !insideGame()) replay(mock[1].split(','), deliver);

@@ -61,6 +61,21 @@ class PageSessionTest {
     }
 
     @Test
+    @DisplayName("a screen the player asked for by command opens the page even while it still pings, once")
+    void askedScreenOpensDespitePings() {
+        offer("IntermissionState", "{a}", false, UPDATE_OR_OPEN_IF_FLAGGED, true, 0);
+        session.hello(false, 500);
+        session.ping(false, 9_900);
+        session.askOpen(10_000);
+        assertEquals(OPEN, offer("TowerHallState", "{hall}", false, UPDATE_OR_OPEN, true, 10_100), "pinging, but asked: open");
+        session.hello(false, 10_600);
+        assertEquals(EMIT, offer("TowerHallState", "{reply}", false, UPDATE_OR_OPEN, true, 11_000), "the ask was used up: a reply updates");
+        session.ping(false, 23_900);
+        session.askOpen(20_000);
+        assertEquals(EMIT, offer("TowerHallState", "{late}", false, UPDATE_OR_OPEN, true, 24_000), "an ask nobody answered within 3 s lapses");
+    }
+
+    @Test
     @DisplayName("a page that stops pinging is closed after the heartbeat, and the next open payload opens it again")
     void heartbeatLapses() {
         offer("RentalDraft", "{d}", false, UPDATE_OR_OPEN, true, 0);
