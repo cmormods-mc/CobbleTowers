@@ -59,6 +59,7 @@ export function Lobby({ state }) {
     const host = v.role === 1;
     controls.push(html`<${NB} x=${host ? rightX + half + 4 : rightX} y=${next()} w=${host ? half : column} onClick=${() => play('LEAVE')}>${v.leave}<//>`);
   } else controls.push(html`<${NB} x=${rightX} y=${next()} w=${column} onClick=${() => update(goBack)}>Close<//>`);
+  if (v.role === 1 || v.role === 3) controls.push(html`<${NB} x=${rightX} y=${next()} w=${column} onClick=${() => play('OPEN_CHOOSER')}>Choose party<//>`);
 
   const teamX = SW - STATUS_W + 7;
   const textW = STATUS_W - 16;

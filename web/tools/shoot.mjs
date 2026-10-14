@@ -33,6 +33,7 @@ export const SHOTS = {
   lobby_host: { payloads: [fixture('TowerHallState'), fixture('PlayState')] },
   lobby_rental: { payloads: [fixture('PlayState', (d) => { d.lobby.options.modes.readiness = { confirmed: true, drafted: false, mine: false, host: false }; d.lobby.members = [{ name: 'Ash', accepted: true, ready: false }, { name: 'Misty', accepted: false, ready: false }]; d.lobby.options.depth = { chosen: 1, max: 2, offered: true }; })] },
   lobby_invited: { payloads: [fixture('PlayState', (d) => { d.lobby.role = 2; })] },
+  party: { payloads: [fixture('TowerHallState'), fixture('PlayState'), fixture('RegistrationState')] },
   feature_list: { payloads: [fixture('TowerHallState'), fixture('TowerFeatureState', (d) => { d.requestId = 0; })] },
   feature_entry: { payloads: [fixture('TowerFeatureState', (d) => { d.requestId = 0; })], steps: async (page) => { await page.click('button:has-text("Champion")'); } },
   feature_review: { payloads: [fixture('TowerFeatureState', (d) => { d.requestId = 0; })], steps: async (page) => { await page.click('button:has-text("Club banner")'); await page.click('button:has-text("Set banner")'); } },

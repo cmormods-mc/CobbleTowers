@@ -494,6 +494,9 @@ public final class LobbyService {
         return ruleset == null ? PartyArrangement.PARTY_SIZE : ruleset.registeredPartySize();
     }
 
+    /** The most Pokemon the web chooser is sent (about 100 characters each against a 32,000 character message). */
+    private static final int MAX_CHOOSER_ENTRIES = 200;
+
     /** The chooser: everything the player owns, what they have chosen, and the limit. */
     public static void sendRegistration(MinecraftServer server, ServerPlayer player, String message, boolean open) {
         PartyStorage.Snapshot snapshot = PartyStorage.snapshot(player);
@@ -503,8 +506,20 @@ public final class LobbyService {
             entries.add(new RegistrationStatePayload.Entry(entry.id(), entry.name(), entry.level(), entry.fainted(), where));
         }
         Optional<TowerLobby> lobby = lobbyOf(player.getUUID());
-        TowerNetworking.sendRegistration(player, new RegistrationStatePayload(entries,
-                lobby.map(found -> found.chosenOf(player.getUUID())).orElse(List.of()),
+        List<UUID> chosen = lobby.map(found -> found.chosenOf(player.getUUID())).orElse(List.of());
+        if (entries.size() > MAX_CHOOSER_ENTRIES && com.cobbletowers.webgui.WebGuiBridge.takesOver(player, RegistrationStatePayload.TYPE)) {
+            // A page message has a size limit: keep the chosen ones, then party and box order.
+            List<RegistrationStatePayload.Entry> kept = new ArrayList<>(entries.stream().filter(e -> chosen.contains(e.id())).toList());
+            for (RegistrationStatePayload.Entry entry : entries) {
+                if (kept.size() >= MAX_CHOOSER_ENTRIES) break;
+                if (!chosen.contains(entry.id())) kept.add(entry);
+            }
+            List<RegistrationStatePayload.Entry> all = entries;
+            kept.sort(java.util.Comparator.comparingInt(all::indexOf));
+            entries = kept;
+            message = message.isEmpty() ? "Showing the first " + MAX_CHOOSER_ENTRIES + " Pokemon: move others into your party or first boxes." : message;
+        }
+        TowerNetworking.sendRegistration(player, new RegistrationStatePayload(entries, chosen,
                 lobby.map(LobbyService::registerLimit).orElse(PartyArrangement.PARTY_SIZE), message, open));
     }
 

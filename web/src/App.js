@@ -9,6 +9,7 @@ import { Draft } from './screens/Draft.js';
 import { Hud } from './screens/Hud.js';
 import { Hall, useBusyTimeout } from './screens/Hall.js';
 import { Lobby } from './screens/Lobby.js';
+import { Party } from './screens/Party.js';
 import { RewardModal, VendorModal } from './screens/Modals.js';
 
 /** Fits the 1280x720 stage to the window with a single scale. */
@@ -45,6 +46,7 @@ export function App() {
   const notice = useStore((s) => s.notice);
   const hall = useStore((s) => s.hall);
   const play = useStore((s) => s.play);
+  const reg = useStore((s) => s.reg);
   const view = useStore((s) => s.view);
   const tab = useStore((s) => s.tab);
   const pick = useStore((s) => s.pick);
@@ -52,7 +54,7 @@ export function App() {
   const busyAt = useStore((s) => s.busyAt);
   useBusyTimeout(busyAt);
   useFit();
-  const native = screen === 'hall' && (view === 'lobby' ? !!play : !!hall || view === 'feature');
+  const native = screen === 'hall' && (view === 'lobby' ? !!play : view === 'party' ? !!reg : !!hall || view === 'feature');
   useEffect(() => { document.documentElement.classList.toggle('native', native); }, [native]);
   useNoticeTimeout(notice, () => update((s) => (s.notice === notice ? { ...s, notice: null } : s)));
 
@@ -62,6 +64,7 @@ export function App() {
     <div class="main">
       ${screen === 'intermission' && inter ? html`<${Intermission} inter=${inter} at=${interAt} />`
         : screen === 'draft' && draft ? html`<${Draft} draft=${draft} />`
+        : screen === 'hall' && view === 'party' && reg ? html`<${Party} reg=${reg} />`
         : screen === 'hall' && view === 'lobby' && play ? html`<${Lobby} state=${play} />`
         : screen === 'hall' && (hall || view === 'feature') ? html`<${Hall} hall=${hall} tab=${tab} page=${page} view=${view} pick=${pick} busy=${!!busyAt} />`
         : html`<${Waiting} />`}

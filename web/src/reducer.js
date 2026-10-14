@@ -13,7 +13,8 @@ export const initial = Object.freeze({
   fx: null,          // RunEffects, for the HUD page
   hall: null,        // TowerHallState
   play: null,        // PlayState (also carried inside TowerHallState)
-  view: 'hall',      // inside the hall screen: 'hall' | 'tower' | 'trial' | 'lobby'
+  reg: null,         // RegistrationState (the party chooser, view 'party')
+  view: 'hall',      // inside the hall screen: 'hall' | 'tower' | 'trial' | 'lobby' | 'party'
   tab: 'towers',     // hall tab: 'towers' | 'trials' | 'social' | 'progress'
   page: 0,           // tower tile page in the hall
   pick: '',          // the tower id or trial kind a briefing shows
@@ -59,6 +60,11 @@ export function reduce(state, kind, data, now) {
       const base = { ...state, play: data, busyAt: 0 };
       return withNotice(data.open ? { ...showLobby(base) } : base, data.message);
     }
+    case 'RegistrationState': {
+      // Opens the chooser only when flagged (the player asked); an unflagged one refreshes an open chooser.
+      const base = { ...state, reg: data, busyAt: 0 };
+      return withNotice(data.open ? showParty(base) : base, data.message);
+    }
     case 'TrackState': {
       const towerMoved = state.tracks && state.tracks.selectedTower !== data.selectedTower;
       return withNotice({ ...state, tracks: data, tracksAt: now, tSel: towerMoved ? { ...state.tSel, mastery: null } : state.tSel }, data.message);
@@ -83,8 +89,16 @@ export function reduce(state, kind, data, now) {
 export const closeReward = (state) => ({ ...state, reward: null });
 export const openVendor = (state, open) => ({ ...state, vendorOpen: open });
 
+function showParty(state) {
+  if (state.screen === 'hall' && state.view === 'party') return state;
+  const stack = state.screen === 'hall' ? [...state.stack, state.view] : [];
+  return { ...state, screen: 'hall', view: 'party', stack };
+}
+
 function showLobby(state) {
   if (state.screen === 'hall' && state.view === 'lobby') return state;
+  // The chooser's Done answers with the lobby: that is a return, not a new view.
+  if (state.screen === 'hall' && state.view === 'party') return goBack(state);
   const stack = state.screen === 'hall' ? [...state.stack, state.view] : [];
   return { ...state, screen: 'hall', view: 'lobby', stack };
 }

@@ -4,6 +4,7 @@ import com.cobbletowers.TowerLog;
 import com.cobbletowers.network.IntermissionStatePayload;
 import com.cobbletowers.network.MasteryScreenPayload;
 import com.cobbletowers.network.PlayStatePayload;
+import com.cobbletowers.network.RegistrationStatePayload;
 import com.cobbletowers.network.RentalDraftPayload;
 import com.cobbletowers.network.RewardRevealPayload;
 import com.cobbletowers.network.RunEffectsPayload;
@@ -52,7 +53,8 @@ public final class WebGuiBridge {
      */
     private static final Set<CustomPacketPayload.Type<?>> SUPPORTED = Set.of(
             IntermissionStatePayload.TYPE, RentalDraftPayload.TYPE, RewardRevealPayload.TYPE, VendorCatalogPayload.TYPE,
-            RunEffectsPayload.TYPE, TowerHallStatePayload.TYPE, PlayStatePayload.TYPE, TowerFeatureState.TYPE, TrackStatePayload.TYPE);
+            RunEffectsPayload.TYPE, TowerHallStatePayload.TYPE, PlayStatePayload.TYPE, TowerFeatureState.TYPE, TrackStatePayload.TYPE,
+            RegistrationStatePayload.TYPE);
 
     private static volatile WebGuiConfig config = WebGuiConfig.OFF;
     private static volatile boolean linked;
@@ -98,7 +100,8 @@ public final class WebGuiBridge {
 
     private static PageSession.Policy policyOf(CustomPacketPayload payload) {
         if (payload instanceof RewardRevealPayload || payload instanceof ScoutingRevealPayload) return PageSession.Policy.REPLACE;
-        if (payload instanceof IntermissionStatePayload || payload instanceof PlayStatePayload) return PageSession.Policy.UPDATE_OR_OPEN_IF_FLAGGED;
+        if (payload instanceof IntermissionStatePayload || payload instanceof PlayStatePayload
+                || payload instanceof RegistrationStatePayload) return PageSession.Policy.UPDATE_OR_OPEN_IF_FLAGGED;
         if (payload instanceof TrackStatePayload) return PageSession.Policy.UPDATE_ONLY;
         if (payload instanceof RunEffectsPayload effects) {
             return effects.floor() > 0 ? PageSession.Policy.UPDATE_OR_OPEN : PageSession.Policy.UPDATE_ONLY;
@@ -109,6 +112,7 @@ public final class WebGuiBridge {
     private static boolean flagged(CustomPacketPayload payload) {
         if (payload instanceof IntermissionStatePayload p) return p.open();
         if (payload instanceof PlayStatePayload p) return p.open();
+        if (payload instanceof RegistrationStatePayload p) return p.open();
         return true;
     }
 

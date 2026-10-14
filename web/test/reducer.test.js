@@ -96,3 +96,16 @@ test('a request that gets no answer times out into a notice', () => {
 test('an unknown kind changes nothing', () => {
   assert.equal(reduce(initial, 'SomethingNew', {}, 1), initial);
 });
+
+test('an opening RegistrationState shows the chooser; Done (the lobby state) returns without growing the stack', async () => {
+  const { reduce, initial } = await import('../src/reducer.js');
+  const lobby = reduce(initial, 'PlayState', { open: true, message: '', lobby: {}, towers: [], partyLevels: [] }, 1);
+  const open = reduce(lobby, 'RegistrationState', { pokemon: [], chosen: [], max: 6, message: '', open: true }, 2);
+  assert.equal(open.view, 'party');
+  const pushed = reduce(open, 'RegistrationState', { pokemon: [], chosen: ['a'], max: 6, message: '', open: false }, 3);
+  assert.equal(pushed.view, 'party');
+  assert.deepEqual(pushed.reg.chosen, ['a']);
+  const back = reduce(pushed, 'PlayState', { open: true, message: '', lobby: {}, towers: [], partyLevels: [] }, 4);
+  assert.equal(back.view, 'lobby');
+  assert.equal(back.stack.length, lobby.stack.length);
+});
