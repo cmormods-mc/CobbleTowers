@@ -33,6 +33,8 @@ public final class AscensionLibRewards {
     private static Method settleBoss;
     private static Method settleScouters;
     private static Method settleTrial;
+    private static Method settleCompletion;
+    private static Method completionExtras;
     private static int tickCounter;
 
     private AscensionLibRewards() {}
@@ -90,6 +92,22 @@ public final class AscensionLibRewards {
                 List.copyOf(players), now, 0), true);
     }
 
+    /** Whether the installed library can pay a completion chest (an older one pays the milestone formula instead). */
+    public static boolean supportsCompletion() {
+        return resolve(PendingLibSettlement.Kind.COMPLETION) != null;
+    }
+
+    /**
+     * Pays a tower cycle's champion as a completion chest: a guaranteed pile, a quality tier from the run's challenge cards, Ascension cycle and
+     * whether it was flawless, and a crown. Flushed first because it is real value. The armor pieces and booster packs the crown rolls are handed
+     * over from the tower's own reward table once the library confirms the payment.
+     */
+    public static void settleCompletion(MinecraftServer server, UUID encounterId, String outcome, int bossFloor, int cycle,
+                                        int challengeCards, boolean flawless, String towerId, Collection<UUID> players, long now) {
+        submit(server, new PendingLibSettlement(encounterId, PendingLibSettlement.Kind.COMPLETION, outcome, challengeCards, bossFloor,
+                flawless, List.copyOf(players), now, 0, cycle, towerId), true);
+    }
+
     /** Tries every unconfirmed settlement again; gives up on, and says so for, any older than a week. */
     public static void retryPending(MinecraftServer server, long now) {
         TowerLibSettlementStore store = TowerLibSettlementStore.get(server);
@@ -101,7 +119,7 @@ public final class AscensionLibRewards {
                         settlement.kind(), settlement.encounterId(), settlement.attempts(), settlement.players());
                 continue;
             }
-            attempt(store, settlement);
+            attempt(server, store, settlement);
         }
     }
 
@@ -111,12 +129,14 @@ public final class AscensionLibRewards {
         TowerLibSettlementStore store = TowerLibSettlementStore.get(server);
         store.put(settlement);
         if (flush) store.checkpoint(server);
-        attempt(store, settlement);
+        attempt(server, store, settlement);
     }
 
     /** One call to the library, then the entry is trimmed to whoever is still owed (or removed). */
-    private static void attempt(TowerLibSettlementStore store, PendingLibSettlement settlement) {
+    private static void attempt(MinecraftServer server, TowerLibSettlementStore store, PendingLibSettlement settlement) {
         Map<?, ?> statuses = invoke(settlement);
+        // The completion's armor and packs are queued (idempotently) before the settlement is trimmed, so a crash in between repeats them harmlessly.
+        if (statuses != null && settlement.kind() == PendingLibSettlement.Kind.COMPLETION) handOverExtras(server, settlement, statuses);
         Optional<PendingLibSettlement> remaining = settlement.afterAttempt(statuses);
         remaining.ifPresentOrElse(store::put, () -> store.remove(settlement));
         if (statuses != null) {
@@ -133,6 +153,54 @@ public final class AscensionLibRewards {
         }
     }
 
+    /** Queues each paid player's armor pieces and booster packs from the tower's reward table; the next delivery hands them over. */
+    private static void handOverExtras(MinecraftServer server, PendingLibSettlement settlement, Map<?, ?> statuses) {
+        try {
+            var content = com.cobbletowers.definition.TowerDefinitionRegistry.content();
+            var towerId = net.minecraft.resources.ResourceLocation.tryParse(settlement.towerId());
+            var tower = towerId == null ? null : content.towers().get(towerId);
+            var table = tower == null ? null : content.rewardTables().get(tower.rewardTableId());
+            if (table == null) {
+                TowerLog.warn("Completion {}: tower {} or its reward table is gone; no armor or packs handed over", settlement.encounterId(), settlement.towerId());
+                return;
+            }
+            var queue = com.cobbletowers.persistence.TowerPendingRewardStore.get(server);
+            long now = System.currentTimeMillis();
+            var paid = new java.util.ArrayList<UUID>();
+            for (UUID player : settlement.players()) {
+                String status = String.valueOf(statuses.get(player));
+                if (!"GRANTED".equals(status) && !"ALREADY_GRANTED".equals(status)) continue;
+                Map<?, ?> extras = extras(settlement, player);
+                if (extras == null) continue;
+                int armor = extras.get("armor") instanceof Number n ? n.intValue() : 0;
+                int tickets = extras.get("tickets") instanceof Number n ? n.intValue() : 0;
+                for (var item : CompletionExtras.pick(table, settlement.encounterId(), player, armor, tickets)) {
+                    queue.addIfAbsent(player, new com.cobbletowers.persistence.PendingTowerReward(settlement.encounterId(),
+                            Math.max(1, settlement.bossFloor()), item, 1, now));
+                }
+                paid.add(player);
+            }
+            queue.checkpoint(server);
+            for (UUID player : paid) {
+                var online = server.getPlayerList().getPlayer(player);
+                if (online != null) com.cobbletowers.reward.RewardDelivery.deliver(server, online);
+            }
+        } catch (RuntimeException ex) {
+            TowerLog.error("Completion {}: handing over armor and packs failed", settlement.encounterId(), ex);
+        }
+    }
+
+    private static Map<?, ?> extras(PendingLibSettlement settlement, UUID player) {
+        if (resolve(PendingLibSettlement.Kind.COMPLETION) == null || completionExtras == null) return null;
+        try {
+            return completionExtras.invoke(null, settlement.encounterId(), player, settlement.cycle(), settlement.fromFloor(),
+                    settlement.keenEyeFloor()) instanceof Map<?, ?> map ? map : null;
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError ex) {
+            TowerLog.error("AscensionLib completion extras failed for {}", player, ex);
+            return null;
+        }
+    }
+
     /** The library's per-player statuses, or null when the call could not be made or threw (nothing confirmed). */
     private static Map<?, ?> invoke(PendingLibSettlement settlement) {
         Method method = resolve(settlement.kind());
@@ -141,6 +209,8 @@ public final class AscensionLibRewards {
             Object result = switch (settlement.kind()) {
                 case MILESTONE -> method.invoke(null, settlement.encounterId(), settlement.outcome(), settlement.fromFloor(),
                         settlement.bossFloor(), settlement.players());
+                case COMPLETION -> method.invoke(null, settlement.encounterId(), settlement.outcome(), settlement.bossFloor(),
+                        settlement.cycle(), settlement.fromFloor(), settlement.keenEyeFloor(), settlement.players());
                 case TRIAL -> method.invoke(null, settlement.encounterId(), settlement.outcome(), settlement.bossFloor(),
                         settlement.players());
                 case SCOUTER_DROPS -> method.invoke(null, settlement.encounterId(), settlement.outcome(),
@@ -172,10 +242,21 @@ public final class AscensionLibRewards {
                 } catch (NoSuchMethodException missing) {
                     settleTrial = null;
                 }
+                try {
+                    // Newer still: without it the champion pays the milestone formula.
+                    settleCompletion = rewards.getMethod("settleTowerCompletion", UUID.class, String.class, int.class, int.class,
+                            int.class, boolean.class, Collection.class);
+                    completionExtras = rewards.getMethod("towerCompletionExtras", UUID.class, UUID.class, int.class, int.class, boolean.class);
+                } catch (NoSuchMethodException missing) {
+                    settleCompletion = null;
+                    completionExtras = null;
+                }
             } catch (ReflectiveOperationException | LinkageError ex) {
                 settleBoss = null;
                 settleScouters = null;
                 settleTrial = null;
+                settleCompletion = null;
+                completionExtras = null;
                 TowerLog.error("AscensionLib is installed but " + REWARDS + " does not match what CobbleTowers expects",
                         ex);
             }
@@ -184,6 +265,7 @@ public final class AscensionLibRewards {
             case MILESTONE -> settleBoss;
             case TRIAL -> settleTrial;
             case SCOUTER_DROPS -> settleScouters;
+            case COMPLETION -> settleCompletion;
         };
     }
 }

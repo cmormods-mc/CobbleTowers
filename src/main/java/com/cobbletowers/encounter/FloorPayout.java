@@ -52,6 +52,16 @@ final class FloorPayout {
         if (content.milestoneAt(run.towerId(), binding.floorIndex()).isEmpty()) return;
         int from = AscensionLibRewards.segmentStart(
                 floor -> content.milestoneAt(run.towerId(), floor).isPresent(), binding.floorIndex());
+        var tower = content.towers().get(run.towerId());
+        if (tower != null && tower.contentFloor(binding.floorIndex()) == tower.floorCount() && AscensionLibRewards.supportsCompletion()) {
+            // A cycle's champion is the hour-long completion chest, scored by the run's challenge cards, its Ascension cycle and whether no player
+            // Pokemon fainted during the cycle (the mastery stats reset at the cycle's first floor).
+            var stats = com.cobbletowers.persistence.TowerRunStatsStore.get(server).peek(run.runId());
+            boolean flawless = stats != null && stats.faints == 0;
+            AscensionLibRewards.settleCompletion(server, result.encounterId(), outcome, binding.floorIndex(),
+                    tower.ascensionOf(binding.floorIndex()), run.modifiers().accumulated().size(), flawless, run.towerId().toString(), members, now);
+            return;
+        }
         AscensionLibRewards.settleMilestone(server, result.encounterId(), outcome, from, binding.floorIndex(),
                 members, now);
     }

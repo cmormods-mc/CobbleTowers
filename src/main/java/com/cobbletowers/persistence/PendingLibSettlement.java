@@ -20,10 +20,21 @@ import net.minecraft.nbt.Tag;
  * @param attempts tries so far
  */
 public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, int fromFloor, int bossFloor,
-                                   boolean keenEyeFloor, List<UUID> players, long createdAt, int attempts) {
+                                   boolean keenEyeFloor, List<UUID> players, long createdAt, int attempts,
+                                   int cycle, String towerId) {
 
-    /** TRIAL carries its rank (1-3) in {@code bossFloor}. */
-    public enum Kind { MILESTONE, SCOUTER_DROPS, TRIAL }
+    /**
+     * TRIAL carries its rank (1-3) in {@code bossFloor}. COMPLETION is a tower cycle's champion: it carries the run's
+     * challenge-card count in {@code fromFloor}, whether the cycle was flawless in {@code keenEyeFloor}, the Ascension
+     * cycle in {@code cycle} and the tower (whose reward table supplies the armor and tickets) in {@code towerId}.
+     */
+    public enum Kind { MILESTONE, SCOUTER_DROPS, TRIAL, COMPLETION }
+
+    /** Every kind but a completion, which is the only one that needs a cycle and a tower. */
+    public PendingLibSettlement(UUID encounterId, Kind kind, String outcome, int fromFloor, int bossFloor,
+                                boolean keenEyeFloor, List<UUID> players, long createdAt, int attempts) {
+        this(encounterId, kind, outcome, fromFloor, bossFloor, keenEyeFloor, players, createdAt, attempts, 0, "");
+    }
 
     /** How long an unpaid settlement is kept trying before it is given up on and logged. */
     public static final long EXPIRY_MILLIS = 7L * 24 * 60 * 60 * 1000;
@@ -33,6 +44,7 @@ public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, 
         Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(outcome, "outcome");
         players = List.copyOf(players);
+        towerId = towerId == null ? "" : towerId;
     }
 
     /** The statuses that mean "not paid yet, try again": the library was unavailable, or the wallet refused. */
@@ -54,7 +66,7 @@ public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, 
         }
         if (remaining.isEmpty()) return Optional.empty();
         return Optional.of(new PendingLibSettlement(encounterId, kind, outcome, fromFloor, bossFloor, keenEyeFloor,
-                remaining, createdAt, attempts + 1));
+                remaining, createdAt, attempts + 1, cycle, towerId));
     }
 
     public boolean expired(long now) {
@@ -79,6 +91,8 @@ public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, 
         tag.put("players", list);
         tag.putLong("created_at", createdAt);
         tag.putInt("attempts", attempts);
+        tag.putInt("cycle", cycle);
+        if (!towerId.isEmpty()) tag.putString("tower", towerId);
         return tag;
     }
 
@@ -87,6 +101,6 @@ public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, 
         for (Tag entry : tag.getList("players", Tag.TAG_INT_ARRAY)) players.add(NbtUtils.loadUUID(entry));
         return new PendingLibSettlement(tag.getUUID("encounter"), Kind.valueOf(tag.getString("kind")),
                 tag.getString("outcome"), tag.getInt("from"), tag.getInt("boss"), tag.getBoolean("keen_eye"), players,
-                tag.getLong("created_at"), tag.getInt("attempts"));
+                tag.getLong("created_at"), tag.getInt("attempts"), tag.getInt("cycle"), tag.getString("tower"));
     }
 }

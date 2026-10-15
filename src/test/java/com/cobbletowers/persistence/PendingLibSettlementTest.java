@@ -22,6 +22,29 @@ class PendingLibSettlementTest {
     }
 
     @Test
+    @DisplayName("a completion keeps its cards, cycle, flawless flag and tower through the disk round trip and retries like the others")
+    void completionSurvivesTheTagAndRetries() {
+        var completion = new PendingLibSettlement(UUID.randomUUID(), PendingLibSettlement.Kind.COMPLETION, "VICTORY", 4, 10, true,
+                List.of(A, B), 1000L, 0, 2, "cobbletowers:tideforge");
+        assertEquals(completion, PendingLibSettlement.fromTag(completion.toTag()));
+        var retry = completion.afterAttempt(Map.of(A, "GRANTED", B, "REFUSED")).orElseThrow();
+        assertEquals(List.of(B), retry.players());
+        assertEquals(2, retry.cycle());
+        assertEquals("cobbletowers:tideforge", retry.towerId());
+    }
+
+    @Test
+    @DisplayName("a settlement saved before completions existed still loads, with cycle 0 and no tower")
+    void oldTagsStillLoad() {
+        var tag = milestone().toTag();
+        tag.remove("cycle");
+        tag.remove("tower");
+        var loaded = PendingLibSettlement.fromTag(tag);
+        assertEquals(0, loaded.cycle());
+        assertEquals("", loaded.towerId());
+    }
+
+    @Test
     @DisplayName("a trial settlement keeps its rank through the disk round trip and retries like the others")
     void trialRankSurvivesTheTagAndRetries() {
         var trial = new PendingLibSettlement(UUID.randomUUID(), PendingLibSettlement.Kind.TRIAL, "VICTORY", 0, 2, false,
