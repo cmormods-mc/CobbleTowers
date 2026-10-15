@@ -58,7 +58,8 @@ export function App() {
   const busyAt = useStore((s) => s.busyAt);
   useBusyTimeout(busyAt);
   useFit();
-  const native = screen === 'scout' || screen === 'intermission' || screen === 'draft' || screen === 'hall' && (view === 'lobby' ? !!play : view === 'party' ? !!reg : view === 'mastery' ? !!mast : !!hall || view === 'feature');
+  // a reward or the vendor drawn over the waiting page is still drawn in GUI pixels, so it needs the native layout too
+  const native = !!reward || (vendorOpen && !!vendor) || screen === 'scout' || screen === 'intermission' || screen === 'draft' || screen === 'hall' && (view === 'lobby' ? !!play : view === 'party' ? !!reg : view === 'mastery' ? !!mast : !!hall || view === 'feature');
   useEffect(() => { document.documentElement.classList.toggle('native', native); }, [native]);
   useNoticeTimeout(notice, () => update((s) => (s.notice === notice ? { ...s, notice: null } : s)));
 

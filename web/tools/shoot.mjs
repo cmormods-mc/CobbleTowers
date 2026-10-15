@@ -20,6 +20,7 @@ const openDraft = (d) => { d.complete = false; d.current = 0; d.packs.forEach((p
 export const SHOTS = {
   intermission: { payloads: [fixture('IntermissionState')] },
   reward: { payloads: [fixture('IntermissionState'), fixture('RewardReveal')] },
+  reward_alone: { payloads: [fixture('RewardReveal')] },
   reward_armor: { payloads: [fixture('IntermissionState'), fixture('RewardReveal', (d) => { d.grants.reverse(); })] },
   relic_draft: { payloads: [fixture('IntermissionState', (d) => { d.draft.cards = [
     { id: 'cobbletowers:ember_brand', displayName: 'Ember Brand', votes: 0, risk: 0, theme: 'custom:', lines: ['[+] Your Fire moves deal 25% more damage.', 'Tags: offense', 'Held for this run; not permanent equipment.'] },
