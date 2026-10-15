@@ -8,7 +8,7 @@ def devBuild = project.hasProperty('dev')
 // `-Pserveronly` builds the server jar of the P43 goal: no client classes and a mod file that says "server", so it can sit on a
 // server that players join with Cobblemon and WebGUI alone. The default build still carries the native client screens.
 def serverOnly = project.hasProperty('serveronly')
-version = '0.27.0-p46-rotating-tower'
+version = '0.28.0-p47-mastery-badge'
 if (devBuild) version = version + '-dev'
 if (serverOnly) version = version + '-server'
 group = 'com.cobbletowers'
