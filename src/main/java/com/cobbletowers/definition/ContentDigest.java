@@ -19,6 +19,11 @@ public final class ContentDigest {
 
     private ContentDigest() {}
 
+    /** Lowercase hex SHA-256 of a plain string, for content that has no file (a rotating trial's id). */
+    public static String ofText(String text) {
+        return of(new com.google.gson.JsonPrimitive(text));
+    }
+
     /** Lowercase hex SHA-256 of the canonical form of {@code json}. */
     public static String of(JsonElement json) {
         try {

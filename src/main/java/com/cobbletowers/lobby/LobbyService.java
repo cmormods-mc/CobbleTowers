@@ -581,7 +581,7 @@ public final class LobbyService {
 
     public static PlayStatePayload playState(MinecraftServer server, ServerPlayer player, TowerLobby lobby, String message, boolean open) {
         TowerContent content = TowerDefinitionRegistry.content();
-        List<PlayStatePayload.Tower> towers = content.towers().values().stream()
+        List<PlayStatePayload.Tower> towers = content.catalogTowers().stream()
                 .map(tower -> new PlayStatePayload.Tower(tower.id(), tower.displayName())).toList();
         List<Integer> levels = PartyReader.members(player).stream().map(PartyMember::level).toList();
 

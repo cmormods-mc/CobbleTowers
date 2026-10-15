@@ -208,6 +208,39 @@ public record TowerContent(
         return problems;
     }
 
+    /** Id path prefix of a rotating trial's tower (P46); such towers are not in {@link #sortedTowerIds}. */
+    public static final String ROTATING_PREFIX = "rotating/";
+
+    public static boolean isRotating(ResourceLocation towerId) {
+        return towerId.getPath().startsWith(ROTATING_PREFIX);
+    }
+
+    /** The towers a player can browse: every loaded one except a rotating trial's. */
+    public List<TowerDefinition> catalogTowers() {
+        return towers.values().stream().filter(tower -> !isRotating(tower.id())).toList();
+    }
+
+    /**
+     * This content plus one rotating trial's tower and floors (P46). Its problems are checked with the same rules as a
+     * file's and added to the list; it stays out of {@link #sortedTowerIds}, so no screen lists it.
+     */
+    public TowerContent withRotating(TowerDefinition tower, List<FloorDefinition> rotatingFloors) {
+        Map<ResourceLocation, TowerDefinition> allTowers = new LinkedHashMap<>(towers);
+        allTowers.put(tower.id(), tower);
+        Map<ResourceLocation, FloorDefinition> allFloors = new LinkedHashMap<>(floors);
+        for (FloorDefinition floor : rotatingFloors) allFloors.put(floor.id(), floor);
+        Map<DefinitionKey, String> allDigests = new LinkedHashMap<>(digests);
+        allDigests.put(DefinitionKey.tower(tower.id()), ContentDigest.ofText(tower.id().toString()));
+        TowerContent merged = of(allTowers, allFloors, pools, rulesets, milestones, bossPools, modifiers, rewardTables,
+                regionalThemes, vendorServices, scoutingProfiles, allDigests);
+        List<String> allProblems = new ArrayList<>(problems);
+        for (String problem : merged.problems()) {
+            if (!problems.contains(problem)) allProblems.add(problem);
+        }
+        return new TowerContent(merged.towers(), merged.floors(), pools, rulesets, milestones, bossPools, modifiers,
+                rewardTables, regionalThemes, vendorServices, scoutingProfiles, allDigests, allProblems, sortedTowerIds);
+    }
+
     public Optional<TowerSummary> summary(ResourceLocation towerId) {
         TowerDefinition tower = towers.get(towerId);
         if (tower == null) return Optional.empty();

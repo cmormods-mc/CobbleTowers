@@ -34,6 +34,8 @@ public final class TowerDefinitionRegistry
 
     private static volatile TowerContent CONTENT = TowerContent.EMPTY;
     private static final TowerRegistryView VIEW = new View();
+    /** Rotating trial towers built so far (P46), rebuilt into the content on every reload. */
+    private static final java.util.Set<ResourceLocation> ROTATING = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     /** The content of the last completed reload. Never null. */
     public static TowerContent content() {
@@ -48,6 +50,44 @@ public final class TowerDefinitionRegistry
     @Override
     public ResourceLocation getFabricId() {
         return ID;
+    }
+
+    /** Recipes load first, so a reload can rebuild the rotating towers. */
+    @Override
+    public java.util.Collection<ResourceLocation> getFabricDependencies() {
+        return List.of(TrialRecipeRegistry.ID);
+    }
+
+    /**
+     * Makes sure the content holds a rotating trial's tower (P46), building it from its id if not. False when the id is
+     * not a rotating tower or cannot be built (the reason is logged). Idempotent; call it before reading a trial run's
+     * tower.
+     */
+    public static synchronized boolean ensureRotating(ResourceLocation towerId) {
+        if (CONTENT.towers().containsKey(towerId)) return true;
+        TowerContent built = withRotating(CONTENT, towerId);
+        if (built == null) return false;
+        CONTENT = built;
+        ROTATING.add(towerId);
+        return true;
+    }
+
+    private static TowerContent withRotating(TowerContent content, ResourceLocation towerId) {
+        var parsed = com.cobbletowers.trial.RotatingTowers.parse(towerId);
+        if (parsed.isEmpty()) return null;
+        var recipe = TrialRecipeRegistry.ofKind(parsed.get().kind());
+        if (recipe.isEmpty()) {
+            TowerLog.warn("Cannot build {}: no {} trial recipe is loaded.", towerId, parsed.get().kind());
+            return null;
+        }
+        try {
+            var roll = com.cobbletowers.trial.RotatingRoll.of(recipe.get(), parsed.get().number());
+            var built = com.cobbletowers.trial.RotatingTowers.build(recipe.get(), roll, towerId, content);
+            return content.withRotating(built.tower(), built.floors());
+        } catch (IllegalArgumentException ex) {
+            TowerLog.error("Cannot build rotating tower {}: {}", towerId, ex.getMessage());
+            return null;
+        }
     }
 
     @Override
@@ -112,7 +152,12 @@ public final class TowerDefinitionRegistry
 
     @Override
     protected void apply(TowerContent prepared, ResourceManager manager, ProfilerFiller profiler) {
-        CONTENT = prepared;
+        TowerContent next = prepared;
+        for (ResourceLocation id : ROTATING) {
+            TowerContent rebuilt = withRotating(next, id);
+            if (rebuilt != null) next = rebuilt;
+        }
+        CONTENT = next;
         if (prepared.problems().isEmpty()) {
             TowerLog.info("Loaded {} tower definition(s) across {} file(s), all references resolved.",
                     prepared.towers().size(), prepared.definitionCount());

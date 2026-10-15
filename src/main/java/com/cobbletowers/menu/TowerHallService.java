@@ -37,7 +37,7 @@ public final class TowerHallService {
             else LobbyService.openScreenWithMessage(server, player, message);
             return;
         }
-        var towers = TowerDefinitionRegistry.content().towers().values().stream()
+        var towers = TowerDefinitionRegistry.content().catalogTowers().stream()
                 .sorted(Comparator.comparing(t -> t.displayName()))
                 .limit(256)
                 .map(t -> new TowerHallStatePayload.Destination(t.id(), t.displayName(), t.floorIds().size(),
