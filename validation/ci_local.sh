@@ -132,11 +132,11 @@ step "Validate persisted state holds no live references (jar)"
 
 # Source compatibility is what the build above proves; this proves BINARY compatibility, which is what a jar built
 # against one Cobblemon needs to run on another (see check_cobblemon_binary_compat.py). Cobblemon is taken from the
-# Gradle cache by its Modrinth version id: gBW3vLC7 is 1.8.1, the compile target (the jar is built against it, so it
-# must always pass, or the checker itself is wrong). 1.8.1 is the supported target from P24 on; add the next Cobblemon
+# Gradle cache by its Modrinth version id: GJ2a1b8O is 1.8.2, the compile target (the jar is built against it, so it
+# must always pass, or the checker itself is wrong). 1.8.1 is still checked; add the next Cobblemon
 # here (and a rig for it) when one is released. A version missing from the cache is a skipped check, not a failure.
 cache="${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1/maven.modrinth/MdwFAVRL"
-for pair in "gBW3vLC7:1.8.1"; do
+for pair in "GJ2a1b8O:1.8.2" "gBW3vLC7:1.8.1"; do
   id="${pair%%:*}"
   name="${pair##*:}"
   step "Binary compatibility with Cobblemon $name"
