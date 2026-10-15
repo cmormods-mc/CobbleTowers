@@ -24,7 +24,16 @@ public final class Cosmetics {
      * One piece of the text in front of a name, with the colour it is shown in (a vanilla formatting name such as
      * {@code gold}).
      */
-    public record Segment(String text, String color) {}
+    public record Segment(String text, String color, Optional<String> font) {
+        public Segment {
+            font = font == null ? Optional.empty() : font;
+        }
+
+        /** A piece in the default font. */
+        public Segment(String text, String color) {
+            this(text, color, Optional.empty());
+        }
+    }
 
     private Cosmetics() {}
 

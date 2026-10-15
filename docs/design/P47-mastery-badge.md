@@ -1,6 +1,6 @@
 # P47: The mastery badge (a tower icon and a level beside the name)
 
-Status: **draft, owner decisions made 2026-10-14, no code yet.** Replaces the long-standing "mastery-level cosmetics are recorded but shown nowhere" item. Written first, per the design gate.
+Status: **P47a built 2026-10-14 (`MasteryBadge`, `Segment.font`, `mastery_badge` config flag, `MasteryBadgeTest`); P47b-c not started.** Owner decisions made 2026-10-14. Replaces the long-standing "mastery-level cosmetics are recorded but shown nowhere" item. Written first, per the design gate.
 
 ## Why
 

@@ -23,8 +23,18 @@ public final class CosmeticsConfig {
 
     private static volatile boolean chatTags = true;
     private static volatile List<String> onEarnCommands = List.of();
+    private static volatile boolean masteryBadge = true;
 
     private CosmeticsConfig() {}
+
+    /** Whether the mastery badge (P47) shows before names; {@code "mastery_badge": false} switches it off. */
+    public static boolean masteryBadge() {
+        return masteryBadge;
+    }
+
+    public static void setMasteryBadge(boolean on) {
+        masteryBadge = on;
+    }
 
     public static void install() {
         ServerLifecycleEvents.SERVER_STARTING.register(server -> load());
@@ -46,6 +56,7 @@ public final class CosmeticsConfig {
 
     static void load() {
         Path file = FabricLoader.getInstance().getConfigDir().resolve("cobbletowers-cosmetics.json");
+        masteryBadge = true;
         if (!Files.exists(file)) {
             set(true, List.of());
             return;
@@ -62,7 +73,8 @@ public final class CosmeticsConfig {
                 }
             }
             set(tags, commands);
-            TowerLog.info("Cosmetics config: chat tags {}, {} earn command(s)", tags, commands.size());
+            masteryBadge = !root.has("mastery_badge") || root.get("mastery_badge").getAsBoolean();
+            TowerLog.info("Cosmetics config: chat tags {}, mastery badge {}, {} earn command(s)", tags, masteryBadge, commands.size());
         } catch (IOException | RuntimeException ex) {
             TowerLog.error("{} is not usable ({}); cosmetics use the defaults (chat tags on, no earn commands)", file, ex.toString());
             set(true, List.of());
