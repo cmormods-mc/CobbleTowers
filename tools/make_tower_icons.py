@@ -14,65 +14,68 @@ from PIL import Image
 OUT = Path(__file__).resolve().parent.parent / "src/main/resources/assets/cobbletowers/textures/font/tower_icons.png"
 
 PALETTE = {
-    "#": (196, 198, 208, 255),   # stone
-    "o": (96, 98, 120, 255),     # stone shade
+    "K": (36, 26, 32, 255),      # outline
+    "S": (206, 208, 218, 255),   # stone light
+    "s": (150, 152, 172, 255),   # stone mid
+    "d": (92, 94, 120, 255),     # shade and windows
     "b": (64, 140, 235, 255),    # water
-    "w": (200, 232, 255, 255),   # water highlight
-    "g": (86, 190, 96, 255),     # leaf
-    "G": (40, 120, 60, 255),     # leaf vein
-    "p": (150, 96, 220, 255),    # dusk
-    "q": (236, 214, 255, 255),   # star
-    "y": (246, 200, 64, 255),    # gold
+    "w": (176, 218, 255, 255),   # water highlight
+    "n": (30, 84, 172, 255),     # water shade
+    "g": (96, 200, 100, 255),    # leaf
+    "G": (44, 126, 62, 255),     # leaf vein and shade
+    "p": (156, 100, 226, 255),   # dusk
+    "q": (240, 220, 255, 255),   # star
+    "y": (248, 204, 66, 255),    # gold
     "Y": (200, 140, 30, 255),    # gold shade
     ".": (0, 0, 0, 0),
 }
 
 ICONS = [
     # neutral: a stone tower
-    ["#.#..#.#",
-     "########",
-     ".######.",
-     ".##oo##.",
-     ".######.",
-     ".#o##o#.",
-     ".######.",
-     "########"],
+    ["KK.KK.KK",
+     "KSKSSKSK",
+     "KSSSSSsK",
+     "KSSdSSsK",
+     "KSSSSSsK",
+     "KSSddSsK",
+     "KSSddSsK",
+     "KKKKKKKK"],
     # tideforge: a drop of water
-    ["...bb...",
-     "..bbbb..",
-     ".bbwbbb.",
-     ".bwbbbb.",
-     "bbbbbbbb",
-     "bbbbbbbb",
-     ".bbbbbb.",
-     "..bbbb.."],
+    ["...KK...",
+     "..KbbK..",
+     ".KbwbbK.",
+     ".KbwbbK.",
+     "KbbbbbbK",
+     "KbbbbbnK",
+     ".KbbbnK.",
+     "..KKKK.."],
     # rootvale: a leaf
-    ["......gg",
-     "....gggg",
-     "..gggGgg",
-     ".gggGggg",
-     ".gggGgg.",
-     "ggGggg..",
-     "gG.gg...",
-     "G......."],
+    [".....KKK",
+     "...KKggK",
+     "..KgggGK",
+     ".KggGggK",
+     ".KgGgggK",
+     "KgGggGK.",
+     "KGgGGK..",
+     "KKKK...."],
     # duskvale: a crescent moon and a star
-    ["..pppp.q",
-     ".ppp....",
-     "ppp.....",
-     "ppp.....",
-     "ppp.....",
-     "ppp.....",
-     ".ppp....",
-     "..pppp.."],
+    ["..KKKK.q",
+     ".KppppK.",
+     "KpppKK..",
+     "KppK....",
+     "KppK....",
+     "KpppKK..",
+     ".KppppK.",
+     "..KKKK.."],
     # any other tower: a gold star
-    ["...yy...",
-     "...yy...",
-     "yyyyyyyy",
-     ".yyyyyy.",
-     "..yyyy..",
-     "..yYYy..",
-     ".yy..yy.",
-     "yy....yy"],
+    ["...KK...",
+     "..KyyK..",
+     "KKKyyKKK",
+     "KyyyyyyK",
+     ".KyyyyK.",
+     ".KyYYyK.",
+     "KyyKKyyK",
+     "KKK..KKK"],
 ]
 
 
