@@ -62,6 +62,9 @@ public final class CobblemonBattleAdapter {
     /** An opponent must have stood this long (ticks) before it can be called stray: the battle starts the tick it spawns. */
     private static final int ORPHAN_GRACE_TICKS = 200;
     private static int sweepTicks;
+    /** Opponents to discard once they can be found, with the ticks left to try. Server thread only. */
+    private static final Map<UUID, Integer> PENDING_DISCARDS = new HashMap<>();
+    private static final int PENDING_DISCARD_TICKS = 100;
 
     private CobblemonBattleAdapter() {}
 
@@ -83,6 +86,7 @@ public final class CobblemonBattleAdapter {
         CobblemonEvents.BATTLE_VICTORY.subscribe(CobblemonBattleAdapter::onVictorySafely);
         CobblemonEvents.BATTLE_FAINTED.subscribe(CobblemonBattleAdapter::onFaintedSafely);
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
+            retryPendingDiscards(server);
             if (++sweepTicks % ORPHAN_SWEEP_TICKS != 0) return;
             try {
                 sweepOrphanOpponents(server);
@@ -350,6 +354,23 @@ public final class CobblemonBattleAdapter {
                 return;
             }
         }
+        // Just sent out and not yet findable by id (a disconnect in the first ticks of a battle): try again each tick.
+        PENDING_DISCARDS.put(binding.opponentEntity(), PENDING_DISCARD_TICKS);
+    }
+
+    private static void retryPendingDiscards(MinecraftServer server) {
+        if (PENDING_DISCARDS.isEmpty()) return;
+        PENDING_DISCARDS.replaceAll((id, left) -> left - 1);
+        PENDING_DISCARDS.entrySet().removeIf(entry -> {
+            for (ServerLevel level : server.getAllLevels()) {
+                Entity entity = level.getEntity(entry.getKey());
+                if (entity != null) {
+                    entity.discard();
+                    return true;
+                }
+            }
+            return entry.getValue() <= 0;
+        });
     }
 
     /** Ends one player's battle and removes their opponent, leaving the floor alone. */

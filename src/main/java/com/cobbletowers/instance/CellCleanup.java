@@ -93,6 +93,12 @@ public final class CellCleanup {
         return debris.size();
     }
 
+    /** Type, name, tags and position, so a quarantine says what was left behind. */
+    private static String describe(Entity entity) {
+        return entity.getType() + " '" + entity.getName().getString() + "' tags=" + entity.getTags()
+                + " at " + entity.blockPosition().toShortString();
+    }
+
     public static Report verify(MinecraftServer server, int cell) {
         CellGrid.requireValid(cell);
         List<String> problems = new ArrayList<>();
@@ -115,7 +121,7 @@ public final class CellCleanup {
         List<Entity> entities = level.getEntities((Entity) null, bounds, entity -> !(entity instanceof Player));
         if (!entities.isEmpty()) {
             problems.add(entities.size() + " entity/entities still inside: "
-                    + entities.stream().limit(5).map(entity -> entity.getType().toString()).toList());
+                    + entities.stream().limit(5).map(CellCleanup::describe).toList());
         }
         return new Report(cell, problems);
     }
