@@ -42,7 +42,7 @@ Pure: the badge rule above; a segment with a font renders into a component with 
 
 ## Added 2026-10-14: choosing the tower
 
-Owner asked how to pick the icon when several towers are maxed (the tie then goes to the newest achievement, which can change). Built: `/tower badge <tower>` pins the badge to a tower where the player has a level, `/tower badge auto` returns to the highest level; a pin on a tower that has lost every level quietly falls back to automatic. The Hall mastery screen has a button for the selected tower ("Show on name" / "Use my highest") and a line saying what the name shows. The page reuses the mastery request with a `badge:pin` or `badge:auto` tab, and each tower in the mastery payload carries `badge` (0 not shown, 1 automatic, 2 pinned). Stored per player in `TowerMasteryStore` (`badge_pick`).
+Owner asked how to pick the icon when several towers are maxed (the tie then goes to the newest achievement, which can change). Built and checked by the owner ("looks good", 2026-10-14): `/tower badge <tower>` pins the badge to a tower where the player has a level, `/tower badge auto` returns to the highest level; a pin on a tower that has lost every level quietly falls back to automatic. The Hall mastery screen has a button for the selected tower ("Show on name" / "Use my highest") and a line saying what the name shows. The page reuses the mastery request with a `badge:pin` or `badge:auto` tab, and each tower in the mastery payload carries `badge` (0 not shown, 1 automatic, 2 pinned). Stored per player in `TowerMasteryStore` (`badge_pick`).
 
 ## Not in this phase
 
