@@ -183,10 +183,10 @@ public final class IntermissionService {
             notifyAll(server, run, "The team cashed out.");
             return "The team cashed out.";
         }
-        String message = "";
+        String message = round.cashOutTied(electorate) ? "The cash-out vote is tied, so the team keeps playing." : "";
         if (!round.counting() && !run.modifiers().hasOpenDraft() && round.allReady(electorate)) {
             round.beginCountdown(System.currentTimeMillis(), LobbyService.COUNTDOWN_MILLIS);
-            message = "Everyone is ready. The next floor opens in " + LobbyService.COUNTDOWN_MILLIS / 1000 + " seconds.";
+            message = (message.isEmpty() ? "" : message + " ") + "Everyone is ready. The next floor opens in " + LobbyService.COUNTDOWN_MILLIS / 1000 + " seconds.";
         }
         broadcast(server, run, message, false);
         return reply;

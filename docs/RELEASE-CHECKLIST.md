@@ -59,7 +59,7 @@ Still open, for the owner or the next session:
   - Battle switching (TDS #48) is deliberately not CobbleTowers' business: switching and item rules reach Showdown only through CobbleRaids' `EncounterRules` for **boss** battles (`TowerBossAdapter.withSwitching/withItems`, set by the No Retreat / no-items modifiers). Ordinary floors use the live party untouched. Nothing to build unless you want ordinary-floor rules.
   - `item_action_budget` (TDS #47) was removed 2026-10-14: it was parsed and enforced nowhere (`RulesetView.itemActionBudget()`, the ruleset field and the four shipped values are gone; a datapack that still sets it is ignored). A Hardcore-style item limit would be a new field.
   - Mid-run party changes (P18 allows moves after lock-in) are the trap for any party-restricting playlist (Monotype and similar): re-validate at each floor start, or freeze the registered party (roadmap section 'The trap: mid-run changes').
-  - Cash-out vote ties fall back to "keep playing" (`IntermissionRound`: no leader exists to break a tie). Confirm that is wanted; alternatives are "cash out" on a tie, or a coin flip seeded by the run.
+  - [x] Cash-out vote ties keep playing (owner confirmed 2026-10-14); the intermission now says "The cash-out vote is tied, so the team keeps playing." when a vote is exactly half.
 - [ ] **Art.** Armor worn layers (visor, boot band, shading), jerseys (data-only today), Test Tower chambers not connected.
 
 ## Verification gaps that could hide bugs

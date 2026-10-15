@@ -51,6 +51,13 @@ public final class IntermissionRound {
         return yes * 2 > electorate.size();
     }
 
+    /** Exactly half of the electorate voted to cash out: not a majority, so the team keeps playing. */
+    public boolean cashOutTied(Collection<UUID> electorate) {
+        if (electorate.isEmpty()) return false;
+        long yes = electorate.stream().filter(this::votedCashOut).count();
+        return yes > 0 && yes * 2 == electorate.size();
+    }
+
     private int lastAnnounced = -1;
 
     /**

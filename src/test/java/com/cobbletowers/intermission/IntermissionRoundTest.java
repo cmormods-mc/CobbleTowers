@@ -60,6 +60,20 @@ class IntermissionRoundTest {
     }
 
     @Test
+    @DisplayName("exactly half voting to cash out is a tie, not a pass; no votes and a majority are not ties")
+    void tie() {
+        IntermissionRound round = new IntermissionRound();
+        assertFalse(round.cashOutTied(List.of(A, B)), "no votes is not a tie");
+        round.voteCashOut(A, true);
+        assertTrue(round.cashOutTied(List.of(A, B)));
+        assertFalse(round.cashOutPasses(List.of(A, B)));
+        assertFalse(round.cashOutTied(List.of(A, B, C)), "one of three is a minority");
+        round.voteCashOut(B, true);
+        assertFalse(round.cashOutTied(List.of(A, B)), "both voting is a majority");
+        assertFalse(round.cashOutTied(List.of()));
+    }
+
+    @Test
     @DisplayName("a solo player's own vote is a majority")
     void solo() {
         IntermissionRound round = new IntermissionRound();
