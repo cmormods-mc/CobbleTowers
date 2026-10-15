@@ -46,7 +46,7 @@ Still open, for the owner or the next session:
 
 - [ ] **Rotating trials (P46).** Built and tested 2026-10-14 (`rotating_trial_test.py` 13/13: roll, route line, run on the rotating tower, rebuilt after a restart). Still open: a full mixed-route run by a human across a region boundary, the weekly rules in play (no vendor, no Rest, double risk, relic rooms), and a day turnover at midnight with a run in progress.
 
-- [ ] **Server-only deployment (P43).** Steps done 2026-10-14: `-Pserveronly` jar builds, boots and loads; Polymer auto-host serves the resource pack on the game port; `ci_local.sh` and the workflow check the committed web bundle. Setup notes: `docs/SERVER-ONLY-SETUP.md`. Still to verify with a stock client (Cobblemon + WebGUI + Rinku only): pack download, worn armor, a full run, every page.
+- [ ] **Server-only deployment (P43).** Steps done 2026-10-14: `-Pserveronly` jar builds, boots and loads; Polymer auto-host serves the resource pack on the game port; `ci_local.sh` and the workflow check the committed web bundle. Setup notes: `docs/SERVER-ONLY-SETUP.md`. Owner played it through on a client with the web UI on 2026-10-14 (pages, a run to floor 2, vendor, rooms, draft, icons, pack) and reported it all looks and works well. Not itemised: worn armor with the pack, the HUD page closing. Still open: a longer run and a second player.
 
 ## Should be refined before players see it
 

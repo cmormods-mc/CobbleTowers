@@ -30,5 +30,5 @@ Host it with Polymer's own auto-host, which serves the pack **over the game port
 ## What a player sees
 Everything is a WebGUI page opened by the server (`/tower`, the intermission after a floor, rewards, vendor, rental draft, mastery, scouting, spectator HUD). There is no key binding: open the menu with `/tower` (the tower key item is a run-entry cost, not a menu opener).
 
-## Still to verify with a stock client
-Inventory, worn armor with the pack, the vendor villager, a full run, and every page, on a client with only Cobblemon, WebGUI and Rinku.
+## Verified
+The owner played it through on 2026-10-14 (every page they opened, a run to floor 2, the vendor, rooms, the rental draft) and reported it all looks and works well. A long multi-floor run and a second player are still to do.

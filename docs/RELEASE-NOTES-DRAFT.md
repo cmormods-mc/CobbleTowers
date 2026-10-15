@@ -5,7 +5,7 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 
 ## For players
 
-**Menus are web pages (P43-P44)** **(unverified with a stock client)**
+**Menus are web pages (P43-P44)**
 - With the WebGUI mod on the server, every CobbleTowers screen is a page the server opens: Tower Hall (towers, Daily and Weekly trial briefings, lobby, party chooser),
   the intermission after a floor, rewards, the vendor, the Rental Draft, mastery and boards, scouting, the Progress tracks, club, season, cosmetics, contracts, Hall of
   Fame, run report, codex, echoes, collection, and the spectator panel. They look like the native screens and fill the window at Minecraft's own GUI scale.
@@ -69,7 +69,7 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 
 ## For server owners
 
-**New requirements (P43)** **(unverified with a stock client)**
+**New requirements (P43)**
 - **Polymer is now required on the server** (the bundled `polymer-bundled-0.9.19+1.21.1` jar). The tower key, the 48 armor pieces, the armor materials and the season trim
   templates are Polymer items, so players need no CobbleTowers jar to join. Armor tooltips and names come from the server.
 - **WebGUI is optional** (`suggests`). Turn the web pages on with `config/cobbletowers-webgui.json` (`enabled`, `url`, `mode` of `fallback` or `prefer`,
@@ -112,7 +112,7 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 - New client payloads `tracks_v1` and `track_action_v1`; a server without them keeps the old Progress cards.
 
 ## Known issues
-- The web pages and the server-only mode have only been tested headless and on one client; a full run with a stock client (Cobblemon, WebGUI and Rinku only) is still to do.
+- The web pages and the server-only mode were played through by the owner on 2026-10-14 (hall, features, tracks, lobby, rental draft, a run to floor 2, vendor, rooms) and looked and worked well; a long multi-floor run and a second player are still untested.
 - The relic battle effects and the four new rooms are covered by unit tests but have not been seen in a real battle.
 - A page closed with Esc may keep running in the background (WebGUI tells the server nothing when a page closes); the server opens menus you ask for (`/tower`) and the intermission after a floor clear regardless, but any other
   screen the server opens by itself may not show if the page is still alive.
