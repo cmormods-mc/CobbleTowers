@@ -70,6 +70,14 @@ public final class RunFactory {
                                                 List<UUID> players, Map<UUID, List<UUID>> parties,
                                                 int ascension, RunOptions options, List<ResourceLocation> extraModifiers,
                                                 long seed, long now) {
+        return create(content, towerId, players, parties, ascension, options, extraModifiers, List.of(), seed, now);
+    }
+
+    /** As above, also starting holding {@code startingRelics} (a rotating trial's, P46). Unknown or surplus ones are skipped. */
+    public static Optional<PersistedRun> create(TowerContent content, ResourceLocation towerId,
+                                                List<UUID> players, Map<UUID, List<UUID>> parties,
+                                                int ascension, RunOptions options, List<ResourceLocation> extraModifiers,
+                                                List<ResourceLocation> startingRelics, long seed, long now) {
         TowerDefinition tower = content.towers().get(towerId);
         if (tower == null) return Optional.empty();
         int startAscension = tower.ascension() ? Math.max(0, ascension) : 0;
@@ -86,6 +94,12 @@ public final class RunFactory {
         }
         for (ResourceLocation extra : extraModifiers) {
             if (content.modifier(extra).isPresent()) startModifiers = startModifiers.accumulating(extra);
+        }
+
+        for (ResourceLocation relic : startingRelics) {
+            if (content.modifier(relic).filter(ModifierDefinition::relic).isPresent() && startModifiers.hasRelicRoom()) {
+                startModifiers = startModifiers.withRelic(relic, FIRST_FLOOR);
+            }
         }
 
         RulesetDefinition ruleset = com.cobbletowers.definition.RulesetResolver.forTower(content, tower, options.playlist());

@@ -1,6 +1,6 @@
 # P46: The rotating tower (daily and weekly, built from the seed)
 
-Status: **P46a, P46b built (2026-10-14); P46c-d not started.** Follows P32b (Seeded Trials), P45 (relics and rooms), P38 (region rules). Written first, per the design gate.
+Status: **P46a-d built (2026-10-14).** As built: the schedule uses the recipe (`TrialSchedule.of(recipe, day)`, `TrialService.current` calls `ensureRotating` and asks the cell pool to pre-warm the route's structures once per trial), `TrialRules` re-rolls the weekly rule and room lean from a run's trial id, the starting relic goes in through `RunFactory`, and `trialadmin roll <date>` prints a day. Live: `validation/smoke/rotating_trial_test.py`. Follows P32b (Seeded Trials), P45 (relics and rooms), P38 (region rules). Written first, per the design gate.
 
 ## Why
 

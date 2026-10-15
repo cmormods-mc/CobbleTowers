@@ -1,6 +1,7 @@
 package com.cobbletowers.trial;
 
 import com.cobbletowers.CobbleTowers;
+import com.cobbletowers.definition.RotatingRecipeDefinition;
 import com.cobbletowers.definition.TrialPoolDefinition;
 import com.cobbletowers.definition.TrialPoolDefinition.Kind;
 import java.time.LocalDate;
@@ -21,9 +22,16 @@ public final class TrialSchedule {
      * @param id {@code daily:2026-10-05} or {@code weekly:2026-w41}, stored on a run and used as a board key
      * @param periodKey the date or week
      * @param seed the run seed every attempt shares
+     * @param roll the composed parts of a rotating trial (P46); empty for a hand-written entry
      */
     public record Instance(String id, Kind kind, String periodKey, ResourceLocation pool, TrialPoolDefinition.Entry entry,
-                           int floors, int streakMinFloors, long seed) {
+                           int floors, int streakMinFloors, long seed, Optional<RotatingRoll> roll) {
+
+        /** A trial drawn from a hand-written pool entry. */
+        public Instance(String id, Kind kind, String periodKey, ResourceLocation pool, TrialPoolDefinition.Entry entry,
+                        int floors, int streakMinFloors, long seed) {
+            this(id, kind, periodKey, pool, entry, floors, streakMinFloors, seed, Optional.empty());
+        }
 
         /** The board this trial's results live on, as a tower-style id: {@code cobbletowers:daily/2026-10-05}. */
         public ResourceLocation boardId() {
@@ -36,10 +44,30 @@ public final class TrialSchedule {
         }
     }
 
+    /** The period number the trial seeds and rotations count in: the epoch day, or the week since the epoch. */
+    public static long numberOf(Kind kind, LocalDate day) {
+        return kind == Kind.DAILY ? day.toEpochDay() : TrialClock.weekStart(day).toEpochDay() / 7;
+    }
+
+    /**
+     * The trial a recipe composes on a trial day (P46): a rolled tower, or on a featured day one of the recipe's
+     * hand-written entries.
+     */
+    public static Instance of(RotatingRecipeDefinition recipe, LocalDate day) {
+        Kind kind = recipe.kind();
+        String period = periodKey(kind, day);
+        String id = kind.name().toLowerCase(Locale.ROOT) + ":" + period;
+        RotatingRoll roll = RotatingRoll.of(recipe, numberOf(kind, day));
+        TrialPoolDefinition.Entry entry = roll.featured() ? recipe.named().get(roll.namedIndex())
+                : new TrialPoolDefinition.Entry(RotatingTowers.idFor(kind, period), roll.playlist(), roll.mutators(), roll.level(), roll.label());
+        return new Instance(id, kind, period, recipe.id(), entry, recipe.floors(), recipe.streakMinFloors(),
+                TrialSeed.of(id + "|" + recipe.id() + "|seed"), roll.featured() ? Optional.empty() : Optional.of(roll));
+    }
+
     /** The trial a pool holds on a trial day. */
     public static Instance of(TrialPoolDefinition pool, LocalDate day) {
         String period = periodKey(pool.kind(), day);
-        long number = pool.kind() == Kind.DAILY ? day.toEpochDay() : TrialClock.weekStart(day).toEpochDay() / 7;
+        long number = numberOf(pool.kind(), day);
         int index = indexFor(pool.id().toString(), pool.entries().size(), number);
         String id = pool.kind().name().toLowerCase(Locale.ROOT) + ":" + period;
         return new Instance(id, pool.kind(), period, pool.id(), pool.entries().get(index), pool.floors(),

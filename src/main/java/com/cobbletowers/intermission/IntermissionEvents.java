@@ -8,6 +8,7 @@ import com.cobbletowers.encounter.EncounterSeed;
 import com.cobbletowers.modifier.ModifierResolver;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.RunModifierState;
+import com.cobbletowers.trial.TrialRules;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -162,22 +163,34 @@ public final class IntermissionEvents {
         if (content.milestoneAt(run.towerId(), floorIndex).isPresent()) {
             return echoAvailable ? Optional.of(Room.ECHO_DUEL) : Optional.empty();
         }
-        if (Math.floorMod(seedOf(run, floorIndex), 100) >= ROOM_CHANCE_PERCENT) return Optional.empty();
+        // a weekly rule (P46) can make every second floor a relic room, and can take Rest rooms away
+        boolean relicFloor = floorIndex % 2 == 0 && TrialRules.hasRule(run, "relics_every_second_floor");
+        if (!relicFloor && Math.floorMod(seedOf(run, floorIndex), 100) >= ROOM_CHANCE_PERCENT) return Optional.empty();
+        boolean noRest = TrialRules.hasRule(run, "no_healing_rooms");
+        Optional<String> bias = TrialRules.roomBias(run);
         List<Room> eligible = new ArrayList<>();
         int total = 0;
         for (Room room : Room.values()) {
-            if (room != Room.ECHO_DUEL && eligible(content, run, floorIndex, room, balance)) {
+            if (room == Room.ECHO_DUEL || (room == Room.REST && noRest)) continue;
+            if (relicFloor && room != Room.SHRINE && room != Room.FORGE && room != Room.LIBRARY) continue;
+            if (eligible(content, run, floorIndex, room, balance)) {
                 eligible.add(room);
-                total += WEIGHTS.getOrDefault(room, 10);
+                total += weightOf(room, bias);
             }
         }
         if (eligible.isEmpty()) return Optional.empty();
         long roll = Math.floorMod(EncounterSeed.of(run.seed(), floorIndex, EVENT_ORDINAL_BASE + 1), total);
         for (Room room : eligible) {
-            roll -= WEIGHTS.getOrDefault(room, 10);
+            roll -= weightOf(room, bias);
             if (roll < 0) return Optional.of(room);
         }
         return Optional.of(eligible.get(eligible.size() - 1));
+    }
+
+    /** A room's weight; the room a rotating trial leans toward counts triple. */
+    public static int weightOf(Room room, Optional<String> bias) {
+        int weight = WEIGHTS.getOrDefault(room, 10);
+        return bias.isPresent() && bias.get().equals(room.name().toLowerCase(java.util.Locale.ROOT)) ? weight * 3 : weight;
     }
 
     static boolean eligible(TowerContent content, PersistedRun run, int floorIndex, Room room) {

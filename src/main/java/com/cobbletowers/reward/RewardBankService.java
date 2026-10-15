@@ -77,7 +77,9 @@ public final class RewardBankService {
         List<com.cobbletowers.api.modifier.RiskTier> risks = new ArrayList<>();
         for (var held : DraftService.held(content, run.modifiers())) risks.add(held.risk());
         for (var locked : run.modifiers().lockedIn()) content.modifier(locked).ifPresent(m -> risks.add(m.risk()));
-        return RiskReward.bonusPercent(risks);
+        int bonus = RiskReward.bonusPercent(risks);
+        // the weekly rule doubles it (P46)
+        return com.cobbletowers.trial.TrialRules.hasRule(run, "double_risk") ? bonus * 2 : bonus;
     }
 
     /** Who a grant is split across: everybody still a member, not only those who can fight right now. */

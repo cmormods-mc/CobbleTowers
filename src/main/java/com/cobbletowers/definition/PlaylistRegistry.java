@@ -41,7 +41,9 @@ public final class PlaylistRegistry
 
     /** Whether a run's playlist closes the vendor (Hardcore). */
     public static boolean vendorClosed(com.cobbletowers.persistence.PersistedRun run) {
-        return run.options().playlist().flatMap(PlaylistRegistry::get).map(PlaylistDefinition::vendorClosed).orElse(false);
+        return run.options().playlist().flatMap(PlaylistRegistry::get).map(PlaylistDefinition::vendorClosed).orElse(false)
+                // a weekly rule (P46) can close it too
+                || com.cobbletowers.trial.TrialRules.hasRule(run, "no_vendor");
     }
 
     @Override

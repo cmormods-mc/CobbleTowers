@@ -39,6 +39,22 @@ public record RotatingRoll(
         return namedIndex >= 0;
     }
 
+    /** A region's name for a label: {@code cobbletowers:tideforge} is Tideforge. */
+    public static String regionName(ResourceLocation region) {
+        String path = region.getPath();
+        return path.isEmpty() ? path : Character.toUpperCase(path.charAt(0)) + path.substring(1);
+    }
+
+    /** A name for the board, generated from the route: {@code Tideforge-Duskvale Gauntlet}, or {@code Rootvale Run}. */
+    public String label() {
+        List<String> names = new ArrayList<>();
+        for (ResourceLocation region : segmentRegions) {
+            String name = regionName(region);
+            if (!names.contains(name)) names.add(name);
+        }
+        return String.join("-", names) + (names.size() > 1 ? " Gauntlet" : " Run");
+    }
+
     /** The region of trial floor {@code floor} (1-based). */
     public ResourceLocation regionAt(RotatingRecipeDefinition recipe, int floor) {
         return segmentRegions.get(Math.min((floor - 1) / recipe.segmentSize(), segmentRegions.size() - 1));

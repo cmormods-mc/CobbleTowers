@@ -1,6 +1,6 @@
 # Release notes (draft, updated 2026-10-14)
 
-Version `0.26.0-p45-web-ui`. Covers the work after commit `9688678`. Items marked **(unverified)** are written but have not been seen in a real client or a full
+Version `0.27.0-p46-rotating-tower`. Covers the work after commit `9688678`. Items marked **(unverified)** are written but have not been seen in a real client or a full
 human run; do not publish them as done until the checklist in `docs/RELEASE-CHECKLIST.md` is ticked.
 
 ## For players
@@ -15,6 +15,15 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 - Reward and track pictures: your own items show their art, common Cobblemon items (candy, balls, potions, berries, apricorns, stones, apples, booster packs) show a
   drawn icon, anything else shows a gift.
 - Your client no longer needs a CobbleTowers jar at all if the server runs the server-only build (see below).
+
+**Rotating trials (P46)**
+- **The daily and weekly trial are composed, not picked from a list.** Each day rolls a route (a region for every two floors, so a trial can run Tideforge into Duskvale into
+  Rootvale), a house rule, an enemy level, up to two mutators, sometimes a starting relic and a room the run leans toward. Everyone gets the same trial that day. The board name is
+  generated from the route (for example "Tideforge-Duskvale Gauntlet"). Each region's rules (Tideforge held items, Rootvale drain, Duskvale status) apply on its own floors.
+- The **weekly** is the same recipe at ten floors plus a **weekly rule**: no vendor, no Rest rooms, double risk bonus, or a relic room on every second floor.
+- About one day in seven (one week in four) is a hand-written featured trial instead.
+- Boards, streaks, contracts, the one scored attempt and the reward tables are unchanged; a mixed tower pays the reward table of its last region.
+- `/tower trial` and the Hall briefing list the route, starting relic, room lean and weekly rule. **All numbers (level lists, chances, the rule list) are first guesses.**
 
 **Relics, set bonuses and rooms (P45)**
 - **38 relics** (26 new), each with tags (sustain, economy, tempo, offense, scouting, boss, risk). Many have battle effects: type-themed damage, drain, resistance, tailwind,
@@ -93,11 +102,13 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 **Requirements**
 - Deploy the CobbleTowers jar together with the AscensionLib jar (rentals are locked out of upgrades only when both are present).
 - Rewards that name CobblemonCards items need that mod on the server; a missing item is skipped with one log line, so players get less and nothing breaks.
-- The build version is now `0.26.0-p45-web-ui`, so a server log shows which jar is running. Bump it for every deployed build.
+- The build version is now `0.27.0-p46-rotating-tower`, so a server log shows which jar is running. Bump it for every deployed build.
 
 ## For addon authors
 - Mastery tracks and season steps are data. Add rewards and ranks with a datapack; files merge, they do not replace. See `docs/TRACKS-GUIDE.md`.
 - Mastery perks are set by level, not claimed: `vendor_discount_percent`, `cobble_dollar_bonus_percent`, `raid_points_bonus_percent` (0 to 100).
+- **Trial recipes:** `data/<ns>/cobbletowers/trial_recipes/*.json` (one per kind) list what each part draws from. `trial_pools` still works as the fallback when no recipe is loaded.
+  `/cobbletowers trialadmin roll <date>` prints what a date would hold.
 - New client payloads `tracks_v1` and `track_action_v1`; a server without them keeps the old Progress cards.
 
 ## Known issues

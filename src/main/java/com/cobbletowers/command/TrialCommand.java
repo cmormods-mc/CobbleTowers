@@ -123,6 +123,8 @@ public final class TrialCommand {
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.literal("day")
                                 .then(Commands.argument("date", StringArgumentType.word()).executes(TrialCommand::day)))
+                        .then(Commands.literal("roll")
+                                .then(Commands.argument("date", StringArgumentType.word()).executes(TrialCommand::roll)))
                         .then(Commands.literal("reset")
                                 .then(Commands.argument("player", EntityArgument.player()).executes(TrialCommand::reset)))));
     }
@@ -192,6 +194,37 @@ public final class TrialCommand {
 
     // ---- operators
     // -------------------------------------------------------------------------------------------------
+
+    /** Prints the rotating trials a date would hold, without starting anything (P46). */
+    private static int roll(CommandContext<CommandSourceStack> context) {
+        String raw = StringArgumentType.getString(context, "date");
+        LocalDate date;
+        try {
+            date = LocalDate.parse(raw);
+        } catch (DateTimeParseException ex) {
+            context.getSource().sendFailure(Component.literal("A date looks like 2026-10-05."));
+            return 0;
+        }
+        int shown = 0;
+        for (Kind kind : Kind.values()) {
+            var recipe = com.cobbletowers.definition.TrialRecipeRegistry.ofKind(kind);
+            if (recipe.isEmpty()) {
+                context.getSource().sendSuccess(() -> Component.literal(kind + ": no recipe is loaded."), false);
+                continue;
+            }
+            TrialSchedule.Instance trial = TrialSchedule.of(recipe.get(), date);
+            var entry = trial.entry();
+            List<String> lines = new java.util.ArrayList<>();
+            lines.add(kind + " " + trial.periodKey() + ": " + trial.title() + (trial.roll().isEmpty() ? " (featured)" : "") + ", " + trial.floors() + " floors");
+            lines.add("  " + entry.tower().getPath() + ", " + entry.playlist().map(p -> p.getPath()).orElse("no house rule")
+                    + ", level " + entry.enemyLevel() + ", mutators " + (entry.modifiers().isEmpty() ? "none"
+                    : String.join(" + ", entry.modifiers().stream().map(m -> m.getPath()).toList())));
+            for (String part : com.cobbletowers.trial.TrialParts.lines(trial, id -> id.getPath())) lines.add("  " + part);
+            for (String line : lines) context.getSource().sendSuccess(() -> Component.literal(line), false);
+            shown++;
+        }
+        return shown;
+    }
 
     private static int day(CommandContext<CommandSourceStack> context) {
         String raw = StringArgumentType.getString(context, "date");

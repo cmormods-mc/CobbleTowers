@@ -42,6 +42,11 @@ public final class TrialRecipeRegistry
         return LOADED.values().stream().filter(pool -> pool.kind() == kind).findFirst();
     }
 
+    /** Test seam: the recipes a plain-JVM test runs against. */
+    public static void setForTests(Map<ResourceLocation, RotatingRecipeDefinition> recipes) {
+        LOADED = new LinkedHashMap<>(recipes);
+    }
+
     @Override
     public ResourceLocation getFabricId() {
         return ID;

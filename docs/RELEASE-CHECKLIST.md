@@ -22,7 +22,7 @@ Ordered by how badly each blocks a release.
 - [ ] **A human plays a full tower.** Everything so far is headless bots and screenshots. At least two real players, one full tower, watching: animation feel at a real frame rate, mouse feel, audio, the vendor villager, the HUD, worn armor, the Shift tooltip, the Test Tower chambers.
 - [ ] **Cell allocation on the server thread.** A burst of allocate/abandon cycles (hundreds a minute) backs up chunk saves until the 60 s watchdog kills the server, and even ordinary run starts and ends stall a tick for 0.3 to 0.9 s. Options, costs and a recommended order are in `docs/design/cell-allocation-async.md`; the owner picks (three questions at its end).
   - Partly addressed 2026-10-08: the warm pool builds a slice per tick (`SlicedBuild`, longest hold about 60 ms against a 343 ms mean for the synchronous paste) and a finished run's cell is cleared a slice per tick (`CellClearJobs`), so `soak_test --pause 0` queues instead of stalling. Still synchronous: a run start without a warm cell (about 340 ms) and the cold first allocation after boot (2 to 3 s). See "As built" in `docs/design/cell-allocation-async.md`.
-- [x] **Bump the build version string** (2026-10-14: `0.26.0-p45-web-ui`; 2026-10-08: `0.23.0-p38-regions-armor`; it had never been bumped before 2026-10-07). Bump it again for every build you deploy, so a log says which jar runs.
+- [x] **Bump the build version string** (2026-10-14: `0.27.0-p46-rotating-tower`; 2026-10-08: `0.23.0-p38-regions-armor`; it had never been bumped before 2026-10-07). Bump it again for every build you deploy, so a log says which jar runs.
 - [ ] **Deployment.** Ship the CobbleTowers jar and the AscensionLib jar (with the rental craft lock) together; find out where the real server gets AscensionLib (source: `L:\Codex\CobbleAscend\ascensionlib`). Keep the CobbleRaids version label pinned (`0.8.162-admin-helper`).
 
 ### P37 code review (2026-10-07, read-only plus small fixes, still uncompiled)
@@ -43,6 +43,8 @@ Still open, for the owner or the next session:
 - [ ] An addon season file's own `step_cost` is ignored unless it is the base file (document; the guide says the first file with steps is the base).
 - [x] Mastery lane with no towers loaded sends an empty lane; the client should say "No towers" instead of an empty strip. DONE 2026-10-08: the player is told "No towers are installed on this server."
 - [ ] `TowerUi.wrapped` has no line limit, so a long reward text can overflow the detail panel on a 240 px GUI.
+
+- [ ] **Rotating trials (P46).** Built and tested 2026-10-14 (`rotating_trial_test.py` 13/13: roll, route line, run on the rotating tower, rebuilt after a restart). Still open: a full mixed-route run by a human across a region boundary, the weekly rules in play (no vendor, no Rest, double risk, relic rooms), and a day turnover at midnight with a run in progress.
 
 - [ ] **Server-only deployment (P43).** Steps done 2026-10-14: `-Pserveronly` jar builds, boots and loads; Polymer auto-host serves the resource pack on the game port; `ci_local.sh` and the workflow check the committed web bundle. Setup notes: `docs/SERVER-ONLY-SETUP.md`. Still to verify with a stock client (Cobblemon + WebGUI + Rinku only): pack download, worn armor, a full run, every page.
 

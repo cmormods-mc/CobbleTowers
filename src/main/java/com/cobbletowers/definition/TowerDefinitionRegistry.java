@@ -69,6 +69,7 @@ public final class TowerDefinitionRegistry
         if (built == null) return false;
         CONTENT = built;
         ROTATING.add(towerId);
+        TowerLog.info("Built rotating tower {} ({} floors).", towerId, built.towers().get(towerId).floorCount());
         return true;
     }
 

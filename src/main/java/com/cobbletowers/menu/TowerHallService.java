@@ -51,6 +51,7 @@ public final class TowerHallService {
             rules.add(t.entry().enemyLevel() > 0 ? "Enemy level: " + t.entry().enemyLevel() : "Enemy level follows tower rules");
             rules.add("Starting modifiers: " + (t.entry().modifiers().isEmpty() ? "None" :
                     String.join(", ", t.entry().modifiers().stream().map(id -> modifierName(id)).toList())));
+            rules.addAll(com.cobbletowers.trial.TrialParts.lines(t, id -> modifierName(id)));
             rules.add("First launch is scored; later attempts are practice. Team eligibility is checked in the lobby.");
             trials.add(new TowerHallStatePayload.Trial(kind.name().toLowerCase(Locale.ROOT), revision(t),
                     t.title(), t.entry().tower(), rules));

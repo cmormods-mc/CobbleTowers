@@ -75,6 +75,8 @@ public final class CobbleTowers implements ModInitializer {
             long now = System.currentTimeMillis();
             try {
                 int loaded = TowerRuns.load(server, now);
+                // a rotating trial's tower is built from its id, so a run saved on it finds it again
+                for (var run : TowerRuns.all()) com.cobbletowers.definition.TowerDefinitionRegistry.ensureRotating(run.towerId());
                 // The cell index is rebuilt from the runs themselves, so there is no second file
                 // that could disagree with them about who holds what.
                 int leased = InstanceAllocator.rebuild(server, TowerRuns.all());

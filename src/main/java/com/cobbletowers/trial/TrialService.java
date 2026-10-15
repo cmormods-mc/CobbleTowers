@@ -2,7 +2,17 @@ package com.cobbletowers.trial;
 
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.api.tower.RunState;
+import com.cobbletowers.definition.FloorDefinition;
+import com.cobbletowers.definition.TowerDefinition;
+import com.cobbletowers.definition.RotatingRecipeDefinition;
+import com.cobbletowers.definition.TowerContent;
+import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.definition.TrialPoolDefinition;
+import com.cobbletowers.definition.TrialRecipeRegistry;
+import com.cobbletowers.instance.CellWarmPool;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.resources.ResourceLocation;
 import com.cobbletowers.definition.TrialPoolDefinition.Kind;
 import com.cobbletowers.definition.TrialPoolRegistry;
 import com.cobbletowers.mastery.CycleResult;
@@ -72,7 +82,42 @@ public final class TrialService {
 
     /** The trial of this kind today, if a pool of that kind is loaded. */
     public static Optional<Instance> current(Kind kind) {
+        Optional<RotatingRecipeDefinition> recipe = TrialRecipeRegistry.ofKind(kind);
+        if (recipe.isPresent()) {
+            Instance rotating = TrialSchedule.of(recipe.get(), today());
+            ResourceLocation tower = rotating.entry().tower();
+            if (!TowerContent.isRotating(tower)) return Optional.of(rotating);
+            if (TowerDefinitionRegistry.ensureRotating(tower)) {
+                prewarm(rotating);
+                return Optional.of(rotating);
+            }
+            TowerLog.warn("The {} rotating trial could not be built; using the hand-written pool instead.", kind);
+        }
         return TrialPoolRegistry.ofKind(kind).map(pool -> TrialSchedule.of(pool, today()));
+    }
+
+    private static final Set<String> WARMED = ConcurrentHashMap.newKeySet();
+
+    static {
+        com.cobbletowers.ServerState.onStop(WARMED::clear);
+    }
+
+    /** Asks the cell pool to keep a ready cell for every structure the trial uses, once per trial, so a mixed route does not start cold. */
+    private static void prewarm(Instance trial) {
+        if (!WARMED.add(trial.id())) return;
+        TowerContent content = TowerDefinitionRegistry.content();
+        TowerDefinition tower = content.towers().get(trial.entry().tower());
+        if (tower == null) return;
+        for (ResourceLocation floorId : tower.floorIds()) {
+            FloorDefinition floor = content.floors().get(floorId);
+            if (floor != null) floor.layout().ifPresent(CellWarmPool::want);
+        }
+    }
+
+    /** The streak threshold of today's daily: the recipe's, else the pool's. */
+    static int dailyStreakMinFloors() {
+        return TrialRecipeRegistry.ofKind(Kind.DAILY).map(RotatingRecipeDefinition::streakMinFloors)
+                .or(() -> TrialPoolRegistry.ofKind(Kind.DAILY).map(TrialPoolDefinition::streakMinFloors)).orElse(3);
     }
 
     // ---- attempts
@@ -173,7 +218,7 @@ public final class TrialService {
         com.cobbletowers.mastery.RunSummaries.trialScore(run.runId(), score);
 
         // The daily streak (P32): the day qualifies when enough floors were cleared.
-        int minFloors = TrialPoolRegistry.ofKind(Kind.DAILY).map(TrialPoolDefinition::streakMinFloors).orElse(3);
+        int minFloors = dailyStreakMinFloors();
         Optional<LocalDate> day = TrialSchedule.dayOf(instanceId);
         List<String> streakLines = new ArrayList<>();
         if (kind == Kind.DAILY && day.isPresent() && cleared >= minFloors) {
@@ -272,6 +317,7 @@ public final class TrialService {
         lines.add("  " + entry.tower().getPath() + (entry.playlist().isPresent() ? ", " + entry.playlist().get().getPath() : "")
                 + (entry.modifiers().isEmpty() ? "" : ", " + String.join(", ", entry.modifiers().stream().map(m -> m.getPath()).toList()))
                 + (entry.enemyLevel() > 0 ? ", enemies level " + entry.enemyLevel() : ""));
+        for (String part : TrialParts.lines(trial, id -> id.getPath())) lines.add("  " + part);
         TowerTrialStore store = TowerTrialStore.get(server);
         Optional<TowerTrialStore.Attempt> attempt = store.attemptOf(player, trial.id());
         if (attempt.isEmpty()) {

@@ -229,19 +229,21 @@ final class LobbyLaunch {
         int startAt = lobby.ascension();
         RunOptions options = RunOptions.of(lobby.playlist());
         List<ResourceLocation> trialModifiers = List.of();
+        List<ResourceLocation> startingRelics = List.of();
         if (lobby.trial().isPresent()) {
             TrialSchedule.Instance trial = lobby.trial().get();
             boolean scored = TrialService.wouldBeScored(server, plan.players(), trial.id());
             options = new RunOptions(lobby.playlist(), Optional.of(trial.id()), trial.floors(), scored,
                     trial.entry().enemyLevel());
             trialModifiers = trial.entry().modifiers();
+            startingRelics = trial.roll().flatMap(com.cobbletowers.trial.RotatingRoll::startingRelic).map(List::of).orElse(List.of());
             seed = trial.seed();
             startAt = 0;
         }
         long chosenSeed = seed;
         int chosenStart = startAt;
         return RunFactory.create(content, lobby.tower(), plan.players(), plan.parties(), startAt, options,
-                trialModifiers, seed, now).map(run -> new Created(run, chosenSeed, chosenStart));
+                trialModifiers, startingRelics, seed, now).map(run -> new Created(run, chosenSeed, chosenStart));
     }
 
     /** Printed for every ordinary run (P35): a friend who enters it plays the same run. */

@@ -193,3 +193,14 @@ species and outcome. Run it after touching anything that starts, ends or abandon
 
 `SMOKE_BOT=raid` switches the shared helper back to `raidbot.js`. Cobblemon's wire format for the request is in
 the comments at the top of `battlebot.js`; the enum fields are four-byte ints, not varints.
+
+## `rotating_trial_test.py`
+
+Proves P46's rotating trials: `trialadmin roll`, the route line in `/tower trial`, a trial run on the rotating tower with the rolled enemy level, and that after a restart mid-run the
+tower is built again from the run at boot. The rig needs Polymer and WebGUI in `mods/` (the mod requires Polymer). The mineflayer player stops handling packets soon after joining and
+times out 30 s later, so this test keeps the bot part short; `trial_test.py` and other long bot tests fail at their later floors for that reason (checked 2026-10-14: the commit
+before P46 fails `trial_test.py` the same way, "floor 5 never opened").
+
+```sh
+python validation/smoke/rotating_trial_test.py --server-dir <rig>/testserver-181 --java "<jdk21 java>" --jar build/libs/CobbleTowers-<version>-dev.jar
+```
