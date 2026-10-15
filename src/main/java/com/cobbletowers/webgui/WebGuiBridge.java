@@ -81,7 +81,10 @@ public final class WebGuiBridge {
         WebUiFiles.install();
         config = loaded;
         linked = true;
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> SESSIONS.remove(handler.getPlayer().getUUID()));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            SESSIONS.remove(handler.getPlayer().getUUID());
+            LAST_TOO_LARGE.remove(handler.getPlayer().getUUID());
+        });
         TowerLog.info("Tower screens can be shown through WebGUI at {} ({} mode)", loaded.url(), loaded.mode());
     }
 
@@ -124,6 +127,19 @@ public final class WebGuiBridge {
         SESSIONS.computeIfAbsent(player.getUUID(), id -> new PageSession()).askOpen(System.currentTimeMillis());
     }
 
+    private static final Map<UUID, Long> LAST_TOO_LARGE = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** Says so in chat when a screen was dropped for size, at most once every 30 s per player, so it is not a silent blank. */
+    private static void tellTooLarge(ServerPlayer player, String kind) {
+        long now = System.currentTimeMillis();
+        Long last = LAST_TOO_LARGE.get(player.getUUID());
+        if (last != null && now - last < 30_000) return;
+        LAST_TOO_LARGE.put(player.getUUID(), now);
+        player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                "The " + kind + " screen is too large to show. Please tell a server admin (it is in the log).")
+                .withStyle(net.minecraft.ChatFormatting.RED));
+    }
+
     /**
      * Sends a state payload to the player's page if the page is to show it. Returns {@code true} when the bridge handled it
      * (including when it deliberately dropped it), so the caller sends nothing natively.
@@ -134,6 +150,7 @@ public final class WebGuiBridge {
         if (json.length() > MAX_EMIT) {
             TowerLog.warn("A {} for {} is {} characters, over WebGUI's limit; not sent", payload.getClass().getSimpleName(),
                     player.getGameProfile().getName(), json.length());
+            tellTooLarge(player, PayloadJson.kindOf(payload.getClass()));
             return true;
         }
         long now = System.currentTimeMillis();

@@ -22,6 +22,7 @@ const AVOID = new Set([
 ]);
 
 const bot = mineflayer.createBot({ host: '127.0.0.1', port, username, version: '1.21.1', auth: 'offline' });
+require('./skipbad')(bot);
 bot._client.on('error', () => {});   // Cobblemon's entity metadata is not in mineflayer's tables; routine
 
 let battleId = null;     // 16 raw bytes, from battle_initialize

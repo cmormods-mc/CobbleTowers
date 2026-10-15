@@ -12,6 +12,7 @@ const bot = mineflayer.createBot({
   auth: 'offline',
 });
 
+require('./skipbad')(bot);
 bot.on('spawn', () => {
   // The tower is a void to a bot that has no chunks, so with physics on it falls away from wherever the test
   // teleported it and the click is out of reach by the time it lands. Hold it where the server puts it.

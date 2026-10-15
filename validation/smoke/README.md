@@ -197,9 +197,7 @@ the comments at the top of `battlebot.js`; the enum fields are four-byte ints, n
 ## `rotating_trial_test.py`
 
 Proves P46's rotating trials: `trialadmin roll`, the route line in `/tower trial`, a trial run on the rotating tower with the rolled enemy level, and that after a restart mid-run the
-tower is built again from the run at boot. The rig needs Polymer and WebGUI in `mods/` (the mod requires Polymer). The mineflayer player stops handling packets soon after joining and
-times out 30 s later, so this test keeps the bot part short; `trial_test.py` and other long bot tests fail at their later floors for that reason (checked 2026-10-14: the commit
-before P46 fails `trial_test.py` the same way, "floor 5 never opened").
+tower is built again from the run at boot. The rig needs Polymer and WebGUI in `mods/` (the mod requires Polymer). The bots load `skipbad.js`: a packet mineflayer cannot parse (an item with Polymer's data) used to end its packet stream, so the bot never spawned properly and timed out 30 s after joining; it now skips that packet. Until 2026-10-14 the long bot tests (`trial_test.py`) failed at their later floors for that reason.
 
 ```sh
 python validation/smoke/rotating_trial_test.py --server-dir <rig>/testserver-181 --java "<jdk21 java>" --jar build/libs/CobbleTowers-<version>-dev.jar

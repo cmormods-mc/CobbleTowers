@@ -11,6 +11,7 @@ const bot = mineflayer.createBot({
   auth: 'offline',
 });
 
+require('./skipbad')(bot);
 bot.on('spawn', () => console.log('spawned'));
 bot.on('kicked', (reason) => console.log('kicked: ' + reason));
 // Cobblemon's entity metadata is not in mineflayer's vanilla protocol definitions, so parse errors

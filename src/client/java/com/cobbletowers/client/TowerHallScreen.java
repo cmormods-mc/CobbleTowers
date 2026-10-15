@@ -200,7 +200,7 @@ public final class TowerHallScreen extends TowerMenuScreen {
             String stateText=switch(node.state()){case TrackStatePayload.CLAIMABLE->"ready to claim";case TrackStatePayload.CLAIMED->"claimed";case TrackStatePayload.LOCKED->"locked";case TrackStatePayload.UNAVAILABLE->"unavailable here";default->"";};
             TowerUi.label(g,font,what+(stateText.isEmpty()?"":"  -  "+stateText),x+8,dy+5,textW,node.state()==TrackStatePayload.CLAIMABLE?TowerUi.BRONZE_LIGHT:TowerUi.TEXT);
             int ty=dy+16;
-            if(!node.reward().isEmpty())ty=TowerUi.wrapped(g,font,node.reward(),x+8,ty,textW,TowerUi.TEXT);
+            if(!node.reward().isEmpty())ty=TowerUi.wrapped(g,font,node.reward(),x+8,ty,textW,TowerUi.TEXT,dy+dh-4);
             else if(node.note().isEmpty())ty=TowerUi.wrapped(g,font,season?"No reward on this step.":"No reward at this level. Keep unlocking achievements to climb.",x+8,ty,textW,TowerUi.MUTED);
             if(!node.note().isEmpty()&&ty<dy+dh-9)TowerUi.label(g,font,node.note(),x+8,ty,textW,TowerUi.MUTED);
         }

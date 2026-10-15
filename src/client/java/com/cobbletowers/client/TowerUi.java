@@ -51,10 +51,33 @@ public final class TowerUi {
     }
 
     public static int wrapped(GuiGraphics g, Font font, String text, int x, int y, int width, int color) {
-        for (var line : font.split(Component.literal(text), Math.max(24, width))) {
-            g.drawString(font, line, x, y, color, false);
+        return wrapped(g, font, text, x, y, width, color, Integer.MAX_VALUE);
+    }
+
+    /** As above, but draws no line that would end below {@code bottom}; the last line that fits ends in "..." if text was cut. */
+    public static int wrapped(GuiGraphics g, Font font, String text, int x, int y, int width, int color, int bottom) {
+        var lines = font.split(Component.literal(text), Math.max(24, width));
+        for (int i = 0; i < lines.size(); i++) {
+            if (y + 9 > bottom) break;
+            boolean lastFit = i + 1 < lines.size() && y + 11 + 9 > bottom;
+            if (lastFit) {
+                String cut = font.plainSubstrByWidth(lineText(lines.get(i)), Math.max(1, width - font.width("...")));
+                g.drawString(font, cut + "...", x, y, color, false);
+                y += 11;
+                break;
+            }
+            g.drawString(font, lines.get(i), x, y, color, false);
             y += 11;
         }
         return y;
+    }
+
+    private static String lineText(net.minecraft.util.FormattedCharSequence line) {
+        StringBuilder out = new StringBuilder();
+        line.accept((index, style, codePoint) -> {
+            out.appendCodePoint(codePoint);
+            return true;
+        });
+        return out.toString();
     }
 }
