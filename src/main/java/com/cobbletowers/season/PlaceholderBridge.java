@@ -21,8 +21,15 @@ final class PlaceholderBridge {
     static void register() {
         add("title", player -> {
             var server = player.getServer();
-            return server == null ? "" : ChatTags.segmentsOf(server, player.getUUID()).stream()
-                    .filter(segment -> segment.color().equals("gold")).map(segment -> segment.text().trim()).findFirst().orElse("");
+            return server == null ? "" : ChatTags.titleOf(server, player.getUUID()).orElse("");
+        });
+        // The mastery badge alone (P47), coloured, with its icon font.
+        Placeholders.register(CobbleTowers.id("badge"), (context, argument) -> {
+            if (!context.hasPlayer()) return PlaceholderResult.invalid("no player");
+            ServerPlayer player = context.player();
+            var server = player.getServer();
+            List<Cosmetics.Segment> segments = server == null ? List.of() : ChatTags.badgeOf(server, player.getUUID());
+            return PlaceholderResult.value(ChatTags.prefixComponent(segments));
         });
         add("club_tag", player -> clubOf(player, true));
         add("club_name", player -> clubOf(player, false));

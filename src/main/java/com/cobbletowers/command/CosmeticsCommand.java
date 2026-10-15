@@ -28,6 +28,10 @@ public final class CosmeticsCommand {
     /** The subcommands players use, to be added under {@code /cobbletowers play}. */
     public static List<LiteralArgumentBuilder<CommandSourceStack>> playerCommands() {
         return List.of(
+                Commands.literal("badge")
+                        .executes(context -> one(context, badge(context, null)))
+                        .then(Commands.literal("on").executes(context -> one(context, badge(context, false))))
+                        .then(Commands.literal("off").executes(context -> one(context, badge(context, true)))),
                 Commands.literal("cosmetics").executes(context -> lines(context, CosmeticsService.cosmeticsLines(
                         context.getSource().getServer(), context.getSource().getPlayerOrException().getUUID()))),
                 Commands.literal("title")
@@ -38,6 +42,20 @@ public final class CosmeticsCommand {
                         .then(Commands.argument("number", IntegerArgumentType.integer(1, 999)).executes(context -> one(context,
                                 CosmeticsService.wear(context.getSource().getServer(), context.getSource().getPlayerOrException(),
                                         IntegerArgumentType.getInteger(context, "number"))))));
+    }
+
+    /** {@code /tower badge [on|off]}: shows or hides your own mastery badge (P47); with no argument, says which it is. */
+    private static String badge(CommandContext<CommandSourceStack> context, Boolean hide) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        var server = context.getSource().getServer();
+        var store = com.cobbletowers.persistence.TowerMasteryStore.get(server);
+        if (hide != null && store.setBadgeHidden(player.getUUID(), hide)) {
+            store.checkpoint(server);
+            ChatTags.refresh(server, player.getUUID());
+        }
+        String shown = store.badgeHidden(player.getUUID()) ? "hidden" : "shown";
+        if (!com.cobbletowers.season.CosmeticsConfig.masteryBadge()) shown += " (this server has the mastery badge switched off)";
+        return "Your mastery badge is " + shown + ". /tower badge on or off changes it.";
     }
 
     /** {@code /cobbletowers cosmeticsadmin ...}: operator only. */

@@ -40,6 +40,8 @@ public final class TowerMasteryStore extends TowerStore {
     }
 
     private final Map<UUID, Map<ResourceLocation, Entry>> entries = new LinkedHashMap<>();
+    /** Players who asked to hide their own mastery badge (P47). */
+    private final java.util.Set<UUID> badgeHidden = new java.util.LinkedHashSet<>();
 
     public static TowerMasteryStore get(MinecraftServer server) {
         return open(server, TowerMasteryStore::new, TowerMasteryStore::load, FILE_ID);
@@ -59,6 +61,30 @@ public final class TowerMasteryStore extends TowerStore {
             copy.put(player, mine);
         });
         return copy;
+    }
+
+    /** One player standing per tower for the badge: the level and when the latest achievement was earned. */
+    public Map<ResourceLocation, com.cobbletowers.mastery.MasteryBadge.Standing> standingsOf(UUID player, Iterable<ResourceLocation> towers) {
+        Map<ResourceLocation, com.cobbletowers.mastery.MasteryBadge.Standing> out = new LinkedHashMap<>();
+        Map<ResourceLocation, Entry> mine = entries.getOrDefault(player, Map.of());
+        for (ResourceLocation tower : towers) {
+            Entry entry = mine.get(tower);
+            if (entry == null || entry.unlocked.isEmpty()) continue;
+            long last = entry.unlocked.values().stream().mapToLong(Long::longValue).max().orElse(0L);
+            out.put(tower, new com.cobbletowers.mastery.MasteryBadge.Standing(entry.unlocked.size(), last));
+        }
+        return out;
+    }
+
+    public boolean badgeHidden(UUID player) {
+        return badgeHidden.contains(player);
+    }
+
+    /** Hides or shows a player's own badge; returns whether anything changed. */
+    public boolean setBadgeHidden(UUID player, boolean hidden) {
+        boolean changed = hidden ? badgeHidden.add(player) : badgeHidden.remove(player);
+        if (changed) setDirty();
+        return changed;
     }
 
     /** One more cycle cleared; returns the new total. */
@@ -114,6 +140,8 @@ public final class TowerMasteryStore extends TowerStore {
                 if (id != null) entry.unlocked.put(id, one.getLong("at"));
             }
         }
+        ListTag hidden = tag.getList("badge_hidden", Tag.TAG_COMPOUND);
+        for (int i = 0; i < hidden.size(); i++) store.badgeHidden.add(hidden.getCompound(i).getUUID("player"));
         return store;
     }
 
@@ -139,6 +167,13 @@ public final class TowerMasteryStore extends TowerStore {
             }
         }
         tag.put("progress", list);
+        ListTag hidden = new ListTag();
+        for (UUID player : badgeHidden) {
+            CompoundTag item = new CompoundTag();
+            item.putUUID("player", player);
+            hidden.add(item);
+        }
+        tag.put("badge_hidden", hidden);
         return tag;
     }
 }

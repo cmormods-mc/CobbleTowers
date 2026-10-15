@@ -1,6 +1,8 @@
 package com.cobbletowers.mastery;
 
+import com.cobbletowers.season.Cosmetics;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +31,29 @@ public final class MasteryBadge {
                         .thenComparingLong(entry -> entry.getValue().lastAt())
                         .thenComparing(Map.Entry::getKey, Comparator.comparing(ResourceLocation::toString).reversed()))
                 .map(entry -> new Badge(entry.getKey(), entry.getValue().level()));
+    }
+
+    /** The font that holds the tower icons (a bitmap font in the resource pack, {@code font/tower_icons.json}). */
+    public static final String FONT = "cobbletowers:tower_icons";
+
+    /** The icon character of a tower: fixed for the shipped towers so it never moves, the generic one for any other. */
+    public static String glyph(ResourceLocation tower) {
+        if (tower.getNamespace().equals("cobbletowers")) {
+            switch (tower.getPath()) {
+                case "neutral": return "";
+                case "tideforge": return "";
+                case "rootvale": return "";
+                case "duskvale": return "";
+                default: break;
+            }
+        }
+        return "";
+    }
+
+    /** The pieces in front of a name: the icon in the icon font, then the level in the rank's colour. */
+    public static List<Cosmetics.Segment> segments(Badge badge, String rank) {
+        return List.of(new Cosmetics.Segment(glyph(badge.tower()), "white", Optional.of(FONT)),
+                new Cosmetics.Segment(badge.level() + " ", colorOf(rank)));
     }
 
     /** The vanilla chat colour a rank name is shown in; an unknown rank (an addon's) is white. */

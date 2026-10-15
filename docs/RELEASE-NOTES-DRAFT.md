@@ -25,6 +25,10 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 - Boards, streaks, contracts, the one scored attempt and the reward tables are unchanged; a mixed tower pays the reward table of its last region.
 - `/tower trial` and the Hall briefing list the route, starting relic, room lean and weekly rule. **All numbers (level lists, chances, the rule list) are first guesses.**
 
+**Mastery badge (P47)**
+- Your name now carries a small tower icon and your mastery level, for the tower where your level is highest (chat and the tab list). The level is coloured by rank, Bronze to Champion.
+- `/tower badge off` hides yours. A server can turn it off with `"mastery_badge": false` in `config/cobbletowers-cosmetics.json`. The icons come from the resource pack (placeholder art).
+
 **Relics, set bonuses and rooms (P45)**
 - **38 relics** (26 new), each with tags (sustain, economy, tempo, offense, scouting, boss, risk). Many have battle effects: type-themed damage, drain, resistance, tailwind,
   a burned or slowed foe lead.

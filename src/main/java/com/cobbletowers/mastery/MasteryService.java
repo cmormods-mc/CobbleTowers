@@ -344,6 +344,8 @@ public final class MasteryService {
     private static void announce(MinecraftServer server, PersistedRun run, UUID playerId, int levelBefore,
                                  List<AchievementDefinition> fresh) {
         if (fresh.isEmpty()) return;
+        // a new level changes the badge beside the name (P47)
+        com.cobbletowers.season.ChatTags.refresh(server, playerId);
         ServerPlayer player = server.getPlayerList().getPlayer(playerId);
         if (player == null) return;
         String tower = TowerDefinitionRegistry.content().towers().containsKey(run.towerId())

@@ -61,6 +61,38 @@ class MasteryBadgeTest {
     }
 
     @Test
+    @DisplayName("the icon characters are fixed per shipped tower, any other tower gets the generic one")
+    void glyphs() {
+        assertEquals("", MasteryBadge.glyph(tower("neutral")));
+        assertEquals("", MasteryBadge.glyph(tower("tideforge")));
+        assertEquals("", MasteryBadge.glyph(tower("rootvale")));
+        assertEquals("", MasteryBadge.glyph(tower("duskvale")));
+        assertEquals("", MasteryBadge.glyph(tower("somethingnew")));
+        assertEquals("", MasteryBadge.glyph(ResourceLocation.fromNamespaceAndPath("addon", "neutral")));
+    }
+
+    @Test
+    @DisplayName("the badge is the icon in the icon font, then the level in the rank colour")
+    void badgeSegments() {
+        var pieces = MasteryBadge.segments(new Badge(tower("rootvale"), 12), "Gold");
+        assertEquals(2, pieces.size());
+        assertEquals(new Cosmetics.Segment("", "white", Optional.of(MasteryBadge.FONT)), pieces.get(0));
+        assertEquals(new Cosmetics.Segment("12 ", "gold"), pieces.get(1));
+    }
+
+    @Test
+    @DisplayName("the shipped icon font lists the characters the code uses, and the strip has one 8 pixel icon for each")
+    void iconFont() throws Exception {
+        String json = java.nio.file.Files.readString(java.nio.file.Paths.get("src/main/resources/assets/cobbletowers/font/tower_icons.json"));
+        var chars = com.google.gson.JsonParser.parseString(json).getAsJsonObject().getAsJsonArray("providers").get(0).getAsJsonObject()
+                .getAsJsonArray("chars").get(0).getAsString();
+        assertEquals("", chars);
+        var image = javax.imageio.ImageIO.read(java.nio.file.Paths.get("src/main/resources/assets/cobbletowers/textures/font/tower_icons.png").toFile());
+        assertEquals(8 * chars.length(), image.getWidth());
+        assertEquals(8, image.getHeight());
+    }
+
+    @Test
     @DisplayName("a segment may name a font; the two-argument form uses the default one")
     void segmentFont() {
         assertTrue(new Cosmetics.Segment("x", "gold").font().isEmpty());

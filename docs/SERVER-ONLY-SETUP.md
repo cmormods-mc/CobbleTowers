@@ -27,6 +27,9 @@ Host it with Polymer's own auto-host, which serves the pack **over the game port
 - If the game port cannot carry HTTP (some DDoS-protection proxies), use `"type": "polymer:standalone"` with `{"port": <free port>, "external_address": "https://..."}` and open that port, or host `polymer/resource_pack.zip` yourself and set `resource-pack=` and `resource-pack-sha1=` in `server.properties`.
 - Checked 2026-10-14: with auto-host enabled the server regenerates the pack (about 1 MB) and answers HTTP on the game port. Not yet checked with a real client downloading it.
 
+## Mastery badge (P47)
+Names carry a small tower icon and the player's mastery level (the tower with the highest level). The icons are a font in the resource pack, so a player who declines the pack sees an empty box where the icon is; the level number still reads. Switch the badge off for everyone with `"mastery_badge": false` in `config/cobbletowers-cosmetics.json`; a player can hide their own with `/tower badge off`.
+
 ## What a player sees
 Everything is a WebGUI page opened by the server (`/tower`, the intermission after a floor, rewards, vendor, rental draft, mastery, scouting, spectator HUD). There is no key binding: open the menu with `/tower` (the tower key item is a run-entry cost, not a menu opener).
 

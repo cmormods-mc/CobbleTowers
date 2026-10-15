@@ -1,6 +1,6 @@
 # P47: The mastery badge (a tower icon and a level beside the name)
 
-Status: **P47a built 2026-10-14 (`MasteryBadge`, `Segment.font`, `mastery_badge` config flag, `MasteryBadgeTest`); P47b-c not started.** Owner decisions made 2026-10-14. Replaces the long-standing "mastery-level cosmetics are recorded but shown nowhere" item. Written first, per the design gate.
+Status: **P47a-c built 2026-10-14; unit-tested, live check (`validation/smoke/mastery_badge_test.py`) written but not yet run.** As built: no per-player cache (a name is four map lookups, so it reads the store each time); the refresh runs from `MasteryService.announce` whenever an achievement is unlocked; `/tower badge [on|off]` hides your own badge from everyone (it cannot help a viewer who lacks the pack, because chat is shared); a `badge` placeholder returns the badge alone; icons are drawn by `tools/make_tower_icons.py`. Owner decisions made 2026-10-14. Replaces the long-standing "mastery-level cosmetics are recorded but shown nowhere" item. Written first, per the design gate.
 
 ## Why
 

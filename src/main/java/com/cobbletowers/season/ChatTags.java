@@ -2,7 +2,12 @@ package com.cobbletowers.season;
 
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.club.ClubBook;
+import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.mastery.MasteryBadge;
+import com.cobbletowers.mastery.MasteryPerks;
 import com.cobbletowers.persistence.TowerClubStore;
+import com.cobbletowers.persistence.TowerMasteryStore;
+import net.minecraft.resources.ResourceLocation;
 import com.cobbletowers.persistence.TowerSeasonProgressStore;
 import java.util.EnumSet;
 import java.util.List;
@@ -32,11 +37,37 @@ public final class ChatTags {
             Optional<String> title = Cosmetics.validSelection(cosmetics.selectedTitle(player), cosmetics.cosmeticsOf(player))
                     .flatMap(Cosmetics::parse).flatMap(Cosmetics::shortTitle);
             Optional<ClubBook.Club> club = TowerClubStore.get(server).book().clubOf(player);
-            return Cosmetics.decoration(title, club.map(ClubBook.Club::tag), club.map(ClubBook.Club::banner));
+            List<Cosmetics.Segment> decoration = Cosmetics.decoration(title, club.map(ClubBook.Club::tag), club.map(ClubBook.Club::banner));
+            List<Cosmetics.Segment> badge = badgeOf(server, player);
+            if (badge.isEmpty()) return decoration;
+            List<Cosmetics.Segment> all = new java.util.ArrayList<>(badge);
+            all.addAll(decoration);
+            return List.copyOf(all);
         } catch (RuntimeException ex) {
             TowerLog.errorOnce("chatTags", "Could not build a chat tag; names are left plain", ex);
             return List.of();
         }
+    }
+
+    /** The worn season title alone ({@code Champion S1}), for the title placeholder. */
+    public static Optional<String> titleOf(MinecraftServer server, UUID player) {
+        TowerSeasonProgressStore cosmetics = TowerSeasonProgressStore.get(server);
+        return Cosmetics.validSelection(cosmetics.selectedTitle(player), cosmetics.cosmeticsOf(player))
+                .flatMap(Cosmetics::parse).flatMap(Cosmetics::shortTitle);
+    }
+
+    /**
+     * The mastery badge (P47): the icon of the tower with the highest level and that level, empty when the badge is off
+     * (server or player) or the player has no level. Only the catalog towers count; a bounded loop over a handful.
+     */
+    public static List<Cosmetics.Segment> badgeOf(MinecraftServer server, UUID player) {
+        if (!CosmeticsConfig.masteryBadge()) return List.of();
+        TowerMasteryStore mastery = TowerMasteryStore.get(server);
+        if (mastery.badgeHidden(player)) return List.of();
+        var towers = TowerDefinitionRegistry.content().sortedTowerIds();
+        return MasteryBadge.of(mastery.standingsOf(player, towers))
+                .map(badge -> MasteryBadge.segments(badge, MasteryPerks.rankOf(badge.tower(), badge.level())))
+                .orElse(List.of());
     }
 
     private static Component compose(List<Cosmetics.Segment> segments, Component name) {
@@ -44,7 +75,13 @@ public final class ChatTags {
         for (Cosmetics.Segment segment : segments) {
             ChatFormatting color = ChatFormatting.getByName(segment.color());
             MutableComponent piece = Component.literal(segment.text());
-            out.append(color == null ? piece : piece.withStyle(color));
+            if (color != null) piece = piece.withStyle(color);
+            Optional<ResourceLocation> font = segment.font().map(ResourceLocation::tryParse);
+            if (font.isPresent()) {
+                ResourceLocation fontId = font.get();
+                piece = piece.withStyle(style -> style.withFont(fontId));
+            }
+            out.append(piece);
         }
         return out.append(name);
     }
