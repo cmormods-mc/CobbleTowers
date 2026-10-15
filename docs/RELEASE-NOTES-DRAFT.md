@@ -1,6 +1,6 @@
 # Release notes (draft, updated 2026-10-14)
 
-Version `0.28.0-p47-mastery-badge`. Covers the work after commit `9688678`. Items marked **(unverified)** are written but have not been seen in a real client or a full
+Version `0.28.1-p47-badge-pin`. Covers the work after commit `9688678`. Items marked **(unverified)** are written but have not been seen in a real client or a full
 human run; do not publish them as done until the checklist in `docs/RELEASE-CHECKLIST.md` is ticked.
 
 ## For players
@@ -27,7 +27,7 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 
 **Mastery badge (P47)**
 - Your name now carries a small tower icon and your mastery level, for the tower where your level is highest (chat and the tab list). The level is coloured by rank, Bronze to Champion.
-- `/tower badge off` hides yours. A server can turn it off with `"mastery_badge": false` in `config/cobbletowers-cosmetics.json`. The icons come from the resource pack (placeholder art).
+- `/tower badge off` hides yours. `/tower badge <tower>` pins the badge to a tower you have a level in (also a button on the Hall mastery screen), `/tower badge auto` goes back to your highest. A server can turn it off with `"mastery_badge": false` in `config/cobbletowers-cosmetics.json`. The icons come from the resource pack (placeholder art).
 
 **Relics, set bonuses and rooms (P45)**
 - **38 relics** (26 new), each with tags (sustain, economy, tempo, offense, scouting, boss, risk). Many have battle effects: type-themed damage, drain, resistance, tailwind,
@@ -106,7 +106,7 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 **Requirements**
 - Deploy the CobbleTowers jar together with the AscensionLib jar (rentals are locked out of upgrades only when both are present).
 - Rewards that name CobblemonCards items need that mod on the server; a missing item is skipped with one log line, so players get less and nothing breaks.
-- The build version is now `0.28.0-p47-mastery-badge`, so a server log shows which jar is running. Bump it for every deployed build.
+- The build version is now `0.28.1-p47-badge-pin`, so a server log shows which jar is running. Bump it for every deployed build.
 
 ## For addon authors
 - Mastery tracks and season steps are data. Add rewards and ranks with a datapack; files merge, they do not replace. See `docs/TRACKS-GUIDE.md`.

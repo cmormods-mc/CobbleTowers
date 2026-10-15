@@ -3,10 +3,12 @@ import { html } from '../html.js';
 import { act } from '../bridge.js';
 import { update } from '../store.js';
 import { goBack } from '../reducer.js';
-import { boardLines, nodesPerPage, TABS, tabWidth, towerLabel } from '../mastery.js';
+import { badgeView, boardLines, nodesPerPage, TABS, tabWidth, towerLabel } from '../mastery.js';
 import { at, Icon, Label, NB, Panel, screen, useScreen } from '../components/native.js';
 
 export const requestMastery = (tower, tab) => act('MasteryRequest', { tower, tab });
+/** Pins the name badge to a tower, or (auto) back to the highest level; the reply is the mastery view again. */
+export const requestBadge = (tower, action) => act('MasteryRequest', { tower, tab: 'badge:' + action });
 
 /** AchievementNode: a card with the name, a line of description and a mark when earned. */
 function Node({ x, y, w, node, selected, onPick }) {
@@ -44,9 +46,13 @@ function Board({ state, SW, SH }) {
 export function Mastery({ state }) {
   useScreen();
   const SW = screen.w, SH = screen.h;
+  const badge = badgeView(state.towers, state.selected);
   return html`
     <div class="ns" style=${`--g:${screen.g}px`}>
       <${Panel} x=${6} y=${27} w=${101} h=${SH - 62} />
+      <${Label} x=${12} y=${SH - 88} w=${90} color="muted">Name badge: ${badge.line}<//>
+      ${badge.mode ? html`<${Label} x=${12} y=${SH - 77} w=${90} color="muted">${badge.mode}<//>` : null}
+      <${NB} x=${10} y=${SH - 56} w=${94} kind="dark" disabled=${badge.button.disabled} onClick=${() => badge.button.action !== 'none' && requestBadge(state.selected, badge.button.action)}>${badge.button.label}<//>
       ${state.towers.map((t, i) => html`<${NB} key=${t.id} x=${10} y=${30 + i * 22} w=${94} kind="dark" disabled=${t.id === state.selected} onClick=${() => requestMastery(t.id, state.tab)}>${towerLabel(t, state.selected)}<//>`)}
       <${NB} x=${10} y=${SH - 28} w=${94} onClick=${() => update(goBack)}>Close<//>
       ${(() => { let x = 112; return TABS.map(([id, name]) => { const w = tabWidth(name), at0 = x; x += w + 2;

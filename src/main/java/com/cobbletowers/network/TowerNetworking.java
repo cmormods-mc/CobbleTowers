@@ -75,8 +75,7 @@ public final class TowerNetworking {
         });
         ServerPlayNetworking.registerGlobalReceiver(MasteryRequestPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
-            context.server().execute(() -> MasteryScreens.send(player,
-                    MasteryScreens.build(context.server(), player, payload.tower(), payload.tab(), false)));
+            context.server().execute(() -> MasteryScreens.handleRequest(context.server(), player, payload));
         });
         ServerPlayNetworking.registerGlobalReceiver(RentalDraftActionPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
@@ -104,8 +103,7 @@ public final class TowerNetworking {
         else if (action instanceof TowerFeatureRequest a) com.cobbletowers.menu.TowerFeatureService.handle(server, player, a);
         else if (action instanceof TrackActionPayload a) com.cobbletowers.track.TrackService.handle(server, player, a);
         else if (action instanceof VendorPurchasePayload a) handlePurchase(server, player, a);
-        else if (action instanceof MasteryRequestPayload a) MasteryScreens.send(player,
-                MasteryScreens.build(server, player, a.tower(), a.tab(), false));
+        else if (action instanceof MasteryRequestPayload a) MasteryScreens.handleRequest(server, player, a);
         else TowerLog.warn("handleAction was given {}, which is not a screen action", action.getClass().getSimpleName());
     }
 

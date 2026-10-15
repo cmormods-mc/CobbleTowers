@@ -6,25 +6,29 @@
         "id": "cobbletowers:neutral",
         "displayName": "Neutral Tower",
         "level": 7,
-        "rank": "Veteran"
+        "rank": "Veteran",
+        "badge": 0
       },
       {
         "id": "cobbletowers:tideforge",
         "displayName": "Tideforge",
         "level": 3,
-        "rank": "Challenger"
+        "rank": "Challenger",
+        "badge": 2
       },
       {
         "id": "cobbletowers:rootvale",
         "displayName": "Rootvale",
         "level": 0,
-        "rank": "Novice"
+        "rank": "Novice",
+        "badge": 0
       },
       {
         "id": "cobbletowers:duskvale",
         "displayName": "Duskvale",
         "level": 12,
-        "rank": "Expert"
+        "rank": "Expert",
+        "badge": 0
       }
     ],
     "selected": "cobbletowers:neutral",

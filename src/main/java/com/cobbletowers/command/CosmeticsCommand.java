@@ -31,7 +31,13 @@ public final class CosmeticsCommand {
                 Commands.literal("badge")
                         .executes(context -> one(context, badge(context, null)))
                         .then(Commands.literal("on").executes(context -> one(context, badge(context, false))))
-                        .then(Commands.literal("off").executes(context -> one(context, badge(context, true)))),
+                        .then(Commands.literal("off").executes(context -> one(context, badge(context, true))))
+                        .then(Commands.literal("auto").executes(context -> one(context, pinBadge(context, "auto"))))
+                        .then(Commands.argument("tower", StringArgumentType.word())
+                                .suggests((context, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                                        com.cobbletowers.definition.TowerDefinitionRegistry.content().sortedTowerIds().stream()
+                                                .map(id -> id.getPath()), builder))
+                                .executes(context -> one(context, pinBadge(context, StringArgumentType.getString(context, "tower"))))),
                 Commands.literal("cosmetics").executes(context -> lines(context, CosmeticsService.cosmeticsLines(
                         context.getSource().getServer(), context.getSource().getPlayerOrException().getUUID()))),
                 Commands.literal("title")
@@ -55,7 +61,19 @@ public final class CosmeticsCommand {
         }
         String shown = store.badgeHidden(player.getUUID()) ? "hidden" : "shown";
         if (!com.cobbletowers.season.CosmeticsConfig.masteryBadge()) shown += " (this server has the mastery badge switched off)";
-        return "Your mastery badge is " + shown + ". /tower badge on or off changes it.";
+        String which = com.cobbletowers.mastery.MasteryBadges.shownFor(server, player.getUUID())
+                .map(badge -> " It shows " + badge.tower().getPath() + " (level " + badge.level() + ", "
+                        + (store.badgePickOf(player.getUUID()).isPresent() ? "pinned" : "automatic") + ").").orElse("");
+        return "Your mastery badge is " + shown + "." + which + " /tower badge on|off hides it, /tower badge <tower> pins one, /tower badge auto follows your highest.";
+    }
+
+    /** {@code /tower badge <tower>} pins the badge to a tower you have a level in; {@code auto} follows your highest (P47). */
+    private static String pinBadge(CommandContext<CommandSourceStack> context, String tower) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        var server = context.getSource().getServer();
+        var outcome = com.cobbletowers.mastery.MasteryBadges.pin(server, player.getUUID(), tower);
+        if (outcome.changed()) ChatTags.refresh(server, player.getUUID());
+        return outcome.message();
     }
 
     /** {@code /cobbletowers cosmeticsadmin ...}: operator only. */

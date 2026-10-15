@@ -42,10 +42,15 @@ public final class MasteryScreens {
         List<ResourceLocation> ids = TowerDefinitionRegistry.content().sortedTowerIds();
         TowerMasteryStore store = TowerMasteryStore.get(server);
         List<MasteryScreenPayload.Tower> towers = new ArrayList<>();
+        // the badge on the name (P47): shown only while the badge is on for the server and the player
+        var onName = com.cobbletowers.season.CosmeticsConfig.masteryBadge() && !store.badgeHidden(player.getUUID())
+                ? com.cobbletowers.mastery.MasteryBadges.shownFor(server, player.getUUID()) : java.util.Optional.<com.cobbletowers.mastery.MasteryBadge.Badge>empty();
+        boolean pinned = store.badgePickOf(player.getUUID()).isPresent();
         for (ResourceLocation id : ids) {
             TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(id);
             int level = store.progressOf(player.getUUID(), id).level();
-            towers.add(new MasteryScreenPayload.Tower(id, tower.displayName(), level, MasteryPerks.rankOf(id, level)));
+            int badge = onName.isPresent() && onName.get().tower().equals(id) ? (pinned ? 2 : 1) : 0;
+            towers.add(new MasteryScreenPayload.Tower(id, tower.displayName(), level, MasteryPerks.rankOf(id, level), badge));
         }
         ResourceLocation tower = ResourceLocation.tryParse(towerRaw == null ? "" : towerRaw);
         if (tower == null || !ids.contains(tower)) tower = ids.isEmpty() ? null : ids.get(0);
@@ -95,6 +100,22 @@ public final class MasteryScreens {
         List<String> rows = new ArrayList<>();
         for (int i = 0; i < entries.size(); i++) rows.add(MasteryView.row(board, i + 1, entries.get(i)));
         return rows;
+    }
+
+    /**
+     * A request from the screen (native or web). A tab of {@code badge:pin} or {@code badge:auto} first pins the badge to
+     * the named tower (or releases it); the reply is then the same mastery view, so the page shows the change.
+     */
+    public static void handleRequest(MinecraftServer server, ServerPlayer player, MasteryRequestPayload request) {
+        String tab = request.tab();
+        if (tab != null && tab.startsWith("badge:")) {
+            var outcome = com.cobbletowers.mastery.MasteryBadges.pin(server, player.getUUID(),
+                    tab.equals("badge:auto") ? "auto" : request.tower());
+            if (outcome.changed()) com.cobbletowers.season.ChatTags.refresh(server, player.getUUID());
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(outcome.message()));
+            tab = MASTERY_TAB;
+        }
+        send(player, build(server, player, request.tower(), tab, false));
     }
 
     public static void send(ServerPlayer player, MasteryScreenPayload payload) {

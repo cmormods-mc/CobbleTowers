@@ -40,6 +40,22 @@ class TowerMasteryBadgeStoreTest {
     }
 
     @Test
+    @DisplayName("a pinned tower is remembered through a save and a load, and can be released")
+    void pinned() {
+        TowerMasteryStore store = new TowerMasteryStore();
+        assertTrue(store.badgePickOf(PLAYER).isEmpty());
+        assertTrue(store.setBadgePick(PLAYER, java.util.Optional.of(id("rootvale"))));
+        assertFalse(store.setBadgePick(PLAYER, java.util.Optional.of(id("rootvale"))), "same pick, no change");
+        assertTrue(store.setBadgePick(PLAYER, java.util.Optional.of(id("neutral"))));
+
+        TowerMasteryStore restored = TowerMasteryStore.load(store.save(new CompoundTag(), null), null);
+        assertEquals(java.util.Optional.of(id("neutral")), restored.badgePickOf(PLAYER));
+        assertTrue(restored.setBadgePick(PLAYER, java.util.Optional.empty()));
+        assertFalse(restored.setBadgePick(PLAYER, java.util.Optional.empty()));
+        assertTrue(restored.badgePickOf(PLAYER).isEmpty());
+    }
+
+    @Test
     @DisplayName("hiding the badge is remembered through a save and a load, and can be undone")
     void hidden() {
         TowerMasteryStore store = new TowerMasteryStore();

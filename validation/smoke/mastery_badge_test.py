@@ -109,6 +109,27 @@ def main() -> None:
             on = rcon.command(f"execute as {BOT} run cobbletowers play badge on")
             results.append(Result("/tower badge on brings it back", decoration(rcon).startswith(ICON["neutral"]) and "shown" in on, f"{on.strip()} -> {decoration(rcon)!r}"))
 
+            pin = rcon.command(f"execute as {BOT} run cobbletowers play badge rootvale")
+            deco = decoration(rcon)
+            results.append(Result("/tower badge <tower> pins a tower even when another ties or leads",
+                                  deco.startswith(ICON["rootvale"]) and "now shows rootvale" in pin, f"{pin.strip()} -> {deco!r}"))
+            none = rcon.command(f"execute as {BOT} run cobbletowers play badge duskvale")
+            results.append(Result("a tower with no level cannot be pinned",
+                                  "no mastery level" in none and decoration(rcon).startswith(ICON["rootvale"]), none.strip()))
+            unknown = rcon.command(f"execute as {BOT} run cobbletowers play badge nonesuch")
+            results.append(Result("an unknown tower is refused", "no tower called" in unknown, unknown.strip()))
+            status = rcon.command(f"execute as {BOT} run cobbletowers play badge")
+            results.append(Result("/tower badge says it is pinned", "pinned" in status and "rootvale" in status, status.strip()[:200]))
+            auto = rcon.command(f"execute as {BOT} run cobbletowers play badge auto")
+            results.append(Result("/tower badge auto goes back to the newest of the tied towers",
+                                  decoration(rcon).startswith(ICON["neutral"]) and "highest" in auto, f"{auto.strip()} -> {decoration(rcon)!r}"))
+            rcon.command(f"execute as {BOT} run cobbletowers play badge rootvale")
+            rcon.command(f"cobbletowers masteryadmin reset {BOT} {ROOTVALE}")
+            results.append(Result("a pin on a tower that lost every level falls back to automatic",
+                                  decoration(rcon).startswith(ICON["neutral"]), repr(decoration(rcon))))
+            rcon.command(f"cobbletowers masteryadmin grant {BOT} {ROOTVALE} all")
+            rcon.command(f"execute as {BOT} run cobbletowers play badge auto")
+
             rcon.command(f"cobbletowers masteryadmin reset {BOT} {NEUTRAL}")
             deco = decoration(rcon)
             results.append(Result("after a reset the next tower's badge shows", deco.startswith(ICON["rootvale"] + f"{top} "), repr(deco)))

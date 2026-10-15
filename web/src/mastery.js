@@ -22,3 +22,16 @@ export function boardLines(board) {
 
 /** The label of a tower button: ">" marks the one shown. */
 export const towerLabel = (t, selected) => (t.id === selected ? '> ' : '') + t.displayName + ' L' + t.level;
+
+/**
+ * The badge controls (P47): what the player's name shows now, and what the button does for the selected tower. A tower's
+ * `badge` is 0 (not on the name), 1 (on it automatically) or 2 (pinned there).
+ */
+export function badgeView(towers, selected) {
+  const shown = towers.find((t) => t.badge > 0) || null;
+  const sel = towers.find((t) => t.id === selected) || null;
+  let button = { label: 'Show on name', action: 'pin', disabled: false };
+  if (!sel || sel.level < 1) button = { label: 'No level here', action: 'none', disabled: true };
+  else if (sel.badge === 2) button = { label: 'Use my highest', action: 'auto', disabled: false };
+  return { line: shown ? shown.displayName : 'off', mode: shown ? (shown.badge === 2 ? 'pinned' : 'automatic') : '', button };
+}

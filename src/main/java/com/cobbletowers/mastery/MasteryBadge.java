@@ -23,6 +23,18 @@ public final class MasteryBadge {
     /** What the name shows: the tower whose icon to draw and the level beside it. */
     public record Badge(ResourceLocation tower, int level) {}
 
+    /**
+     * The badge when the player pinned a tower: that tower if they have a level in it, else the automatic one (a pin on a
+     * tower they have since lost every level in does not blank the badge).
+     */
+    public static Optional<Badge> of(Map<ResourceLocation, Standing> standings, Optional<ResourceLocation> pick) {
+        if (pick.isPresent()) {
+            Standing pinned = standings.get(pick.get());
+            if (pinned != null && pinned.level() > 0) return Optional.of(new Badge(pick.get(), pinned.level()));
+        }
+        return of(standings);
+    }
+
     /** The badge for these standings, or empty when there is no level anywhere. */
     public static Optional<Badge> of(Map<ResourceLocation, Standing> standings) {
         return standings.entrySet().stream()

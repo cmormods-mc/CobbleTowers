@@ -18,13 +18,20 @@ import net.minecraft.resources.ResourceLocation;
 public record MasteryScreenPayload(List<Tower> towers, String selected, String tab, Mastery mastery, Board board,
                                    boolean open) implements CustomPacketPayload {
 
-    public record Tower(ResourceLocation id, String displayName, int level, String rank) {
+    /** {@code badge}: 0 when this tower is not the one on the player's name, 1 when it is (automatically), 2 when it is pinned there (P47). */
+    public record Tower(ResourceLocation id, String displayName, int level, String rank, int badge) {
         static final StreamCodec<RegistryFriendlyByteBuf, Tower> STREAM_CODEC = StreamCodec.composite(
                 ResourceLocation.STREAM_CODEC, Tower::id,
                 ByteBufCodecs.STRING_UTF8, Tower::displayName,
                 ByteBufCodecs.VAR_INT, Tower::level,
                 ByteBufCodecs.STRING_UTF8, Tower::rank,
+                ByteBufCodecs.VAR_INT, Tower::badge,
                 Tower::new);
+
+        /** A tower with no badge on it. */
+        public Tower(ResourceLocation id, String displayName, int level, String rank) {
+            this(id, displayName, level, rank, 0);
+        }
     }
 
     public record Achievement(String name, String description, boolean held) {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { boardLines, nodesPerPage, tabWidth, towerLabel } from '../src/mastery.js';
+import { badgeView, boardLines, nodesPerPage, tabWidth, towerLabel } from '../src/mastery.js';
 
 test('a split board lists solo then team, and says when a side is empty', () => {
   const lines = boardLines({ title: 'Speed', split: true, solo: ['#1 Ash'], team: [] });
@@ -15,4 +15,19 @@ test('tiles per page and tab width', () => {
 test('the shown tower is marked', () => {
   assert.equal(towerLabel({ id: 'a', displayName: 'Neutral', level: 3 }, 'a'), '> Neutral L3');
   assert.equal(towerLabel({ id: 'b', displayName: 'Rootvale', level: 0 }, 'a'), 'Rootvale L0');
+});
+
+test('the badge controls name the tower on the name and offer pin, unpin or nothing', () => {
+  const towers = [
+    { id: 'a', displayName: 'Neutral', level: 7, badge: 0 },
+    { id: 'b', displayName: 'Tideforge', level: 3, badge: 2 },
+    { id: 'c', displayName: 'Rootvale', level: 0, badge: 0 },
+  ];
+  assert.deepEqual(badgeView(towers, 'a'), { line: 'Tideforge', mode: 'pinned', button: { label: 'Show on name', action: 'pin', disabled: false } });
+  assert.equal(badgeView(towers, 'b').button.action, 'auto');
+  assert.equal(badgeView(towers, 'c').button.disabled, true);
+  const auto = towers.map((t) => ({ ...t, badge: t.id === 'a' ? 1 : 0 }));
+  assert.equal(badgeView(auto, 'a').mode, 'automatic');
+  assert.equal(badgeView(auto, 'a').button.action, 'pin');
+  assert.deepEqual(badgeView(towers.map((t) => ({ ...t, badge: 0 })), 'a').line, 'off');
 });

@@ -40,6 +40,10 @@ Shown in the tab list, chat (the display-name mixin already used by `ChatTags.de
 
 Pure: the badge rule above; a segment with a font renders into a component with that font and keeps the existing title and club segments in order; the glyph map is stable (adding a tower does not change another tower's character). Live (dev jar, `masteryadmin` to set a level): the tab list and a chat line carry the badge; it changes when a higher-level tower overtakes; it disappears with `mastery_badge: false`; a stock client with the pack shows the icons (owner check).
 
+## Added 2026-10-14: choosing the tower
+
+Owner asked how to pick the icon when several towers are maxed (the tie then goes to the newest achievement, which can change). Built: `/tower badge <tower>` pins the badge to a tower where the player has a level, `/tower badge auto` returns to the highest level; a pin on a tower that has lost every level quietly falls back to automatic. The Hall mastery screen has a button for the selected tower ("Show on name" / "Use my highest") and a line saying what the name shows. The page reuses the mastery request with a `badge:pin` or `badge:auto` tab, and each tower in the mastery payload carries `badge` (0 not shown, 1 automatic, 2 pinned). Stored per player in `TowerMasteryStore` (`badge_pick`).
+
 ## Not in this phase
 
 Mastery titles, a choice of which tower to show, per-rank art, badges on the nameplate above the head, anything in the Hall beyond showing the same badge on the player's own mastery screen.

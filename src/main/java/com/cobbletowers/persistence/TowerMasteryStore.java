@@ -42,6 +42,8 @@ public final class TowerMasteryStore extends TowerStore {
     private final Map<UUID, Map<ResourceLocation, Entry>> entries = new LinkedHashMap<>();
     /** Players who asked to hide their own mastery badge (P47). */
     private final java.util.Set<UUID> badgeHidden = new java.util.LinkedHashSet<>();
+    /** The tower a player pinned their badge to; absent means the highest level wins (P47). */
+    private final Map<UUID, ResourceLocation> badgePick = new LinkedHashMap<>();
 
     public static TowerMasteryStore get(MinecraftServer server) {
         return open(server, TowerMasteryStore::new, TowerMasteryStore::load, FILE_ID);
@@ -74,6 +76,17 @@ public final class TowerMasteryStore extends TowerStore {
             out.put(tower, new com.cobbletowers.mastery.MasteryBadge.Standing(entry.unlocked.size(), last));
         }
         return out;
+    }
+
+    public java.util.Optional<ResourceLocation> badgePickOf(UUID player) {
+        return java.util.Optional.ofNullable(badgePick.get(player));
+    }
+
+    /** Pins a badge to a tower, or back to automatic with an empty pick; returns whether anything changed. */
+    public boolean setBadgePick(UUID player, java.util.Optional<ResourceLocation> tower) {
+        boolean changed = tower.isPresent() ? !tower.get().equals(badgePick.put(player, tower.get())) : badgePick.remove(player) != null;
+        if (changed) setDirty();
+        return changed;
     }
 
     public boolean badgeHidden(UUID player) {
@@ -142,6 +155,11 @@ public final class TowerMasteryStore extends TowerStore {
         }
         ListTag hidden = tag.getList("badge_hidden", Tag.TAG_COMPOUND);
         for (int i = 0; i < hidden.size(); i++) store.badgeHidden.add(hidden.getCompound(i).getUUID("player"));
+        ListTag picks = tag.getList("badge_pick", Tag.TAG_COMPOUND);
+        for (int i = 0; i < picks.size(); i++) {
+            ResourceLocation tower = ResourceLocation.tryParse(picks.getCompound(i).getString("tower"));
+            if (tower != null) store.badgePick.put(picks.getCompound(i).getUUID("player"), tower);
+        }
         return store;
     }
 
@@ -174,6 +192,14 @@ public final class TowerMasteryStore extends TowerStore {
             hidden.add(item);
         }
         tag.put("badge_hidden", hidden);
+        ListTag picks = new ListTag();
+        for (Map.Entry<UUID, ResourceLocation> pick : badgePick.entrySet()) {
+            CompoundTag item = new CompoundTag();
+            item.putUUID("player", pick.getKey());
+            item.putString("tower", pick.getValue().toString());
+            picks.add(item);
+        }
+        tag.put("badge_pick", picks);
         return tag;
     }
 }

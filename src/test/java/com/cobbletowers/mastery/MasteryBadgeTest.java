@@ -51,6 +51,17 @@ class MasteryBadgeTest {
     }
 
     @Test
+    @DisplayName("a pin wins over the highest level while the player still has a level there, and falls back to automatic otherwise")
+    void pinned() {
+        Map<ResourceLocation, Standing> s = standings("neutral", new Standing(4, 900), "rootvale", new Standing(12, 100));
+        assertEquals(tower("neutral"), MasteryBadge.of(s, Optional.of(tower("neutral"))).orElseThrow().tower());
+        assertEquals(4, MasteryBadge.of(s, Optional.of(tower("neutral"))).orElseThrow().level());
+        assertEquals(tower("rootvale"), MasteryBadge.of(s, Optional.empty()).orElseThrow().tower());
+        assertEquals(tower("rootvale"), MasteryBadge.of(s, Optional.of(tower("duskvale"))).orElseThrow().tower(), "no level in the pinned tower");
+        assertTrue(MasteryBadge.of(Map.of(), Optional.of(tower("neutral"))).isEmpty());
+    }
+
+    @Test
     @DisplayName("each shipped rank has a colour, an unknown rank is white")
     void colours() {
         for (String rank : new String[] {"Bronze", "Silver", "Gold", "Platinum", "Diamond", "Master", "Champion"}) {

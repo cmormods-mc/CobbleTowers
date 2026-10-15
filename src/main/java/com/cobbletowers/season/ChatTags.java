@@ -2,8 +2,8 @@ package com.cobbletowers.season;
 
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.club.ClubBook;
-import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.mastery.MasteryBadge;
+import com.cobbletowers.mastery.MasteryBadges;
 import com.cobbletowers.mastery.MasteryPerks;
 import com.cobbletowers.persistence.TowerClubStore;
 import com.cobbletowers.persistence.TowerMasteryStore;
@@ -62,10 +62,8 @@ public final class ChatTags {
      */
     public static List<Cosmetics.Segment> badgeOf(MinecraftServer server, UUID player) {
         if (!CosmeticsConfig.masteryBadge()) return List.of();
-        TowerMasteryStore mastery = TowerMasteryStore.get(server);
-        if (mastery.badgeHidden(player)) return List.of();
-        var towers = TowerDefinitionRegistry.content().sortedTowerIds();
-        return MasteryBadge.of(mastery.standingsOf(player, towers))
+        if (TowerMasteryStore.get(server).badgeHidden(player)) return List.of();
+        return MasteryBadges.shownFor(server, player)
                 .map(badge -> MasteryBadge.segments(badge, MasteryPerks.rankOf(badge.tower(), badge.level())))
                 .orElse(List.of());
     }
