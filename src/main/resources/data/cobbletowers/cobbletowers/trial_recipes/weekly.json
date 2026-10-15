@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "display_name": "Weekly Trial",
+  "kind": "weekly",
+  "floors": 10,
+  "streak_min_floors": 0,
+  "segment_size": 3,
+  "regions": [
+    "cobbletowers:neutral",
+    "cobbletowers:tideforge",
+    "cobbletowers:rootvale",
+    "cobbletowers:duskvale"
+  ],
+  "single_region_percent": 15,
+  "playlists": [
+    "cobbletowers:level_cap_50",
+    "cobbletowers:monotype",
+    "cobbletowers:underdog",
+    "cobbletowers:hardcore"
+  ],
+  "playlist_percent": 60,
+  "levels": [
+    50,
+    55,
+    60
+  ],
+  "mutators": [
+    {
+      "id": "cobbletowers:downpour",
+      "group": "field"
+    },
+    {
+      "id": "cobbletowers:electric_terrain",
+      "group": "field"
+    },
+    {
+      "id": "cobbletowers:sandstorm",
+      "group": "field"
+    },
+    {
+      "id": "cobbletowers:scorching_sun",
+      "group": "field"
+    },
+    {
+      "id": "cobbletowers:grassy_terrain",
+      "group": "field"
+    },
+    {
+      "id": "cobbletowers:gauntlet",
+      "group": "encounter"
+    },
+    {
+      "id": "cobbletowers:crowded_floor",
+      "group": "encounter"
+    },
+    {
+      "id": "cobbletowers:no_recovery",
+      "group": "constraint"
+    },
+    {
+      "id": "cobbletowers:no_setup",
+      "group": "constraint"
+    },
+    {
+      "id": "cobbletowers:empty_pockets",
+      "group": "constraint"
+    },
+    {
+      "id": "cobbletowers:sharpened_claws",
+      "group": "enemy"
+    },
+    {
+      "id": "cobbletowers:seasoned_ranks",
+      "group": "enemy"
+    },
+    {
+      "id": "cobbletowers:towering_presence",
+      "group": "enemy"
+    }
+  ],
+  "mutator_count_weights": [
+    1,
+    3,
+    2
+  ],
+  "relics": [
+    "cobbletowers:ember_brand",
+    "cobbletowers:iron_hide",
+    "cobbletowers:keen_edge",
+    "cobbletowers:swift_feather",
+    "cobbletowers:vampiric_fang",
+    "cobbletowers:tide_charm",
+    "cobbletowers:verdant_seed"
+  ],
+  "relic_percent": 25,
+  "room_bias": [
+    "forge",
+    "library",
+    "vault",
+    "pool",
+    "rest",
+    "shrine"
+  ],
+  "room_bias_percent": 30,
+  "weekly_rules": [
+    "no_vendor",
+    "no_healing_rooms",
+    "double_risk",
+    "relics_every_second_floor"
+  ],
+  "named": [
+    {
+      "tower": "cobbletowers:tideforge",
+      "playlist": "cobbletowers:level_cap_50",
+      "enemy_level": 60,
+      "label": "The Long Tide",
+      "modifiers": [
+        "cobbletowers:double_trouble",
+        "cobbletowers:downpour"
+      ]
+    },
+    {
+      "tower": "cobbletowers:rootvale",
+      "playlist": "cobbletowers:underdog",
+      "enemy_level": 55,
+      "label": "Rootbound Siege",
+      "modifiers": [
+        "cobbletowers:mob_rule"
+      ]
+    },
+    {
+      "tower": "cobbletowers:duskvale",
+      "playlist": "cobbletowers:hardcore",
+      "enemy_level": 60,
+      "label": "Nightfall Gauntlet",
+      "modifiers": [
+        "cobbletowers:seasoned_ranks"
+      ]
+    }
+  ],
+  "featured_every": 4
+}

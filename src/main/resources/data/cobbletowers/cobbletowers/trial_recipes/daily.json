@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "display_name": "Daily Trial",
+  "kind": "daily",
+  "floors": 5,
+  "streak_min_floors": 3,
+  "segment_size": 2,
+  "regions": [
+    "cobbletowers:neutral",
+    "cobbletowers:tideforge",
+    "cobbletowers:rootvale",
+    "cobbletowers:duskvale"
+  ],
+  "single_region_percent": 15,
+  "playlists": [
+    "cobbletowers:level_cap_50",
+    "cobbletowers:monotype",
+    "cobbletowers:underdog",
+    "cobbletowers:hardcore"
+  ],
+  "playlist_percent": 60,
+  "levels": [
+    40,
+    45,
+    50,
+    55
+  ],
+  "mutators": [
+    {
+      "id": "cobbletowers:downpour",
+      "group": "field"
+    },
+    {
+      "id": "cobbletowers:electric_terrain",
+      "group": "field"
+    },
+    {
+      "id": "cobbletowers:sandstorm",
+      "group": "field"
+    },
+    {
+      "id": "cobbletowers:scorching_sun",
+      "group": "field"
+    },
+    {
+      "id": "cobbletowers:grassy_terrain",
+      "group": "field"
+    },
+    {
+      "id": "cobbletowers:gauntlet",
+      "group": "encounter"
+    },
+    {
+      "id": "cobbletowers:crowded_floor",
+      "group": "encounter"
+    },
+    {
+      "id": "cobbletowers:no_recovery",
+      "group": "constraint"
+    },
+    {
+      "id": "cobbletowers:no_setup",
+      "group": "constraint"
+    },
+    {
+      "id": "cobbletowers:empty_pockets",
+      "group": "constraint"
+    },
+    {
+      "id": "cobbletowers:sharpened_claws",
+      "group": "enemy"
+    },
+    {
+      "id": "cobbletowers:seasoned_ranks",
+      "group": "enemy"
+    },
+    {
+      "id": "cobbletowers:towering_presence",
+      "group": "enemy"
+    }
+  ],
+  "mutator_count_weights": [
+    3,
+    5,
+    2
+  ],
+  "relics": [
+    "cobbletowers:ember_brand",
+    "cobbletowers:iron_hide",
+    "cobbletowers:keen_edge",
+    "cobbletowers:swift_feather",
+    "cobbletowers:vampiric_fang",
+    "cobbletowers:tide_charm",
+    "cobbletowers:verdant_seed"
+  ],
+  "relic_percent": 25,
+  "room_bias": [
+    "forge",
+    "library",
+    "vault",
+    "pool",
+    "rest",
+    "shrine"
+  ],
+  "room_bias_percent": 30,
+  "named": [
+    {
+      "tower": "cobbletowers:tideforge",
+      "playlist": "cobbletowers:level_cap_50",
+      "enemy_level": 50,
+      "label": "Tide Pool Rush",
+      "modifiers": [
+        "cobbletowers:downpour"
+      ]
+    },
+    {
+      "tower": "cobbletowers:rootvale",
+      "playlist": "cobbletowers:monotype",
+      "enemy_level": 50,
+      "label": "Verdant Mono",
+      "modifiers": [
+        "cobbletowers:grassy_terrain"
+      ]
+    },
+    {
+      "tower": "cobbletowers:duskvale",
+      "playlist": "cobbletowers:underdog",
+      "enemy_level": 45,
+      "label": "Dusk Underdogs"
+    },
+    {
+      "tower": "cobbletowers:neutral",
+      "playlist": "cobbletowers:level_cap_50",
+      "enemy_level": 50,
+      "label": "Rookie Cup"
+    }
+  ],
+  "featured_every": 7
+}

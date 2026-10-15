@@ -108,6 +108,7 @@ public final class CobbleTowers implements ModInitializer {
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.AchievementRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.PlaylistRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.TrialPoolRegistry());
+        ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.TrialRecipeRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.SeasonRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.SeasonTrackRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.MasteryTrackRegistry());

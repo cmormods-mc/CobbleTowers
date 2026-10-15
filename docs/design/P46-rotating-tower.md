@@ -1,6 +1,6 @@
 # P46: The rotating tower (daily and weekly, built from the seed)
 
-Status: **draft for owner review. No code yet.** Follows P32b (Seeded Trials), P45 (relics and rooms), P38 (region rules). Written first, per the design gate.
+Status: **P46a built (2026-10-14); P46b-d not started.** Follows P32b (Seeded Trials), P45 (relics and rooms), P38 (region rules). Written first, per the design gate.
 
 ## Why
 
@@ -95,7 +95,7 @@ Per-player seeds, player-voted recipes, a trial ladder or season points, new flo
 
 ## Build order (each step tested and pushed alone)
 
-1. **P46a** recipe definition, parser, validator, shipped `trial_recipes/daily.json` and `weekly.json`; pure roll function and its tests. No behaviour change yet.
+1. **P46a (done 2026-10-14: `RotatingRecipeDefinition`, `TrialRecipeRegistry`, `RotatingRoll`, `trial_recipes/daily|weekly.json`, `RotatingRollTest`; the no-repeat guard chases a redraw back 8 periods; weekly rule ids are `no_vendor`, `no_healing_rooms`, `double_risk`, `relics_every_second_floor`, room names validated in P46c)** recipe definition, parser, validator, shipped `trial_recipes/daily.json` and `weekly.json`; pure roll function and its tests. No behaviour change yet.
 2. **P46b** synthetic tower: `RotatingTowers.build`, `TowerContent.withRotating`, on-demand rebuild by id, and the audit list above. No per-floor rule work is needed.
 3. **P46c** wire `TrialSchedule.of` to the recipe (keeping `named` entries and the featured-day rule), generated labels, the briefing `parts`, `trialadmin roll`.
 4. **P46d** weekly rule, pre-warm at the day turnover, live tests, balance counters.
