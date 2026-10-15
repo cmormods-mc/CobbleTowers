@@ -1,6 +1,6 @@
 # P48: Beta readiness (one week before players test)
 
-Status: **in progress 2026-10-15.** Owner approved the list and the order (feedback, first run, known gaps, then safety). Written first, per the design gate. One commit at the end.
+Status: **built 2026-10-15; soak passed (15 min, 6/6, one 24 s transition outlier under a no-pause stress), dry run of the server-only file set booted clean.** Owner approved the list and the order (feedback, first run, known gaps, then safety). Written first, per the design gate. One commit at the end.
 
 ## 1. Feedback you can act on
 
