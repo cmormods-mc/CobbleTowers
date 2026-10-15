@@ -31,10 +31,25 @@ export function closeGui() {
   if (typeof W.closeGui === 'function') W.closeGui();
 }
 
+let lastHeard = Date.now();
+
+/** True when a page in the game has heard nothing from the server for `limit` ms (the server sends a Pong every few seconds). */
+export const silentFor = (limit, now = Date.now()) => insideGame() && now - lastHeard > limit;
+
+/** Calls `onChange(true|false)` when the page starts or stops being cut off from the server. */
+export function watchServer(onChange, limit = 12000) {
+  let was = false;
+  setInterval(() => {
+    const now = silentFor(limit) && document.visibilityState !== 'hidden';
+    if (now !== was) { was = now; onChange(now); }
+  }, 2000);
+}
+
 /** Starts listening. `onPayload(kind, data)` is called for every server payload. */
 export function connect(onPayload) {
   const deliver = (envelope) => {
     if (!envelope || typeof envelope.kind !== 'string') return;
+    lastHeard = Date.now();
     // The server sends every emit to every open page of the player (GUI and HUD), so the HUD takes only what is meant for it.
     if (isHud && envelope.kind !== 'SpectatorPanel') return;
     try { onPayload(envelope.kind, envelope.data); } catch (e) { console.error('[tower] handler for ' + envelope.kind, e); }

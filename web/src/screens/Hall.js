@@ -6,6 +6,7 @@ import { begin, goBack, goTo, setPage, setRecords, setTab, timeout } from '../re
 import { canSelect, regionOf } from '../lobby.js';
 import { Tracks, sendTrack } from './Tracks.js';
 import { Settings } from './Settings.js';
+import { Guide, firstVisit } from './Guide.js';
 import { requestMastery } from './Mastery.js';
 import { Features, sectionTitle, sendFeature, stepBack } from './Features.js';
 import { at, box, Card, Label, NB, Panel, screen, Shell, useScreen } from '../components/native.js';
@@ -57,6 +58,7 @@ function Footer({ hall, busy, status }) {
   return html`
     <${Label} x=${b.x} y=${b.status} w=${b.w} color="soft">${status}<//>
     <${NB} x=${b.x} y=${b.foot} w=${Math.min(95, Math.floor(b.w / 2))} kind="dark" icon="door" label=${resume ? 'Return to run' : 'Lobby'} disabled=${busy} onClick=${() => request(resume ? 'resume' : 'lobby')}>${resume ? 'Return to run' : 'Lobby'}<//>
+    <${NB} x=${b.x + Math.min(95, Math.floor(b.w / 2)) + 6} y=${b.foot} w=${50} kind="dark" onClick=${() => update((s) => (s.view === 'guide' ? s : goTo(s, 'guide')))}>Guide<//>
     <${NB} x=${b.x + b.w - 58} y=${b.foot} w=${58} kind="dark" disabled=${busy} onClick=${() => request('refresh')}>Refresh<//>`;
 }
 
@@ -115,6 +117,8 @@ export function Hall({ hall, tab, page, busy, view, pick }) {
   const tracks = useStore((s) => s.tracks);
   const records = useStore((s) => s.records);
   const fSection = useStore((s) => s.fSection);
+  // the guide opens by itself the first time this browser shows the Hall
+  useEffect(() => { if (view === 'hall' && firstVisit()) update((s) => (s.view === 'hall' ? goTo(s, 'guide') : s)); }, []);
   const onTab = (id) => {
     if (id === 'codex') return sendFeature('modifiers');
     if (id === 'echoes') return sendFeature('echoes');
@@ -125,11 +129,12 @@ export function Hall({ hall, tab, page, busy, view, pick }) {
     return undefined;
   };
   const status = !hall ? '' : hall.runStatus || (hall.play.lobby.role === 0 ? 'Choose a destination to begin.' : 'Your expedition lobby is available.');
-  const section = view === 'settings' ? 'Settings' : view === 'feature' ? sectionTitle(feature, fSection) : view === 'tower' ? 'Tower briefing' : view === 'trial' ? 'Trial briefing' : { towers: 'Tower Hall', trials: 'Trials', social: 'Social', progress: 'Progress' }[tab];
+  const section = view === 'settings' ? 'Settings' : view === 'guide' ? 'Guide' : view === 'feature' ? sectionTitle(feature, fSection) : view === 'tower' ? 'Tower briefing' : view === 'trial' ? 'Trial briefing' : { towers: 'Tower Hall', trials: 'Trials', social: 'Social', progress: 'Progress' }[tab];
   // A feature menu lights the rail tab it belongs to (Current Run, Codex, Echoes, Collection); the others are not on the rail.
   const active = view === 'feature' ? { run: 'run', modifiers: 'codex', relics: 'codex', echoes: 'echoes', collection: 'collection' }[fSection] || null : undefined;
   return html`<${Shell} section=${section} tab=${tab} active=${active} onTab=${onTab} onBack=${() => (view === 'hall' ? closeGui() : view === 'feature' ? stepBack(get().fui) : update(goBack))} onClose=${closeGui} onSettings=${() => update((s) => (s.view === 'settings' ? s : goTo(s, 'settings')))}>
     ${view === 'settings' ? html`<${Settings} />`
+      : view === 'guide' ? html`<${Guide} />`
       : view === 'feature' ? html`<${Features} />`
       : view === 'tower' ? html`<${TowerBriefing} hall=${hall} id=${pick} busy=${busy} />`
       : view === 'trial' ? html`<${TrialBriefing} hall=${hall} kind=${pick} busy=${busy} />`

@@ -197,6 +197,10 @@ public final class TrialService {
         }
 
         Kind kind = TrialSchedule.kindOf(instanceId).orElse(Kind.DAILY);
+        com.cobbletowers.mastery.TuningCounters.bump(server, "trial." + kind.name().toLowerCase(java.util.Locale.ROOT) + ".finished");
+        if (to == RunState.COMPLETED) {
+            com.cobbletowers.mastery.TuningCounters.bump(server, "trial." + kind.name().toLowerCase(java.util.Locale.ROOT) + ".completed");
+        }
         List<Member> team = new ArrayList<>();
         for (PersistedParticipant participant : run.participants()) team.add(MasteryService.member(server, participant.playerId()));
         Key key = new Key(Board.TRIAL, TrialSchedule.boardIdOf(instanceId).orElseThrow(),

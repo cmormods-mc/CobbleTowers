@@ -205,7 +205,7 @@ final class LobbyLaunch {
             ServerPlayer keyholder = server.getPlayerList().getPlayer(id);
             if (keyholder == null || TowerKeys.count(keyholder) < 1) {
                 plan.problems().add((keyholder == null ? "A teammate" : LobbyService.name(keyholder))
-                        + " needs a Tower Key");
+                        + " needs a Tower Key to start (ask a moderator if you have none)");
             }
         }
     }

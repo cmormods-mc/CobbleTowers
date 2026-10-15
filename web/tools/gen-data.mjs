@@ -28,5 +28,6 @@ export function genData(root) {
 
   // fabric.mod.json is a Gradle template: the one unquoted placeholder (the optional client entrypoint) is dropped before parsing.
   const version = JSON.parse(fs.readFileSync(path.join(root, 'src/main/resources/fabric.mod.json'), 'utf8').replace('${clientEntrypoint}', '')).version;
-  return { rental, species: [...species].sort(), version };
+  const guide = readJson(path.join(root, 'src/main/resources/data/cobbletowers/guide.json'));
+  return { rental, species: [...species].sort(), version, guide };
 }

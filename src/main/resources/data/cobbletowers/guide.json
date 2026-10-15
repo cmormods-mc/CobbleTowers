@@ -1,0 +1,52 @@
+{
+  "title": "How CobbleTowers works",
+  "sections": [
+    {
+      "heading": "The tower",
+      "lines": [
+        "Pick a tower in the Hall and open a lobby. A tower is a climb of floors; each floor is a battle against wild opponents, then a boss.",
+        "Floors 5 and 10 are milestones with bigger bosses. Some towers keep going into harder cycles (Ascension)."
+      ]
+    },
+    {
+      "heading": "Getting in",
+      "lines": [
+        "You need a Tower Key and a registered party of up to six Pokemon. Invite friends in the lobby and everyone readies up.",
+        "In Rental Draft mode you borrow a team instead, and your own Pokemon stay safe."
+      ]
+    },
+    {
+      "heading": "Between floors",
+      "lines": [
+        "At the intermission the team drafts a modifier (a harder floor for better rewards), can visit the vendor to heal or buy, and sometimes meets a room: Rest, Shrine, Forge, Library, Vault or Mystic Pool.",
+        "Relics from bosses and rooms help for the rest of the run (up to six). The team votes to keep climbing or cash out."
+      ]
+    },
+    {
+      "heading": "Rewards",
+      "lines": [
+        "Rewards are banked at milestone floors, when you cash out and when you finish the tower. Cashing out keeps what is banked and ends the run."
+      ]
+    },
+    {
+      "heading": "Daily and weekly trials",
+      "lines": [
+        "Each day and week has its own tower, built from a mix of regions with its own rules. Everyone gets the same one.",
+        "You get one scored attempt on each trial; later runs are practice. Daily trials build a streak, and weekly trials add a rule for the whole week."
+      ]
+    },
+    {
+      "heading": "Mastery and your name",
+      "lines": [
+        "Achievements in a tower raise your mastery level there. The icon and number beside your name show your best tower.",
+        "Pick which tower shows with /tower badge <tower>, or /tower badge off to hide it."
+      ]
+    },
+    {
+      "heading": "Useful commands",
+      "lines": [
+        "/tower opens the Hall. /tower help shows this guide in chat. /tower trial shows today's trials. /tower report <text> tells us about a problem or an idea."
+      ]
+    }
+  ]
+}

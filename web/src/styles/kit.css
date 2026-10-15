@@ -36,4 +36,5 @@
 @keyframes veil { from { opacity: 0; } }
 .toast { position: absolute; left: 50%; bottom: 10px; transform: translate(-50%, 140px); z-index: 40; transition: transform .25s; pointer-events: none; max-width: 760px; text-align: center; }
 .toast.show { transform: translate(-50%, 0); }
+.offline { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 50; padding: 8px 18px; background: #5a1b17; color: #f6dcc0; border: 3px solid #e3bd7f; font-size: 20px; pointer-events: none; }
 @keyframes glow { 50% { box-shadow: 0 0 0 4px var(--gold), 0 0 30px var(--gold); } }

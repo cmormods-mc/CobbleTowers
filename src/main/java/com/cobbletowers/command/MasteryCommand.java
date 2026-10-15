@@ -81,7 +81,9 @@ public final class MasteryCommand {
                                         .then(Commands.argument("tower", ResourceLocationArgument.id())
                                                 .executes(MasteryCommand::reset))))
                         .then(Commands.literal("report").executes(MasteryCommand::report))
-                        .then(Commands.literal("counters").executes(MasteryCommand::counters))
+                        .then(Commands.literal("counters").executes(context -> counters(context, ""))
+                                .then(Commands.argument("prefix", StringArgumentType.word())
+                                        .executes(context -> counters(context, StringArgumentType.getString(context, "prefix")))))
                         .then(Commands.literal("clearboards").executes(MasteryCommand::clearBoards))));
     }
 
@@ -238,13 +240,16 @@ public final class MasteryCommand {
         for (String line : com.cobbletowers.mastery.TuningReport.build(standings, achievements, attempts, boards)) {
             context.getSource().sendSuccess(() -> Component.literal(line), false);
         }
-        return counters(context);
+        return counters(context, "");
     }
 
     /** The balance tallies on their own (the full report is longer than an RCON reply holds). */
-    private static int counters(CommandContext<CommandSourceStack> context) {
+    /** {@code masteryadmin counters [prefix]}: every tally, or only those whose key starts with the prefix (an RCON reply is cut near 4 KB). */
+    private static int counters(CommandContext<CommandSourceStack> context, String prefix) {
         net.minecraft.server.MinecraftServer server = context.getSource().getServer();
-        for (String line : com.cobbletowers.mastery.TuningCounters.lines(com.cobbletowers.persistence.TowerCounterStore.get(server).all())) {
+        var all = new java.util.TreeMap<>(com.cobbletowers.persistence.TowerCounterStore.get(server).all());
+        if (!prefix.isEmpty()) all.keySet().removeIf(key -> !key.startsWith(prefix));
+        for (String line : com.cobbletowers.mastery.TuningCounters.lines(all)) {
             context.getSource().sendSuccess(() -> Component.literal(line), false);
         }
         return 1;

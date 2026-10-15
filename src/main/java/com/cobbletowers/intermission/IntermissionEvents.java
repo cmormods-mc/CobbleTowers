@@ -142,6 +142,13 @@ public final class IntermissionEvents {
         return !"off".equalsIgnoreCase(System.getProperty("cobbletowers.events", "on"));
     }
 
+    private static volatile Room FORCED_ROOM;
+
+    /** Dev build test seam: the next ordinary room is this one if it is eligible. */
+    public static void forceNextRoom(Room room) {
+        FORCED_ROOM = room;
+    }
+
     public static long seedOf(PersistedRun run, int floorIndex) {
         return EncounterSeed.of(run.seed(), floorIndex, EVENT_ORDINAL_BASE);
     }
@@ -162,6 +169,12 @@ public final class IntermissionEvents {
         if (!enabled()) return Optional.empty();
         if (content.milestoneAt(run.towerId(), floorIndex).isPresent()) {
             return echoAvailable ? Optional.of(Room.ECHO_DUEL) : Optional.empty();
+        }
+        // a dev build can ask for a particular room once (runs draft room), so a test can see every room live
+        Room asked = FORCED_ROOM;
+        if (asked != null) {
+            FORCED_ROOM = null;
+            return eligible(content, run, floorIndex, asked, balance) ? Optional.of(asked) : Optional.empty();
         }
         // a weekly rule (P46) can make every second floor a relic room, and can take Rest rooms away
         boolean relicFloor = floorIndex % 2 == 0 && TrialRules.hasRule(run, "relics_every_second_floor");

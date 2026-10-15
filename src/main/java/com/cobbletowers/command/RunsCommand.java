@@ -123,6 +123,11 @@ public final class RunsCommand {
                         .then(Commands.argument("card", IntegerArgumentType.integer(1, 9))
                                 .executes(RunsCommand::draftVote)));
         if (Dev.present()) draft.then(opOnRun("force", RunsCommand::draftForce));
+        if (Dev.present()) {
+            draft.then(op("room").then(Commands.argument("room", StringArgumentType.word())
+                    .suggests(suggesting(Arrays.stream(com.cobbletowers.intermission.IntermissionEvents.Room.values()).map(Enum::name).toList()))
+                    .executes(RunsCommand::draftRoom)));
+        }
         group.then(draft);
         return group;
     }
@@ -136,6 +141,8 @@ public final class RunsCommand {
                                 .executes(RunsCommand::grant))));
         group.then(op("list").executes(RunsCommand::list));
         group.then(opOnRun("show", RunsCommand::show));
+        // A moderator's way to end a run that is stuck (beta runbook): abandons it, or a run waiting for recovery.
+        group.then(opOnRun("abandon", RunsCommand::abandon));
         // Test tooling that drives the run machine by hand: dev build only.
         if (Dev.present()) {
             group.then(op("create")
@@ -562,6 +569,31 @@ public final class RunsCommand {
         return begun.byPlayer().size();
     }
 
+    /**
+     * {@code /cobbletowers runs abandon <run>}: ends a run an operator found stuck. A run waiting for recovery is
+     * abandoned the way recovery would; any other live run is abandoned as if its party had asked. Rewards that were
+     * banked stay banked; nothing else is paid.
+     */
+    private static int abandon(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        UUID runId = UuidArgument.getUuid(context, "run");
+        Optional<PersistedRun> found = TowerRuns.get(runId);
+        if (found.isEmpty()) {
+            source.sendFailure(Component.literal("No run " + runId + "."));
+            return 0;
+        }
+        RunEvent event = found.get().state() == RunState.RECOVERY_REQUIRED ? RunEvent.RECOVERY_ABANDONED : RunEvent.ABANDON_REQUESTED;
+        RunTransitionService.Outcome outcome = RunTransitionService.apply(source.getServer(), runId, event, System.currentTimeMillis());
+        if (outcome instanceof RunTransitionService.Move move) {
+            source.sendSuccess(() -> Component.literal("Run " + runId + " abandoned (" + move.from() + " -> " + move.next().state() + ").")
+                    .withStyle(ChatFormatting.GOLD), true);
+            return 1;
+        }
+        RunTransitionService.Refusal refusal = (RunTransitionService.Refusal) outcome;
+        source.sendFailure(Component.literal("Could not abandon it: " + refusal.reason() + ": " + refusal.detail()));
+        return 0;
+    }
+
     private static int advance(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         UUID runId = UuidArgument.getUuid(context, "run");
@@ -677,6 +709,20 @@ public final class RunsCommand {
     }
 
     /** Settles an open draft without waiting for the rest of the party. */
+    /** Dev build: the next ordinary intermission room is this one, if it is eligible. */
+    private static int draftRoom(CommandContext<CommandSourceStack> context) {
+        String raw = StringArgumentType.getString(context, "room");
+        try {
+            var room = com.cobbletowers.intermission.IntermissionEvents.Room.valueOf(raw.toUpperCase(Locale.ROOT));
+            com.cobbletowers.intermission.IntermissionEvents.forceNextRoom(room);
+            context.getSource().sendSuccess(() -> Component.literal("The next intermission room is " + room + " if it is eligible."), true);
+            return 1;
+        } catch (IllegalArgumentException ex) {
+            context.getSource().sendFailure(Component.literal("No room called " + raw + "."));
+            return 0;
+        }
+    }
+
     private static int draftForce(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         UUID runId = UuidArgument.getUuid(context, "run");

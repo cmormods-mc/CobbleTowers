@@ -16,7 +16,7 @@ export const initial = Object.freeze({
   spec: null, specAt: 0, // SpectatorPanel, for the HUD page, and when it last arrived
   mast: null,        // MasteryScreen (view 'mastery')
   reg: null,         // RegistrationState (the party chooser, view 'party')
-  view: 'hall',      // inside the hall screen: 'hall' | 'tower' | 'trial' | 'lobby' | 'party' | 'mastery' | 'settings'
+  view: 'hall',      // inside the hall screen: 'hall' | 'tower' | 'trial' | 'lobby' | 'party' | 'mastery' | 'settings' | 'guide'
   tab: 'towers',     // hall tab: 'towers' | 'trials' | 'social' | 'progress'
   page: 0,           // tower tile page in the hall
   pick: '',          // the tower id or trial kind a briefing shows
@@ -34,6 +34,7 @@ export const initial = Object.freeze({
   fUncertain: false, // no reply in time: refresh before another action
   ret: null,         // the screen a feature menu was opened over (e.g. 'intermission'), returned to when it closes
   fui: freshUi(),
+  offline: false,    // the page has heard nothing from the server for a while (a banner says so)
   notice: null,      // {text, id}: the last message the server attached to a payload
   noticeId: 0,
 });

@@ -84,6 +84,7 @@ public final class WebGuiBridge {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             SESSIONS.remove(handler.getPlayer().getUUID());
             LAST_TOO_LARGE.remove(handler.getPlayer().getUUID());
+            LAST_PONG.remove(handler.getPlayer().getUUID());
         });
         TowerLog.info("Tower screens can be shown through WebGUI at {} ({} mode)", loaded.url(), loaded.mode());
     }
@@ -175,6 +176,17 @@ public final class WebGuiBridge {
     // ---- page to server
     // ----------------------------------------------------------------------------------------------
 
+    private static final Map<UUID, Long> LAST_PONG = new ConcurrentHashMap<>();
+    /** The page says it has lost the server when it hears nothing for a while, so the server says something every few seconds. */
+    private static final long PONG_MILLIS = 4_000;
+
+    private static void pong(ServerPlayer player, long now) {
+        Long last = LAST_PONG.get(player.getUUID());
+        if (last != null && now - last < PONG_MILLIS) return;
+        LAST_PONG.put(player.getUUID(), now);
+        WebGuiLink.emit(player, "{\"kind\":\"Pong\",\"data\":{}}");
+    }
+
     /** Every message a page posts on the {@code cobbletowers} channel. Runs on the server thread. */
     static void onPage(ServerPlayer player, String raw) {
         JsonObject message;
@@ -192,7 +204,10 @@ public final class WebGuiBridge {
                     WebGuiLink.emit(player, missed);
                 }
             }
-            case "ping" -> SESSIONS.computeIfAbsent(player.getUUID(), id -> new PageSession()).ping(hud, now);
+            case "ping" -> {
+                SESSIONS.computeIfAbsent(player.getUUID(), id -> new PageSession()).ping(hud, now);
+                if (!hud) pong(player, now);
+            }
             case "bye" -> {
                 PageSession session = SESSIONS.get(player.getUUID());
                 if (session != null) session.bye(hud);

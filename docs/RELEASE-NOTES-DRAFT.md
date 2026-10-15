@@ -1,6 +1,6 @@
 # Release notes (draft, updated 2026-10-14)
 
-Version `0.28.1-p47-badge-pin`. Covers the work after commit `9688678`. Items marked **(unverified)** are written but have not been seen in a real client or a full
+Version `0.29.0-p48-beta-ready`. Covers the work after commit `9688678`. Items marked **(unverified)** are written but have not been seen in a real client or a full
 human run; do not publish them as done until the checklist in `docs/RELEASE-CHECKLIST.md` is ticked.
 
 ## For players
@@ -106,7 +106,7 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 **Requirements**
 - Deploy the CobbleTowers jar together with the AscensionLib jar (rentals are locked out of upgrades only when both are present).
 - Rewards that name CobblemonCards items need that mod on the server; a missing item is skipped with one log line, so players get less and nothing breaks.
-- The build version is now `0.28.1-p47-badge-pin`, so a server log shows which jar is running. Bump it for every deployed build.
+- The build version is now `0.29.0-p48-beta-ready`, so a server log shows which jar is running. Bump it for every deployed build.
 
 ## For addon authors
 - Mastery tracks and season steps are data. Add rewards and ranks with a datapack; files merge, they do not replace. See `docs/TRACKS-GUIDE.md`.

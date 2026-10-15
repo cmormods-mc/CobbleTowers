@@ -134,6 +134,8 @@ public final class RunTransitionService {
             TowerRuns.save(server, move.next(), move.checkpoint());
             TowerLog.info("Run {} {} -> {} on {}{}", runId, move.from(), move.next().state(), event,
                     move.checkpoint() ? " [checkpoint " + move.key() + "]" : "");
+            // Beta telemetry and the per-run history a player report reads (P48); never disturbs the run.
+            com.cobbletowers.report.RunTelemetry.onTransition(server, runId, move.from(), move.next().state(), event);
             // The physical vendor stands only for an intermission (P28), so it goes the moment the run leaves one.
             if (move.from() == RunState.INTERMISSION) {
                 com.cobbletowers.vendor.VendorNpc.despawn(server, run);

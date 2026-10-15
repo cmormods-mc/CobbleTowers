@@ -46,6 +46,7 @@ export function App() {
   const vendor = useStore((s) => s.vendor);
   const vendorOpen = useStore((s) => s.vendorOpen);
   const notice = useStore((s) => s.notice);
+  const offline = useStore((s) => s.offline);
   const hall = useStore((s) => s.hall);
   const play = useStore((s) => s.play);
   const reg = useStore((s) => s.reg);
@@ -77,6 +78,7 @@ export function App() {
         : html`<${Waiting} />`}
       ${reward ? html`<${RewardModal} reward=${reward} onClose=${closeRewardNow} />`
         : vendorOpen && vendor ? html`<${VendorModal} vendor=${vendor} onClose=${() => update((s) => openVendor(s, false))} />` : null}
+      ${offline ? html`<div class="offline">Lost contact with the server. Waiting for it to answer...</div>` : null}
       <${Toast} notice=${notice} />
     </div>`;
 }

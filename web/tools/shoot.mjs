@@ -48,6 +48,9 @@ export const SHOTS = {
   mastery_board: { payloads: [fixture('TowerHallState'), fixture('MasteryScreen'), ['MasteryScreen', fixture('MasteryBoard')[1]]] },
   scouting: { payloads: [fixture('ScoutingReveal')] },
   spectator: { payloads: [fixture('SpectatorPanel')], hud: true },
+  offline: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.evaluate(() => window.TowerDev.update((s) => ({ ...s, offline: true }))); } },
+  guide_first: { payloads: [fixture('TowerHallState')] },
+  guide: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.click('button:has-text("Guide")'); } },
   settings: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.click('button:has-text("Settings")'); } },
   current_run: { payloads: [fixture('TowerHallState'), fixture('TowerFeatureState', (d) => { d.requestId = 0; d.section = 'run'; d.title = 'Current Run'; d.actions = []; d.entries = [
     { id: 'run', title: 'This run', lines: ['Neutral Tower, floor 6 (Ascension 1)', 'Difficulty rating: Hard (7): 3 challenges, Ascension 1', '[+] Risk carried: +20% to your final payout.', '3 modifiers, 2 relics (room for 6).'], actions: [] },
@@ -73,6 +76,8 @@ for (const [name, shot] of Object.entries(SHOTS)) {
   const page = await browser.newPage({ viewport: { width: +(process.env.W || 1280), height: +(process.env.H || 720) } });
   page.on('console', (m) => { if (m.type() === 'error') console.log(`[${name}] console error: ${m.text()}`); });
   page.on('pageerror', (e) => console.log(`[${name}] page error: ${e.message}`));
+  // the Hall opens its guide by itself the first time; every shot but the guide's own has seen it
+  if (name !== 'guide_first') await page.addInitScript(() => { try { localStorage.setItem('cobbletowers.guideSeen', '1'); } catch (err) { /* none */ } });
   await page.goto(pathToFileURL(dist).href + (shot.hud ? '#hud' : ''));
   await page.waitForFunction(() => window.TowerDev);
   for (const [kind, data] of shot.payloads) await page.evaluate(([k, d]) => window.TowerDev.dispatch(k, d), [kind, data]);

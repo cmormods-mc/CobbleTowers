@@ -31,3 +31,12 @@ test('the badge controls name the tower on the name and offer pin, unpin or noth
   assert.equal(badgeView(auto, 'a').button.action, 'pin');
   assert.deepEqual(badgeView(towers.map((t) => ({ ...t, badge: 0 })), 'a').line, 'off');
 });
+
+test('the guide has a title, sections and short lines, and flattens in reading order', async () => {
+  const { guideLines } = await import('../src/screens/Guide.js');
+  const lines = guideLines({ title: 'T', sections: [{ heading: 'A', lines: ['one', 'two'] }, { heading: 'B', lines: ['three'] }] });
+  assert.deepEqual(lines.map((l) => l.kind + ':' + l.text), ['title:T', 'heading:A', 'line:one', 'line:two', 'heading:B', 'line:three']);
+  const real = guideLines();
+  assert.ok(real.length > 10);
+  assert.ok(real.every((l) => l.text.length > 0 && l.text.length < 260), 'every guide line is short enough to read');
+});

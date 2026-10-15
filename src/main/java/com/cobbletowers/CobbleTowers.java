@@ -61,6 +61,7 @@ public final class CobbleTowers implements ModInitializer {
                 com.cobbletowers.command.SeasonCommand.registerAdmin(dispatcher);
                 com.cobbletowers.command.TrackCommand.registerAdmin(dispatcher);
                 com.cobbletowers.command.CosmeticsCommand.registerAdmin(dispatcher);
+                com.cobbletowers.command.ReportCommand.registerAdmin(dispatcher);
                 CellsCommand.register(dispatcher);
                 DiagnosticsCommand.register(dispatcher);
                 Dev.registerCommands(dispatcher);
@@ -115,6 +116,7 @@ public final class CobbleTowers implements ModInitializer {
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.SeasonTrackRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.MasteryTrackRegistry());
         com.cobbletowers.track.TrackConfig.install();
+        com.cobbletowers.report.BetaConfig.install();
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.ContractTemplateRegistry());
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.definition.RentalSetRegistry());
         // Armor sets (P24): the items must exist before any datapack loads; what they do is data.
