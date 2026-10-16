@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Generates the placeholder art for the P24 armor sets: layer textures, item icons, item models.
+"""Generates the item models for the P24 armor sets. The layer textures and icons are made by
+tools/generate_armor_textures.py (P49); the placeholder painters below are kept only as history.
+
+Original description: layer textures, item icons, item models.
 
     python tools/generate_armor_art.py            # writes under src/main/resources/assets/cobbletowers
 
@@ -178,13 +181,10 @@ def main() -> int:
     (textures / "item").mkdir(parents=True, exist_ok=True)
     (ROOT / "models/item").mkdir(parents=True, exist_ok=True)
     for set_id in PALETTES:
-        for number in (1, 2):
-            layer(set_id, number).save(textures / f"models/armor/{set_id}_layer_{number}.png")
         for slot in SLOTS:
-            icon(set_id, slot).save(textures / f"item/{set_id}_{slot}.png")
             model = {"parent": "minecraft:item/generated", "textures": {"layer0": f"cobbletowers:item/{set_id}_{slot}"}}
             (ROOT / f"models/item/{set_id}_{slot}.json").write_text(json.dumps(model, indent=2) + "\n", encoding="utf-8")
-    print(f"wrote {len(PALETTES)} sets: {len(PALETTES) * 2} layer textures, {len(PALETTES) * len(SLOTS)} icons and models")
+    print(f"wrote {len(PALETTES) * len(SLOTS)} item models")
     return 0
 
 
