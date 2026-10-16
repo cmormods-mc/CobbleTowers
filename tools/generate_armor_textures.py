@@ -81,7 +81,7 @@ def material(cv, x, y, w, h, look, tone=0.0):
     if p == "lames":
         cv.lames(x, y, w, h, look.metal, max(2, h // T(2.6)))
     elif p == "scales":
-        cv.scales(x, y, w, h, look.metal, T(4.4), tone_top=0.18)
+        cv.scales(x, y, w, h, look.metal, T(5.6), tone_top=0.12)
     elif p == "planks":
         cv.planks(x, y, w, h, look.metal, T(1.6), seed=look.seed + x)
     elif p == "mail":
@@ -387,7 +387,7 @@ def main():
             (args.out / f"models/armor/{name}_layer_{number}.polymer.json").write_text(METADATA, encoding="utf-8")
         (args.out / "item").mkdir(parents=True, exist_ok=True)
         for slot in ("helmet", "chestplate", "leggings", "boots"):
-            armor_icons.make_icon(l1, l2, slot, look.metal[0], look.metal[1]).save(args.out / f"item/{name}_{slot}.png")
+            armor_icons.make_icon(l1, l2, slot, look.metal[0], look.metal[1], look).save(args.out / f"item/{name}_{slot}.png")
         print("wrote", name)
 
 

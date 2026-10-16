@@ -171,7 +171,7 @@ class Cv:
                 m = sh.mask()
                 clip = np.zeros_like(m)
                 clip[max(0, y):min(self.h, y + h), max(0, x):min(self.w, x + w)] = True
-                self.plate(m & clip, rp, tone=tone, split=False, hot=False)
+                self.plate(m & clip, rp, tone=tone, split=False, hot=False, bevel=0)
 
     def planks(self, x, y, w, h, rp, plank, seed=1, knots=True):
         """Vertical bark planks with seams, grain dashes and knots."""

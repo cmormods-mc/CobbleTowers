@@ -80,7 +80,39 @@ def _edge_shade(img: Image.Image, light, dark) -> Image.Image:
     return out
 
 
-def make_icon(l1: Image.Image, l2: Image.Image, slot: str, outline, interior) -> Image.Image:
+def _band(canvas, x0, x1, y, rp):
+    """A trim band: light top row, base below."""
+    cp = canvas.load()
+    for x in range(x0, x1):
+        cp[x, y] = (*rp[4], 255)
+        cp[x, y + 1] = (*rp[3], 255)
+
+
+def _leggings_detail(canvas, look):
+    cp = canvas.load()
+    _band(canvas, 8, 24, 4, look.trim)  # belt
+    for x in (15, 16):
+        cp[x, 4] = (*look.trim[5], 255)
+        cp[x, 5] = (*look.trim[4], 255)
+    for x0 in (8, 17):  # knee plates and cuffs
+        for x in range(x0 + 1, x0 + 6):
+            cp[x, 16] = (*look.metal[4], 255)
+            cp[x, 17] = (*look.metal[3], 255)
+            cp[x, 18] = (*look.metal[2], 255)
+        _band(canvas, x0, x0 + 6, 26, look.trim)
+
+
+def _boots_detail(canvas, look):
+    cp = canvas.load()
+    for dx in (0, 15):
+        _band(canvas, 6 + dx, 14 + dx, 9, look.trim)  # cuff
+        for x in range(2 + dx, 14 + dx):  # sole
+            cp[x, 23] = (*look.dark[1], 255)
+        for x in range(2 + dx, 6 + dx):  # toe cap
+            cp[x, 21] = (*look.metal[4], 255)
+
+
+def make_icon(l1: Image.Image, l2: Image.Image, slot: str, outline, interior, look=None) -> Image.Image:
     canvas = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     if slot == "helmet":
         front = _fit(_region(l1, 16, 16, 16, 16), 20, 20)
@@ -106,20 +138,24 @@ def make_icon(l1: Image.Image, l2: Image.Image, slot: str, outline, interior) ->
                    [(31, 8), (28, 5), (24, 5), (24, 23), (26, 24), (31, 22)]])
         _composite(canvas, tmp, m, (0, 0), interior)
     elif slot == "leggings":
-        waist = _fit(_region(l2, 40, 58, 16, 6), 16, 5)
-        leg = _fit(_region(l2, 8, 40, 8, 24), 7, 19)
+        leg = _fit(_region(l2, 8, 40, 8, 24), 7, 21)
         tmp = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-        tmp.paste(leg, (8, 8))
-        tmp.paste(leg.transpose(Image.FLIP_LEFT_RIGHT), (17, 8))
-        tmp.paste(waist, (8, 4))
-        m = _mask([[(8, 4), (24, 4), (24, 9), (24, 28), (17, 28), (17, 13), (15, 13), (15, 28), (8, 28), (8, 9)]])
+        tmp.paste(leg, (8, 7))
+        tmp.paste(leg.transpose(Image.FLIP_LEFT_RIGHT), (17, 7))
+        m = _mask([[(8, 4), (24, 4), (24, 10), (23, 28), (17, 28), (16, 14), (15, 14), (14, 28), (9, 28), (8, 10)]])
         _composite(canvas, tmp, m, (0, 0), interior)
-    else:  # boots
-        boot = _fit(_region(l1, 8, 56, 8, 8), 11, 10)
+        if look is not None:
+            _leggings_detail(canvas, look)
+    else:  # boots: side view, shaft and a toe that points left
+        boot = _fit(_region(l1, 0, 40, 8, 24).crop((0, 8, 8, 24)), 10, 14)
         tmp = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-        tmp.paste(boot, (3, 14))
-        tmp.paste(boot, (18, 14))
-        m = _mask([[(3, 14), (14, 14), (14, 24), (2, 24), (2, 20), (3, 18)], [(18, 14), (29, 14), (29, 24), (17, 24), (17, 20), (18, 18)]])
+        for x0 in (2, 17):
+            tmp.paste(boot, (x0 + 4, 9))
+            tmp.paste(_fit(_region(l1, 0, 56, 8, 8), 14, 6), (x0, 20))
+        shape = [(6, 9), (14, 9), (14, 24), (2, 24), (2, 21), (6, 20)]
+        m = _mask([shape, [(x + 15, y) for x, y in shape]])
         _composite(canvas, tmp, m, (0, 0), interior)
+        if look is not None:
+            _boots_detail(canvas, look)
     canvas = _edge_shade(canvas, None, None)
     return _outline(canvas, outline)

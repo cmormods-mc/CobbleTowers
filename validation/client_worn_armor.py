@@ -108,13 +108,21 @@ def main() -> None:
         rcon(f"effect give {VIEWER} minecraft:invisibility 999 0 true")
         for who in (VIEWER, BOT):
             print(who, rcon(f"data get entity {who} Dimension")[:120], rcon(f"data get entity {who} Pos")[:120])
+        # place the viewer around where the bot really stands (physics can nudge it off the teleport spot)
+        found = re.findall(r"-?\d+\.\d+", rcon(f"data get entity {BOT} Pos"))
+        bx, bz = (float(found[0]), float(found[2])) if len(found) >= 3 else (0.0, 0.0)
+        rcon(OW + f"tp {VIEWER} {bx:.2f} 200 {bz + 3.6:.2f} 180 8")
+        time.sleep(6)  # the first teleport after joining is interpolated slowly on the client
         for set_id in args.sets.split(","):
             for slot, piece in SLOTS:
                 rcon(f"item replace entity {BOT} armor.{slot} with cobbletowers:{set_id}_{piece}")
             time.sleep(1)
             for name, dx, dz, yaw in VIEWS:
-                rcon(OW + f"tp {VIEWER} {dx} 200 {dz} {yaw} 8")
+                rcon(OW + f"tp {VIEWER} {bx + dx:.2f} 200 {bz + dz:.2f} {yaw} 8")
                 time.sleep(1.6)
+                if os.environ.get("CAPTURE_DEBUG"):
+                    for who in (VIEWER, BOT):
+                        print("  ", who, rcon(f"data get entity {who} Pos")[-60:], rcon(f"data get entity {who} Rotation")[-40:])
                 shot = out / f"{set_id}_{name}.png"
                 done = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HERE / "capture_window.ps1"), "-Out", str(shot)],
                                       check=False, capture_output=True, text=True)
