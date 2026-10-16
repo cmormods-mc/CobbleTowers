@@ -133,28 +133,45 @@ public final class AscensionLibRewards {
     }
 
     /** One call to the library, then the entry is trimmed to whoever is still owed (or removed). */
-    private static void attempt(MinecraftServer server, TowerLibSettlementStore store, PendingLibSettlement settlement) {
-        Map<?, ?> statuses = invoke(settlement);
-        // The completion's armor and packs are queued (idempotently) before the settlement is trimmed, so a crash in between repeats them harmlessly.
-        if (statuses != null && settlement.kind() == PendingLibSettlement.Kind.COMPLETION) handOverExtras(server, settlement, statuses);
-        Optional<PendingLibSettlement> remaining = settlement.afterAttempt(statuses);
-        remaining.ifPresentOrElse(store::put, () -> store.remove(settlement));
+    private static void attempt(MinecraftServer server, TowerLibSettlementStore store, PendingLibSettlement submitted) {
+        PendingLibSettlement settlement = submitted;
+        Map<?, ?> statuses = invoke(submitted);
+        // The completion's armor and packs, in this order so a crash anywhere repeats nothing and loses nothing: (1) queue them for each newly paid player and
+        // write the queue; (2) write the settlement marked "extras paid" for those players; only then (3) hand the queue over. A crash before (2) leaves the items
+        // queued and undelivered, so the retry finds them there (addIfAbsent); a crash after (2) is skipped by the mark.
+        java.util.List<UUID> toDeliver = java.util.List.of();
+        if (statuses != null && settlement.kind() == PendingLibSettlement.Kind.COMPLETION) {
+            toDeliver = queueExtras(server, settlement, statuses);
+            if (!toDeliver.isEmpty()) {
+                settlement = settlement.withExtrasPaid(toDeliver);
+                store.put(settlement);
+                store.checkpoint(server);
+                deliverQueued(server, toDeliver);
+            }
+        }
+        final PendingLibSettlement settled = settlement;
+        Optional<PendingLibSettlement> remaining = settled.afterAttempt(statuses);
+        remaining.ifPresentOrElse(store::put, () -> store.remove(settled));
         if (statuses != null) {
             statuses.forEach((player, status) -> {
                 // GRANTED and ALREADY_GRANTED are the normal answers; anything else is worth one line.
                 // A retry that fails the same way again is not said again, or a refused wallet fills the log.
-                boolean fresh = settlement.attempts() == 0 || remaining.isEmpty();
+                boolean fresh = settled.attempts() == 0 || remaining.isEmpty();
                 if (fresh && !"GRANTED".equals(String.valueOf(status)) && !"ALREADY_GRANTED".equals(String.valueOf(status))) {
-                    TowerLog.warn("AscensionLib {} for encounter {}: player {} -> {}{}", settlement.kind(),
-                            settlement.encounterId(), player, status,
+                    TowerLog.warn("AscensionLib {} for encounter {}: player {} -> {}{}", settled.kind(),
+                            settled.encounterId(), player, status,
                             remaining.isPresent() ? " (will retry)" : "");
                 }
             });
         }
     }
 
-    /** Queues each paid player's armor pieces and booster packs from the tower's reward table; the next delivery hands them over. */
-    private static void handOverExtras(MinecraftServer server, PendingLibSettlement settlement, Map<?, ?> statuses) {
+    /**
+     * Queues each paid player's armor pieces and booster packs from the tower's reward table (skipping anyone already marked in {@code extrasPaid}) and writes the queue
+     * to disk. Returns the players it queued for; delivery is a separate step, after the settlement records them.
+     */
+    private static java.util.List<UUID> queueExtras(MinecraftServer server, PendingLibSettlement settlement, Map<?, ?> statuses) {
+        var queued = new java.util.ArrayList<UUID>();
         try {
             var content = com.cobbletowers.definition.TowerDefinitionRegistry.content();
             var towerId = net.minecraft.resources.ResourceLocation.tryParse(settlement.towerId());
@@ -162,12 +179,12 @@ public final class AscensionLibRewards {
             var table = tower == null ? null : content.rewardTables().get(tower.rewardTableId());
             if (table == null) {
                 TowerLog.warn("Completion {}: tower {} or its reward table is gone; no armor or packs handed over", settlement.encounterId(), settlement.towerId());
-                return;
+                return queued;
             }
             var queue = com.cobbletowers.persistence.TowerPendingRewardStore.get(server);
             long now = System.currentTimeMillis();
-            var paid = new java.util.ArrayList<UUID>();
             for (UUID player : settlement.players()) {
+                if (settlement.extrasPaid().contains(player)) continue;
                 String status = String.valueOf(statuses.get(player));
                 if (!"GRANTED".equals(status) && !"ALREADY_GRANTED".equals(status)) continue;
                 Map<?, ?> extras = extras(settlement, player);
@@ -178,15 +195,25 @@ public final class AscensionLibRewards {
                     queue.addIfAbsent(player, new com.cobbletowers.persistence.PendingTowerReward(settlement.encounterId(),
                             Math.max(1, settlement.bossFloor()), item, 1, now));
                 }
-                paid.add(player);
+                queued.add(player);
             }
             queue.checkpoint(server);
-            for (UUID player : paid) {
-                var online = server.getPlayerList().getPlayer(player);
-                if (online != null) com.cobbletowers.reward.RewardDelivery.deliver(server, online);
-            }
         } catch (RuntimeException ex) {
-            TowerLog.error("Completion {}: handing over armor and packs failed", settlement.encounterId(), ex);
+            TowerLog.error("Completion {}: queueing armor and packs failed; will retry", settlement.encounterId(), ex);
+            return java.util.List.of();
+        }
+        return queued;
+    }
+
+    private static void deliverQueued(MinecraftServer server, java.util.List<UUID> players) {
+        for (UUID player : players) {
+            var online = server.getPlayerList().getPlayer(player);
+            if (online == null) continue;
+            try {
+                com.cobbletowers.reward.RewardDelivery.deliver(server, online);
+            } catch (RuntimeException ex) {
+                TowerLog.error("Delivering completion rewards to {} failed; they stay queued for the next login", player, ex);
+            }
         }
     }
 

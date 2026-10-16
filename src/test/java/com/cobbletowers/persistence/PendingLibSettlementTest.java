@@ -103,4 +103,28 @@ class PendingLibSettlementTest {
                 true, List.of(A), 5L, 2);
         assertEquals(drops, PendingLibSettlement.fromTag(drops.toTag()));
     }
+
+    @Test
+    @DisplayName("the players whose armor and packs are queued are remembered through the disk round trip and a retry, and marking one twice does nothing")
+    void extrasPaidSurvivesTheTagAndRetries() {
+        var completion = new PendingLibSettlement(UUID.randomUUID(), PendingLibSettlement.Kind.COMPLETION, "VICTORY", 4, 10, true,
+                List.of(A, B), 1000L, 0, 2, "cobbletowers:tideforge");
+        assertEquals(List.of(), completion.extrasPaid());
+        var marked = completion.withExtrasPaid(List.of(A)).withExtrasPaid(List.of(A));
+        assertEquals(List.of(A), marked.extrasPaid(), "marking the same player twice changes nothing");
+        assertEquals(marked, PendingLibSettlement.fromTag(marked.toTag()), "and it is written to disk");
+        var retry = marked.afterAttempt(Map.of(A, "GRANTED", B, "DISABLED")).orElseThrow();
+        assertEquals(List.of(A), retry.extrasPaid(), "a retry still knows A's extras are queued");
+        assertEquals(List.of(B), retry.players());
+        var more = retry.withExtrasPaid(List.of(B));
+        assertEquals(List.of(A, B), more.extrasPaid());
+    }
+
+    @Test
+    @DisplayName("a settlement saved before extras were tracked still loads with nobody marked")
+    void oldTagsHaveNoExtrasMarks() {
+        var tag = milestone().toTag();
+        tag.remove("extras_paid");
+        assertEquals(List.of(), PendingLibSettlement.fromTag(tag).extrasPaid());
+    }
 }

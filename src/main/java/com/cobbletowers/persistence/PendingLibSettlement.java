@@ -21,7 +21,7 @@ import net.minecraft.nbt.Tag;
  */
 public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, int fromFloor, int bossFloor,
                                    boolean keenEyeFloor, List<UUID> players, long createdAt, int attempts,
-                                   int cycle, String towerId) {
+                                   int cycle, String towerId, List<UUID> extrasPaid) {
 
     /**
      * TRIAL carries its rank (1-3) in {@code bossFloor}. COMPLETION is a tower cycle's champion: it carries the run's
@@ -33,7 +33,13 @@ public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, 
     /** Every kind but a completion, which is the only one that needs a cycle and a tower. */
     public PendingLibSettlement(UUID encounterId, Kind kind, String outcome, int fromFloor, int bossFloor,
                                 boolean keenEyeFloor, List<UUID> players, long createdAt, int attempts) {
-        this(encounterId, kind, outcome, fromFloor, bossFloor, keenEyeFloor, players, createdAt, attempts, 0, "");
+        this(encounterId, kind, outcome, fromFloor, bossFloor, keenEyeFloor, players, createdAt, attempts, 0, "", List.of());
+    }
+
+    /** A completion as it is first submitted: nobody's armor and packs have been queued yet. */
+    public PendingLibSettlement(UUID encounterId, Kind kind, String outcome, int fromFloor, int bossFloor,
+                                boolean keenEyeFloor, List<UUID> players, long createdAt, int attempts, int cycle, String towerId) {
+        this(encounterId, kind, outcome, fromFloor, bossFloor, keenEyeFloor, players, createdAt, attempts, cycle, towerId, List.of());
     }
 
     /** How long an unpaid settlement is kept trying before it is given up on and logged. */
@@ -45,6 +51,17 @@ public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, 
         Objects.requireNonNull(outcome, "outcome");
         players = List.copyOf(players);
         towerId = towerId == null ? "" : towerId;
+        extrasPaid = extrasPaid == null ? List.of() : List.copyOf(extrasPaid);
+    }
+
+    /**
+     * This settlement with more players marked as having had their completion armor and packs queued. Written to disk before the queue is delivered, so a crash and a
+     * retry after the library already paid can never queue the same pieces twice ({@code extrasPaid} outlives the player leaving {@code players}).
+     */
+    public PendingLibSettlement withExtrasPaid(java.util.Collection<UUID> more) {
+        var all = new ArrayList<>(extrasPaid);
+        for (UUID player : more) if (!all.contains(player)) all.add(player);
+        return new PendingLibSettlement(encounterId, kind, outcome, fromFloor, bossFloor, keenEyeFloor, players, createdAt, attempts, cycle, towerId, all);
     }
 
     /** The statuses that mean "not paid yet, try again": the library was unavailable, or the wallet refused. */
@@ -66,7 +83,7 @@ public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, 
         }
         if (remaining.isEmpty()) return Optional.empty();
         return Optional.of(new PendingLibSettlement(encounterId, kind, outcome, fromFloor, bossFloor, keenEyeFloor,
-                remaining, createdAt, attempts + 1, cycle, towerId));
+                remaining, createdAt, attempts + 1, cycle, towerId, extrasPaid));
     }
 
     public boolean expired(long now) {
@@ -93,14 +110,21 @@ public record PendingLibSettlement(UUID encounterId, Kind kind, String outcome, 
         tag.putInt("attempts", attempts);
         tag.putInt("cycle", cycle);
         if (!towerId.isEmpty()) tag.putString("tower", towerId);
+        if (!extrasPaid.isEmpty()) {
+            ListTag paid = new ListTag();
+            for (UUID player : extrasPaid) paid.add(NbtUtils.createUUID(player));
+            tag.put("extras_paid", paid);
+        }
         return tag;
     }
 
     public static PendingLibSettlement fromTag(CompoundTag tag) {
         List<UUID> players = new ArrayList<>();
         for (Tag entry : tag.getList("players", Tag.TAG_INT_ARRAY)) players.add(NbtUtils.loadUUID(entry));
+        List<UUID> paid = new ArrayList<>();
+        for (Tag entry : tag.getList("extras_paid", Tag.TAG_INT_ARRAY)) paid.add(NbtUtils.loadUUID(entry));
         return new PendingLibSettlement(tag.getUUID("encounter"), Kind.valueOf(tag.getString("kind")),
                 tag.getString("outcome"), tag.getInt("from"), tag.getInt("boss"), tag.getBoolean("keen_eye"), players,
-                tag.getLong("created_at"), tag.getInt("attempts"), tag.getInt("cycle"), tag.getString("tower"));
+                tag.getLong("created_at"), tag.getInt("attempts"), tag.getInt("cycle"), tag.getString("tower"), paid);
     }
 }
