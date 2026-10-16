@@ -39,7 +39,23 @@ SLOTS = (("head", "helmet"), ("chest", "chestplate"), ("legs", "leggings"), ("fe
 VIEWS = (("front", 0, 3.6, 180), ("side", 3.6, 0, 90), ("back", 0, -3.6, 0), ("side2", -3.6, 0, -90))
 
 
+def wait_for_pack(pack: Path) -> None:
+    """The server may still be writing the pack after a restart; a half-written zip makes the client drop it."""
+    import zipfile
+    for _ in range(120):
+        try:
+            if time.time() - pack.stat().st_mtime > 6 and zipfile.is_zipfile(pack):
+                with zipfile.ZipFile(pack) as z:
+                    if z.testzip() is None:
+                        return
+        except OSError:
+            pass
+        time.sleep(2)
+    sys.exit("the resource pack never settled")
+
+
 def prepare(game: Path, rig: Path, pack: Path, gui_scale: int) -> None:
+    wait_for_pack(pack)
     shutil.rmtree(game / "mods", ignore_errors=True)
     (game / "mods").mkdir(parents=True)
     for pattern in ("fabric-api-*.jar", "Cobblemon-*.jar"):

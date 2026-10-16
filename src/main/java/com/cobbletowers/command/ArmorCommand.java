@@ -45,6 +45,19 @@ public final class ArmorCommand {
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.literal("show")
                                 .then(Commands.argument("player", EntityArgument.player()).executes(ArmorCommand::show)))
+                        .then(Commands.literal("worn")
+                                .executes(context -> {
+                                    context.getSource().sendSuccess(() -> Component.literal(com.cobbletowers.armor.worn.WornModelService.stats()), false);
+                                    return 1;
+                                })
+                                .then(Commands.literal("reload").executes(context -> {
+                                    com.cobbletowers.armor.worn.WornModelService.reload();
+                                    return 1;
+                                }))
+                                .then(Commands.literal("reset").executes(context -> {
+                                    com.cobbletowers.armor.worn.WornModelService.resetStats();
+                                    return 1;
+                                })))
                         .then(Commands.literal("probe")
                                 .then(Commands.argument("player", EntityArgument.player()).executes(ArmorCommand::probe)))
                         .then(Commands.literal("points")

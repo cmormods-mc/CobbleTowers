@@ -139,3 +139,39 @@ no CobbleTowers/CobbleRaids/AscensionLib jar): all 12 sets, front and back, no a
 
 Still open: the 3D worn parts (section 2) are not started; the Tideforge spike is next. Leggings and boots icons are plain, and
 Tideforge's scale pattern is a little noisy.
+
+## 10. Tideforge 3D spike (2026-10-16): result
+
+Built behind `config/cobbletowers-armor.json` (off by default until the pack-delivery path is verified): `com.cobbletowers.armor.worn`
+(`WornModelService`, `WornPart`, `WornConfig`), the sculpting DSL `tools/worn_model.py`, `tools/generate_worn_models.py` (Tideforge crest
+plus pauldrons, one 128x64 atlas), and the real-client scripts `validation/client_worn_parts.py` (poses, lifecycle),
+`client_worn_motion.py` (bursts: spin, sneak, walk, fast spin) and `worn_cost_test.py` (N wearers, parts on versus off).
+Admin: `/cobbletowers armor worn [reset|reload]`.
+
+Verified in a stock-style client (no CobbleTowers jar), photographed:
+
+* **Works.** One `ElementHolder` per wearer, `EntityAttachment.ofTicking`, item displays on Polymer's paper with custom model data.
+  The crest rides the head (yaw and pitch), the pauldrons ride the body (yaw, sneak lean). Fast spin (344 deg/s) keeps the parts on
+  the head with `smoothing_ticks` 0, 2 or 3; 2 is the default. Parts reappear after a dimension change and after death and respawn;
+  swimming, gliding, sleeping and crawling hide them (the body lies down, which cannot be followed).
+* **Calibration, learned the hard way.** Display entities rotate with `yaw + 180` and `-pitch`. The player model is drawn at 15/16
+  scale, so parts are scaled 0.9375 and the neck sits at 1.40625 blocks, not 1.5 (without it the crest floated 1.5 units up). A
+  texture is only stitched into the atlas from `textures/item` or `textures/block`, so the part atlas lives in `textures/item/worn/`.
+* **Cost.** 18 wearers each seen by 17 others (306 watchers): about 0.6 ms per tick, about 34 us per wearer, of which the
+  service's own update is 5 us in total; the rest is Polymer's position and rotation packets. Cost grows with wearers times viewers
+  in range, so a crowd in one place is the case to cap (`maxWearers` is still to add).
+* **Owner hiding.** `hide_from_owner` (default true) keeps the holder from starting on the owner's own connection; server-side the
+  watcher counts are exactly the other players. Not photographed from the owner's client.
+
+Not proven, and why the config stays off:
+
+* **Pack status.** Parts are shown only to clients Polymer reports as having the pack (`hasMainPack`). The test client installs the
+  pack by hand, so the rig runs with `require_pack` false. Through the real auto-host route a viewer whose pack finishes loading
+  after the wearer is already tracked would miss the parts until the wearer is tracked again; the fix is a scan that starts the
+  holders for such a viewer when their pack status turns true. Needs a live test with the auto-host.
+* Riding, elytra take-off, first-person arms with parts at the screen edge, Iris shaders, other player-model mods.
+* **Art scale.** The parts are small next to the 2x shader layer: the crest is a thin blade from the front and the pauldrons read as
+  small plates. A go decision needs larger silhouettes per set (horns, fins, antlers) and a look check from the front.
+
+Go/no-go: go for helmet and shoulder parts; legs and boots stay 2D. Next: pack-status scan, `maxWearers` and `update_ticks` 2 for
+distant viewers, larger Tideforge silhouettes, then the other eleven sets by the same DSL.
