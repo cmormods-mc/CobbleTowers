@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
+import armor_paint
 from armor_paint import Cv
 
 SCALE = 2          # atlas texels per model unit
@@ -28,6 +29,7 @@ class Box:
     to: tuple
     material: str = "metal"
     skip: tuple = ()  # faces not drawn (hidden against the body)
+    rot: tuple | None = None  # (axis, angle in 22.5 steps, origin) as vanilla allows one axis per element
 
 
 @dataclass
@@ -35,14 +37,18 @@ class Part:
     name: str
     boxes: list = field(default_factory=list)
 
-    def box(self, frm, to, material="metal", skip=()):
-        self.boxes.append(Box(tuple(frm), tuple(to), material, tuple(skip)))
+    def box(self, frm, to, material="metal", skip=(), rot=None):
+        self.boxes.append(Box(tuple(frm), tuple(to), material, tuple(skip), rot))
         return self
 
-    def mirror_x(self, centre=8.0):
-        """Add the mirror image of every box across x = centre."""
-        for b in list(self.boxes):
-            self.boxes.append(Box((2 * centre - b.to[0], b.frm[1], b.frm[2]), (2 * centre - b.frm[0], b.to[1], b.to[2]), b.material, b.skip))
+    def mirror_x(self, centre=8.0, since=0):
+        """Add the mirror image of the boxes from index `since` on, across x = centre."""
+        for b in list(self.boxes[since:]):
+            rot = b.rot
+            if rot:  # a mirror flips the angle of a y or z rotation, and the origin moves across
+                axis, angle, origin = rot
+                rot = (axis, angle if axis == "x" else -angle, (2 * centre - origin[0], origin[1], origin[2]))
+            self.boxes.append(Box((2 * centre - b.to[0], b.frm[1], b.frm[2]), (2 * centre - b.frm[0], b.to[1], b.to[2]), b.material, b.skip, rot))
         return self
 
 
@@ -57,6 +63,7 @@ def _face_size(box: Box, face: str):
 
 def build(parts: list[Part], ramps: dict, size: int = 128):
     """Pack every face of every part into one atlas; returns (atlas image, {part name: model json dict})."""
+    armor_paint.BEVEL = 1  # the part atlas is 2 texels per unit, so a one-texel bevel
     cv = Cv(size, size)
     models, x, y, row_h = {}, 1, 1, 0
     for part in parts:
@@ -77,7 +84,10 @@ def build(parts: list[Part], ramps: dict, size: int = 128):
                 faces[face] = {"uv": [round(x * 16 / size, 4), round(y * 16 / size, 4), round((x + w) * 16 / size, 4), round((y + h) * 16 / size, 4)],
                                "texture": "#0"}
                 x, row_h = x + w + 1, max(row_h, h)
-            elements.append({"from": list(box.frm), "to": list(box.to), "faces": faces})
+            element = {"from": list(box.frm), "to": list(box.to), "faces": faces}
+            if box.rot:
+                element["rotation"] = {"angle": box.rot[1], "axis": box.rot[0], "origin": list(box.rot[2])}
+            elements.append(element)
         models[part.name] = {"texture_size": [size, size], "textures": {"0": "cobbletowers:item/worn/atlas", "particle": "cobbletowers:item/worn/atlas"},
                              "elements": elements}
     return Image.fromarray(cv.a, "RGBA"), models

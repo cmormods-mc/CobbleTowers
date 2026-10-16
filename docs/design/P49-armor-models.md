@@ -175,3 +175,18 @@ Not proven, and why the config stays off:
 
 Go/no-go: go for helmet and shoulder parts; legs and boots stay 2D. Next: pack-status scan, `maxWearers` and `update_ticks` 2 for
 distant viewers, larger Tideforge silhouettes, then the other eleven sets by the same DSL.
+
+## 11. Armor Model API test (2026-10-16): works, becomes the main 3D route
+
+Owner decision: players may install the client mod [Armor Model API](https://github.com/FabricExtras/ArmorModelAPI) (MIT, Fabric 1.21.1, Modrinth `armor-model-api`).
+It draws Bedrock `.geo.json` armor through the vanilla pipeline, so limbs swing.
+
+* **Server side stays server-only.** `ArmorSetItems.PieceItem.getPolymerItemStack` adds `custom_data {armor_model_api: {model, texture, glowmask}}` to the
+  client stack of every set in `GEO_SETS` (Tideforge for now). The geo and textures ship in the Polymer pack
+  (`assets/cobbletowers/geo/*.geo.json`, `textures/armor/<set>_<1|2>[_glowmask].png`). A client without the mod ignores the tag and keeps the shader layers.
+* **Generator:** `tools/generate_armor_geo.py`. Base cubes use the vanilla armor UV layout, so the 4x layer art maps straight on (UV is divided by the
+  declared texture size, 64x128, not the file size). Ornament cubes (crest, temple and nape fins, back carapace, arm pauldrons, knee guards, boot fins)
+  are boxes in the nine conventional bones, painted into rows 32+ with the same painter. Box UV only (no per-face UV, no rotated UV origins).
+* **Seen in a real client with the mod:** correct orientation (front is -z), ornaments, glow mask, and legs and arms swinging with the ornaments
+  attached. Without the mod the same client draws the shader layer at 256x64 per layer (`polymer.json` scale 4).
+* The display-entity parts (section 10) are now the fallback idea only; they stay off. Next: author the other sets' ornament lists, then retire or keep them.

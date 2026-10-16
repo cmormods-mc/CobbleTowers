@@ -100,7 +100,7 @@ def main() -> None:
                 rcon(ow + f"tp {VIEWER} {bx + dx:.2f} 200 {bz + dz:.2f} {vyaw} 8")
                 time.sleep(1.6)
                 shot = out / f"{args.set}_{label}_{name}.png"
-                done = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HERE / "capture_window.ps1"), "-Out", str(shot)],
+                done = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HERE / "capture_window.ps1"), "-Out", str(shot), "-ProcessId", str(client.pid)],
                                       check=False, capture_output=True, text=True)
                 print("shot", shot.name, shot.exists(), (done.stderr or done.stdout).strip()[:200])
         print(rcon("cobbletowers armor worn"))
@@ -109,7 +109,7 @@ def main() -> None:
                 rcon(ow + f"tp {VIEWER} {bx:.2f} 200 {bz + 3.6:.2f} 180 8")
                 time.sleep(2)
                 shot = out / f"{args.set}_{label}.png"
-                subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HERE / "capture_window.ps1"), "-Out", str(shot)],
+                subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HERE / "capture_window.ps1"), "-Out", str(shot), "-ProcessId", str(client.pid)],
                                check=False, capture_output=True, text=True)
                 print("shot", shot.name, shot.exists(), "|", rcon("cobbletowers armor worn"))
 

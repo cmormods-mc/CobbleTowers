@@ -117,12 +117,12 @@ def main() -> None:
                     rcon("cobbletowers armor worn reload")
                     time.sleep(2.5)
                     done = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HERE / "capture_burst.ps1"),
-                                           "-OutDir", str(out), "-Frames", str(args.frames), "-DelayMs", "40", "-Prefix", f"{args.set}_fast_s{value}"],
+                                           "-ProcessId", str(client.pid), "-OutDir", str(out), "-Frames", str(args.frames), "-DelayMs", "40", "-Prefix", f"{args.set}_fast_s{value}"],
                                           check=False, capture_output=True, text=True)
                     print("fast smoothing", value, (done.stderr or done.stdout).strip()[:100])
                 continue
             done = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HERE / "capture_burst.ps1"),
-                                   "-OutDir", str(out), "-Frames", str(args.frames), "-DelayMs", "40", "-Prefix", f"{args.set}_{mode}"],
+                                   "-ProcessId", str(client.pid), "-OutDir", str(out), "-Frames", str(args.frames), "-DelayMs", "40", "-Prefix", f"{args.set}_{mode}"],
                                   check=False, capture_output=True, text=True)
             print(mode, (done.stderr or done.stdout).strip()[:200])
         print(rcon("cobbletowers armor worn"))

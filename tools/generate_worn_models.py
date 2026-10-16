@@ -21,25 +21,35 @@ from worn_model import Part  # noqa: E402
 
 def tideforge() -> list[Part]:
     crest = Part("tideforge_crest")
-    # a swept dorsal fin along the head, tallest toward the front
-    crest.box((7.25, 9, 2.5), (8.75, 11, 5.5))
-    crest.box((7.25, 9, 5.5), (8.75, 13.5, 8.5))
-    crest.box((7.25, 9, 8.5), (8.75, 16, 11), skip=("down",))
-    crest.box((7.25, 9, 11), (8.75, 12, 13.5))
-    crest.box((7.5, 14.5, 9), (8.5, 17, 10.5), "glow")
-    # temple fins
-    crest.box((0.5, 3, 6.5), (3, 6.5, 10.5))
-    crest.box((-0.5, 4, 7.5), (0.5, 6, 9.5), "trim")
-    crest.box((13, 3, 6.5), (15.5, 6.5, 10.5))
-    crest.box((15.5, 4, 7.5), (16.5, 6, 9.5), "trim")
+    # a comb of three swept blades along the head, leaning back, with a glowing eye on the tallest
+    crest.box((7, 9, 3), (9, 15, 6.5), rot=("x", -22.5, (8, 9, 4.5)))
+    crest.box((7, 9, 6.5), (9, 18, 10), rot=("x", -22.5, (8, 9, 8)))
+    crest.box((7, 9, 10), (9, 13.5, 13.5), "trim")
+    crest.box((7.4, 13, 8.2), (8.6, 15.5, 9.4), "glow", rot=("x", -22.5, (8, 9, 8)))
+    # a fin hanging off the nape
+    crest.box((6.8, -1, 1.2), (9.2, 8, 3), skip=("south",))
+    # swept temple fins, flaring out and back, mirrored
+    sides = len(crest.boxes)
+    crest.box((-0.5, 3, 3.5), (1.5, 10, 11), rot=("y", 22.5, (0.5, 3, 11)))
+    crest.box((-1.5, 5, 6), (-0.5, 8.5, 9.5), "trim")
+    crest.mirror_x(since=sides)
 
-    paul = Part("tideforge_pauldrons")
-    paul.box((11, 25, 4.5), (17, 26.5, 11.5))
-    paul.box((17, 23, 5), (19, 25.5, 11))
-    paul.box((13, 26.5, 6.5), (15.5, 29.5, 9.5), "trim")
-    paul.box((13.5, 29.5, 7.5), (14.5, 31, 8.5), "glow")
-    paul.mirror_x()
-    return [crest, paul]
+    mantle = Part("tideforge_mantle")
+    # stacked shell pauldrons with a glowing pearl on top
+    mantle.box((12, 24.5, 3.5), (19, 26.2, 12.5))
+    mantle.box((13.5, 26.2, 4.5), (20, 27.7, 11.5))
+    mantle.box((16, 27.7, 5.5), (20.5, 28.9, 10.5), "trim")
+    mantle.box((14.6, 27.7, 7.3), (16, 29.3, 8.7), "glow")
+    mantle.box((19, 21.5, 4.5), (21, 26, 11.5))
+    mantle.box((20.5, 18.5, 5.5), (22, 24, 10.5), "trim")
+    mantle.mirror_x()
+    # a carapace down the back with a dorsal fin along the spine
+    mantle.box((3.5, 12, 11.2), (12.5, 25, 12.8))
+    mantle.box((4.5, 15, 12.8), (11.5, 24, 14.4))
+    mantle.box((6, 18, 14.4), (10, 23, 16), "trim")
+    mantle.box((7.2, 24.5, 11.8), (8.8, 29.5, 16), rot=("x", 22.5, (8, 24.5, 12)))
+    mantle.box((7.5, 20, 15.8), (8.5, 22, 16.8), "glow")
+    return [crest, mantle]
 
 
 def main() -> None:
@@ -48,7 +58,7 @@ def main() -> None:
     args = parser.parse_args()
     look = Look("tideforge", SPECS["tideforge"])
     ramps = {"metal": look.metal, "trim": look.trim, "glow": look.glow}
-    atlas = worn_model.write(tideforge(), ramps, args.out, "tideforge_atlas")
+    atlas = worn_model.write(tideforge(), ramps, args.out, "tideforge_atlas", size=256)
     print("wrote tideforge parts", atlas.size)
 
 

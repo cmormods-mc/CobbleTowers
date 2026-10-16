@@ -1,4 +1,4 @@
-param([string]$Out, [string]$Title = "Minecraft")
+param([string]$Out, [string]$Title = "Minecraft", [int]$ProcessId = 0)
 # Saves a picture of the Minecraft client window (moved to the top-left and brought to the front first) to $Out.
 Add-Type -AssemblyName System.Drawing
 Add-Type @"
@@ -14,7 +14,9 @@ public class Win {
 }
 "@
 [Win]::SetProcessDPIAware() | Out-Null
-$p = Get-Process | Where-Object { $_.MainWindowTitle -like "$Title*" -and $_.ProcessName -like "java*" } | Select-Object -First 1
+# only the test client, by process id: the player's own game window is never touched
+$p = Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
+if ($p -and $p.MainWindowHandle -eq 0) { $p.Refresh() }
 if (-not $p) { Write-Error "no client window"; exit 1 }
 [Win]::ShowWindow($p.MainWindowHandle, 9) | Out-Null
 [Win]::SetForegroundWindow($p.MainWindowHandle) | Out-Null

@@ -1,4 +1,4 @@
-param([string]$OutDir, [int]$Frames = 10, [int]$DelayMs = 60, [string]$Prefix = "burst", [string]$Title = "Minecraft")
+param([string]$OutDir, [int]$Frames = 10, [int]$DelayMs = 60, [string]$Prefix = "burst", [string]$Title = "Minecraft", [int]$ProcessId = 0)
 # Saves $Frames pictures of the Minecraft client window in quick succession (the window is brought to the top-left once first).
 Add-Type -AssemblyName System.Drawing
 Add-Type @"
@@ -14,7 +14,9 @@ public class WinB {
 }
 "@
 [WinB]::SetProcessDPIAware() | Out-Null
-$p = Get-Process | Where-Object { $_.MainWindowTitle -like "$Title*" -and $_.ProcessName -like "java*" } | Select-Object -First 1
+# only the test client, by process id: the player's own game window is never touched
+$p = Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
+if ($p -and $p.MainWindowHandle -eq 0) { $p.Refresh() }
 if (-not $p) { Write-Error "no client window"; exit 1 }
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 [WinB]::ShowWindow($p.MainWindowHandle, 9) | Out-Null

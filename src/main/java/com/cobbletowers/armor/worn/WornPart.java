@@ -15,7 +15,7 @@ import net.minecraft.world.item.component.CustomModelData;
  */
 public enum WornPart {
     TIDEFORGE_CREST("tideforge_crest", "tideforge_helmet", Anchor.HEAD),
-    TIDEFORGE_PAULDRONS("tideforge_pauldrons", "tideforge_chestplate", Anchor.TORSO);
+    TIDEFORGE_MANTLE("tideforge_mantle", "tideforge_chestplate", Anchor.TORSO);
 
     /** Which body part the display follows. */
     public enum Anchor { HEAD, TORSO }

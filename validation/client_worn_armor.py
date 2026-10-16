@@ -61,6 +61,8 @@ def prepare(game: Path, rig: Path, pack: Path, gui_scale: int) -> None:
     for pattern in ("fabric-api-*.jar", "Cobblemon-*.jar"):
         jar = client_launch.first(rig / "mods", pattern)
         shutil.copy2(jar, game / "mods" / jar.name)
+    for jar in (rig.parent / "apitest").glob("armor_model_api*.jar") if os.environ.get("WITH_ARMOR_API") else []:
+        shutil.copy2(jar, game / "mods" / jar.name)  # optional client mod: real 3D geo armor
     # the rig also runs CobblemonCards (with Accessories and owo-lib), which are not server-only
     for jar in client_launch.card_mods(rig):
         shutil.copy2(jar, game / "mods" / jar.name)
@@ -140,7 +142,7 @@ def main() -> None:
                     for who in (VIEWER, BOT):
                         print("  ", who, rcon(f"data get entity {who} Pos")[-60:], rcon(f"data get entity {who} Rotation")[-40:])
                 shot = out / f"{set_id}_{name}.png"
-                done = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HERE / "capture_window.ps1"), "-Out", str(shot)],
+                done = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HERE / "capture_window.ps1"), "-Out", str(shot), "-ProcessId", str(client.pid)],
                                       check=False, capture_output=True, text=True)
                 print("shot", shot.name, shot.exists(), (done.stderr or done.stdout).strip()[:300])
         log = (game / "logs" / "latest.log").read_text(encoding="utf-8", errors="replace")

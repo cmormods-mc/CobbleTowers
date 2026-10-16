@@ -38,6 +38,9 @@ def mix(a, b, t):
     return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
+BEVEL = 1  # bevel width in texels; the generator raises it with the texture scale
+
+
 class Shape:
     """A boolean mask the size of a canvas, drawn with PIL primitives."""
 
@@ -109,10 +112,15 @@ class Cv:
         out = np.zeros_like(m)
         if outline:
             out = edge
-        ip = np.pad(inner, 1)
-        iu, idn, il, ir = ip[:-2, 1:-1], ip[2:, 1:-1], ip[1:-1, :-2], ip[1:-1, 2:]
-        tl = inner & ~(iu & il)
-        br = inner & ~(idn & ir) & ~tl
+        tl = np.zeros_like(inner)
+        br = np.zeros_like(inner)
+        bw = BEVEL if bevel else 1
+        for i in range(1, bw + 1):
+            ip = np.pad(inner, i)
+            h, w = inner.shape
+            tl |= inner & ~(ip[0:h, i:i + w] & ip[i:i + h, 0:w])
+            br |= inner & ~(ip[2 * i:2 * i + h, i:i + w] & ip[i:i + h, 2 * i:2 * i + w])
+        br &= ~tl
         body = inner & ~tl & ~br
         ys, xs = np.nonzero(m)
         if len(ys) == 0:
@@ -171,7 +179,7 @@ class Cv:
                 m = sh.mask()
                 clip = np.zeros_like(m)
                 clip[max(0, y):min(self.h, y + h), max(0, x):min(self.w, x + w)] = True
-                self.plate(m & clip, rp, tone=tone, split=False, hot=False, bevel=0)
+                self.plate(m & clip, rp, tone=tone + (0.07 if (c + r) % 2 else -0.05), split=True, hot=False, bevel=1)
 
     def planks(self, x, y, w, h, rp, plank, seed=1, knots=True):
         """Vertical bark planks with seams, grain dashes and knots."""

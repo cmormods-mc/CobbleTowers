@@ -7,7 +7,7 @@ Output (default: src/main/resources/assets/cobbletowers/textures):
   models/armor/<set>_layer_1.png   256x64: left half = helmet, chestplate, boots (vanilla UV layout at 2x),
                                    right half = emission mask (white where the armor glows)
   models/armor/<set>_layer_2.png   256x64: the same for leggings
-  models/armor/<set>_layer_N.polymer.json   {"scale": 2, "emissivity": 1}: tells Polymer's armor shader the above
+  models/armor/<set>_layer_N.polymer.json   {"scale": 4, "emissivity": 1}: tells Polymer's armor shader the above
   item/<set>_<slot>.png            32x32 icons, rendered from the layer art by tools/armor_preview3d.py
 
 The art is painted in "unfolded box" strips so trims wrap around a part, with bevelled plates and material patterns from
@@ -25,10 +25,12 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import armor_paint  # noqa: E402
 from armor_paint import Cv, Shape, emblem_mask, mix, ramp  # noqa: E402
 import armor_icons  # noqa: E402
 
-K = 2  # texels per vanilla pixel
+K = 4  # texels per vanilla pixel
+armor_paint.BEVEL = max(1, K // 2)
 
 
 def T(v):
@@ -366,7 +368,7 @@ def with_emission(img: Image.Image, look) -> Image.Image:
     return sheet
 
 
-METADATA = '{"scale": 2, "emissivity": 1}\n'
+METADATA = '{"scale": 4, "emissivity": 1}\n'
 
 
 def main():

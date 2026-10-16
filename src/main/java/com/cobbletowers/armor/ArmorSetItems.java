@@ -11,6 +11,11 @@ import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import eu.pb4.polymer.rsm.api.RegistrySyncUtils;
 import com.cobbletowers.ServerLang;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.CustomData;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.core.Registry;
@@ -41,6 +46,9 @@ public final class ArmorSetItems {
     public static final List<String> SETS = List.of("challenger", "tideforge", "rootvale", "duskvale",
             "recruit", "tidewalker", "sprout", "duskwanderer",
             "paragon", "leviathan", "heartwood", "nightfall");
+
+    /** Sets that ship a geo model for Armor Model API (clients with that mod draw it; others keep the shader layers). */
+    private static final java.util.Set<String> GEO_SETS = java.util.Set.of("tideforge");
 
     private static final int DURABILITY_FACTOR = 33;
     private static final int ENCHANTABILITY = 10;
@@ -116,6 +124,7 @@ public final class ArmorSetItems {
         private final Item base;
         private final PolymerArmorModel worn;
         private final PolymerModelData icon;
+        private final CompoundTag geo;
 
         PieceItem(Holder<ArmorMaterial> material, Type type, Properties properties, String set) {
             super(material, type, properties);
@@ -128,6 +137,23 @@ public final class ArmorSetItems {
             this.worn = PolymerResourcePackUtils.requestArmor(ResourceLocation.fromNamespaceAndPath(NAMESPACE, set));
             this.icon = PolymerResourcePackUtils.requestModel(base,
                     ResourceLocation.fromNamespaceAndPath(NAMESPACE, "item/" + set + "_" + SLOT_NAMES.get(type)));
+            if (GEO_SETS.contains(set)) {
+                String layer = type == Type.LEGGINGS ? "2" : "1";
+                geo = new CompoundTag();
+                geo.putString("model", NAMESPACE + ":geo/" + set + ".geo.json");
+                geo.putString("texture", NAMESPACE + ":textures/armor/" + set + "_" + layer + ".png");
+                geo.putString("glowmask", NAMESPACE + ":textures/armor/" + set + "_" + layer + "_glowmask.png");
+            } else {
+                geo = null;
+            }
+        }
+
+        /** A client with Armor Model API draws the geo model from this tag; any other client ignores it. */
+        @Override
+        public ItemStack getPolymerItemStack(ItemStack stack, TooltipFlag flag, HolderLookup.Provider lookup, ServerPlayer player) {
+            ItemStack out = PolymerItem.super.getPolymerItemStack(stack, flag, lookup, player);
+            if (geo != null) CustomData.update(DataComponents.CUSTOM_DATA, out, tag -> tag.put("armor_model_api", geo.copy()));
+            return out;
         }
 
         @Override
