@@ -143,6 +143,11 @@ public final class RunsCommand {
         group.then(opOnRun("show", RunsCommand::show));
         // A moderator's way to end a run that is stuck (beta runbook): abandons it, or a run waiting for recovery.
         group.then(opOnRun("abandon", RunsCommand::abandon));
+        // Wins the floor under way for a player's run, rewards and all (admin testing).
+        group.then(op("winfloor")
+                .executes(context -> winFloor(context, context.getSource().getPlayerOrException()))
+                .then(Commands.argument("player", EntityArgument.player())
+                        .executes(context -> winFloor(context, EntityArgument.getPlayer(context, "player")))));
         // Test tooling that drives the run machine by hand: dev build only.
         if (Dev.present()) {
             group.then(op("create")
@@ -191,6 +196,23 @@ public final class RunsCommand {
         source.sendSuccess(() -> Component.literal("Swept " + floors + " floor(s) as if the " + cap
                 + " cap had passed").withStyle(ChatFormatting.GOLD), false);
         return floors;
+    }
+
+    /** {@code /cobbletowers runs winfloor [player]}: wins the floor under way for that player's run. */
+    private static int winFloor(CommandContext<CommandSourceStack> context, ServerPlayer target) {
+        CommandSourceStack source = context.getSource();
+        Optional<PersistedRun> run = TowerRuns.forPlayer(target.getUUID());
+        if (run.isEmpty()) {
+            source.sendFailure(Component.literal(target.getGameProfile().getName() + " is not in a tower run."));
+            return 0;
+        }
+        Optional<String> done = com.cobbletowers.encounter.TowerEncounters.winFloor(source.getServer(), run.get().runId());
+        if (done.isEmpty()) {
+            source.sendFailure(Component.literal("That run has no floor under way."));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(done.get()).withStyle(ChatFormatting.GOLD), true);
+        return 1;
     }
 
     /** {@code /cobbletowers runs leave}: terminal for the player; ends the run if they were the last (TDS #39). */

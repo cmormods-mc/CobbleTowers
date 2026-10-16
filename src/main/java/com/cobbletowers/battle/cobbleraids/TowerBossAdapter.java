@@ -6,6 +6,7 @@ import com.cobbleraids.api.encounter.EncounterListener;
 import com.cobbleraids.api.encounter.EncounterPolicy;
 import com.cobbleraids.api.encounter.EncounterRules;
 import com.cobbleraids.api.encounter.EncounterRequest;
+import com.cobbleraids.api.encounter.EncounterOutcome;
 import com.cobbleraids.api.encounter.EncounterResult;
 import com.cobbleraids.api.encounter.LeaveReason;
 import com.cobbleraids.api.encounter.StartResult;
@@ -166,6 +167,24 @@ public final class TowerBossAdapter {
             TowerLog.error("Aborting the boss of run {} threw", runId, ex);
             return false;
         }
+    }
+
+    /** Operator tool: removes a run's boss and tells the floor it was beaten, as if the shared pool had reached zero. */
+    public static boolean forceVictory(MinecraftServer server, UUID runId) {
+        UUID encounterId = ENCOUNTER_BY_RUN.remove(runId);
+        if (encounterId == null) return false;
+        Binding binding = BY_ENCOUNTER.remove(encounterId);
+        com.cobbletowers.economy.AscensionLibScouting.end(encounterId.toString());
+        try {
+            // Removed from the maps first, so the abort's own ended callback finds nothing to settle twice.
+            CobbleRaidsEncounters.abort(encounterId);
+        } catch (RuntimeException ex) {
+            TowerLog.error("Removing the boss of run {} threw", runId, ex);
+        }
+        if (binding == null) return false;
+        listener.onBossEnded(server, binding,
+                new EncounterResult(encounterId, EncounterOutcome.VICTORY, Map.of(), java.util.Set.of(), 0));
+        return true;
     }
 
     public static boolean isFighting(UUID runId) {

@@ -405,6 +405,34 @@ public final class TowerEncounters {
         return true;
     }
 
+    /**
+     * Operator tool: wins the run's current floor. Each open opponent battle ends as a player win through the normal
+     * result path, then the boss is ended as a victory, so rewards, banking and the intermission follow as usual.
+     * @return what was done, or empty when the run has no floor under way
+     */
+    public static Optional<String> winFloor(MinecraftServer server, UUID runId) {
+        if (!ROUNDS.containsKey(runId)) return Optional.empty();
+        int opponents = 0;
+        // Bounded: a multi-opponent floor sends the next one from inside onResolved.
+        for (int pass = 0; pass < 64; pass++) {
+            Round round = ROUNDS.get(runId);
+            if (round == null || round.phase() != Phase.PREREQUISITE) break;
+            List<CobblemonBattleAdapter.Binding> open = CobblemonBattleAdapter.battlesOf(runId).stream()
+                    .filter(b -> !b.exhibition()).toList();
+            if (open.isEmpty()) break;
+            for (CobblemonBattleAdapter.Binding binding : open) {
+                if (!CobblemonBattleAdapter.endPlayer(server, runId, binding.playerId())) continue;
+                opponents++;
+                onResolved(server, binding, true);
+            }
+        }
+        Round round = ROUNDS.get(runId);
+        boolean boss = round != null && round.phase() == Phase.BOSS && TowerBossAdapter.forceVictory(server, runId);
+        if (boss) endParticipantBattles(server, runId);
+        if (!boss && ROUNDS.containsKey(runId)) return Optional.of("Could not finish the floor (" + opponents + " opponent(s) won)");
+        return Optional.of("Floor won: " + opponents + " opponent battle(s)" + (boss ? " and the boss" : ""));
+    }
+
     /** The run is lost. The unclaimed pool is marked, not deleted, so it can still be read. */
     static void lose(MinecraftServer server, UUID runId, int floorIndex, long now) {
         TowerLog.info("Floor {} of run {} wiped the party; the unclaimed pool is forfeited",
