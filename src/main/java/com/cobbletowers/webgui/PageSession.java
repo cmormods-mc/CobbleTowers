@@ -88,6 +88,14 @@ final class PageSession {
     }
 
     /**
+     * Keeps a payload without showing it, for a moment when another mod's screen is up and ours must not cover it. Same bookkeeping as {@link #offer}
+     * minus the page: the latest of each kind is stored so the page catches up when it does open.
+     */
+    void hold(String kind, String json, long now) {
+        latest.put(kind, new Stamped(now, json));
+    }
+
+    /**
      * A freshly loaded page says hello. Returns what it missed while loading: the latest of each kind produced since it was
      * opened. Older ones belong to an earlier screen and would only show stale information. A page nobody opened (the player
      * used {@code /webgui gui} by hand) gets nothing, and asks for its own state.

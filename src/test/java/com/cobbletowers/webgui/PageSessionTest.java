@@ -141,4 +141,15 @@ class PageSessionTest {
         offer("IntermissionState", "{i}", false, UPDATE_OR_OPEN_IF_FLAGGED, false, 100);
         assertEquals(EMIT, offer("IntermissionState", "{i2}", false, UPDATE_OR_OPEN_IF_FLAGGED, false, 200), "alive from its hello, so updates reach it");
     }
+
+    @Test
+    @DisplayName("a payload held back while another mod's screen is up opens nothing and marks nothing as loading, so the next flagged payload opens the page and it catches up")
+    void heldPayloadsDoNotDisturbTheSession() {
+        session.hold("IntermissionState", "{held}", 0);
+        session.hold("IntermissionState", "{held2}", 3_000);
+        assertFalse(session.alive(false, 3_000, HEARTBEAT));
+        assertFalse(session.loading(false, 3_000, LOAD), "nothing was opened, so nothing is loading");
+        assertEquals(OPEN, offer("IntermissionState", "{after}", false, UPDATE_OR_OPEN_IF_FLAGGED, true, 20_000));
+        assertEquals(List.of("{after}"), session.hello(false, 20_100), "the newest state, not the stale held one");
+    }
 }

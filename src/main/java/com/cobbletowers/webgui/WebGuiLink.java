@@ -46,6 +46,32 @@ final class WebGuiLink {
         }
     }
 
+    private static boolean revealLooked;
+    private static MethodHandle revealShowing;
+
+    /**
+     * Whether AscensionLib's completion reveal is on this player's screen. Looked up once by name, so an older or absent AscensionLib simply answers
+     * no. While it is up, a screen of ours would cover it, so {@link WebGuiBridge} keeps its payloads for later instead of opening a page.
+     */
+    static boolean otherModScreenShowing(ServerPlayer player) {
+        if (!revealLooked) {
+            revealLooked = true;
+            try {
+                Class<?> screens = Class.forName("com.ascensionlib.AscensionScreens");
+                revealShowing = MethodHandles.publicLookup().findStatic(screens, "revealShowing",
+                        MethodType.methodType(boolean.class, java.util.UUID.class));
+            } catch (ReflectiveOperationException | LinkageError ex) {
+                revealShowing = null;
+            }
+        }
+        if (revealShowing == null) return false;
+        try {
+            return (boolean) revealShowing.invoke(player.getUUID());
+        } catch (Throwable ex) {
+            return false;
+        }
+    }
+
     static void openGui(ServerPlayer player, String url) {
         try {
             openGui.invokeExact(player, url);

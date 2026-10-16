@@ -157,6 +157,13 @@ public final class WebGuiBridge {
         long now = System.currentTimeMillis();
         PageSession session = SESSIONS.computeIfAbsent(player.getUUID(), id -> new PageSession());
         boolean hud = payload instanceof SpectatorPanelPayload;
+        // The completion reveal of AscensionLib is on screen (it opens in the same tick a cycle's champion falls): do not cover it. Our page is not showing,
+        // so this only holds back an open, and the state is kept for the next payload or the player's own request.
+        if (!hud && !session.alive(false, now, config.heartbeatSeconds()) && WebGuiLink.otherModScreenShowing(player)) {
+            session.hold(PayloadJson.kindOf(payload.getClass()), json, now);
+            if (flagged(payload)) TowerLog.info("WebGUI {} for {}: held back, a completion reveal is showing", PayloadJson.kindOf(payload.getClass()), player.getGameProfile().getName());
+            return true;
+        }
         PageSession.Action action = session.offer(PayloadJson.kindOf(payload.getClass()), json, hud, policyOf(payload), flagged(payload), now,
                 config.heartbeatSeconds(), LOAD_MILLIS);
         if (flagged(payload) && !hud) TowerLog.info("WebGUI {} for {}: {}", PayloadJson.kindOf(payload.getClass()), player.getGameProfile().getName(), action);
