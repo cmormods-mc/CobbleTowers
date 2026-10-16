@@ -1,161 +1,77 @@
-"""32x32 item sprites for the armor pieces, drawn from the worn layer art.
+"""16x16 item sprites for the armor pieces, drawn natively at the size an inventory slot shows them.
 
-A flat sprite in the vanilla way: a classic silhouette (helmet, chestplate with sleeves, leggings, boots) filled with the
-front-face texels of the layer texture, so the icon always matches what is worn. Texel positions assume the 2x layout of
-tools/generate_armor_textures.py (K = 2).
+Each piece is a left-half template (8 columns) mirrored across the middle, so every icon is symmetric and crisp. Letters:
+O outline, L light, M base, S shade, T trim, D dark interior, G glow. Light comes from the top left, so the right half drops
+one step. The set's look (`generate_armor_textures.Look`) supplies the colours; its pattern and tier add small accents.
 """
 
 from __future__ import annotations
 
-import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image
 
-SIZE = 32
+SIZE = 16
 
-
-def _region(img: Image.Image, x, y, w, h) -> Image.Image:
-    return img.crop((x, y, x + w, y + h))
-
-
-def _fit(src: Image.Image, w, h) -> Image.Image:
-    """Nearest-neighbour resize keeps the pixel art crisp; alpha holes (a helmet's open face) stay holes."""
-    return src.resize((w, h), Image.NEAREST)
-
-
-def _mask(poly_list, size=SIZE) -> Image.Image:
-    m = Image.new("L", (size, size), 0)
-    d = ImageDraw.Draw(m)
-    for pts in poly_list:
-        d.polygon(pts, fill=255)
-    return m
-
-
-def _composite(canvas: Image.Image, tex: Image.Image, mask: Image.Image, at, hole_color):
-    """Paste `tex` at `at`, clipped by `mask`; transparent texels inside the mask become the dark interior colour."""
-    layer = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-    layer.paste(tex, at)
-    px = layer.load()
-    mp = mask.load()
-    cp = canvas.load()
-    for y in range(canvas.height):
-        for x in range(canvas.width):
-            if mp[x, y] > 0:
-                r, g, b, a = px[x, y]
-                cp[x, y] = (r, g, b, 255) if a > 128 else (*hole_color, 255)
+HALVES = {
+    "helmet": [
+        "......TT", "......TT", "....OOOO", "...OLLLL", "..OLLMMM", "..OLMMMM", "..OTTTTT", "..OMMMMM",
+        "..OMDDDD", "..OMDGDD", "..OMDDDD", "..OMMO..", "..OOOO..", "........", "........", "........",
+    ],
+    "chestplate": [
+        "........", ".OOOOO..", "OLLLMMOO", "OLLMMMMM", "OLMMMMMM", "OTTTTTTT", "OLMOMMMM", "OMMOMMMG",
+        "OMMOMMMG", "OSSOMMMM", "OOOOMMMM", "....TTTT", "....MMMM", "....OOOO", "........", "........",
+    ],
+    "leggings": [
+        "........", "..OTTTTT", "..OLMMMM", "..OLMMMM", "..OMMMMM", "..OLMMMO", "..OLMMMO", "..OLMMMO",
+        "..OTTTTO", "..OMMMMO", "..OMMMMO", "..OMMMMO", "..OTTTTO", "..OOOOOO", "........", "........",
+    ],
+    "boots": [
+        "........", "........", "........", "..OOOOO.", "..OTTTO.", "..OTTTO.", "..OLMMO.", "..OLMMO.",
+        "..OMMMO.", "..OMMMO.", ".OLMMMO.", "OLLMMMO.", "OLMMMMO.", "OSSSSSO.", "OOOOOOO.", "........",
+    ],
+}
 
 
-def _outline(img: Image.Image, color) -> Image.Image:
-    src = img.load()
-    out = img.copy()
-    o = out.load()
-    for y in range(img.height):
-        for x in range(img.width):
-            if src[x, y][3] == 0:
-                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                    nx, ny = x + dx, y + dy
-                    if 0 <= nx < img.width and 0 <= ny < img.height and src[nx, ny][3] > 0:
-                        o[x, y] = (*color, 255)
-                        break
-    return out
+def _colors(look) -> dict:
+    metal = look.cloth if look.s["pattern"] == "cloth" else look.metal
+    return {"O": metal[0], "L": metal[4], "M": metal[3], "S": metal[2], "T": look.trim[3], "D": look.dark[1], "G": look.glow[4]}
 
 
-def _edge_shade(img: Image.Image, light, dark) -> Image.Image:
-    """Light top-left rim and dark bottom-right rim inside the silhouette, like a hand-drawn sprite."""
-    src = img.load()
-    out = img.copy()
-    o = out.load()
-    for y in range(img.height):
-        for x in range(img.width):
-            if src[x, y][3] == 0:
-                continue
-            up = y == 0 or src[x, y - 1][3] == 0
-            left = x == 0 or src[x - 1, y][3] == 0
-            down = y == img.height - 1 or src[x, y + 1][3] == 0
-            right = x == img.width - 1 or src[x + 1, y][3] == 0
-            r, g, b, a = src[x, y]
-            if (up or left) and not (down or right):
-                o[x, y] = (min(255, int(r * 1.25 + 12)), min(255, int(g * 1.25 + 12)), min(255, int(b * 1.25 + 12)), 255)
-            elif down or right:
-                o[x, y] = (int(r * 0.72), int(g * 0.72), int(b * 0.78), 255)
-    return out
-
-
-def _band(canvas, x0, x1, y, rp):
-    """A trim band: light top row, base below."""
-    cp = canvas.load()
-    for x in range(x0, x1):
-        cp[x, y] = (*rp[4], 255)
-        cp[x, y + 1] = (*rp[3], 255)
-
-
-def _leggings_detail(canvas, look):
-    cp = canvas.load()
-    _band(canvas, 8, 24, 4, look.trim)  # belt
-    for x in (15, 16):
-        cp[x, 4] = (*look.trim[5], 255)
-        cp[x, 5] = (*look.trim[4], 255)
-    for x0 in (8, 17):  # knee plates and cuffs
-        for x in range(x0 + 1, x0 + 6):
-            cp[x, 16] = (*look.metal[4], 255)
-            cp[x, 17] = (*look.metal[3], 255)
-            cp[x, 18] = (*look.metal[2], 255)
-        _band(canvas, x0, x0 + 6, 26, look.trim)
-
-
-def _boots_detail(canvas, look):
-    cp = canvas.load()
-    for dx in (0, 15):
-        _band(canvas, 6 + dx, 14 + dx, 9, look.trim)  # cuff
-        for x in range(2 + dx, 14 + dx):  # sole
-            cp[x, 23] = (*look.dark[1], 255)
-        for x in range(2 + dx, 6 + dx):  # toe cap
-            cp[x, 21] = (*look.metal[4], 255)
-
-
-def make_icon(l1: Image.Image, l2: Image.Image, slot: str, outline, interior, look=None) -> Image.Image:
-    canvas = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+def make_icon(l1, l2, slot: str, outline, interior, look) -> Image.Image:
+    """The first four arguments are unused (the old sprites were cut from the layer art); the caller still passes them."""
+    colors = _colors(look)
+    full = []
+    for half in HALVES[slot]:
+        left = list(half)
+        right = ["M" if ch == "L" else ch for ch in reversed(left)]
+        # the cell just inside the right outline drops to shade, so the piece has a lit side and a shaded side
+        for i, ch in enumerate(right):
+            if ch in "LM" and i > 0 and right[i - 1] == "O":
+                right[i] = "S"
+        full.append(left + right)
+    spec = look.s
+    tier, pattern = spec["tier"], spec["pattern"]
+    for y, row in enumerate(full):
+        for x, ch in enumerate(row):
+            if ch == "M" and pattern in ("mail", "scales") and (x + y * 2) % 5 == 0:
+                row[x] = "L"
+            elif ch == "M" and pattern == "planks" and x % 3 == 0:
+                row[x] = "S"
     if slot == "helmet":
-        front = _fit(_region(l1, 16, 16, 16, 16), 20, 20)
-        side = _fit(_region(l1, 32, 16, 16, 16), 7, 20)
-        m = _mask([[(5, 11), (7, 6), (11, 4), (21, 4), (25, 6), (27, 11), (27, 26), (24, 27), (24, 24), (8, 24), (8, 27), (5, 26)]])
-        # front face, then the right side as a sheared strip for depth
-        tmp = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-        tmp.paste(front, (6, 5))
-        for i in range(7):
-            col = side.crop((i, 0, i + 1, 20))
-            tmp.paste(col, (26 + i - 1, 5 - (i // 2) + 2))
-        m2 = _mask([[(5, 11), (7, 6), (11, 4), (21, 4), (27, 6), (31, 9), (31, 23), (26, 25), (26, 24), (8, 24), (8, 27), (5, 26)]])
-        _composite(canvas, tmp, m2, (0, 0), interior)
-    elif slot == "chestplate":
-        body = _fit(_region(l1, 40, 40, 16, 24), 16, 20)
-        arm = _fit(_region(l1, 88, 40, 8, 24), 7, 17)
-        tmp = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-        tmp.paste(arm, (1, 6))
-        tmp.paste(arm.transpose(Image.FLIP_LEFT_RIGHT), (24, 6))
-        tmp.paste(body, (8, 6))
-        m = _mask([[(8, 6), (12, 6), (14, 8), (18, 8), (20, 6), (24, 6), (24, 26), (8, 26)],
-                   [(1, 8), (4, 5), (8, 5), (8, 23), (6, 24), (1, 22)],
-                   [(31, 8), (28, 5), (24, 5), (24, 23), (26, 24), (31, 22)]])
-        _composite(canvas, tmp, m, (0, 0), interior)
-    elif slot == "leggings":
-        leg = _fit(_region(l2, 8, 40, 8, 24), 7, 21)
-        tmp = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-        tmp.paste(leg, (8, 7))
-        tmp.paste(leg.transpose(Image.FLIP_LEFT_RIGHT), (17, 7))
-        m = _mask([[(8, 4), (24, 4), (24, 10), (23, 28), (17, 28), (16, 14), (15, 14), (14, 28), (9, 28), (8, 10)]])
-        _composite(canvas, tmp, m, (0, 0), interior)
-        if look is not None:
-            _leggings_detail(canvas, look)
-    else:  # boots: side view, shaft and a toe that points left
-        boot = _fit(_region(l1, 0, 40, 8, 24).crop((0, 8, 8, 24)), 10, 14)
-        tmp = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-        for x0 in (2, 17):
-            tmp.paste(boot, (x0 + 4, 9))
-            tmp.paste(_fit(_region(l1, 0, 56, 8, 8), 14, 6), (x0, 20))
-        shape = [(6, 9), (14, 9), (14, 24), (2, 24), (2, 21), (6, 20)]
-        m = _mask([shape, [(x + 15, y) for x, y in shape]])
-        _composite(canvas, tmp, m, (0, 0), interior)
-        if look is not None:
-            _boots_detail(canvas, look)
-    canvas = _edge_shade(canvas, None, None)
-    return _outline(canvas, outline)
+        for y in range(2 if tier == 1 else 1 if tier == 2 else 0):
+            full[y] = ["."] * SIZE
+        if spec["helm"] == "visor":
+            for x in (5, 6, 9, 10):
+                full[9][x] = "G"
+        if spec["helm"] == "hood":
+            full[6] = ["S" if ch == "T" else ch for ch in full[6]]
+    img = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    px = img.load()
+    for y in range(SIZE):
+        for x in range(SIZE):
+            ch = full[y][x]
+            if ch != ".":
+                px[x, y] = (*colors[ch], 255)
+    if slot == "chestplate" and spec["shoulder"] == "spike":
+        for x in (1, 14):
+            px[x, 0] = (*colors["T"], 255)
+    return img
