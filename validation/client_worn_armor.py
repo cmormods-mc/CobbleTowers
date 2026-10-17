@@ -139,7 +139,7 @@ def main() -> None:
             time.sleep(1)
             for name, dx, dz, yaw in VIEWS:
                 rcon(OW + f"tp {VIEWER} {bx + dx:.2f} 200 {bz + dz:.2f} {yaw} 8")
-                time.sleep(1.6)
+                time.sleep(float(os.environ.get("SHOT_WAIT", "1.6")))
                 if os.environ.get("CAPTURE_DEBUG"):
                     for who in (VIEWER, BOT):
                         print("  ", who, rcon(f"data get entity {who} Pos")[-60:], rcon(f"data get entity {who} Rotation")[-40:])

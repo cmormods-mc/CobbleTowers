@@ -73,19 +73,34 @@ def geo(name: str, extra: dict | None = None) -> dict:
 
 def _mx(items):
     """Mirror boxes across x = 0 (right side to left side); a box is (origin, size, material[, pattern])."""
-    return [((-(o[0] + sz[0]), o[1], o[2]), sz, *rest) for o, sz, *rest in items]
+    out = []
+    for o, sz, *rest in items:
+        if len(rest) >= 3 and rest[2]:  # a rotated box flips its y and z angles in the mirror
+            rx, ry, rz = rest[2]
+            rest = [rest[0], rest[1], (rx, -ry, -rz)]
+        out.append(((-(o[0] + sz[0]), o[1], o[2]), sz, *rest))
+    return out
 
 
 def tideforge_ornaments():
     """bone -> [(origin, size, material[, pattern])] in geo coordinates (y up, the front at -z), unrotated boxes."""
     # head: a stepped dorsal fin, swept cheek wings, a tail fin down the nape
-    crest = [([-1, 33, -4.5], [2, 2.5, 2], "trim"), ([-1, 33, -2.5], [2, 5.5, 2], "metal"), ([-1, 33, -0.5], [2, 8, 2], "metal"),
+    crest = [([-1, 33, -2.5], [2, 5.5, 2], "metal"), ([-1, 33, -0.5], [2, 8, 2], "metal"),
              ([-1, 33, 1.5], [2, 5, 2], "metal"), ([-1, 33, 3.5], [2, 2, 2], "metal"), ([-0.7, 41, 0], [1.4, 1.6, 1], "glow"),
              ([1, 36.5, 0], [0.3, 2.2, 1.2], "glow"), ([-1.3, 36.5, 0], [0.3, 2.2, 1.2], "glow")]
     wing = [([5, 28, -2.5], [1.4, 5.5, 4.5], "metal", "scales"), ([5.2, 27, 2], [1.4, 4, 4.5], "metal"),
             ([5.4, 26, 6], [1.4, 3, 3.5], "metal"), ([5.6, 25.4, 9.5], [0.8, 2, 1.6], "trim")]
     nape = [([-1.2, 27, 5], [2.4, 6, 1.2], "metal"), ([-1.2, 24.5, 6.2], [2.4, 5.5, 1.2], "metal"), ([-1, 23, 7.4], [2, 4, 1], "trim")]
-    head = crest + wing + _mx(wing) + nape
+    # the face: a trident crown across the front, a heavy brow with a pearl, a slim nose guard, gill-slat cheeks, a chin fin
+    crown = [([-5.2, 33, -5.4], [10.4, 1.4, 1.6], "trim"), ([-1.1, 34.4, -5], [2.2, 8, 1.8], "metal"), ([-0.7, 42.2, -4.8], [1.4, 1.2, 1.4], "glow"),
+             ([3.3, 34.4, -5], [1.9, 5.5, 1.8], "metal", None, (0, 0, -20)), ([3.7, 39.2, -5.2], [1.1, 1.1, 1.4], "glow", None, (0, 0, -20))]
+    brow = [([-5.4, 29.6, -5.9], [10.8, 1.6, 1.1], "metal", "scales"), ([-1.1, 29.7, -6.8], [2.2, 2.2, 1], "glow"),
+            ([-1.8, 29.1, -6.3], [3.6, 0.7, 0.6], "trim"), ([-0.5, 25.4, -5.6], [1, 4.2, 0.7], "metal")]
+    brow_fin = [([4.2, 30.6, -5.8], [1.6, 2.4, 1.2], "trim")]
+    gills = [([3.4, 25.2 + 1.5 * i, -5.7 + 0.3 * i], [3, 0.9, 1.2], "metal") for i in range(3)]
+    chin = [([-1.4, 21.6, -5.9], [2.8, 2.6, 1], "metal"), ([-0.8, 20.2, -5.7], [1.6, 1.6, 0.8], "trim")]
+    crown = crown[:3] + crown[3:5] + _mx(crown[3:5])
+    head = crest + wing + _mx(wing) + nape + crown + brow + brow_fin + _mx(brow_fin) + gills + _mx(gills) + chin
     # body: a scallop shell on the chest, a layered carapace and swept spine fin on the back
     ribs = [(-2.4, 2.4), (-1.2, 3.6), (0, 4.8), (1.2, 3.6), (2.4, 2.4)]
     body = [([cx - 0.55, 17, -3.9], [1.1, h, 0.9], "metal") for cx, h in ribs]
@@ -169,7 +184,11 @@ def pack_ornaments(ornaments, look, art):
                          tone=tones[name], hot=name == "top")
                 if material != "glow":
                     finish_face(cv, (x0, y0, x1, y1), ramps[material], name, pattern, seed=x0 * 7 + y0)
-            cubes.setdefault(bone, []).append(cube(list(origin), list(size), [x, y], 0.0))
+            c = cube(list(origin), list(size), [x, y], 0.0)
+            if len(extra) >= 2 and extra[1]:  # rotation about the box's base centre
+                c["pivot"] = [origin[0] + sx / 2, origin[1], origin[2] + sz / 2]
+                c["rotation"] = list(extra[1])
+            cubes.setdefault(bone, []).append(c)
             x, row = x + cw, max(row, ch)
     return Image.fromarray(cv.a, "RGBA"), cubes
 
