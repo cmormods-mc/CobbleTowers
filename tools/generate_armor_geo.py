@@ -269,12 +269,43 @@ def pack_ornaments(ornaments, look, art):
     return Image.fromarray(cv.a, "RGBA"), cubes
 
 
+BASE_ORNAMENTS = {"tideforge": tideforge_ornaments, "challenger": challenger_ornaments, "rootvale": rootvale_ornaments,
+                  "duskvale": duskvale_ornaments}
+# set -> (tier II set whose ornaments it builds on, tier)
+VARIANTS = {"recruit": ("challenger", 1), "paragon": ("challenger", 3), "tidewalker": ("tideforge", 1), "leviathan": ("tideforge", 3),
+            "sprout": ("rootvale", 1), "heartwood": ("rootvale", 3), "duskwanderer": ("duskvale", 1), "nightfall": ("duskvale", 3)}
+
+
+def set_ornaments(name: str) -> dict:
+    """The ornament boxes for a set: a tier II set's own list, or its tier I (plainer) / tier III (extra gems, a head crest and shoulder bands) variant."""
+    if name in BASE_ORNAMENTS:
+        return BASE_ORNAMENTS[name]()
+    base, tier = VARIANTS[name]
+    orn = BASE_ORNAMENTS[base]()
+    out = {}
+    for bone, items in orn.items():
+        if tier == 1:
+            # plainer: no glow and no rotated boxes; limbs keep only their structural (metal/cloth) boxes
+            keep = [b for b in items if b[2] != "glow" and not (len(b) > 4 and b[4])]
+            if bone not in ("armorHead", "armorBody"):
+                keep = [b for b in keep if b[2] != "trim"]
+            out[bone] = keep
+        else:
+            out[bone] = list(items)
+    if tier == 3:
+        out["armorBody"] += [((-1, 20.6, -4.9), (2, 2, 0.6), "glow"), ((-0.6, 17.2, -4.9), (1.2, 1.2, 0.5), "glow")]
+        out["armorHead"] += [((-0.6, 30.8, -5.3), (1.2, 1.2, 0.6), "glow"), ((-0.7, 32.6, -0.7), (1.4, 3.2, 1.4), "trim"),
+                             ((-0.5, 35.6, -0.5), (1, 1, 1), "glow")]
+        out["armorRightArm"] += [((-10.4, 21.8, -1.8), (1, 1.6, 3.6), "trim")]
+        out["armorLeftArm"] += _mx([((-10.4, 21.8, -1.8), (1, 1.6, 3.6), "trim")])
+    return out
+
+
 def write_set(name: str, layers: Path, out: Path) -> None:
     (out / "geo").mkdir(parents=True, exist_ok=True)
     (out / "textures/armor").mkdir(parents=True, exist_ok=True)
     look = Look(name, SPECS[name])
-    ornaments = {"tideforge": tideforge_ornaments, "challenger": challenger_ornaments, "rootvale": rootvale_ornaments,
-                  "duskvale": duskvale_ornaments}.get(name, lambda: {})()
+    ornaments = set_ornaments(name)
     cubes = {}
     for number in (1, 2):
         sheet = Image.open(layers / f"{name}_layer_{number}.png").convert("RGBA")
