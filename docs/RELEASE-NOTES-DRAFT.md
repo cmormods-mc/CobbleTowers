@@ -29,6 +29,12 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 - Your name now carries a small tower icon and your mastery level, for the tower where your level is highest (chat and the tab list). The level is coloured by rank, Bronze to Champion.
 - `/tower badge off` hides yours. `/tower badge <tower>` pins the badge to a tower you have a level in (also a button on the Hall mastery screen), `/tower badge auto` goes back to your highest. A server can turn it off with `"mastery_badge": false` in `config/cobbletowers-cosmetics.json`. The icons come from the resource pack (placeholder art).
 
+**Armor models (P49)**
+- The 2D worn armor art was redrawn at 4x, and the item icons redrawn at 16x16.
+- **Optional client mod: Armor Model API** (Fabric, Modrinth `armor-model-api`, 1.1.0 for 1.21.1). With it, the Tideforge, Challenger, Rootvale and Duskvale sets show real 3D
+  armor (crowns, horns, antlers, fins, pauldrons; limbs swing). Without it you see the flat worn layers, exactly as before. Servers need no extra setup (the models ride in the
+  Polymer resource pack). **(unverified)** Only the middle tier of each set has the 3D ornaments so far, and the final Tideforge look has not been seen walking in a real client.
+
 **Relics, set bonuses and rooms (P45)**
 - **38 relics** (26 new), each with tags (sustain, economy, tempo, offense, scouting, boss, risk). Many have battle effects: type-themed damage, drain, resistance, tailwind,
   a burned or slowed foe lead.

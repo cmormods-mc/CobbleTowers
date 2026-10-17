@@ -27,6 +27,9 @@ Host it with Polymer's own auto-host, which serves the pack **over the game port
 - If the game port cannot carry HTTP (some DDoS-protection proxies), use `"type": "polymer:standalone"` with `{"port": <free port>, "external_address": "https://..."}` and open that port, or host `polymer/resource_pack.zip` yourself and set `resource-pack=` and `resource-pack-sha1=` in `server.properties`.
 - Checked 2026-10-14: with auto-host enabled the server regenerates the pack (about 1 MB) and answers HTTP on the game port. Not yet checked with a real client downloading it.
 
+### Optional client mod: Armor Model API
+Four armor sets (Tideforge, Challenger, Rootvale, Duskvale) have real 3D models (ornaments, limbs that swing). A player sees them only with the Fabric mod **Armor Model API** (Modrinth `armor-model-api`, 1.1.0 for 1.21.1) in their own `mods/`. The server needs nothing extra: the models ship inside the Polymer resource pack, and the server tags each piece so the mod finds them. Without the mod (or without the pack) the player sees the flat worn layers instead; nothing breaks. Worth telling players on the server's mod list or Discord. `validation/validate_armor_geo.py` checks the models at build time (a broken one renders nothing on the client).
+
 ## Mastery badge (P47)
 Names carry a small tower icon and the player's mastery level (the tower with the highest level). The icons are a font in the resource pack, so a player who declines the pack sees an empty box where the icon is; the level number still reads. Switch the badge off for everyone with `"mastery_badge": false` in `config/cobbletowers-cosmetics.json`; a player can hide their own with `/tower badge off`.
 

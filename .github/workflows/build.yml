@@ -56,6 +56,9 @@ jobs:
       - name: Validate the bundled tower definitions
         run: python3 validation/validate_definitions.py
 
+      - name: Validate the geo armor models
+        run: python3 validation/validate_armor_geo.py
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:

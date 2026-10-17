@@ -74,6 +74,10 @@ step "Validate the bundled tower definitions"
 # fail here rather than be skipped at runtime by the registry's malformed-file safety net.
 "$py" validation/validate_definitions.py
 
+step "Validate the geo armor models"
+# A broken geo or a missing texture renders nothing for a player with Armor Model API, and nothing else notices.
+"$py" validation/validate_armor_geo.py
+
 step "Check the committed web UI bundle is current"
 # The jar ships src/main/resources/web/cobbletowers, built from web/. An edit to web/src without a rebuild would ship the old page.
 if command -v node >/dev/null 2>&1 && [ -d web/node_modules ]; then
