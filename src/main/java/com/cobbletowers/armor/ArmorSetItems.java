@@ -48,7 +48,7 @@ public final class ArmorSetItems {
             "paragon", "leviathan", "heartwood", "nightfall");
 
     /** Sets that ship a geo model for Armor Model API (clients with that mod draw it; others keep the shader layers). */
-    private static final java.util.Set<String> GEO_SETS = java.util.Set.of("tideforge");
+    private static final java.util.Set<String> GEO_SETS = java.util.Set.of("tideforge", "challenger", "rootvale", "duskvale");
 
     private static final int DURABILITY_FACTOR = 33;
     private static final int ENCHANTABILITY = 10;

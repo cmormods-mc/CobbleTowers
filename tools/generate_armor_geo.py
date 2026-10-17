@@ -29,7 +29,7 @@ import armor_paint
 from armor_paint import Cv
 from generate_armor_textures import SPECS, Look
 
-TEX_W, TEX_H = 64, 192  # rows 0-31 the layer art in the vanilla layout, rows 32-191 the ornament cubes
+TEX_W, TEX_H = 64, 256  # rows 0-31 the layer art in the vanilla layout, rows 32-255 the ornament cubes
 K = 4  # texels per unit in the written PNGs, matching the layer art
 
 
@@ -122,6 +122,81 @@ def tideforge_ornaments():
             "armorRightLeg": leg, "armorLeftLeg": _mx(leg), "armorRightBoot": boot, "armorLeftBoot": _mx(boot)}
 
 
+def challenger_ornaments():
+    """A knight: a plumed crest on a ridged helm, flat gold-rimmed plates, layered pauldrons, tassets and a red tabard cape."""
+    plume = [([-1, 32.6, -4.6], [2, 1.4, 9.2], "trim"), ([-1.1, 34, -4.4], [2.2, 3.4, 2.2], "cloth"), ([-1.1, 34, -2.2], [2.2, 5.6, 2.2], "cloth"),
+             ([-1.1, 34, 0], [2.2, 6.4, 2.2], "cloth"), ([-1.1, 34, 2.2], [2.2, 5, 2.2], "cloth"), ([-1.1, 32, 4.4], [2.2, 5.2, 2], "cloth"),
+             ([-1.1, 29.5, 6.2], [2.2, 4.4, 1.6], "cloth"), ([-0.6, 40.4, -0.6], [1.2, 1.2, 1.2], "glow")]
+    brow = [([-4.9, 29.6, -5.4], [9.8, 1.2, 1.4], "trim"), ([-0.7, 24.6, -5.6], [1.4, 5.2, 0.9], "metal"), ([-5.3, 25, -4], [1.2, 4.6, 6], "metal"),
+            ([-5.5, 28, -1], [1.2, 1.4, 2], "trim")]
+    head = plume + brow + _mx(brow[2:])
+    chest = [([-3.6, 14, -4.3], [7.2, 7.5, 0.9], "metal", "scales"), ([-0.5, 14.4, -4.8], [1, 6.6, 0.6], "trim"), ([-3.6, 21.6, -4.5], [7.2, 1, 1.1], "trim"),
+             ([-1, 17.2, -5.2], [2, 2, 0.6], "glow"), ([-4.4, 22.4, -2.8], [8.8, 1.4, 5.6], "metal"), ([-3.2, 12, -4.2], [6.4, 1.2, 0.8], "trim")]
+    back = [([-4.2, 12.4, 2.6], [8.4, 11, 1.2], "cloth"), ([-3.4, 12.4, 3.6], [6.8, 8.6, 1], "cloth"), ([-4.4, 22.2, 2.2], [8.8, 1.2, 2], "trim"),
+            ([-1.2, 15.4, 4.4], [2.4, 2.4, 0.6], "glow")]
+    arm = [([-10.2, 23.2, -4.4], [7.4, 1.6, 8.8], "metal"), ([-10.8, 24.6, -3.8], [7, 1.6, 7.6], "metal"), ([-10.4, 26, -2.8], [5, 1.2, 5.6], "metal"),
+           ([-10.9, 23.2, -4.6], [0.7, 4.2, 9.2], "trim"), ([-9.8, 17, -2.8], [1.8, 5.4, 5.6], "metal"), ([-9.9, 13.4, -2.6], [1.6, 0.9, 5.2], "trim")]
+    waist = [([-4.8, 9.4, -3.2], [3.6, 6.6, 1], "metal"), ([1.2, 9.4, -3.2], [3.6, 6.6, 1], "metal"), ([-1.2, 12.4, -3.6], [2.4, 2.4, 0.8], "glow"),
+             ([4.4, 9.8, -1.8], [1.2, 6.2, 3.6], "metal"), ([-5.6, 9.8, -1.8], [1.2, 6.2, 3.6], "metal")]
+    leg = [([-4.6, 5.4, -3.8], [5, 3.2, 1.5], "metal"), ([-4.2, 5.8, -4.3], [4.2, 2.4, 0.7], "trim"), ([-5.6, 2, -2.4], [1.2, 8.6, 4.8], "metal"),
+           ([-5.8, 9.4, -2.6], [1.4, 0.9, 5.2], "trim")]
+    boot = [([-4.5, 0.4, -4.2], [5, 2.2, 1.5], "metal"), ([-4.4, 3.6, -3], [4.8, 1, 6], "trim"), ([-5.5, 0.6, -2], [1, 3, 4.4], "metal")]
+    return {"armorHead": head, "armorBody": chest + back, "armorRightArm": arm, "armorLeftArm": _mx(arm), "armorWaist": waist,
+            "armorRightLeg": leg, "armorLeftLeg": _mx(leg), "armorRightBoot": boot, "armorLeftBoot": _mx(boot)}
+
+
+def rootvale_ornaments():
+    """A forest warden: antlers of branching bark, leaf clusters, a bark-bundle back and root-clawed boots."""
+    antler = [([2.4, 32.6, -0.9], [1.8, 2.6, 1.8], "metal"), ([3.3, 34.8, -0.9], [1.7, 2.6, 1.7], "metal"), ([4.2, 37, -0.9], [1.6, 2.6, 1.6], "metal"),
+              ([5.1, 39.2, -0.9], [1.5, 2.6, 1.5], "trim"), ([5.3, 41.6, -0.8], [1.2, 1.4, 1.2], "glow"),
+              ([3.3, 35.6, -3.4], [1.4, 1.4, 2.8], "metal"), ([3.2, 35.6, -4.4], [1.2, 2.2, 1.2], "trim"), ([4.2, 37.8, 0.7], [1.4, 1.4, 2.8], "metal"),
+              ([4.1, 37.8, 2.5], [1.2, 2.2, 1.2], "trim"), ([6, 38.6, -0.8], [2, 1.3, 1.3], "metal"), ([7.7, 38.6, -0.7], [1, 2, 1], "glow")]
+    leaves = [([-5.2, 29.4, -5.6], [10.4, 1.4, 1.4], "cloth"), ([-4.4, 30.4, -6], [2.2, 1.6, 1], "cloth", None, (0, 0, 25)),
+              ([2.2, 30.4, -6], [2.2, 1.6, 1], "cloth", None, (0, 0, -25)), ([-0.6, 30, -6.2], [1.2, 1.4, 0.8], "glow"),
+              ([-0.7, 25.2, -5.6], [1.4, 4.4, 0.8], "metal"), ([-5.4, 26, -2], [1.4, 3.6, 5], "cloth")]
+    nape = [([-3, 25, 4.6], [6, 4, 1.2], "cloth"), ([-2.2, 22.2, 5.4], [4.4, 3.4, 1], "cloth"), ([-1.4, 20.4, 6.2], [2.8, 2.4, 0.8], "trim")]
+    head = antler + _mx(antler) + leaves + _mx(leaves[5:]) + nape
+    chest = [([-3.8, 14, -4.3], [7.6, 8, 0.9], "metal", "scales"), ([-0.5, 14, -4.8], [1, 8, 0.7], "trim"), ([-3.2, 17.4, -4.8], [2.6, 1.4, 0.6], "cloth", None, (0, 0, 30)),
+             ([0.6, 17.4, -4.8], [2.6, 1.4, 0.6], "cloth", None, (0, 0, -30)), ([-1, 19.2, -5], [2, 2, 0.6], "glow")]
+    back = [([-4.6, 12, 2.8], [9.2, 12, 1.6], "metal", "scales"), ([-3.4, 13, 4.2], [6.8, 10, 1.4], "metal", "scales"),
+            ([-5.2, 21, 3], [3, 1.6, 2.4], "cloth"), ([2.2, 21, 3], [3, 1.6, 2.4], "cloth"), ([-1, 18, 5.4], [2, 2.6, 0.8], "glow")]
+    arm = [([-10.2, 23.4, -4.2], [7, 1.8, 8.4], "cloth"), ([-10.8, 25, -3.4], [6.2, 1.6, 6.8], "cloth"), ([-9.8, 26.4, -1.4], [3.4, 1.4, 3.2], "trim"),
+           ([-9, 27.4, -0.6], [1, 1.2, 1.2], "glow"), ([-10.2, 15, -2.8], [1.6, 7, 5.6], "metal", "scales"), ([-10, 12, -2.4], [1.2, 3, 4.8], "trim")]
+    waist = [([-4.6, 9.6, -3.2], [3.2, 6.6, 1], "cloth"), ([1.4, 9.6, -3.2], [3.2, 6.6, 1], "cloth"), ([-1.3, 12.4, -3.6], [2.6, 2.6, 0.8], "glow"),
+             ([4.4, 10.4, -1.6], [1.4, 6, 3.2], "cloth"), ([-5.8, 10.4, -1.6], [1.4, 6, 3.2], "cloth")]
+    leg = [([-4.4, 5.4, -3.8], [4.6, 3, 1.3], "metal"), ([-3.6, 8, -4], [3, 1.4, 1], "trim"), ([-5.6, 2.6, -2.4], [1.4, 8, 4.8], "cloth"),
+           ([-6.4, 5.4, -0.4], [1, 3, 2.4], "cloth", None, (0, 0, 20))]
+    boot = [([-5.6, 1.6, -1], [1.2, 4, 4.4], "metal"), ([-4.4, 0.2, -4.6], [1.2, 1.6, 1.8], "trim"), ([-2.8, 0.2, -4.8], [1.2, 1.6, 2], "trim"),
+            ([-1.2, 0.2, -4.6], [1.2, 1.6, 1.8], "trim"), ([-4.2, 3.4, -3.2], [4.4, 1, 6.4], "cloth")]
+    return {"armorHead": head, "armorBody": chest + back, "armorRightArm": arm, "armorLeftArm": _mx(arm), "armorWaist": waist,
+            "armorRightLeg": leg, "armorLeftLeg": _mx(leg), "armorRightBoot": boot, "armorLeftBoot": _mx(boot)}
+
+
+def duskvale_ornaments():
+    """A moon mage: a crescent over the brow, swept horns, a high collar and bat wings on the back."""
+    moon = [([-3.4, 33.2, -5.2], [6.8, 1.2, 1.4], "trim"), ([-4.4, 31.8, -5.4], [1.6, 2, 1.4], "trim"), ([2.8, 31.8, -5.4], [1.6, 2, 1.4], "trim"),
+            ([-0.8, 34.4, -5.4], [1.6, 1.6, 1.2], "glow"), ([-0.7, 29.8, -5.6], [1.4, 1.4, 0.8], "glow")]
+    horns = [([3, 32.6, -2], [1.6, 2.6, 1.6], "metal"), ([3.6, 34.8, -1.2], [1.4, 2.6, 1.6], "metal"), ([4.2, 36.8, -0.2], [1.2, 2.4, 1.6], "metal"),
+             ([4.6, 38.6, 1], [1, 2, 1.4], "trim"), ([4.8, 40.2, 2], [0.8, 1.6, 1], "glow")]
+    collar = [([-5.2, 24.4, -2], [1.6, 5.6, 4.8], "metal"), ([-4.4, 24, 3.8], [8.8, 6.6, 1.4], "metal", "scales"), ([-3.6, 27, 5.2], [7.2, 4.4, 1.2], "metal"),
+              ([-3.2, 24, -5.4], [6.4, 1.2, 1.4], "trim")]
+    head = moon + horns + _mx(horns) + collar[:1] + _mx(collar[:1]) + collar[1:]
+    chest = [([-3.8, 14.4, -4.3], [7.6, 7, 0.9], "metal", "scales"), ([-2.4, 19, -4.9], [4.8, 1.2, 0.8], "trim"), ([-1.2, 16.4, -5], [2.4, 2.4, 0.6], "glow"),
+             ([-0.3, 12.4, -4.6], [0.6, 4.4, 0.6], "trim"), ([-4.4, 22.4, -2.8], [8.8, 1.4, 5.6], "metal")]
+    # right wing (the left is its mirror): a top arm, finger spars and a cloth membrane
+    wing = [([-10.4, 20.6, 2.4], [9.4, 1.2, 1.4], "metal"), ([-11.4, 19, 2.6], [1.2, 2, 1.2], "metal"),
+            ([-9.8, 13.4, 2.8], [1.1, 7.4, 1.1], "metal"), ([-7, 14.4, 2.8], [1, 6.4, 1], "metal"), ([-4.4, 15.6, 2.8], [1, 5.2, 1], "metal"),
+            ([-10.2, 14.2, 3.6], [9.4, 6.4, 0.9], "trim"), ([-11.4, 21.4, 3], [1.2, 1.6, 1], "glow")]
+    arm = [([-10, 23.4, -3.4], [6.4, 1.6, 6.8], "metal"), ([-10.4, 25, -3], [5.2, 1.4, 5.8], "metal"), ([-9.4, 26.4, -0.8], [1.4, 3.4, 1.4], "trim", None, (0, 0, 10)),
+           ([-10.8, 28.6, -0.6], [1, 2, 1], "glow"), ([-10.2, 14, -2.8], [1.4, 8, 5.6], "cloth"), ([-9.8, 12, -2.4], [1, 2, 4.8], "trim")]
+    waist = [([-4.6, 8.6, -3.2], [3.4, 7.6, 1], "cloth"), ([1.2, 8.6, -3.2], [3.4, 7.6, 1], "cloth"), ([-1.2, 12.4, -3.6], [2.4, 2.4, 0.8], "glow"),
+             ([4.4, 9, -1.8], [1.4, 7, 3.6], "cloth"), ([-5.8, 9, -1.8], [1.4, 7, 3.6], "cloth")]
+    leg = [([-4.4, 5.4, -3.8], [4.6, 3, 1.3], "metal"), ([-3.4, 6, -4.4], [2.6, 1.6, 0.8], "glow"), ([-5.6, 1.6, -2.4], [1.4, 9.4, 4.8], "cloth")]
+    boot = [([-5.6, 1.6, -1.4], [1.2, 4.4, 4.6], "metal"), ([-4.4, 0.4, -4.4], [4.8, 1.8, 1.2], "metal"), ([-3.6, 2.2, -4.6], [3.2, 0.8, 0.8], "trim")]
+    return {"armorHead": head, "armorBody": chest + wing + _mx(wing), "armorRightArm": arm, "armorLeftArm": _mx(arm), "armorWaist": waist,
+            "armorRightLeg": leg, "armorLeftLeg": _mx(leg), "armorRightBoot": boot, "armorLeftBoot": _mx(boot)}
+
+
 def shell_ramp(look):
     """Ornaments are a lighter, more saturated shell than the base plates, so they stand out from the body."""
     from armor_paint import ramp
@@ -160,7 +235,7 @@ def pack_ornaments(ornaments, look, art):
     cv = Cv(TEX_W * K, TEX_H * K)
     h, w = art.height, art.width
     cv.a[:h, :w] = np.array(art)
-    ramps = {"metal": shell_ramp(look), "trim": look.trim, "glow": look.glow}
+    ramps = {"metal": shell_ramp(look), "trim": look.trim, "glow": look.glow, "cloth": look.cloth}
     tones = {"top": 0.55, "front": 0.2, "back": 0.2, "left": -0.1, "right": -0.1, "bottom": -0.6}
     cubes = {}
     x, y, row = 0, 32, 0
@@ -197,7 +272,8 @@ def write_set(name: str, layers: Path, out: Path) -> None:
     (out / "geo").mkdir(parents=True, exist_ok=True)
     (out / "textures/armor").mkdir(parents=True, exist_ok=True)
     look = Look(name, SPECS[name])
-    ornaments = {"tideforge": tideforge_ornaments}.get(name, lambda: {})()
+    ornaments = {"tideforge": tideforge_ornaments, "challenger": challenger_ornaments, "rootvale": rootvale_ornaments,
+                  "duskvale": duskvale_ornaments}.get(name, lambda: {})()
     cubes = {}
     for number in (1, 2):
         sheet = Image.open(layers / f"{name}_layer_{number}.png").convert("RGBA")
