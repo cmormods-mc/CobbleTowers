@@ -25,6 +25,7 @@ import random
 import numpy as np
 from PIL import Image
 
+import armor_bake
 import armor_paint
 from armor_paint import Cv
 from generate_armor_textures import SPECS, Look
@@ -281,7 +282,6 @@ def write_set(name: str, layers: Path, out: Path) -> None:
         art = sheet.crop((0, 0, half, sheet.height))
         mask = sheet.crop((half, 0, sheet.width, sheet.height)).split()[3]
         full, cubes = pack_ornaments(ornaments, look, art)
-        full.save(out / f"textures/armor/{name}_{number}.png")
         # glow: the art where the layer's mask says so (ornament glow texels are the glow ramp colours)
         arr = np.array(full)
         glow_mask = np.zeros(arr.shape[:2], bool)
@@ -290,6 +290,12 @@ def write_set(name: str, layers: Path, out: Path) -> None:
             glow_mask |= (arr[..., 0] == c[0]) & (arr[..., 1] == c[1]) & (arr[..., 2] == c[2]) & (arr[..., 3] > 0)
         glow = np.zeros_like(arr)
         glow[glow_mask] = arr[glow_mask]
+        # contact shadow from the neighbouring boxes, so the stacked boxes read as one piece
+        all_cubes = [c for b in geo(name, cubes)["minecraft:geometry"][0]["bones"] for c in b["cubes"]]
+        ramps = [shell_ramp(look), look.metal, look.trim, look.cloth, look.dark]
+        glow_ramp_mask = glow_mask.copy()
+        baked = armor_bake.bake(arr, all_cubes, K, ramps, glow_ramp_mask)
+        Image.fromarray(baked, "RGBA").save(out / f"textures/armor/{name}_{number}.png")
         Image.fromarray(glow, "RGBA").save(out / f"textures/armor/{name}_{number}_glowmask.png")
     (out / f"geo/{name}.geo.json").write_text(json.dumps(geo(name, cubes), indent=1), encoding="utf-8")
 
