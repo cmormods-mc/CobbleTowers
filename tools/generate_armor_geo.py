@@ -20,6 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import math
+import random
 
 import numpy as np
 from PIL import Image
@@ -28,7 +29,7 @@ import armor_paint
 from armor_paint import Cv
 from generate_armor_textures import SPECS, Look
 
-TEX_W, TEX_H = 64, 128  # rows 0-31 the layer art in the vanilla layout, rows 32-127 the ornament cubes
+TEX_W, TEX_H = 64, 192  # rows 0-31 the layer art in the vanilla layout, rows 32-191 the ornament cubes
 K = 4  # texels per unit in the written PNGs, matching the layer art
 
 
@@ -70,30 +71,72 @@ def geo(name: str, extra: dict | None = None) -> dict:
     }
 
 
+def _mx(items):
+    """Mirror boxes across x = 0 (right side to left side); a box is (origin, size, material[, pattern])."""
+    return [((-(o[0] + sz[0]), o[1], o[2]), sz, *rest) for o, sz, *rest in items]
+
+
 def tideforge_ornaments():
-    """bone -> [(origin, size, material)] in geo coordinates (y up, the front at -z), unrotated boxes."""
-    o = {"armorHead": [], "armorBody": [], "armorRightArm": [], "armorLeftArm": [], "armorRightLeg": [], "armorLeftLeg": [],
-         "armorRightBoot": [], "armorLeftBoot": []}
-    # head: a swept comb crest, a nape fin, flared temple fins
-    o["armorHead"] += [([-1, 33, 1.5], [2, 6, 3.5], "metal"), ([-1, 33, -2], [2, 9, 3.5], "metal"), ([-1, 33, -5], [2, 4.5, 3], "trim"),
-                       ([-0.6, 38, -1.4], [1.2, 2.5, 1.4], "glow"), ([-1.2, 24, 5], [2.4, 9, 1.8], "metal")]
-    for sx in (1, -1):
-        x = 5 if sx == 1 else -7
-        o["armorHead"] += [([x, 26, -3], [2, 8, 7], "metal"), ([x + (1.5 if sx == 1 else -1), 28, -1], [1, 3.5, 3.5], "trim")]
-    # body: a carapace down the back with a dorsal fin
-    o["armorBody"] += [([-4.5, 12, 3], [9, 13, 1.6], "metal"), ([-3.5, 15, 4.6], [7, 9, 1.6], "metal"), ([-2, 18, 6.2], [4, 5, 1.6], "trim"),
-                       ([-0.8, 25, 3.2], [1.6, 5.5, 4.5], "metal"), ([-0.5, 20, 7.8], [1, 2, 1], "glow")]
-    # arms: stacked shell pauldrons that swing with the arm
-    for bone, sx in (("armorRightArm", -1), ("armorLeftArm", 1)):
-        x0, x1 = (-10.5, -2.5) if sx < 0 else (2.5, 10.5)
-        o[bone] += [([x0, 23.2, -4], [x1 - x0, 1.8, 8], "metal"), ([x0 + (0 if sx < 0 else 1), 25, -3], [x1 - x0 - 1, 1.6, 6], "metal"),
-                    ([-10.5 if sx < 0 else 7, 26.6, -2], [3.5, 1.2, 4], "trim")]
-    # legs: knee guards and side fins; boots: cuff fins and toe caps
-    for bone, bb, sx in (("armorRightLeg", "armorRightBoot", -1), ("armorLeftLeg", "armorLeftBoot", 1)):
-        x = -3.9 if sx < 0 else -0.1
-        o[bone] += [([x - 0.3, 4, -3.5], [4.6, 4, 1], "trim"), ([x - 1.5 if sx < 0 else x + 4.5, 2, -2], [1, 8, 4.5], "metal")]
-        o[bb] += [([x - 1.6 if sx < 0 else x + 4.6, 1, -1.5], [1, 5, 3.5], "metal"), ([x - 0.2, 0.2, -3.6], [4.4, 2, 1.2], "trim")]
-    return o
+    """bone -> [(origin, size, material[, pattern])] in geo coordinates (y up, the front at -z), unrotated boxes."""
+    # head: a stepped dorsal fin, swept cheek wings, a tail fin down the nape
+    crest = [([-1, 33, -4.5], [2, 2.5, 2], "trim"), ([-1, 33, -2.5], [2, 5.5, 2], "metal"), ([-1, 33, -0.5], [2, 8, 2], "metal"),
+             ([-1, 33, 1.5], [2, 5, 2], "metal"), ([-1, 33, 3.5], [2, 2, 2], "metal"), ([-0.7, 41, 0], [1.4, 1.6, 1], "glow"),
+             ([1, 36.5, 0], [0.3, 2.2, 1.2], "glow"), ([-1.3, 36.5, 0], [0.3, 2.2, 1.2], "glow")]
+    wing = [([5, 28, -2.5], [1.4, 5.5, 4.5], "metal", "scales"), ([5.2, 27, 2], [1.4, 4, 4.5], "metal"),
+            ([5.4, 26, 6], [1.4, 3, 3.5], "metal"), ([5.6, 25.4, 9.5], [0.8, 2, 1.6], "trim")]
+    nape = [([-1.2, 27, 5], [2.4, 6, 1.2], "metal"), ([-1.2, 24.5, 6.2], [2.4, 5.5, 1.2], "metal"), ([-1, 23, 7.4], [2, 4, 1], "trim")]
+    head = crest + wing + _mx(wing) + nape
+    # body: a scallop shell on the chest, a layered carapace and swept spine fin on the back
+    ribs = [(-2.4, 2.4), (-1.2, 3.6), (0, 4.8), (1.2, 3.6), (2.4, 2.4)]
+    body = [([cx - 0.55, 17, -3.9], [1.1, h, 0.9], "metal") for cx, h in ribs]
+    body += [([-3, 16.2, -4], [6, 0.8, 1], "trim"), ([-0.7, 18.2, -4.4], [1.4, 1.4, 0.5], "glow")]
+    body += [([-4.8, 12, 3], [9.6, 12.5, 1.4], "metal", "scales"), ([-4, 14.5, 4.4], [8, 9, 1.4], "metal", "scales"),
+             ([-3, 17, 5.8], [6, 5.5, 1.2], "metal", "scales"), ([-0.8, 24.5, 3.2], [1.6, 2.5, 1.8], "metal"),
+             ([-0.8, 24.5, 5], [1.6, 5.5, 2.2], "metal"), ([-0.8, 22, 7.2], [1.6, 5.5, 2], "metal"), ([-0.6, 18.5, 7], [1.2, 1.7, 0.8], "glow")]
+    # arms: stacked shell pauldrons, hanging lames and a swept forearm fin
+    arm = [([-10.2, 23.2, -4.4], [7.4, 2, 8.8], "metal", "scales"), ([-10.8, 25.2, -3.6], [6.8, 1.6, 7.2], "metal", "scales"),
+           ([-10.4, 26.8, -2.4], [4, 1.2, 4.8], "trim"), ([-9, 28, -0.6], [1, 1.2, 1.2], "glow"),
+           ([-10.8, 19, -3.2], [1.2, 4.2, 6.4], "metal"), ([-10.4, 15.5, -2.6], [1, 3.9, 5.2], "metal"), ([-10.2, 12, 1], [1, 4, 3.5], "trim")]
+    # waist and legs: hip fins, shell knee guards, thigh fins
+    waist = [([4.4, 12.5, -1.5], [1.6, 4.5, 4.5], "metal"), ([-6, 12.5, -1.5], [1.6, 4.5, 4.5], "metal"), ([-1.5, 12.5, -3.4], [3, 3, 0.9], "metal")]
+    leg = [([-4.2, 5.5, -3.8], [4.6, 3, 1.3], "metal", "scales"), ([-3.4, 8.5, -3.5], [3, 1, 1], "trim"),
+           ([-5.6, 3, -2], [1.2, 7, 4.4], "metal"), ([-6.6, 5, 0], [1, 3, 2.4], "metal")]
+    boot = [([-5.7, 1.5, -1], [1, 4.5, 4.5], "metal"), ([-6.4, 2.5, 2], [0.7, 2, 2.5], "metal"), ([-4.3, 0.2, -3.6], [4.8, 2, 1.2], "metal"),
+            ([-3.8, 2.2, -3.4], [3.8, 0.8, 0.9], "trim")]
+    return {"armorHead": head, "armorBody": body, "armorRightArm": arm, "armorLeftArm": _mx(arm), "armorWaist": waist,
+            "armorRightLeg": leg, "armorLeftLeg": _mx(leg), "armorRightBoot": boot, "armorLeftBoot": _mx(boot)}
+
+
+def shell_ramp(look):
+    """Ornaments are a lighter, more saturated shell than the base plates, so they stand out from the body."""
+    from armor_paint import ramp
+    base = look.s["metal"]
+    return ramp(tuple(min(255, int(c * 1.3) + 10) for c in base))
+
+
+def finish_face(cv, rect, rp, face, pattern, seed):
+    """Depth on a painted face: scales on big faces, a dithered shadow toward the bottom, a few light specks and worn edge nicks."""
+    x0, y0, x1, y1 = rect
+    w, h = x1 - x0, y1 - y0
+    if w < 6 or h < 6:
+        return
+    if pattern == "scales" and face in ("top", "front", "back") and w >= 12 and h >= 12:
+        sub = Cv(cv.w, cv.h)
+        sub.scales(x0 + 1, y0 + 1, w - 2, h - 2, rp, max(6, min(w, h) // 3), tone_top=0.25)
+        live = sub.a[..., 3] > 0
+        cv.a[live] = sub.a[live]
+    rnd = random.Random(seed)
+    bayer = ((0, 8, 2, 10), (12, 4, 14, 6), (3, 11, 1, 9), (15, 7, 13, 5))
+    for yy in range(y0 + 1, y1 - 1):
+        t = (yy - y0) / h
+        if t < 0.62 or face == "top":
+            continue
+        for xx in range(x0 + 1, x1 - 1):
+            if bayer[yy % 4][xx % 4] / 16 < (t - 0.62) * 1.9 and cv.a[yy, xx, 3]:
+                cv.a[yy, xx] = (*rp[2], 255)
+    for _ in range(max(1, (w * h) // 180)):
+        xx, yy = rnd.randrange(x0 + 1, x1 - 1), rnd.randrange(y0 + 1, y1 - 1)
+        cv.a[yy, xx] = (*rp[4], 255)
 
 
 def pack_ornaments(ornaments, look, art):
@@ -102,12 +145,13 @@ def pack_ornaments(ornaments, look, art):
     cv = Cv(TEX_W * K, TEX_H * K)
     h, w = art.height, art.width
     cv.a[:h, :w] = np.array(art)
-    ramps = {"metal": look.metal, "trim": look.trim, "glow": look.glow}
+    ramps = {"metal": shell_ramp(look), "trim": look.trim, "glow": look.glow}
     tones = {"top": 0.55, "front": 0.2, "back": 0.2, "left": -0.1, "right": -0.1, "bottom": -0.6}
     cubes = {}
     x, y, row = 0, 32, 0
     for bone, items in ornaments.items():
-        for origin, size, material in items:
+        for origin, size, material, *extra in items:
+            pattern = extra[0] if extra else None
             sx, sy, sz = size
             cw, ch = math.ceil(2 * sz + 2 * sx), math.ceil(sz + sy)
             if x + cw > TEX_W:
@@ -123,6 +167,8 @@ def pack_ornaments(ornaments, look, art):
                 mask[y0:y1, x0:x1] = True
                 cv.plate(mask, ramps[material], outline=(x1 - x0) >= 5 and (y1 - y0) >= 5, split=(x1 - x0) > 8 and (y1 - y0) > 8,
                          tone=tones[name], hot=name == "top")
+                if material != "glow":
+                    finish_face(cv, (x0, y0, x1, y1), ramps[material], name, pattern, seed=x0 * 7 + y0)
             cubes.setdefault(bone, []).append(cube(list(origin), list(size), [x, y], 0.0))
             x, row = x + cw, max(row, ch)
     return Image.fromarray(cv.a, "RGBA"), cubes
@@ -156,10 +202,19 @@ def write_set(name: str, layers: Path, out: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--sets", default="tideforge")
-    parser.add_argument("--out", type=Path, default=Path(__file__).resolve().parent.parent / "src/main/resources/assets/cobbletowers")
+    repo = Path(__file__).resolve().parent.parent / "src/main/resources/assets/cobbletowers"
+    parser.add_argument("--out", type=Path, default=repo)
+    parser.add_argument("--dev-pack", type=Path, help="write a loose resource pack here instead (for a client to try without restarting the server)")
     args = parser.parse_args()
+    out = repo
+    if args.dev_pack:
+        out = args.dev_pack / "assets/cobbletowers"
+        (args.dev_pack).mkdir(parents=True, exist_ok=True)
+        (args.dev_pack / "pack.mcmeta").write_text('{"pack": {"pack_format": 34, "description": "geo dev"}}', encoding="utf-8")
+    else:
+        out = args.out
     for name in args.sets.split(","):
-        write_set(name, args.out / "textures/models/armor", args.out)
+        write_set(name, repo / "textures/models/armor", out)
         print("wrote geo armor", name)
 
 

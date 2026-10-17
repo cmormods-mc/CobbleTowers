@@ -36,7 +36,8 @@ SETS = ["recruit", "challenger", "paragon", "tidewalker", "tideforge", "leviatha
         "sprout", "rootvale", "heartwood", "duskwanderer", "duskvale", "nightfall"]
 SLOTS = (("head", "helmet"), ("chest", "chestplate"), ("legs", "leggings"), ("feet", "boots"))
 # (dx, dz, yaw) of the viewer from the bot, which faces south (+z): front, side, back, other side
-VIEWS = (("front", 0, 3.6, 180), ("side", 3.6, 0, 90), ("back", 0, -3.6, 0), ("side2", -3.6, 0, -90))
+D = float(os.environ.get("VIEW_DIST", "3.6"))  # viewer distance in blocks; a smaller value gives a close-up
+VIEWS = (("front", 0, D, 180), ("side", D, 0, 90), ("back", 0, -D, 0), ("side2", -D, 0, -90))
 
 
 def wait_for_pack(pack: Path) -> None:
@@ -71,7 +72,8 @@ def prepare(game: Path, rig: Path, pack: Path, gui_scale: int) -> None:
     (game / "options.txt").write_text(
         f"guiScale:{gui_scale}\nonboardAccessibility:false\nskipMultiplayerWarning:true\npauseOnLostFocus:false\nfullscreen:false\n"
         'soundCategory_master:0.0\nlang:en_us\ntutorialStep:none\nhideGui:true\nrenderDistance:8\n'
-        'resourcePacks:["vanilla","file/polymer.zip"]\nincompatibleResourcePacks:[]\n', encoding="utf-8")
+        'resourcePacks:["vanilla","file/polymer.zip"' + (',"file/geodev"' if (game / "resourcepacks" / "geodev").exists() else "")
+        + ']\nincompatibleResourcePacks:[]\n', encoding="utf-8")
 
 
 def main() -> None:
