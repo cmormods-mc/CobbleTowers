@@ -16,6 +16,7 @@ import { DeskProgress } from './desk/DeskProgress.js';
 import { DeskSocial, DeskTowerBrief, DeskTrialBrief, DeskTrials } from './desk/DeskBriefs.js';
 import { DeskFeatures } from './desk/DeskFeatures.js';
 import { DeskGuide, DeskMastery, DeskParty, DeskSettings } from './desk/DeskMore.js';
+import { DeskDraft, DeskReward, DeskScouting, DeskVendor, DeskWaiting } from './desk/DeskModals.js';
 import { Lobby } from './screens/Lobby.js';
 import { Party } from './screens/Party.js';
 import { Mastery } from './screens/Mastery.js';
@@ -80,10 +81,10 @@ export function App() {
 
   return html`
     <div class="main">
-      ${screen === 'scout' && scout ? html`<${Scouting} scout=${scout} />`
+      ${screen === 'scout' && scout ? (look === 'desk' ? html`<${DeskScouting} scout=${scout} />` : html`<${Scouting} scout=${scout} />`)
         : screen === 'intermission' && inter && look === 'desk' ? html`<${DeskIntermission} inter=${inter} at=${interAt} />`
         : screen === 'intermission' && inter ? html`<${Intermission} inter=${inter} at=${interAt} />`
-        : screen === 'draft' && draft ? html`<${Draft} draft=${draft} />`
+        : screen === 'draft' && draft ? (look === 'desk' ? html`<${DeskDraft} draft=${draft} />` : html`<${Draft} draft=${draft} />`)
         : screen === 'hall' && look === 'desk' && view === 'mastery' && mast ? html`<${DeskMastery} state=${mast} />`
         : screen === 'hall' && look === 'desk' && view === 'party' && reg ? html`<${DeskParty} reg=${reg} />`
         : screen === 'hall' && look === 'desk' && view === 'guide' ? html`<${DeskGuide} />`
@@ -100,9 +101,9 @@ export function App() {
         : screen === 'hall' && look === 'desk' && view === 'trial' && hall ? html`<${DeskTrialBrief} hall=${hall} kind=${pick} busy=${!!busyAt} />`
         : screen === 'hall' && look === 'desk' && view === 'feature' ? html`<${DeskFeatures} />`
         : screen === 'hall' && (hall || view === 'feature') ? html`<${Hall} hall=${hall} tab=${tab} page=${page} view=${view} pick=${pick} busy=${!!busyAt} />`
-        : html`<${Waiting} />`}
-      ${reward ? html`<${RewardModal} reward=${reward} onClose=${closeRewardNow} />`
-        : vendorOpen && vendor ? html`<${VendorModal} vendor=${vendor} onClose=${() => update((s) => openVendor(s, false))} />` : null}
+        : look === 'desk' ? html`<${DeskWaiting} />` : html`<${Waiting} />`}
+      ${reward ? (look === 'desk' ? html`<${DeskReward} reward=${reward} onClose=${closeRewardNow} />` : html`<${RewardModal} reward=${reward} onClose=${closeRewardNow} />`)
+        : vendorOpen && vendor ? (look === 'desk' ? html`<${DeskVendor} vendor=${vendor} onClose=${() => update((s) => openVendor(s, false))} />` : html`<${VendorModal} vendor=${vendor} onClose=${() => update((s) => openVendor(s, false))} />`) : null}
       ${offline ? html`<div class="offline">Lost contact with the server. Waiting for it to answer...</div>` : null}
       ${deskNow ? html`<${DeskToast} notice=${notice} />` : html`<${Toast} notice=${notice} />`}
     </div>`;

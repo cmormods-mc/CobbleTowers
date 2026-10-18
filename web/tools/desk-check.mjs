@@ -340,6 +340,62 @@ async function open(look, size = { width: 1280, height: 720 }) {
   check('the Look switch in Desk settings returns to Native', (await p.locator('.ns').count()) >= 0 && (await p.evaluate(() => JSON.parse(localStorage.getItem('cobbletowers.ui')).look)) === 'native');
   await p.close();
 }
+// 12. the rental draft, the reward and vendor pop-ups, scouting, the spectator panel, the waiting page
+{
+  const open2 = (d) => { d.complete = false; d.current = 0; d.packs.forEach((pk) => { pk.kept = []; }); };
+  const p = await open('desk');
+  await p.send('RentalDraft', fixture('RentalDraft', open2));
+  await p.waitForSelector('.fd .pack');
+  check('the draft opens on a sealed pack on the dark table, three pack dots', (await p.locator('.fd .dtable .pack').count()) === 1 && (await p.locator('.fd .dots i').count()) === 3);
+  await p.locator('.fd .pack').click();
+  await p.waitForSelector('.fd .card.pick', { timeout: 8000 });
+  await p.locator('.fd .card.pick').nth(0).click();
+  await p.locator('.fd .card.pick').nth(1).click();
+  await p.locator('.fd .dbtn', { hasText: 'Keep these two' }).click();
+  const picks = await p.evaluate(() => window.TowerDev.sent.filter((m) => m.kind === 'RentalDraftAction').map((m) => m.action + ':' + m.a + ':' + m.b));
+  check('choosing two cards and keeping them sends the pick', picks.includes('PICK:0:1'), picks.join(','));
+  await p.locator('.fd .tl', { hasText: 'Start over' }).click();
+  check('Start over sends the restart', (await p.evaluate(() => window.TowerDev.sent.some((m) => m.kind === 'RentalDraftAction' && m.action === 'RESTART'))));
+  check('no console errors (draft)', p.errors.length === 0, p.errors.join(' | '));
+  await p.close();
+}
+{
+  const p = await open('desk');
+  await p.send('TowerHallState', fixture('TowerHallState'));
+  await p.send('RewardReveal', fixture('RewardReveal'));
+  await p.waitForSelector('.fd.dover .dmodal');
+  check('a reward reveal is a dialog over the page, one reward at a time', (await p.locator('.fd.dover [role=dialog], .fd.dover').count()) >= 1 && /1 \/ 4/.test(await p.locator('.dmodal').innerText()));
+  await p.locator('.dpager .dbtn').nth(1).click();
+  check('the pager moves to the next reward', /2 \/ 4/.test(await p.locator('.dmodal').innerText()));
+  await p.locator('.dmodal .dbtn', { hasText: 'Continue' }).click();
+  check('Continue closes it and asks the server to refresh', (await p.locator('.dmodal').count()) === 0 && (await p.evaluate(() => window.TowerDev.sent.some((m) => m.kind === 'IntermissionAction' && m.action === 'REFRESH'))));
+  await p.close();
+}
+{
+  const p = await open('desk');
+  await p.send('IntermissionState', fixture('IntermissionState'));
+  await p.send('VendorCatalog', fixture('VendorCatalog'));
+  await p.waitForSelector('.fd .dgood');
+  check('the vendor lists its goods and the balance', (await p.locator('.fd .dgood').count()) >= 2 && /Balance: \d+/.test(await p.locator('.dmodal').innerText()));
+  await p.locator('.fd .dgood').nth(1).click();
+  await p.locator('.dmodal .dbtn', { hasText: 'Purchase' }).click();
+  check('Purchase sends the service and the recipient', (await p.evaluate(() => window.TowerDev.sent.some((m) => m.kind === 'VendorPurchase' && m.serviceId && m.targetPlayerId))));
+  await p.locator('.dmodal .dbtn', { hasText: 'Close' }).click();
+  check('Close hides the vendor again', (await p.locator('.dmodal').count()) === 0);
+  await p.close();
+}
+{
+  const p = await open('desk');
+  await p.send('ScoutingReveal', fixture('ScoutingReveal'));
+  await p.waitForSelector('.fd .dach');
+  await p.locator('.fd .dach').nth(1).click();
+  check('scouting shows each category and reads the chosen one in full', (await p.locator('.fd .dach').count()) === 6 && /Lapras/.test(await p.locator('.fd .dcard').nth(1).innerText()));
+  await p.close();
+  const w = await open('desk');
+  await w.waitForSelector('.fd .dcard');
+  check('before the server says anything the Desk waiting card shows', /Waiting for the tower/.test(await w.locator('.fd').innerText()));
+  await w.close();
+}
 // 6. sizes: nothing overflows the window
 for (const [w, h] of [[800, 500], [1280, 720], [1920, 1080], [2560, 1080]]) {
   const p = await open('desk', { width: w, height: h });

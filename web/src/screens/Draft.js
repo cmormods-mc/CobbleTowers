@@ -21,8 +21,14 @@ function Dots({ current, complete, x, y }) {
   return html`<div class="dots" style=${at(x, y)}>${[0, 1, 2].map((i) => html`<i class=${(i < current || complete ? 'on' : '') + (i === current && !complete ? ' cur' : '')}></i>`)}</div>`;
 }
 
+/** A button in the native frame, or in the Frontier Desk's when the table is drawn there. */
+function Btn({ desk, kind, w, disabled, onClick, children }) {
+  if (desk) return html`<button class=${'dbtn dsm' + (kind === 'dark' ? ' gh' : '')} disabled=${disabled} onClick=${onClick}>${children}</button>`;
+  return html`<${NB} flow w=${w} kind=${kind} disabled=${disabled} onClick=${onClick}>${children}<//>`;
+}
+
 /** sealed -> tearing -> revealing -> choosing, per pack. The server holds the packs and checks every pick; this only presents. */
-function PackStage({ draft }) {
+export function PackStage({ draft, desk }) {
   const cs = cardScale();
   const cards = useMemo(() => draft.packs[draft.current].cards.map(adaptCard), [draft.current, draft.packs[draft.current]]);
   const [phase, setPhase] = useState('sealed');
@@ -63,13 +69,13 @@ function PackStage({ draft }) {
     <div style="display:flex;align-items:center;gap:20px">
       <span class="fl c-bronze">${revealing ? 'Click to skip the reveal' : `Choose two cards to keep (${picks.length} of 2)`}</span>
       ${revealing
-        ? html`<${NB} flow w=${60} kind="dark" onClick=${() => setPhase('choosing')}>Skip<//>`
-        : html`<${NB} flow w=${100} disabled=${picks.length !== 2} onClick=${() => act('RentalDraftAction', { action: 'PICK', a: picks[0], b: picks[1] })}>Keep these two<//>`}
+        ? html`<${Btn} desk=${desk} w=${60} kind="dark" onClick=${() => setPhase('choosing')}>Skip<//>`
+        : html`<${Btn} desk=${desk} w=${100} disabled=${picks.length !== 2} onClick=${() => act('RentalDraftAction', { action: 'PICK', a: picks[0], b: picks[1] })}>Keep these two<//>`}
     </div>
     <div class="fl c-muted">A team may keep at most ${MAX_BIG} legendary or mythic Pokémon.</div>`;
 }
 
-function Done({ draft }) {
+export function Done({ draft, desk }) {
   const team = useMemo(() => keptCards(draft), [draft.packs]);
   const cs = cardScale() * 0.73;
   return html`
@@ -77,9 +83,9 @@ function Done({ draft }) {
     <div style="display:flex;gap:10px">${team.map((c) => html`<${RentalCard} card=${c} cs=${cs} />`)}</div>
     <div class="fl c-text">Your team is drafted.</div>
     <div style="display:flex;gap:12px">
-      <${NB} flow w=${80} kind="dark" onClick=${() => act('RentalDraftAction', { action: 'RESTART', a: 0, b: 0 })}>Draft again<//>
-      <${NB} flow w=${60} kind="dark" onClick=${() => act('RentalDraftAction', { action: 'LOBBY', a: 0, b: 0 })}>Lobby<//>
-      <${NB} flow w=${80} onClick=${() => act('RentalDraftAction', { action: 'READY', a: 0, b: 0 })}>Ready up<//></div>`;
+      <${Btn} desk=${desk} w=${80} kind="dark" onClick=${() => act('RentalDraftAction', { action: 'RESTART', a: 0, b: 0 })}>Draft again<//>
+      <${Btn} desk=${desk} w=${60} kind="dark" onClick=${() => act('RentalDraftAction', { action: 'LOBBY', a: 0, b: 0 })}>Lobby<//>
+      <${Btn} desk=${desk} w=${80} onClick=${() => act('RentalDraftAction', { action: 'READY', a: 0, b: 0 })}>Ready up<//></div>`;
 }
 
 export function Draft({ draft }) {

@@ -84,5 +84,15 @@ The Desk look now covers every page of the Hall, not only the four from the mock
 
 * **Slice 5:** `desk/DeskBriefs.js` (tower briefing, trial briefing, the Trials page, the Social page; `briefing.js` holds the pure parts, including "why can't I select this" and tidying raw modifier ids such as `cobbletowers:double_trouble` into "Double Trouble"), `desk/DeskFeatures.js` (every feature menu: club, season, cosmetics, contracts, Hall of Fame, run report, codex, echoes, collection, spectate, run codes, and the Current Run page; `featureView.js`). A top-bar **Back** button now appears on sub-pages.
 * **Slice 6:** `desk/DeskMore.js`: Mastery and the four boards, the party chooser (`partyView.js`: every Pokemon as a sprite card, the registered ones numbered), the guide (which still opens by itself the first time), and Settings (which has the Look switch, so a player can always get back to Native).
-* The Hall-level pages that stay native: the rental draft, the vendor and reward pop-ups, the scouting report and the HUD (slice 7).
 * Tests: `desk-briefs.test.js`, `desk-more.test.js`; `desk-check.mjs` now has about 60 checks.
+
+## Slice 7: the last screens (2026-10-18)
+
+With this the Desk look covers **every page and pop-up the web UI has**. `desk/DeskModals.js`:
+
+* **Rental draft:** the cards and the pack are pixel art made for a dark table, so the draft keeps a dark "table" (the oak texture) inside the light page, with the Desk header, pack dots and buttons around and on it. `screens/Draft.js` exports `PackStage` and `Done` with a `desk` flag that swaps the native buttons for Desk ones; the pack logic is unchanged.
+* **Reward reveal and vendor:** dialogs over whatever is on screen (the item picture, the amount, a pager; the goods as cards, the recipient, Purchase).
+* **Scouting report, spectator panel (HUD page), the waiting page.**
+* Fix found by the screenshots: Desk class names `.lv`, `.fl` and the type-chip `.ty` leaked into the rental cards and their labels; renamed (`dlv`, `dfl`) or scoped away from the table.
+
+Everything is still opt-in (Settings > Look, default Native). Turning it on for everyone is one default in `web/src/settings.js` (`DEFAULTS.look`) and the same value in `load()`; that is the owner's call. `desk-check.mjs` has about 75 browser checks.
