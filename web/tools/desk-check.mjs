@@ -60,7 +60,7 @@ async function open(look, size = { width: 1280, height: 720 }) {
   check('a row is a real button (keyboard Enter keeps it selected)', (await p.locator('.fd .trow.sel').count()) === 1);
   await p.locator('.fd .dbtn:not(.gh)').last().click();
   await p.waitForTimeout(200);
-  check('Climb opens the native tower briefing', (await p.locator('.ns').count()) > 0 && /Duskvale/.test(await p.locator('.ns').innerText()));
+  check('Climb opens the Desk tower briefing', (await p.locator('.fd .dbanner').count()) === 1 && /Duskvale/.test(await p.locator('.fd').innerText()));
   await p.close();
 }
 {
@@ -69,7 +69,7 @@ async function open(look, size = { width: 1280, height: 720 }) {
   await p.waitForSelector('.fd .trow');
   await p.locator('.fd .pills a', { hasText: 'Trials' }).click();
   await p.waitForTimeout(200);
-  check('the Trials pill opens the native Trials page', (await p.locator('.ns').count()) > 0 && (await p.locator('.fd').count()) === 0);
+  check('the Trials pill opens the Desk Trials page', (await p.locator('.fd .dbanner').count()) === 2 && /Daily Tower/.test(await p.locator('.fd').innerText()));
   await p.close();
 }
 {
@@ -83,19 +83,25 @@ async function open(look, size = { width: 1280, height: 720 }) {
   await p.close();
 }
 
-// 3. the Look setting switches in both directions
+// 3. the Look setting switches (the Desk settings page, and the native one for the way back)
 {
   const p = await open('desk');
   await p.send('TowerHallState', fixture('TowerHallState'));
   await p.waitForSelector('.fd .trow');
   await p.locator('.fd .tl', { hasText: 'Settings' }).click();
-  await p.waitForTimeout(200);
-  const btn = p.locator('.ns button', { hasText: 'Look:' });
-  check('Settings shows the Look button as Frontier Desk', /Frontier Desk/.test(await btn.innerText()));
+  const btn = p.locator('.fd .dsetrow').first().locator('.dbtn');
+  check('Desk settings shows the Look button as Frontier Desk', /Frontier Desk/.test(await btn.innerText()));
   await btn.click();
-  check('clicking it switches to Native', /Native/.test(await p.locator('.ns button', { hasText: 'Look:' }).innerText()));
-  check('and the choice is saved', (await p.evaluate(() => JSON.parse(localStorage.getItem('cobbletowers.ui')).look)) === 'native');
+  check('clicking it switches to Native and the choice is saved', (await p.evaluate(() => JSON.parse(localStorage.getItem('cobbletowers.ui')).look)) === 'native');
   await p.close();
+  const q = await open('native');
+  await q.send('TowerHallState', fixture('TowerHallState'));
+  await q.waitForTimeout(300);
+  await q.locator('.ns button', { hasText: 'Settings' }).first().click();
+  await q.waitForTimeout(200);
+  const nb = q.locator('.ns button', { hasText: 'Look:' });
+  check('native Settings shows the Look button as Native, and switching to Desk saves it', /Native/.test(await nb.innerText()) && await (async () => { await nb.click(); return (await q.evaluate(() => JSON.parse(localStorage.getItem('cobbletowers.ui')).look)) === 'desk'; })());
+  await q.close();
 }
 
 // 4. the Desk intermission (a plain draft, no route): choose, confirm, ready, cash out
@@ -232,6 +238,106 @@ async function open(look, size = { width: 1280, height: 720 }) {
   await p.locator('.fd .pills a', { hasText: 'Progress' }).click();
   await p.waitForSelector('.fd .dtile');
   check('progress with no season and no extras still draws one lane', (await p.locator('.fd .trow').count()) === 1 && p.errors.length === 0, p.errors.join(' | '));
+  await p.close();
+}
+// 10. briefings, Trials, Social and the feature menus
+{
+  const free = (d) => { d.runStatus = ''; d.canResume = false; d.play.lobby.role = 0; d.play.lobby.countdown = -1; d.extras.runTower = ''; };
+  const p = await open('desk');
+  await p.send('TowerHallState', fixture('TowerHallState', free));
+  await p.waitForSelector('.fd .trow');
+  await p.locator('.fd .trow').nth(4).click();
+  await p.locator('.fd .dbtn:not(.gh)').last().click();
+  await p.waitForSelector('.fd .dbanner');
+  check('a free player can select a tower from its briefing (and the button sends the tower request)', await (async () => {
+    await p.locator('.fd .dbtn', { hasText: 'Select tower' }).click();
+    return (await p.sentKinds()).includes('TowerHallAction:tower:cobbletowers:tideforge');
+  })());
+  await p.locator('.fd .dback').click();
+  check('Back returns to the Play page', (await p.locator('.fd .trow').count()) === 5);
+  await p.locator('.fd .pills a', { hasText: 'Trials' }).click();
+  await p.locator('.fd .dbtn', { hasText: 'Open briefing' }).first().click();
+  await p.locator('.fd .dbtn', { hasText: 'Prepare trial lobby' }).click();
+  check('a trial briefing prepares its lobby with the revision it showed', (await p.evaluate(() => window.TowerDev.sent.some((m) => m.kind === 'TowerHallAction' && m.action === 'trial' && m.argument === 'daily' && m.revision.length > 8))));
+  await p.locator('.fd .pills a', { hasText: 'Social' }).click();
+  await p.locator('.fd .dtilebtn', { hasText: 'Club lodge' }).click();
+  check('a Social card asks for its feature menu', (await p.evaluate(() => window.TowerDev.sent.some((m) => m.kind === 'TowerFeatureRequest' && m.section === 'club'))));
+  check('no console errors (briefings)', p.errors.length === 0, p.errors.join(' | '));
+  await p.close();
+}
+{
+  const p = await open('desk');
+  await p.send('TowerHallState', fixture('TowerHallState'));
+  await p.send('TowerFeatureState', fixture('TowerFeatureState', (d) => { d.requestId = 0; }));
+  await p.waitForSelector('.fd .dentry');
+  check('a feature menu lists its entries and actions', (await p.locator('.fd .dentry').count()) === 6 && /Cosmetics/.test(await p.locator('.fd').innerText()));
+  await p.locator('.fd .dentry', { hasText: 'Champion' }).first().click();
+  check('opening an entry shows its lines and its first action', /Unlocked at Gold/.test(await p.locator('.fd').innerText()) && (await p.locator('.fd .dactions .dbtn', { hasText: 'Wear this title' }).count()) === 1);
+  await p.locator('.fd .dactions .dbtn').click();
+  check('an action with a confirmation asks first', /Wear the title Champion/.test(await p.locator('.fd').innerText()) && (await p.locator('.fd .dactions .dbtn', { hasText: 'Confirm' }).count()) === 1);
+  await p.locator('.fd .dactions .dbtn', { hasText: 'Confirm' }).click();
+  check('Confirm sends the action with its argument', (await p.evaluate(() => window.TowerDev.sent.some((m) => m.kind === 'TowerFeatureRequest' && m.action === 'title-wear' && m.argument === 'champion'))));
+  await p.send('TowerFeatureState', fixture('TowerFeatureState', (d) => { d.requestId = 0; }));
+  await p.locator('.fd .dentry', { hasText: 'Club banner' }).first().click();
+  await p.locator('.fd .dactions .dbtn').click();
+  await p.locator('.fd .dedit').fill('Cobble Crew');
+  await p.locator('.fd .dactions .dbtn', { hasText: 'Confirm' }).click();
+  check('typed text goes with the action', (await p.evaluate(() => window.TowerDev.sent.some((m) => m.kind === 'TowerFeatureRequest' && m.action === 'club-banner' && m.argument === 'Cobble Crew'))));
+  check('no console errors (features)', p.errors.length === 0, p.errors.join(' | '));
+  await p.close();
+}
+{
+  const p = await open('desk');
+  await p.send('TowerHallState', fixture('TowerHallState'));
+  await p.send('TowerFeatureState', fixture('TowerFeatureState', (d) => { d.requestId = 0; d.section = 'run'; d.title = 'Current Run'; d.actions = []; d.entries = [
+    { id: 'run', title: 'This run', lines: ['Neutral Tower, floor 6', '[+] Risk carried: +20% to your final payout.'], actions: [] },
+    { id: 'mod:a', title: 'Modifier: Sharpened Claws x2 (floor 3)', lines: ['[+] Moderate risk * +8% to your final payout', '[-] Foes rise 2 levels above the tower.'], actions: [] },
+    { id: 'relic:a:0', title: 'Relic: Ember Brand (floor 5)', lines: ['[+] Your Fire moves deal 25% more damage.', 'Tags: offense'], actions: [] }]; }));
+  await p.waitForSelector('.fd .dentrybox');
+  check('the Current Run page lists modifiers and relics without their tags', (await p.locator('.fd .dentrybox').count()) === 2 && !/Tags:/.test(await p.locator('.fd').innerText()) && /Sharpened Claws/.test(await p.locator('.fd').innerText()));
+  await p.close();
+}
+// 11. Mastery, the party chooser, the guide and settings
+{
+  const p = await open('desk');
+  await p.send('TowerHallState', fixture('TowerHallState'));
+  await p.send('MasteryScreen', fixture('MasteryScreen'));
+  await p.waitForSelector('.fd .dach');
+  check('Mastery lists the towers and the achievements, earned ones marked', (await p.locator('.fd .dentry').count()) === 4 && (await p.locator('.fd .dach.held').count()) === 3);
+  await p.locator('.fd .dentry', { hasText: 'Duskvale' }).click();
+  await p.locator('.fd .seg button', { hasText: 'Speed' }).click();
+  await p.locator('.fd .dbadge .dbtn').click();
+  const sent = await p.evaluate(() => window.TowerDev.sent.filter((m) => m.kind === 'MasteryRequest').map((m) => m.tower + '|' + m.tab));
+  check('picking a tower, a board tab and the badge button send the mastery requests', sent.includes('cobbletowers:duskvale|mastery') && sent.includes('cobbletowers:neutral|speed') && sent.some((s) => /badge:/.test(s)), sent.join(','));
+  await p.send('MasteryScreen', fixture('MasteryBoard')[1] ? fixture('MasteryBoard') : fixture('MasteryBoard'));
+  check('no console errors (mastery)', p.errors.length === 0, p.errors.join(' | '));
+  await p.close();
+}
+{
+  const p = await open('desk');
+  await p.send('TowerHallState', fixture('TowerHallState'));
+  await p.send('PlayState', fixture('PlayState'));
+  await p.send('RegistrationState', fixture('RegistrationState'));
+  await p.waitForSelector('.fd .dmon');
+  check('the party chooser shows every Pokemon with the registered ones numbered', (await p.locator('.fd .dmon').count()) === 10 && (await p.locator('.fd .dmon.on .dord').count()) === 2);
+  await p.locator('.fd .dmon').nth(3).click();
+  await p.locator('.fd .dbtn', { hasText: 'Clear' }).click();
+  await p.locator('.fd .dbtn', { hasText: 'Done' }).click();
+  const kinds = await p.sentKinds();
+  check('toggling, clearing and finishing send the chooser actions', kinds.includes('PlayAction:TOGGLE_POKEMON:00000000-0000-0000-0000-000000000004') && kinds.includes('PlayAction:CLEAR_CHOICE:') && kinds.includes('PlayAction:REFRESH:'), kinds.join(','));
+  check('no console errors (chooser)', p.errors.length === 0, p.errors.join(' | '));
+  await p.close();
+}
+{
+  const p = await open('desk');
+  await p.send('TowerHallState', fixture('TowerHallState'));
+  await p.waitForSelector('.fd .trow');
+  await p.locator('.fd .tl', { hasText: 'Guide' }).click();
+  check('the guide is a readable page with headings', (await p.locator('.fd .dguide h3').count()) >= 3);
+  await p.locator('.fd .dback').click();
+  await p.locator('.fd .tl', { hasText: 'Settings' }).click();
+  await p.locator('.fd .dsetrow').first().locator('.dbtn').click();
+  check('the Look switch in Desk settings returns to Native', (await p.locator('.ns').count()) >= 0 && (await p.evaluate(() => JSON.parse(localStorage.getItem('cobbletowers.ui')).look)) === 'native');
   await p.close();
 }
 // 6. sizes: nothing overflows the window

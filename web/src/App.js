@@ -13,6 +13,9 @@ import { DeskIntermission } from './desk/DeskIntermission.js';
 import { DeskLobby } from './desk/DeskLobby.js';
 import { DeskToast } from './desk/DeskToast.js';
 import { DeskProgress } from './desk/DeskProgress.js';
+import { DeskSocial, DeskTowerBrief, DeskTrialBrief, DeskTrials } from './desk/DeskBriefs.js';
+import { DeskFeatures } from './desk/DeskFeatures.js';
+import { DeskGuide, DeskMastery, DeskParty, DeskSettings } from './desk/DeskMore.js';
 import { Lobby } from './screens/Lobby.js';
 import { Party } from './screens/Party.js';
 import { Mastery } from './screens/Mastery.js';
@@ -72,7 +75,7 @@ export function App() {
 
   // the Frontier Desk look has its own toast, on the screens it draws
   const deskNow = look === 'desk' && !reward && !(vendorOpen && vendor) && (screen === 'intermission' ? !!inter
-    : screen === 'hall' && (view === 'lobby' ? !!play : view === 'hall' && (tab === 'towers' || tab === 'progress') && !!hall));
+    : screen === 'hall' && (view === 'lobby' ? !!play : (view === 'hall' ? !!hall : view === 'tower' || view === 'trial' ? !!hall : view === 'mastery' ? !!mast : view === 'party' ? !!reg : true)));
   const closeRewardNow = () => { update(closeReward); act('IntermissionAction', { action: 'REFRESH', argument: 0 }); };
 
   return html`
@@ -81,12 +84,21 @@ export function App() {
         : screen === 'intermission' && inter && look === 'desk' ? html`<${DeskIntermission} inter=${inter} at=${interAt} />`
         : screen === 'intermission' && inter ? html`<${Intermission} inter=${inter} at=${interAt} />`
         : screen === 'draft' && draft ? html`<${Draft} draft=${draft} />`
+        : screen === 'hall' && look === 'desk' && view === 'mastery' && mast ? html`<${DeskMastery} state=${mast} />`
+        : screen === 'hall' && look === 'desk' && view === 'party' && reg ? html`<${DeskParty} reg=${reg} />`
+        : screen === 'hall' && look === 'desk' && view === 'guide' ? html`<${DeskGuide} />`
+        : screen === 'hall' && look === 'desk' && view === 'settings' ? html`<${DeskSettings} />`
         : screen === 'hall' && view === 'mastery' && mast ? html`<${Mastery} state=${mast} />`
         : screen === 'hall' && view === 'party' && reg ? html`<${Party} reg=${reg} />`
         : screen === 'hall' && view === 'lobby' && play && look === 'desk' ? html`<${DeskLobby} state=${play} />`
         : screen === 'hall' && view === 'lobby' && play ? html`<${Lobby} state=${play} />`
         : screen === 'hall' && look === 'desk' && view === 'hall' && tab === 'towers' && hall ? html`<${DeskHall} hall=${hall} busy=${!!busyAt} />`
         : screen === 'hall' && look === 'desk' && view === 'hall' && tab === 'progress' && hall ? html`<${DeskProgress} hall=${hall} />`
+        : screen === 'hall' && look === 'desk' && view === 'hall' && tab === 'trials' && hall ? html`<${DeskTrials} hall=${hall} />`
+        : screen === 'hall' && look === 'desk' && view === 'hall' && tab === 'social' && hall ? html`<${DeskSocial} />`
+        : screen === 'hall' && look === 'desk' && view === 'tower' && hall ? html`<${DeskTowerBrief} hall=${hall} id=${pick} busy=${!!busyAt} />`
+        : screen === 'hall' && look === 'desk' && view === 'trial' && hall ? html`<${DeskTrialBrief} hall=${hall} kind=${pick} busy=${!!busyAt} />`
+        : screen === 'hall' && look === 'desk' && view === 'feature' ? html`<${DeskFeatures} />`
         : screen === 'hall' && (hall || view === 'feature') ? html`<${Hall} hall=${hall} tab=${tab} page=${page} view=${view} pick=${pick} busy=${!!busyAt} />`
         : html`<${Waiting} />`}
       ${reward ? html`<${RewardModal} reward=${reward} onClose=${closeRewardNow} />`

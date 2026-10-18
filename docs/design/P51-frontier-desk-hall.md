@@ -77,3 +77,12 @@ Same opt-in setting; the Progress pill now opens the Desk page. Built: `desk/Des
 * The Records card grid is not rebuilt; the More buttons cover the same pages.
 * Tiles are real buttons (Tab, Enter); the page opens scrolled to the tile you are on.
 * desk-check.mjs now has 41 checks (loading state, lanes, claims, an older server with no extras, no season).
+
+## Slices 5 and 6: the rest of the Hall (2026-10-18)
+
+The Desk look now covers every page of the Hall, not only the four from the mockups. All of it follows the same rule as before: a view over the existing state, the same requests, the pure helpers (`src/tracks.js`, `features.js`, `mastery.js`, `lobby.js`, `party.js`) still decide what is offered. No server change.
+
+* **Slice 5:** `desk/DeskBriefs.js` (tower briefing, trial briefing, the Trials page, the Social page; `briefing.js` holds the pure parts, including "why can't I select this" and tidying raw modifier ids such as `cobbletowers:double_trouble` into "Double Trouble"), `desk/DeskFeatures.js` (every feature menu: club, season, cosmetics, contracts, Hall of Fame, run report, codex, echoes, collection, spectate, run codes, and the Current Run page; `featureView.js`). A top-bar **Back** button now appears on sub-pages.
+* **Slice 6:** `desk/DeskMore.js`: Mastery and the four boards, the party chooser (`partyView.js`: every Pokemon as a sprite card, the registered ones numbered), the guide (which still opens by itself the first time), and Settings (which has the Look switch, so a player can always get back to Native).
+* The Hall-level pages that stay native: the rental draft, the vendor and reward pop-ups, the scouting report and the HUD (slice 7).
+* Tests: `desk-briefs.test.js`, `desk-more.test.js`; `desk-check.mjs` now has about 60 checks.

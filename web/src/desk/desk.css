@@ -175,3 +175,36 @@
 
 .fd .darena { position: absolute; right: calc(var(--u) * -1.5); top: calc(var(--u) * -1.5); width: calc(var(--u) * 3.4); height: calc(var(--u) * 3.4); border-radius: 50%; overflow: hidden; border: calc(var(--u) * .25) solid #fff; box-shadow: 0 0 0 calc(var(--u) * .15) #9aa6ba, 0 calc(var(--u) * .2) calc(var(--u) * .5) #0003; background: #fff; }
 .fd .darena .dpano, .fd .darena canvas { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---- briefings, Trials, Social, feature menus (P51 slice 5) ---- */
+.fd .dback { margin-right: calc(var(--u) * .6); color: var(--pri); font-weight: 700; }
+.fd .dbanner { height: calc(var(--u) * 12); overflow: hidden; border-radius: calc(var(--u) * 1.3) calc(var(--u) * 1.3) 0 0; background: #345; } .fd .dbanner.short { height: calc(var(--u) * 8); }
+.fd .dbanner canvas { width: 100%; height: 100%; object-fit: cover; }
+.fd .dkv { display: grid; grid-template-columns: auto 1fr; gap: calc(var(--u) * .6) calc(var(--u) * 2); margin: 0; padding: calc(var(--u) * .6) calc(var(--u) * 1.4) calc(var(--u) * 1.2); font-size: calc(var(--u) * 1.35); }
+.fd .dkv dt { color: var(--mut); } .fd .dkv dd { margin: 0; font-weight: 700; }
+.fd .dsub { line-height: 1.4; }
+.fd .dlines .dedit { flex: none; }
+.fd .dtilebtn { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: calc(var(--u) * .5); padding: calc(var(--u) * 2); text-align: left; cursor: pointer; font: inherit; color: var(--ink); }
+.fd .dtilebtn b { font: 800 calc(var(--u) * 2.6) / 1.1 Outfit; } .fd .dtilebtn span { color: var(--mut); font-size: calc(var(--u) * 1.5); } .fd .dtilebtn:hover { border-color: #b4c8f2; }
+.fd .dentry { display: flex; flex-direction: column; gap: calc(var(--u) * .3); text-align: left; padding: calc(var(--u) * .9) calc(var(--u) * 1.2); border: calc(var(--u) * .2) solid var(--line); border-radius: calc(var(--u) * 1.1); background: #fff; cursor: pointer; font: inherit; color: var(--ink); width: 100%; }
+.fd .dentry b { font: 700 calc(var(--u) * 1.4) / 1.2 Outfit; } .fd .dentry small { color: var(--mut); font-size: calc(var(--u) * 1.1); } .fd .dentry:hover:not(:disabled) { border-color: #b4c8f2; } .fd .dentry:disabled { cursor: default; opacity: .7; }
+.fd .dentry.sel { border-color: var(--pri); box-shadow: 0 0 0 calc(var(--u) * .25) #bcd2fb; } .fd .dentry.act { background: #f4f7fb; }
+.fd .dentry.wide { padding: calc(var(--u) * 1.1) calc(var(--u) * 1.4); }
+.fd .dentry:focus-visible { outline: 3px solid var(--pri); outline-offset: 2px; }
+.fd .dactions { display: flex; gap: calc(var(--u) * 1); padding: calc(var(--u) * 1.2) calc(var(--u) * 1.4) calc(var(--u) * 1.4); border-top: calc(var(--u) * .15) solid var(--line); }
+.fd .dentrybox { display: flex; flex-direction: column; gap: calc(var(--u) * .5); padding-bottom: calc(var(--u) * .8); border-bottom: calc(var(--u) * .12) dashed var(--line); } .fd .dentrybox b { font: 800 calc(var(--u) * 1.4) Outfit; }
+.fd .ft { display: flex; align-items: center; gap: calc(var(--u) * 1); }
+
+/* ---- mastery, party chooser, guide, settings (P51 slice 6) ---- */
+.fd .dbadge { padding: calc(var(--u) * 1.1) calc(var(--u) * 1.4) calc(var(--u) * 1.4); border-top: calc(var(--u) * .15) solid var(--line); display: flex; flex-direction: column; gap: calc(var(--u) * .6); font-size: calc(var(--u) * 1.25); }
+.fd .dtiles.wide { grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 17), 1fr)); grid-auto-rows: auto; }
+.fd .dach { border: calc(var(--u) * .2) solid var(--line); border-radius: calc(var(--u) * 1.2); background: #fff; padding: calc(var(--u) * 1.1); display: flex; flex-direction: column; gap: calc(var(--u) * .5); min-width: 0; }
+.fd .dach b { font: 800 calc(var(--u) * 1.5) / 1.15 Outfit; } .fd .dach span { color: #4a586d; font-size: calc(var(--u) * 1.2); line-height: 1.3; } .fd .dach em { font-style: normal; font: 700 calc(var(--u) * 1) Outfit; color: var(--mut); margin-top: auto; }
+.fd .dach.held { background: #eef9f1; border-color: #bfe6cc; } .fd .dach.held em { color: #1e8a52; }
+.fd .dboard { font: 600 calc(var(--u) * 1.3) / 1.5 Outfit; white-space: pre-wrap; } .fd .dboard.gold { font: 800 calc(var(--u) * 1.8) Outfit; } .fd .dboard.bronze { color: #8a5a00; font-weight: 800; } .fd .dboard.muted { color: var(--mut); }
+.fd .dmon { position: relative; display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * .3); padding: calc(var(--u) * 1) calc(var(--u) * .8); border: calc(var(--u) * .2) solid var(--line); border-radius: calc(var(--u) * 1.2); background: #fff; cursor: pointer; font: inherit; color: var(--ink); min-width: 0; }
+.fd .dmon b { font: 800 calc(var(--u) * 1.3) Outfit; } .fd .dmon small { color: var(--mut); font-size: calc(var(--u) * 1); }
+.fd .dmon.on { border-color: var(--pri); background: #f3f8ff; box-shadow: 0 0 0 calc(var(--u) * .25) #bcd2fb; } .fd .dmon.out { opacity: .6; } .fd .dmon:hover { border-color: #b4c8f2; } .fd .dmon:focus-visible { outline: 3px solid var(--pri); outline-offset: 2px; }
+.fd .dord { position: absolute; left: calc(var(--u) * .6); top: calc(var(--u) * .5); width: calc(var(--u) * 2.4); height: calc(var(--u) * 2.4); border-radius: 50%; background: var(--pri); color: #fff; display: grid; place-items: center; font: 800 calc(var(--u) * 1.2) Outfit; }
+.fd .dguide { max-width: calc(var(--u) * 80); padding: calc(var(--u) * 1.6) calc(var(--u) * 2.4); } .fd .dguide h2 { margin: 0 0 calc(var(--u) * .6); font: 800 calc(var(--u) * 2.6) Outfit; } .fd .dguide h3 { margin: calc(var(--u) * 1.4) 0 0; font: 800 calc(var(--u) * 1.6) Outfit; color: var(--pri); } .fd .dguide p { margin: 0; font-size: calc(var(--u) * 1.4); line-height: 1.45; }
+.fd .dsetrow { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--u) * 2); padding: calc(var(--u) * 1.2) 0; border-bottom: calc(var(--u) * .12) solid var(--line); } .fd .dsetrow b { display: block; font: 800 calc(var(--u) * 1.6) Outfit; } .fd .dsetrow span { color: var(--mut); font-size: calc(var(--u) * 1.2); }

@@ -6,6 +6,7 @@ import { ATLAS } from '../gen/atlas.js';
 import { closeGui } from '../bridge.js';
 import { update } from '../store.js';
 import { goTo, setTab } from '../reducer.js';
+import { firstVisit } from '../screens/Guide.js';
 import { regionOf } from '../lobby.js';
 import { paintPanorama } from '../art/panorama.js';
 import { request } from '../screens/Hall.js';
@@ -43,8 +44,8 @@ function openPill(id) {
   return undefined;
 }
 
-export function TopBar({ active = 'towers' }) {
-  return html`<div class="dtop"><span class="logo">COBBLE <b>TOWERS</b></span>
+export function TopBar({ active = 'towers', back }) {
+  return html`<div class="dtop">${back ? html`<button class="tl dback" onClick=${back}>← Back</button>` : null}<span class="logo">COBBLE <b>TOWERS</b></span>
     <div class="pills" role="tablist">${PILLS.map(([id, name]) => html`<a key=${id} role="tab" tabindex="0" aria-selected=${id === active} class=${id === active ? 'on' : ''}
       onClick=${() => openPill(id)} onKeyDown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPill(id); } }}>${name}</a>`)}</div>
     <span class="sp2"></span>
@@ -80,6 +81,8 @@ function TowerRow({ t, extras, selected, onPick }) {
 export function DeskHall({ hall, busy }) {
   const extras = hall.extras;
   const [pick, setPick] = useState(() => defaultPick(hall));
+  // the guide opens by itself the first time this browser shows the Hall
+  useEffect(() => { if (firstVisit()) update((s) => (s.view === 'hall' ? goTo(s, 'guide') : s)); }, []);
   const chosen = hall.towers.find((t) => t.id === pick) || hall.towers[0];
   const runTower = extras?.runTower ? hall.towers.find((t) => t.id === extras.runTower) : null;
   const trial = (kind) => hall.trials.find((t) => t.kind === kind);

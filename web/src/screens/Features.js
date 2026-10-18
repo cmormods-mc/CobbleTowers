@@ -29,7 +29,7 @@ export function stepBack(ui) {
   return true;
 }
 
-function choose(section, action) {
+export function choose(section, action) {
   const plan = actionPlan(action);
   if (plan === 'lobby') act('TowerHallAction', { action: 'lobby', argument: '', revision: '' });
   else if (plan === 'page') sendFeature(action.argument);
