@@ -133,8 +133,8 @@ class PayloadJsonTest {
     void hallExtras() throws IOException {
         var tide = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge");
         var extras = new com.cobbletowers.network.TowerHallStatePayload.Extras("cobbletowers:tideforge",
-                List.of(new com.cobbletowers.network.TowerHallStatePayload.Mon("Arcanine", "arcanine", 50, false, List.of("fire")),
-                        new com.cobbletowers.network.TowerHallStatePayload.Mon("Gliscor", "gliscor", 50, true, List.of("ground", "flying"))),
+                List.of(new com.cobbletowers.network.TowerHallStatePayload.Mon("Arcanine", "arcanine", 50, false, 100, List.of("fire")),
+                        new com.cobbletowers.network.TowerHallStatePayload.Mon("Gliscor", "gliscor", 50, true, 0, List.of("ground", "flying"))),
                 List.of(new com.cobbletowers.network.TowerHallStatePayload.Standing(tide, "Silver", 5, 2, 1)));
         var sent = new com.cobbletowers.network.TowerHallStatePayload(List.of(), List.of(), null, "Floor 6 / INTERMISSION", true, extras);
         JsonObject data = PayloadJson.envelope(sent).getAsJsonObject("data");
@@ -143,6 +143,7 @@ class PayloadJsonTest {
         JsonObject gliscor = out.getAsJsonArray("party").get(1).getAsJsonObject();
         assertEquals("gliscor", gliscor.get("species").getAsString());
         assertTrue(gliscor.get("fainted").getAsBoolean());
+        assertEquals(0, gliscor.get("hp").getAsInt());
         assertEquals(2, gliscor.getAsJsonArray("types").size());
         JsonObject standing = out.getAsJsonArray("standings").get(0).getAsJsonObject();
         assertEquals("cobbletowers:tideforge", standing.get("tower").getAsString());
@@ -152,6 +153,23 @@ class PayloadJsonTest {
         // the five-argument constructor the native screens use sends no extras, which the page treats as an empty team
         var plain = new com.cobbletowers.network.TowerHallStatePayload(List.of(), List.of(), null, "", false);
         assertEquals(0, PayloadJson.envelope(plain).getAsJsonObject("data").getAsJsonObject("extras").getAsJsonArray("party").size());
+    }
+
+    @Test
+    @DisplayName("the intermission carries the team's health and the run's place in its tower for the Frontier Desk page (P51)")
+    void intermissionExtras() {
+        var extras = new IntermissionStatePayload.Extras("Tideforge Tower", 4, 10, List.of(5, 10),
+                List.of(new com.cobbletowers.network.TowerHallStatePayload.Mon("Arcanine", "arcanine", 50, false, 71, List.of("fire"))));
+        var sent = new IntermissionStatePayload(5, new IntermissionStatePayload.Draft(0, List.of(), -1, -1), List.of(), -1, "", true, extras);
+        JsonObject out = PayloadJson.envelope(sent).getAsJsonObject("data").getAsJsonObject("extras");
+        assertEquals("Tideforge Tower", out.get("tower").getAsString());
+        assertEquals(4, out.get("cycleFloor").getAsInt());
+        assertEquals(10, out.get("cycleLength").getAsInt());
+        assertEquals(2, out.getAsJsonArray("milestones").size());
+        assertEquals(71, out.getAsJsonArray("party").get(0).getAsJsonObject().get("hp").getAsInt());
+        // the six-argument constructor the native screens use sends no extras
+        var plain = new IntermissionStatePayload(5, new IntermissionStatePayload.Draft(0, List.of(), -1, -1), List.of(), -1, "", true);
+        assertEquals(0, PayloadJson.envelope(plain).getAsJsonObject("data").getAsJsonObject("extras").get("cycleLength").getAsInt());
     }
 
     @Test

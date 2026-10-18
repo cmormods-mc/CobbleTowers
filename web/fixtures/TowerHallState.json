@@ -131,7 +131,8 @@
           "fainted": false,
           "types": [
             "fire"
-          ]
+          ],
+          "hp": 71
         },
         {
           "name": "Gliscor",
@@ -141,7 +142,8 @@
           "types": [
             "ground",
             "flying"
-          ]
+          ],
+          "hp": 100
         },
         {
           "name": "Umbreon",
@@ -150,7 +152,8 @@
           "fainted": false,
           "types": [
             "dark"
-          ]
+          ],
+          "hp": 82
         },
         {
           "name": "Ludicolo",
@@ -160,7 +163,8 @@
           "types": [
             "water",
             "grass"
-          ]
+          ],
+          "hp": 0
         },
         {
           "name": "Mewtwo",
@@ -169,7 +173,8 @@
           "fainted": false,
           "types": [
             "psychic"
-          ]
+          ],
+          "hp": 100
         },
         {
           "name": "Lucario",
@@ -179,7 +184,8 @@
           "types": [
             "fighting",
             "steel"
-          ]
+          ],
+          "hp": 90
         }
       ],
       "standings": [

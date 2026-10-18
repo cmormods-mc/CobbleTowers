@@ -32,7 +32,7 @@ class HallExtrasTest {
     @Test
     void partyIsCappedAtSixInOrderAndNullRunIsEmpty() {
         List<Mon> party = new ArrayList<>();
-        for (int i = 0; i < 9; i++) party.add(new Mon("M" + i, "m" + i, 50, false, List.of("fire")));
+        for (int i = 0; i < 9; i++) party.add(new Mon("M" + i, "m" + i, 50, false, 100, List.of("fire")));
         var extras = HallExtras.of(null, party, List.of());
         assertEquals(6, extras.party().size());
         assertEquals("M0", extras.party().get(0).name());
@@ -46,5 +46,15 @@ class HallExtrasTest {
         assertEquals("mrmime", HallExtras.spriteName("mr_mime"));
         assertEquals("hooh", HallExtras.spriteName("ho-oh"));
         assertEquals("porygonz", HallExtras.spriteName("Porygon-Z"));
+    }
+
+    @Test
+    void hpPercentIsWholeAndLivingNeverReadsEmpty() {
+        assertEquals(100, HallExtras.hpPercent(80, 80));
+        assertEquals(50, HallExtras.hpPercent(40, 80));
+        assertEquals(1, HallExtras.hpPercent(1, 500));
+        assertEquals(0, HallExtras.hpPercent(0, 80));
+        assertEquals(0, HallExtras.hpPercent(10, 0));
+        assertEquals(100, HallExtras.hpPercent(90, 80));
     }
 }

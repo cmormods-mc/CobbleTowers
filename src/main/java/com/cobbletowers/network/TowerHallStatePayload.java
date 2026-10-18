@@ -20,12 +20,14 @@ public record TowerHallStatePayload(List<Destination> towers, List<Trial> trials
     }
 
     /** One Pokemon of the player's party, as the web Hall draws it. {@code species} is the sprite name. */
-    public record Mon(String name, String species, int level, boolean fainted, List<String> types) {
+    /** @param hp health in percent, 0 to 100 */
+    public record Mon(String name, String species, int level, boolean fainted, int hp, List<String> types) {
         static final StreamCodec<RegistryFriendlyByteBuf, Mon> CODEC = StreamCodec.composite(
                 ByteBufCodecs.stringUtf8(64), Mon::name,
                 ByteBufCodecs.stringUtf8(64), Mon::species,
                 ByteBufCodecs.VAR_INT, Mon::level,
                 ByteBufCodecs.BOOL, Mon::fainted,
+                ByteBufCodecs.VAR_INT, Mon::hp,
                 ByteBufCodecs.stringUtf8(16).apply(ByteBufCodecs.list(4)), Mon::types, Mon::new);
     }
 

@@ -50,3 +50,12 @@ The native-look web pages were built to match the old Minecraft screens. The own
 
 1. Best floor per tower is not stored anywhere today. Slice 1 shows rank and Ascension instead. A stored best floor is a separate small change if wanted.
 2. Currency in the top bar is not in the Hall payload. Slice 1 leaves the slot empty rather than adding a wallet read.
+
+## Slice 2: the between-floors screen (2026-10-17)
+
+Same opt-in setting (Settings > General > Look). Built: `desk/DeskIntermission.js`, `desk/choices.js` (pure: offers as "choices", the floor ladder, health tones), `IntermissionStatePayload.extras` (tower name, floor within the cycle, cycle length, milestone floors, party with health; built in `IntermissionService.extrasOf` through the pure `IntermissionExtras`, failure-safe, hand-written stream codec because the record now has seven fields). `TowerHallStatePayload.Mon` gained `hp` (percent), so the Hall can show health too.
+
+* Layout: team health on the left, the offers in the middle, the selected offer's full lines and the party's readiness on the right, a floor ladder across the top, Confirm / Vendor / Ready / Cash out along the bottom. Votes, pending state, countdown and actions are the native screen's logic unchanged.
+* Rooms (Forge, Shrine, ...) show the room as the chip and the option as the headline.
+* **Not built:** a scouting preview of the next floors. Scouting today is text about the floor you are on, sent when the floor starts (`FloorScouting.sendReveal`); previewing foes ahead is new server behaviour and belongs with P50 (the route map), where Far Sight's reach becomes route depth.
+* The "choices" view model is what the route map will replace: a node is a choice with a room and a modifier.

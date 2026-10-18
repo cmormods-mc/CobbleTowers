@@ -281,7 +281,25 @@ public final class IntermissionService {
                     round.votedCashOut(participant.playerId())));
         }
         TowerNetworking.sendIntermissionState(viewer, new IntermissionStatePayload(run.floorIndex(), draft, members,
-                round.secondsLeft(System.currentTimeMillis()), message, open));
+                round.secondsLeft(System.currentTimeMillis()), message, open, extrasOf(run, viewer)));
+    }
+
+    /** The team's health and the run's place in its tower, for the Frontier Desk page; decoration, so a failure sends none. */
+    private static IntermissionStatePayload.Extras extrasOf(PersistedRun run, ServerPlayer viewer) {
+        try {
+            var content = com.cobbletowers.definition.TowerDefinitionRegistry.content();
+            var tower = content.towers().get(run.towerId());
+            if (tower == null) return IntermissionStatePayload.Extras.NONE;
+            List<Integer> milestones = new ArrayList<>();
+            for (int floor = 1; floor <= tower.floorCount(); floor++) {
+                if (content.milestoneAt(run.towerId(), floor).isPresent()) milestones.add(floor);
+            }
+            return IntermissionExtras.of(tower.displayName(), run.floorIndex(), tower.floorCount(), milestones,
+                    com.cobbletowers.battle.cobblemon.PartyReader.cards(viewer));
+        } catch (RuntimeException ex) {
+            com.cobbletowers.TowerLog.warn("Intermission extras for {} could not be built: {}", viewer.getGameProfile().getName(), ex.toString());
+            return IntermissionStatePayload.Extras.NONE;
+        }
     }
 
     private static IntermissionStatePayload.Draft draftOf(PersistedRun run, UUID viewer) {

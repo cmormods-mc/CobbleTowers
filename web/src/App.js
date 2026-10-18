@@ -9,6 +9,7 @@ import { Draft } from './screens/Draft.js';
 import { Hud } from './screens/Hud.js';
 import { Hall, useBusyTimeout } from './screens/Hall.js';
 import { DeskHall } from './desk/DeskHall.js';
+import { DeskIntermission } from './desk/DeskIntermission.js';
 import { Lobby } from './screens/Lobby.js';
 import { Party } from './screens/Party.js';
 import { Mastery } from './screens/Mastery.js';
@@ -71,6 +72,7 @@ export function App() {
   return html`
     <div class="main">
       ${screen === 'scout' && scout ? html`<${Scouting} scout=${scout} />`
+        : screen === 'intermission' && inter && look === 'desk' ? html`<${DeskIntermission} inter=${inter} at=${interAt} />`
         : screen === 'intermission' && inter ? html`<${Intermission} inter=${inter} at=${interAt} />`
         : screen === 'draft' && draft ? html`<${Draft} draft=${draft} />`
         : screen === 'hall' && view === 'mastery' && mast ? html`<${Mastery} state=${mast} />`

@@ -34,6 +34,11 @@ export const SHOTS = {
   draft_sealed: { payloads: [fixture('RentalDraft', openDraft)] },
   draft_choose: { payloads: [fixture('RentalDraft', openDraft)], steps: async (page) => { await page.click('.pack'); await page.waitForSelector('.card.pick', { timeout: 8000 }); await page.click('.card.pick >> nth=1'); } },
   hall: { payloads: [fixture('TowerHallState')] },
+  desk_inter: { payloads: [fixture('IntermissionState')], look: 'desk' },
+  desk_inter_pick: { payloads: [fixture('IntermissionState')], look: 'desk', steps: async (page) => { await page.click('.dmc >> nth=1'); } },
+  desk_inter_room: { payloads: [fixture('IntermissionState', (d) => { d.floor = 3; d.extras.cycleFloor = 3; d.draft.cards = [
+    { id: 'cobbletowers:event/forge_pay', displayName: 'Forge: every player pays 175 CobbleDollars for a battle relic', votes: 1, risk: -1, theme: 'event', lines: ['Forge: every player pays 175 CobbleDollars for a battle relic'] },
+    { id: 'cobbletowers:event/forge_leave', displayName: 'Forge: walk away', votes: 0, risk: -1, theme: 'event', lines: ['Forge: walk away'] }]; d.members = [{ name: 'WebPlayer', ready: false, cashOut: false }, { name: 'Misty', ready: true, cashOut: false }]; })], look: 'desk' },
   desk_hall: { payloads: [fixture('TowerHallState')], look: 'desk' },
   desk_hall_noRun: { payloads: [fixture('TowerHallState', (d) => { d.runStatus = ''; d.canResume = false; d.extras.runTower = ''; d.extras.party[3].fainted = false; })], look: 'desk' },
   desk_hall_empty: { payloads: [fixture('TowerHallState', (d) => { d.runStatus = ''; d.canResume = false; d.extras.runTower = ''; d.extras.party = []; d.extras.standings = []; d.towers = d.towers.slice(0, 2); })], look: 'desk' },

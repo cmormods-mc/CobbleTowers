@@ -20,7 +20,8 @@ public final class PartyReader {
             List<String> types = new ArrayList<>();
             for (com.cobblemon.mod.common.api.types.ElementalType type : species.getTypes()) types.add(type.getName());
             cards.add(new com.cobbletowers.network.TowerHallStatePayload.Mon(pokemon.getDisplayName(false).getString(),
-                    com.cobbletowers.menu.HallExtras.spriteName(species.getResourceIdentifier().getPath()), pokemon.getLevel(), pokemon.isFainted(), types));
+                    com.cobbletowers.menu.HallExtras.spriteName(species.getResourceIdentifier().getPath()), pokemon.getLevel(), pokemon.isFainted(),
+                    com.cobbletowers.menu.HallExtras.hpPercent(pokemon.getCurrentHealth(), pokemon.getMaxHealth()), types));
         }
         return cards;
     }

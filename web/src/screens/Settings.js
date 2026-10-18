@@ -7,7 +7,7 @@ import { setLook } from '../reducer.js';
 
 const TABS = ['General', 'Audio', 'Keybinds'];
 const NOTES = {
-  General: 'Reduced motion keeps every choice available. The plain font uses your system font instead of the pixel font. The Play page can use the new Frontier Desk look; the other pages are still native. What your run carries is on the Current Run tab.',
+  General: 'Reduced motion keeps every choice available. The plain font uses your system font instead of the pixel font. The Play page and the screen between floors can use the new Frontier Desk look; the other pages are still native. What your run carries is on the Current Run tab.',
   Audio: 'Game volume remains in Minecraft sound settings. The tower pages make no sounds of their own.',
   Keybinds: 'Tower keys are set in Minecraft\'s controls screen, under Miscellaneous.',
 };
@@ -26,6 +26,6 @@ export function Settings() {
     ${tab === 'General' ? html`
       <${NB} x=${b.x + rail + 14} y=${b.y + 14} w=${b.w - rail - 22} kind=${s.motion ? 'primary' : 'dark'} onClick=${() => flip('motion')}>Animations: ${s.motion ? 'On' : 'Off'}<//>
       <${NB} x=${b.x + rail + 14} y=${b.y + 40} w=${b.w - rail - 22} kind=${s.pixelFont ? 'primary' : 'dark'} onClick=${() => flip('pixelFont')}>Pixel font: ${s.pixelFont ? 'On' : 'Off'}<//>
-      <${NB} x=${b.x + rail + 14} y=${b.y + 66} w=${b.w - rail - 22} kind=${s.look === 'desk' ? 'primary' : 'dark'} onClick=${() => setLookTo(s.look === 'desk' ? 'native' : 'desk')}>Play page look: ${s.look === 'desk' ? 'Frontier Desk' : 'Native'}<//>` : null}
+      <${NB} x=${b.x + rail + 14} y=${b.y + 66} w=${b.w - rail - 22} kind=${s.look === 'desk' ? 'primary' : 'dark'} onClick=${() => setLookTo(s.look === 'desk' ? 'native' : 'desk')}>Look: ${s.look === 'desk' ? 'Frontier Desk' : 'Native'}<//>` : null}
     <div class="n-lines lit" style=${at(b.x + rail + 14, b.y + (tab === 'General' ? 96 : 16), b.w - rail - 22, 80)}>${NOTES[tab]}</div>`;
 }

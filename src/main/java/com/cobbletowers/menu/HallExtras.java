@@ -25,6 +25,12 @@ public final class HallExtras {
         return speciesIdPath.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]", "");
     }
 
+    /** Health as a whole percent, 0 to 100; anything above zero shows as at least 1 so a living Pokemon never reads as empty. */
+    public static int hpPercent(int current, int max) {
+        if (max <= 0 || current <= 0) return 0;
+        return Math.min(100, Math.max(1, Math.round(current * 100f / max)));
+    }
+
     /** At most six Pokemon, in party order. */
     public static Extras of(String runTower, List<Mon> party, List<Standing> standings) {
         return new Extras(runTower == null ? "" : runTower, party.size() > 6 ? List.copyOf(party.subList(0, 6)) : List.copyOf(party),

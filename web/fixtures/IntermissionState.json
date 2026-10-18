@@ -54,6 +54,80 @@
     ],
     "countdown": -1,
     "message": "",
-    "open": true
+    "open": true,
+    "extras": {
+      "tower": "Tideforge Tower",
+      "cycleFloor": 1,
+      "cycleLength": 10,
+      "milestones": [
+        5,
+        10
+      ],
+      "party": [
+        {
+          "name": "Arcanine",
+          "species": "arcanine",
+          "level": 50,
+          "fainted": false,
+          "hp": 71,
+          "types": [
+            "fire"
+          ]
+        },
+        {
+          "name": "Gliscor",
+          "species": "gliscor",
+          "level": 50,
+          "fainted": false,
+          "hp": 100,
+          "types": [
+            "ground",
+            "flying"
+          ]
+        },
+        {
+          "name": "Umbreon",
+          "species": "umbreon",
+          "level": 50,
+          "fainted": false,
+          "hp": 82,
+          "types": [
+            "dark"
+          ]
+        },
+        {
+          "name": "Ludicolo",
+          "species": "ludicolo",
+          "level": 50,
+          "fainted": false,
+          "hp": 55,
+          "types": [
+            "water",
+            "grass"
+          ]
+        },
+        {
+          "name": "Mewtwo",
+          "species": "mewtwo",
+          "level": 50,
+          "fainted": false,
+          "hp": 100,
+          "types": [
+            "psychic"
+          ]
+        },
+        {
+          "name": "Lucario",
+          "species": "lucario",
+          "level": 50,
+          "fainted": true,
+          "hp": 0,
+          "types": [
+            "fighting",
+            "steel"
+          ]
+        }
+      ]
+    }
   }
 }
