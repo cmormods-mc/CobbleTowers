@@ -3,7 +3,7 @@
 @font-face { font-family: "Outfit"; src: url(assets/font/Outfit-Variable.ttf); font-weight: 100 900; font-display: block; }
 .fd { --u: min(1vw, 1.7778vh); position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; overflow: hidden; line-height: 1.25; user-select: none; }
 .fd * { box-sizing: border-box; image-rendering: auto; }
-.fd .sprite-em, .fd .sp, .fd canvas { image-rendering: pixelated; }
+.fd .sprite-em, .fd .sp, .fd canvas, .fd .dico { image-rendering: pixelated; }
 /* type chips shared by all three */
 .fd .ty { display:inline-block; font:700 calc(var(--u) * 1)/1 Outfit; letter-spacing:.03em; text-transform:uppercase; padding:calc(var(--u) * .32) calc(var(--u) * .7); background:var(--c); color:#fff; border-radius:calc(var(--u) * .5); }
 .fd .t-fire{--c:#e8702a}.fd .t-water{--c:#3b82d6}.fd .t-grass{--c:#3fa34d}.fd .t-dark{--c:#4f4a52}.fd .t-psychic{--c:#d9468f}.fd .t-ground{--c:#a8742c}.fd .t-flying{--c:#6aa9d8}.fd .t-fighting{--c:#c23b32}.fd .t-steel{--c:#7c8aa0}.fd .t-ghost{--c:#6b4f9a}.fd .t-dragon{--c:#5a49c9}.fd .t-normal{--c:#8a8575}.fd .t-rock{--c:#9a8648}.fd .t-poison{--c:#9a4db3}.fd .t-bug{--c:#7ea02a}.fd .t-ice{--c:#5fb8c9}.fd .t-fairy{--c:#e08ab8}
@@ -132,3 +132,21 @@
 .fd-toast-box { background: #16202e; color: #fff; font: 600 calc(var(--u) * 1.4) Outfit, sans-serif; padding: calc(var(--u) * .9) calc(var(--u) * 1.8); border-radius: calc(var(--u) * 1.2); box-shadow: 0 calc(var(--u) * .4) calc(var(--u) * 1.6) #0004; }
 .fd .stp { display: inline-block; font: 700 calc(var(--u) * 1.1) Outfit; padding: calc(var(--u) * .3) calc(var(--u) * .9); border-radius: calc(var(--u) * 2); white-space: nowrap; background: #eceff5; color: #556; }
 .fd .stp-g { background: #dcf6e8; color: #1e8a52; } .fd .stp-y { background: #fff2c4; color: #8a6410; } .fd .stp-b { background: #e4edfd; color: #1b4fb8; } .fd .stp-n { background: #eceff5; color: #667; }
+
+/* ---- progress (P51 slice 4) ---- */
+.fd .dico { display: inline-block; flex: none; background-repeat: no-repeat; }
+.fd .cont.gold { background: linear-gradient(90deg, #8a5a00, #d98a06); } .fd .cont.gold small { color: #ffe9b0; }
+.fd .dsub { color: var(--mut); font: 600 calc(var(--u) * 1.2) Outfit; margin-top: calc(var(--u) * .3); }
+.fd .dmore { display: flex; flex-wrap: wrap; gap: calc(var(--u) * .6); padding: calc(var(--u) * .8) calc(var(--u) * .2) 0; } .fd .dmore .lbl { width: 100%; }
+.fd .dprog { position: relative; margin: 0 calc(var(--u) * 1.4) calc(var(--u) * .8); height: calc(var(--u) * 1.6); background: #e1e7f0; border-radius: calc(var(--u) * 1); overflow: hidden; }
+.fd .dprog i { display: block; height: 100%; background: var(--pri); border-radius: calc(var(--u) * 1); } .fd .dprog span { position: absolute; inset: 0; display: grid; place-items: center; font: 700 calc(var(--u) * 1) Outfit; color: #16202e; mix-blend-mode: normal; }
+.fd .dtiles { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--u) * 12), 1fr)); grid-auto-rows: calc(var(--u) * 12); gap: calc(var(--u) * .9); padding: calc(var(--u) * .4) calc(var(--u) * 1.4) calc(var(--u) * 1); scrollbar-width: thin; align-content: start; position: relative; }
+.fd .dtile { position: relative; border: calc(var(--u) * .2) solid var(--line); border-radius: calc(var(--u) * 1.2); background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(var(--u) * .5);
+  font: 600 calc(var(--u) * 1) / 1.15 Outfit; color: var(--ink); cursor: pointer; padding: calc(var(--u) * .5); text-align: center; min-width: 0; overflow: hidden; }
+.fd .dtile .dn { position: absolute; left: calc(var(--u) * .7); top: calc(var(--u) * .5); font: 700 calc(var(--u) * 1) Outfit; color: var(--mut); } .fd .dtile .dpic { height: calc(var(--u) * 3.4); display: grid; place-items: center; }
+.fd .dtile .dlab { color: #4a586d; max-width: 100%; overflow: hidden; }
+.fd .dtile.done { background: #f1f5fa; } .fd .dtile.done .dpic, .fd .dtile.done .dlab { opacity: .6; } .fd .dtile .dtick { position: absolute; right: calc(var(--u) * .7); bottom: calc(var(--u) * .3); color: var(--go); font-size: calc(var(--u) * 1.8); }
+.fd .dtile.lock { opacity: .55; background: #f6f8fb; } .fd .dtile.info { background: #f6f8fb; border-style: dashed; }
+.fd .dtile.open { border-color: #e0a406; background: #fff8dd; box-shadow: 0 0 0 calc(var(--u) * .3) #fbe49a; } .fd .dtile .dbang { position: absolute; right: calc(var(--u) * .5); top: calc(var(--u) * .5); background: #e0a406; color: #fff; font: 800 calc(var(--u) * .9) Outfit; padding: calc(var(--u) * .15) calc(var(--u) * .6); border-radius: calc(var(--u) * 1); }
+.fd .dtile.cur:not(.open) { border-color: var(--pri); } .fd .dtile.sel { outline: calc(var(--u) * .3) solid var(--pri); outline-offset: calc(var(--u) * .1); } .fd .dtile:focus-visible { outline: 3px solid var(--pri); outline-offset: 2px; }
+.fd .ddetail { display: flex; align-items: center; gap: calc(var(--u) * 1.4); padding: calc(var(--u) * 1.1) calc(var(--u) * 1.4); border-top: calc(var(--u) * .15) solid var(--line); font-size: calc(var(--u) * 1.3); min-height: calc(var(--u) * 6.5); } .fd .ddetail b { font: 800 calc(var(--u) * 1.6) Outfit; display: block; }

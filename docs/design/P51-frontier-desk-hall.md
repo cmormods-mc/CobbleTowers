@@ -68,3 +68,12 @@ Same opt-in setting. Built: `desk/DeskLobby.js`, `desk/seats.js` (pure: seats fr
 * Only the first open seat has the invite box.
 * The Frontier Desk has its own toast (`fd-toast`) on the screens it draws; the oak toast stays on native screens.
 * **Checks that are not unit tests:** `web/tools/desk-check.mjs` drives the dev build in Chromium (33 checks: native stays the default, the Hall, the Look setting in both directions, the intermission, the lobby, missing `extras` from an older server, no console errors, five window sizes). A pixel comparison of every native screenshot against the start of the session shows 36 of 37 identical; the one change is the Settings page, which gained the Look button.
+
+## Slice 4: progress (2026-10-17)
+
+Same opt-in setting; the Progress pill now opens the Desk page. Built: `desk/DeskProgress.js`, `desk/progressView.js` (pure: ready counts, the lane rows with the Hall's rank names, percent, season timer, tile words), `desk/icons.js` (the mod's icon sheet and item sheet at any size). No server change: it reads `TrackState` and sends `TrackAction` exactly as the native Tracks page does (`refresh`, `claim`, `claim_all`), and `src/tracks.js` still decides what a tile is and whether Claim is allowed.
+
+* Layout: a banner with how many rewards are ready, a row per mastery tower and one for the season (click to switch lane), the "More" buttons for the other Progress cards (season and rewards, cosmetics, contracts, Hall of Fame, run report, mastery and boards), and a large card with the lane's progress bar, a grid of tiles (item pictures, claimed ticks, a "Ready" badge) and a detail strip with Claim.
+* The Records card grid is not rebuilt; the More buttons cover the same pages.
+* Tiles are real buttons (Tab, Enter); the page opens scrolled to the tile you are on.
+* desk-check.mjs now has 41 checks (loading state, lanes, claims, an older server with no extras, no season).

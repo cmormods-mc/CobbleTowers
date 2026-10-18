@@ -169,6 +169,43 @@ async function open(look, size = { width: 1280, height: 720 }) {
   check('the Desk toast shows a server message and the oak toast does not', (await p.locator('.fd-toast.show').count()) === 1 && (await p.locator('.toast').count()) === 0);
   await p.close();
 }
+// 9. the Desk progress page: loading state, lanes, claims
+{
+  const p = await open('desk');
+  await p.send('TowerHallState', fixture('TowerHallState'));
+  await p.waitForSelector('.fd .trow');
+  await p.locator('.fd .pills a', { hasText: 'Progress' }).click();
+  await p.waitForSelector('.fd .dcard.empty');
+  check('Progress asks the server for the tracks and shows a loading card until they arrive', await p.evaluate(() => window.TowerDev.sent.some((m) => m.kind === 'TrackAction' && m.action === 'refresh')));
+  await p.send('TrackState', fixture('TrackState'));
+  await p.waitForSelector('.fd .dtile');
+  check('the mastery lane draws every node and marks the current one', (await p.locator('.fd .dtile').count()) > 10 && (await p.locator('.fd .dtile.cur').count()) === 1);
+  check('the banner counts the ready rewards', /2 rewards ready/.test(await p.locator('.fd .cont').innerText()));
+  await p.locator('.fd .dtile.open').click();
+  check('selecting the ready tile enables Claim', !(await p.locator('.fd .ddetail .dbtn').isDisabled()));
+  await p.locator('.fd .ddetail .dbtn').click();
+  await p.locator('.fd .dbtn', { hasText: 'Claim all' }).click();
+  await p.locator('.fd .trow', { hasText: 'Rootvale' }).click();
+  await p.locator('.fd .trow', { hasText: 'Season' }).click();
+  const season = /Ends in/.test(await p.locator('.fd .ch').innerText());
+  const kinds = await p.evaluate(() => window.TowerDev.sent.filter((m) => m.kind === 'TrackAction').map((m) => m.action + ':' + m.lane + ':' + m.tower + ':' + m.number));
+  check('Claim, Claim all and picking a tower send the track actions; the season shows its timer', kinds.includes('claim:mastery:cobbletowers:tideforge:5') && kinds.includes('claim_all:mastery:cobbletowers:tideforge:0') && kinds.includes('refresh::cobbletowers:rootvale:0') && season, kinds.join(',') + ' season=' + season);
+  await p.locator('.fd .dtile.cur').focus();
+  await p.keyboard.press('Enter');
+  check('tiles are real buttons: Enter selects the focused one', (await p.locator('.fd .dtile.sel').count()) === 1);
+  check('no console errors (progress)', p.errors.length === 0, p.errors.join(' | '));
+  await p.close();
+}
+{
+  const p = await open('desk');
+  await p.send('TowerHallState', fixture('TowerHallState', (d) => { delete d.extras; }));
+  await p.send('TrackState', fixture('TrackState', (d) => { d.season.present = false; d.towers = d.towers.slice(0, 1); }));
+  await p.waitForSelector('.fd .trow');
+  await p.locator('.fd .pills a', { hasText: 'Progress' }).click();
+  await p.waitForSelector('.fd .dtile');
+  check('progress with no season and no extras still draws one lane', (await p.locator('.fd .trow').count()) === 1 && p.errors.length === 0, p.errors.join(' | '));
+  await p.close();
+}
 // 6. sizes: nothing overflows the window
 for (const [w, h] of [[800, 500], [1280, 720], [1920, 1080], [2560, 1080]]) {
   const p = await open('desk', { width: w, height: h });

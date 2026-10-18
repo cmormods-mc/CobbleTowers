@@ -12,6 +12,7 @@ import { DeskHall } from './desk/DeskHall.js';
 import { DeskIntermission } from './desk/DeskIntermission.js';
 import { DeskLobby } from './desk/DeskLobby.js';
 import { DeskToast } from './desk/DeskToast.js';
+import { DeskProgress } from './desk/DeskProgress.js';
 import { Lobby } from './screens/Lobby.js';
 import { Party } from './screens/Party.js';
 import { Mastery } from './screens/Mastery.js';
@@ -71,7 +72,7 @@ export function App() {
 
   // the Frontier Desk look has its own toast, on the screens it draws
   const deskNow = look === 'desk' && !reward && !(vendorOpen && vendor) && (screen === 'intermission' ? !!inter
-    : screen === 'hall' && (view === 'lobby' ? !!play : view === 'hall' && tab === 'towers' && !!hall));
+    : screen === 'hall' && (view === 'lobby' ? !!play : view === 'hall' && (tab === 'towers' || tab === 'progress') && !!hall));
   const closeRewardNow = () => { update(closeReward); act('IntermissionAction', { action: 'REFRESH', argument: 0 }); };
 
   return html`
@@ -85,6 +86,7 @@ export function App() {
         : screen === 'hall' && view === 'lobby' && play && look === 'desk' ? html`<${DeskLobby} state=${play} />`
         : screen === 'hall' && view === 'lobby' && play ? html`<${Lobby} state=${play} />`
         : screen === 'hall' && look === 'desk' && view === 'hall' && tab === 'towers' && hall ? html`<${DeskHall} hall=${hall} busy=${!!busyAt} />`
+        : screen === 'hall' && look === 'desk' && view === 'hall' && tab === 'progress' && hall ? html`<${DeskProgress} hall=${hall} />`
         : screen === 'hall' && (hall || view === 'feature') ? html`<${Hall} hall=${hall} tab=${tab} page=${page} view=${view} pick=${pick} busy=${!!busyAt} />`
         : html`<${Waiting} />`}
       ${reward ? html`<${RewardModal} reward=${reward} onClose=${closeRewardNow} />`

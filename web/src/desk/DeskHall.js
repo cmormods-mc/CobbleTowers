@@ -43,9 +43,9 @@ function openPill(id) {
   return undefined;
 }
 
-function TopBar() {
+export function TopBar({ active = 'towers' }) {
   return html`<div class="dtop"><span class="logo">COBBLE <b>TOWERS</b></span>
-    <div class="pills" role="tablist">${PILLS.map(([id, name]) => html`<a key=${id} role="tab" tabindex="0" aria-selected=${id === 'towers'} class=${id === 'towers' ? 'on' : ''}
+    <div class="pills" role="tablist">${PILLS.map(([id, name]) => html`<a key=${id} role="tab" tabindex="0" aria-selected=${id === active} class=${id === active ? 'on' : ''}
       onClick=${() => openPill(id)} onKeyDown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPill(id); } }}>${name}</a>`)}</div>
     <span class="sp2"></span>
     <button class="tl" onClick=${() => request('refresh')}>Refresh</button>
