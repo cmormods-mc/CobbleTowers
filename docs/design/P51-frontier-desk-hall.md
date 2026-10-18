@@ -59,3 +59,12 @@ Same opt-in setting (Settings > General > Look). Built: `desk/DeskIntermission.j
 * Rooms (Forge, Shrine, ...) show the room as the chip and the option as the headline.
 * **Not built:** a scouting preview of the next floors. Scouting today is text about the floor you are on, sent when the floor starts (`FloorScouting.sendReveal`); previewing foes ahead is new server behaviour and belongs with P50 (the route map), where Far Sight's reach becomes route depth.
 * The "choices" view model is what the route map will replace: a node is a choice with a room and a modifier.
+
+## Slice 3: the lobby (2026-10-17)
+
+Same opt-in setting. Built: `desk/DeskLobby.js`, `desk/seats.js` (pure: seats from `lobbyView`, the line under a name, the mode name, why Start is waiting), `desk/DeskToast.js`. The tower list, the party's seats and the settings are three cards; every button sends what the native lobby sends (`PlayAction` SELECT_TOWER / SET_PLAYLIST / SET_ASCENSION / CONFIRM_MODE / READY / UNREADY / ACCEPT / DECLINE / OPEN_CHOOSER / INVITE / START / LEAVE, and `RentalDraftAction` OPEN), and `lobbyView` still decides what is on offer.
+
+* **Teams are shown for you only.** The payload carries other players' names and states, not their Pokemon, so a teammate's seat shows a state and no team. Showing teammates' teams is a server change (and a decision about what players may see of each other); not made here.
+* Only the first open seat has the invite box.
+* The Frontier Desk has its own toast (`fd-toast`) on the screens it draws; the oak toast stays on native screens.
+* **Checks that are not unit tests:** `web/tools/desk-check.mjs` drives the dev build in Chromium (33 checks: native stays the default, the Hall, the Look setting in both directions, the intermission, the lobby, missing `extras` from an older server, no console errors, five window sizes). A pixel comparison of every native screenshot against the start of the session shows 36 of 37 identical; the one change is the Settings page, which gained the Look button.

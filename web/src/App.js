@@ -10,6 +10,8 @@ import { Hud } from './screens/Hud.js';
 import { Hall, useBusyTimeout } from './screens/Hall.js';
 import { DeskHall } from './desk/DeskHall.js';
 import { DeskIntermission } from './desk/DeskIntermission.js';
+import { DeskLobby } from './desk/DeskLobby.js';
+import { DeskToast } from './desk/DeskToast.js';
 import { Lobby } from './screens/Lobby.js';
 import { Party } from './screens/Party.js';
 import { Mastery } from './screens/Mastery.js';
@@ -67,6 +69,9 @@ export function App() {
   useEffect(() => { document.documentElement.classList.toggle('native', native); }, [native]);
   useNoticeTimeout(notice, () => update((s) => (s.notice === notice ? { ...s, notice: null } : s)));
 
+  // the Frontier Desk look has its own toast, on the screens it draws
+  const deskNow = look === 'desk' && !reward && !(vendorOpen && vendor) && (screen === 'intermission' ? !!inter
+    : screen === 'hall' && (view === 'lobby' ? !!play : view === 'hall' && tab === 'towers' && !!hall));
   const closeRewardNow = () => { update(closeReward); act('IntermissionAction', { action: 'REFRESH', argument: 0 }); };
 
   return html`
@@ -77,6 +82,7 @@ export function App() {
         : screen === 'draft' && draft ? html`<${Draft} draft=${draft} />`
         : screen === 'hall' && view === 'mastery' && mast ? html`<${Mastery} state=${mast} />`
         : screen === 'hall' && view === 'party' && reg ? html`<${Party} reg=${reg} />`
+        : screen === 'hall' && view === 'lobby' && play && look === 'desk' ? html`<${DeskLobby} state=${play} />`
         : screen === 'hall' && view === 'lobby' && play ? html`<${Lobby} state=${play} />`
         : screen === 'hall' && look === 'desk' && view === 'hall' && tab === 'towers' && hall ? html`<${DeskHall} hall=${hall} busy=${!!busyAt} />`
         : screen === 'hall' && (hall || view === 'feature') ? html`<${Hall} hall=${hall} tab=${tab} page=${page} view=${view} pick=${pick} busy=${!!busyAt} />`
@@ -84,7 +90,7 @@ export function App() {
       ${reward ? html`<${RewardModal} reward=${reward} onClose=${closeRewardNow} />`
         : vendorOpen && vendor ? html`<${VendorModal} vendor=${vendor} onClose=${() => update((s) => openVendor(s, false))} />` : null}
       ${offline ? html`<div class="offline">Lost contact with the server. Waiting for it to answer...</div>` : null}
-      <${Toast} notice=${notice} />
+      ${deskNow ? html`<${DeskToast} notice=${notice} />` : html`<${Toast} notice=${notice} />`}
     </div>`;
 }
 

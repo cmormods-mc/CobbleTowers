@@ -39,6 +39,9 @@ export const SHOTS = {
   desk_inter_room: { payloads: [fixture('IntermissionState', (d) => { d.floor = 3; d.extras.cycleFloor = 3; d.draft.cards = [
     { id: 'cobbletowers:event/forge_pay', displayName: 'Forge: every player pays 175 CobbleDollars for a battle relic', votes: 1, risk: -1, theme: 'event', lines: ['Forge: every player pays 175 CobbleDollars for a battle relic'] },
     { id: 'cobbletowers:event/forge_leave', displayName: 'Forge: walk away', votes: 0, risk: -1, theme: 'event', lines: ['Forge: walk away'] }]; d.members = [{ name: 'WebPlayer', ready: false, cashOut: false }, { name: 'Misty', ready: true, cashOut: false }]; })], look: 'desk' },
+  desk_lobby_host: { payloads: [fixture('TowerHallState'), fixture('PlayState')], look: 'desk' },
+  desk_lobby_rental: { payloads: [fixture('TowerHallState'), fixture('PlayState', (d) => { d.lobby.options.modes.readiness = { confirmed: true, drafted: false, mine: false, host: false }; d.lobby.members = [{ name: 'Ash', accepted: true, ready: false }, { name: 'Misty', accepted: false, ready: false }]; d.lobby.options.depth = { chosen: 1, max: 2, offered: true }; })], look: 'desk' },
+  desk_lobby_invited: { payloads: [fixture('TowerHallState'), fixture('PlayState', (d) => { d.lobby.role = 2; d.lobby.members = [{ name: 'WebPlayer', accepted: false, ready: false }]; d.lobby.hostName = 'Ash'; })], look: 'desk' },
   desk_hall: { payloads: [fixture('TowerHallState')], look: 'desk' },
   desk_hall_noRun: { payloads: [fixture('TowerHallState', (d) => { d.runStatus = ''; d.canResume = false; d.extras.runTower = ''; d.extras.party[3].fainted = false; })], look: 'desk' },
   desk_hall_empty: { payloads: [fixture('TowerHallState', (d) => { d.runStatus = ''; d.canResume = false; d.extras.runTower = ''; d.extras.party = []; d.extras.standings = []; d.towers = d.towers.slice(0, 2); })], look: 'desk' },

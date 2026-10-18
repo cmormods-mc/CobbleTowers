@@ -23,7 +23,7 @@ export function DeskSprite({ name, w = 5 }) {
 
 const PANOS = new Map();
 /** A region's landscape in a canvas that fills its box. */
-function DeskPano({ region }) {
+export function DeskPano({ region }) {
   const ref = useRef(null);
   useEffect(() => {
     let data = PANOS.get(region);

@@ -7,7 +7,7 @@ import { setLook } from '../reducer.js';
 
 const TABS = ['General', 'Audio', 'Keybinds'];
 const NOTES = {
-  General: 'Reduced motion keeps every choice available. The plain font uses your system font instead of the pixel font. The Play page and the screen between floors can use the new Frontier Desk look; the other pages are still native. What your run carries is on the Current Run tab.',
+  General: 'Reduced motion keeps every choice available. Look switches the Play page and the screen between floors to the new Frontier Desk look.',
   Audio: 'Game volume remains in Minecraft sound settings. The tower pages make no sounds of their own.',
   Keybinds: 'Tower keys are set in Minecraft\'s controls screen, under Miscellaneous.',
 };

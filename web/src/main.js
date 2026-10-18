@@ -1,7 +1,7 @@
 import { render } from 'preact';
 import { html } from './html.js';
 import { App, HudApp } from './App.js';
-import { connect, isHud, watchServer } from './bridge.js';
+import { connect, isHud, sent, watchServer } from './bridge.js';
 import { dispatch, update } from './store.js';
 import { setLook } from './reducer.js';
 import { apply, load } from './settings.js';
@@ -17,4 +17,4 @@ connect(dispatch);
 if (!isHud) watchServer((offline) => update((s) => (s.offline === offline ? s : { ...s, offline })));
 
 // For tests and for poking a live page from the console: feed a payload as if the server had sent it.
-window.TowerDev = { dispatch, update };
+window.TowerDev = { dispatch, update, sent };
