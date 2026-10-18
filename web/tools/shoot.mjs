@@ -34,6 +34,9 @@ export const SHOTS = {
   draft_sealed: { payloads: [fixture('RentalDraft', openDraft)] },
   draft_choose: { payloads: [fixture('RentalDraft', openDraft)], steps: async (page) => { await page.click('.pack'); await page.waitForSelector('.card.pick', { timeout: 8000 }); await page.click('.card.pick >> nth=1'); } },
   hall: { payloads: [fixture('TowerHallState')] },
+  desk_route: { payloads: [fixture('IntermissionState')], look: 'desk' },
+  desk_route_pick: { payloads: [fixture('IntermissionState')], look: 'desk', steps: async (page) => { await page.click('.dstop.now >> nth=1'); } },
+  desk_route_edge: { payloads: [fixture('IntermissionState', (d) => { d.floor = 3; d.extras.cycleFloor = 3; d.extras.route.lane = 0; d.extras.route.now = [{ lane: 0, card: 0, kind: 'SHRINE' }, { lane: 1, card: 1, kind: 'BATTLE' }]; d.draft.cards = d.draft.cards.slice(0, 2); d.extras.route.ahead = d.extras.route.ahead.slice(0, 2); })], look: 'desk' },
   desk_inter: { payloads: [fixture('IntermissionState')], look: 'desk' },
   desk_inter_pick: { payloads: [fixture('IntermissionState')], look: 'desk', steps: async (page) => { await page.click('.dmc >> nth=1'); } },
   desk_inter_room: { payloads: [fixture('IntermissionState', (d) => { d.floor = 3; d.extras.cycleFloor = 3; d.draft.cards = [

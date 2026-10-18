@@ -295,11 +295,22 @@ public final class IntermissionService {
                 if (content.milestoneAt(run.towerId(), floor).isPresent()) milestones.add(floor);
             }
             return IntermissionExtras.of(tower.displayName(), run.floorIndex(), tower.floorCount(), milestones,
-                    com.cobbletowers.battle.cobblemon.PartyReader.cards(viewer));
+                    com.cobbletowers.battle.cobblemon.PartyReader.cards(viewer), routeOf(content, run));
         } catch (RuntimeException ex) {
             com.cobbletowers.TowerLog.warn("Intermission extras for {} could not be built: {}", viewer.getGameProfile().getName(), ex.toString());
             return IntermissionStatePayload.Extras.NONE;
         }
+    }
+
+    /** The route between floors for the page: the stops on the table and what scouting shows ahead. None when this is not a route step. */
+    private static IntermissionStatePayload.Route routeOf(com.cobbletowers.definition.TowerContent content, PersistedRun run) {
+        if (!com.cobbletowers.modifier.DraftService.routeEnabled()) return IntermissionStatePayload.Route.NONE;
+        var draft = run.modifiers().draft().filter(PersistedDraft::route);
+        int ahead = 1 + Math.max(0, com.cobbletowers.modifier.DraftService.effects(run).scoutingBonus());
+        return com.cobbletowers.route.RouteView.of(run.seed(), run.floorIndex(), run.modifiers().lastLane(),
+                draft.map(PersistedDraft::lanes).orElse(List.of()), draft.map(PersistedDraft::kinds).orElse(List.of()),
+                draft.map(PersistedDraft::arenas).orElse(List.of()), ahead,
+                com.cobbletowers.modifier.DraftService.routeRules(run), floor -> content.milestoneAt(run.towerId(), floor).isPresent());
     }
 
     private static IntermissionStatePayload.Draft draftOf(PersistedRun run, UUID viewer) {
@@ -321,6 +332,18 @@ public final class IntermissionService {
                     : option.isPresent() ? com.cobbletowers.menu.ModifierArt.EVENT : com.cobbletowers.menu.ModifierArt.UNKNOWN;
             List<String> lines = modifier != null ? com.cobbletowers.menu.ModifierMenuText.lines(modifier)
                     : List.of(name);
+            if (draft.route() && modifier != null) {
+                var stop = com.cobbletowers.route.RouteGraph.Kind.parse(draft.kinds().get(i));
+                String then = stop.room().map(room -> "Then: " + com.cobbletowers.route.RouteText.roomName(room) + " room on the way.").orElse("Then: straight to the next battle.");
+                lines = new ArrayList<>(lines);
+                lines.add(then);
+                String arena = draft.arenas().get(i);
+                if (!arena.isEmpty()) {
+                    net.minecraft.resources.ResourceLocation place = net.minecraft.resources.ResourceLocation.tryParse(arena);
+                    com.cobbletowers.definition.TowerDefinition tower = place == null ? null : TowerDefinitionRegistry.content().towers().get(place);
+                    if (tower != null) lines.add("Fought in " + tower.displayName() + ".");
+                }
+            }
             cards.add(new IntermissionStatePayload.Card(draft.cards().get(i), name, votes, risk, theme, lines));
         }
         return new IntermissionStatePayload.Draft(draft.resolved() ? 2 : 1, cards,

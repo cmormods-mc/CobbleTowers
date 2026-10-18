@@ -15,8 +15,14 @@ public final class IntermissionExtras {
      * @param milestones the cycle's milestone floors
      */
     public static Extras of(String tower, int runFloor, int cycleLength, List<Integer> milestones, List<Mon> party) {
+        return of(tower, runFloor, cycleLength, milestones, party, com.cobbletowers.network.IntermissionStatePayload.Route.NONE);
+    }
+
+    /** As above, with the route between floors (P50). */
+    public static Extras of(String tower, int runFloor, int cycleLength, List<Integer> milestones, List<Mon> party,
+                            com.cobbletowers.network.IntermissionStatePayload.Route route) {
         int cycleFloor = cycleLength > 0 && runFloor > 0 ? (runFloor - 1) % cycleLength + 1 : 0;
         return new Extras(tower == null ? "" : tower, cycleFloor, Math.max(0, cycleLength), List.copyOf(milestones),
-                party.size() > 6 ? List.copyOf(party.subList(0, 6)) : List.copyOf(party));
+                party.size() > 6 ? List.copyOf(party.subList(0, 6)) : List.copyOf(party), route);
     }
 }

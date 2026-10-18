@@ -135,10 +135,8 @@ public final class RunLifecycle {
         Optional<PersistedRun> found = TowerRuns.get(runId);
         if (found.isEmpty() || found.get().cell().isEmpty()) return false;
         PersistedRun run = found.get();
-        Optional<FloorLayout> next = TowerDefinitionRegistry.content().floorAt(run.towerId(), run.floorIndex())
-                .flatMap(floor -> floor.layout());
-        Optional<FloorLayout> previous = TowerDefinitionRegistry.content().floorAt(run.towerId(), run.floorIndex() - 1)
-                .flatMap(floor -> floor.layout());
+        Optional<FloorLayout> next = com.cobbletowers.route.FloorLayouts.layoutOf(TowerDefinitionRegistry.content(), run, run.floorIndex());
+        Optional<FloorLayout> previous = com.cobbletowers.route.FloorLayouts.layoutOf(TowerDefinitionRegistry.content(), run, run.floorIndex() - 1);
         if (next.isEmpty()) return false;
         if (previous.isPresent() && previous.get().structure().equals(next.get().structure())) return true;
 
@@ -169,9 +167,7 @@ public final class RunLifecycle {
         }
         PersistedRun run = found.get();
 
-        Optional<FloorLayout> layout = TowerDefinitionRegistry.content()
-                .floorAt(run.towerId(), run.floorIndex())
-                .flatMap(floor -> floor.layout());
+        Optional<FloorLayout> layout = com.cobbletowers.route.FloorLayouts.layoutOf(TowerDefinitionRegistry.content(), run, run.floorIndex());
         if (layout.isEmpty()) {
             TowerLog.error("Run {} is on {} floor {}, which declares no layout; parking it",
                     runId, run.towerId(), run.floorIndex());

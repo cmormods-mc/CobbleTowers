@@ -1,6 +1,6 @@
 # P50: The route map (three paths between floors)
 
-Status: **Design agreed with the owner (2026-10-17). Nothing built.** Follows P34/P34b/P45 (relics and rooms), P46 (rotating tower, seeded floors), P4 (structures and the warm pool). Written first, per the design gate. Visual direction: the Frontier Desk web UI (`docs/design/` has no doc for it yet; mockups were reviewed in chat).
+Status: **Stages 1 and 2 built and verified live (2026-10-17); stage 3 not built (it needs new building schematics).** The design below was agreed with the owner; "As built" at the end says what the code does and where it differs. Follows P34/P34b/P45 (relics and rooms), P46 (rotating tower, seeded floors), P4 (structures and the warm pool). Written first, per the design gate. Visual direction: the Frontier Desk web UI (`docs/design/` has no doc for it yet; mockups were reviewed in chat).
 
 ## Why
 
@@ -79,3 +79,44 @@ The direction (a map, eventually with physical rooms) and the recommendations be
 4. **Room frequency: open.** The generator decides how many room nodes a step shows; the mix needs a first guess and playtest data.
 5. **Voters: resolved.** Unchanged: everyone who can still fight (`DraftService.voters`).
 6. **Runs in flight at deploy: resolved.** They finish with the card draft; the map applies from the next run.
+
+## As built, stage 1 (2026-10-17)
+
+**Server.**
+* `route/RouteGraph` (pure): three lanes, `Kind` (BATTLE, REST, SHRINE, GAMBLER, FORGE, LIBRARY, VAULT, POOL), `kindsAt(seed, floor, rules)` draws three distinct kinds per step from its own ordinal space (`6_000_041`), weighted by the existing room weights plus a battle weight of 40. `Rules` carries the weekly rules and the trial's room lean (`no_healing_rooms`, `relics_every_second_floor`, `roomBias`). `linked` / `reachable`: a path runs between lanes at most one apart; a run with no step yet can start anywhere.
+* `PersistedDraft` gains `lanes` and `kinds` (one of each per card; empty for a plain draft); `RunModifierState` gains `routeSteps` (pairs of floor and lane) with `lastLane()`, `laneAt()`, `withRouteStep()`. Both read old saves as "no route"; no `PersistedRun` schema change.
+* `DraftService.open`: an ordinary draft (not a lock-in, not a milestone floor) becomes a **route draft**. The usual three cards are drawn; card `i` rides on lane `i`; only the lanes reachable from the last lane are offered; each stop shows its kind, and a room that could do nothing now (a Shrine with no relic room, a Forge nobody can pay for) is shown as a plain battle. `settle` records the lane, then opens the room of the stop that was taken (`IntermissionEvents.roomForNode`; the dev `runs draft room` seam still wins). A draft from before routes still rolls its room as it always did.
+* Switches: `-Dcobbletowers.route=off`, and routes are off whenever rooms are (`-Dcobbletowers.events=off`), so the existing tests that turn rooms off still see the plain three-card draft.
+* Payload: `IntermissionStatePayload.Extras.route` (`lane`, `now` = lane / card / kind of each stop, `ahead` = the next steps scouting shows, with their kinds, or a milestone mark). How far ahead: one step, plus the run's scouting bonus (Far Sight), at most six (`RouteView`). Each card also gets a line "Then: Forge room on the way." so the native screen says what a stop leads to.
+* `runs show` prints the route taken and an open draft's stops; `runs draft show` prints each card's lane and kind.
+
+**Page.** `desk/routeMap.js` (pure view model), `desk/DeskRoute.js` (the map), used by the Frontier Desk intermission when the step is a route step; the plain offers remain for lock-ins, milestones and an older server. A stop is a button; choosing it votes its card. Blocked lanes are shown dashed.
+
+**Differences from the plan above.**
+* A milestone step is not a route step: the floor-5 modifier draft is the plain three cards, and the relic draft follows, as before. The map shows it as a "relic" column.
+* Which stops a party can reach follows the lane it last took, so a party on an edge lane has two stops to choose from, not three.
+* Nodes carry no arena variant yet (stage 2).
+
+**Tests.** Unit: `RouteGraphTest`, `RouteViewTest`, `RouteStateTest`, `DraftRouteTest`, the route fields in `PayloadJsonTest`; web: `desk-route.test.js` and 8 route checks in `desk-check.mjs`. Live: `validation/smoke/route_test.py`.
+
+## As built, stage 2: detours to another region's building (2026-10-17)
+
+A route step can have **one stop whose battle is fought in another tower's building**, about one step in three, never into or out of a boss floor, never in a trial (a trial's floors are its shared route), and only for towers in the catalog. The stop is drawn with a small landscape of that region and "in Rootvale" in its text, and the card gets a line "Fought in Rootvale Tower."
+
+* `RouteGraph.detourLane` / `detourPlace` (pure, own ordinal space `6_100_043`): which lane, and which of the other catalog towers (sorted by id, only those with a layout for the next floor, never the Test Tower).
+* `PersistedDraft.arenas` (one tower id or empty per card) and `RunModifierState.arenas` (`"floor=tower"` pairs, last wins). Old saves read as "none".
+* `route/FloorLayouts.layoutOf(content, run, floor)` is the one place that says which layout a floor is built from: the run's own tower's, or **the same floor index of the detour's tower** (so its anchors always fit its own building). The five places that read a floor's layout (`FloorSetup`, the spectator anchor in `TowerEncounters`, `RunLifecycle` twice, `VendorNpc`) now ask it. The existing `rebuildIfStructureChanged` compares the previous and next floor's layouts, so going to the detour and coming back each rebuild the cell, and staying in a building does not.
+* Rules, encounter pool, rewards and theme stay the run's own: a detour changes where the party fights, not what it fights.
+* `runs show` prints which building the current floor is in and, when a detour was taken, the next one.
+
+**Cost, measured on the rig (testserver-181):** the in-place prepare of a ~960 KB building took **414 ms** going to Duskvale and **464 ms** coming back to Neutral, each one pause on the server thread (a run start is 505 ms). That is the answer to the warm-window question: detours do not use the warm pool; they pay about half a second twice, and that is why they are one lane in about a third of the steps. If it proves too noticeable, the next step is pre-building the voted building on the first vote, which is not built.
+
+**Not built (stage 3).** New rooms as real places need new structures with the four anchors (entry, presentation, spectator, exit), converted with `schem_to_structure.py`; that is schematic and build work, not code. The code for it is already there: a node's place is a tower id today and a layout is a layout, so a room structure only needs a `FloorDefinition`-style entry that `FloorLayouts` can return.
+
+**Tests, stage 2.** Unit: `DraftArenaTest` (layouts, detour rarity and exclusions, drafts), more in `RouteGraphTest`, `RouteViewTest`, `PayloadJsonTest`, `desk-route.test.js`. Live: `validation/smoke/route_arena_test.py` plays real runs until a detour appears, then checks the cell was prepared with the other building, `runs show` says so, and the party is back in its own building a floor later.
+
+## Resolved and open (updated)
+
+* Warm window: **measured** (above); detours pay the rebuild, stage 1 changes no structure.
+* Room frequency is still untuned; the weights are the existing room weights plus a battle weight of 40.
+* A run's route is not yet recorded in Echoes or the run report.

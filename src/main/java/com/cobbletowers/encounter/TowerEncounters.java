@@ -394,12 +394,13 @@ public final class TowerEncounters {
     public static boolean sendToSpectatorAnchor(MinecraftServer server, PersistedRun run, ServerPlayer player) {
         Optional<FloorDefinition> floor = TowerDefinitionRegistry.content().floorAt(run.towerId(), run.floorIndex());
         ServerLevel level = TowerDimension.level(server);
-        if (floor.isEmpty() || floor.get().layout().isEmpty() || level == null || run.cell().isEmpty()) return false;
+        Optional<com.cobbletowers.definition.FloorLayout> layout = com.cobbletowers.route.FloorLayouts.layoutOf(TowerDefinitionRegistry.content(), run, run.floorIndex());
+        if (floor.isEmpty() || layout.isEmpty() || level == null || run.cell().isEmpty()) return false;
 
-        Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), floor.get().layout().get());
+        Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), layout.get());
         if (origin.isEmpty()) return false;
 
-        FloorAnchor anchor = floor.get().layout().get().spectator();
+        FloorAnchor anchor = layout.get().spectator();
         BlockPos where = anchor.in(origin.get());
         player.teleportTo(level, where.getX() + 0.5, where.getY(), where.getZ() + 0.5, anchor.yaw(), 0.0f);
         return true;

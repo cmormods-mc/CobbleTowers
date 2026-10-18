@@ -396,8 +396,15 @@ public final class RunsCommand {
             source.sendSuccess(() -> Component.literal("  vendor purchases: " + run.vendorPurchases()), false);
         }
         source.sendSuccess(() -> Component.literal("  intermission: " + IntermissionService.describe(run)), false);
+        source.sendSuccess(() -> Component.literal("  floor " + run.floorIndex() + " is built in: " + com.cobbletowers.route.FloorLayouts.placeOf(run, run.floorIndex())
+                + com.cobbletowers.route.FloorLayouts.layoutOf(TowerDefinitionRegistry.content(), run, run.floorIndex()).map(layout -> " (" + layout.structure() + ")").orElse("")), false);
+        run.modifiers().arenaAt(run.floorIndex() + 1).ifPresent(place -> source.sendSuccess(() -> Component.literal("  floor " + (run.floorIndex() + 1) + " will be built in: " + place
+                + com.cobbletowers.route.FloorLayouts.layoutOf(TowerDefinitionRegistry.content(), run, run.floorIndex() + 1).map(layout -> " (" + layout.structure() + ")").orElse("")), false));
+        if (!run.modifiers().routeSteps().isEmpty()) {
+            source.sendSuccess(() -> Component.literal("  route: lane " + run.modifiers().lastLane() + " (steps floor:lane " + routeSteps(run.modifiers()) + ")"), false);
+        }
         run.modifiers().draft().ifPresent(draft -> source.sendSuccess(() -> Component.literal(
-                "  draft at floor " + draft.floorIndex() + (draft.lockIn() ? " (LOCK-IN)" : "")
+                "  draft at floor " + draft.floorIndex() + (draft.lockIn() ? " (LOCK-IN)" : "") + (draft.route() ? " (ROUTE " + stops(draft) + ")" : "")
                         + ": " + draft.cards() + (draft.resolved()
                         ? " -> " + draft.chosenModifier().orElse(null)
                         + (draft.decidedByTieBreak() ? " (tie-break)" : "")
@@ -672,6 +679,24 @@ public final class RunsCommand {
         return 1;
     }
 
+    /** The route steps taken, as {@code floor:lane} pairs. */
+    private static String routeSteps(com.cobbletowers.persistence.RunModifierState state) {
+        StringBuilder out = new StringBuilder();
+        List<Integer> steps = state.routeSteps();
+        for (int i = 0; i + 1 < steps.size(); i += 2) out.append(i == 0 ? "" : " ").append(steps.get(i)).append(':').append(steps.get(i + 1));
+        return out.toString();
+    }
+
+    /** An open route draft's stops, {@code lane=KIND} for each card in card order. */
+    private static String stops(PersistedDraft draft) {
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < draft.lanes().size(); i++) {
+            out.append(i == 0 ? "" : " ").append(draft.lanes().get(i)).append('=').append(draft.kinds().get(i));
+            if (!draft.arenas().get(i).isEmpty()) out.append('@').append(draft.arenas().get(i));
+        }
+        return out.toString();
+    }
+
     /** Prints the draft with cards numbered from 1; converted to zero-based here, once. */
     private static int draftShow(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
@@ -697,7 +722,8 @@ public final class RunsCommand {
             String risk = content.modifier(id).map(modifier -> modifier.risk().name()).orElse("?");
             long votes = open.votes().values().stream().filter(choice -> choice == card).count();
             source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
-                    "  [%d] %s (%s) - %d vote(s)%s", card + 1, name, risk, votes,
+                    "  [%d] %s (%s)%s - %d vote(s)%s", card + 1, name, risk,
+                    open.route() ? " lane " + open.lanes().get(card) + ", " + open.kinds().get(card) : "", votes,
                     open.chosen().isPresent() && open.chosen().getAsInt() == card ? "  <- CHOSEN" : "")), false);
         }
         if (open.resolved()) {

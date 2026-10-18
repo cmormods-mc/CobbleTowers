@@ -79,8 +79,7 @@ public final class VendorNpc {
         // A mode that closes the vendor (Hardcore, P32) has nobody standing there.
         if (com.cobbletowers.definition.PlaylistRegistry.vendorClosed(run)) return false;
         ServerLevel level = TowerDimension.level(server);
-        Optional<FloorLayout> layout = TowerDefinitionRegistry.content().floorAt(run.towerId(), run.floorIndex())
-                .flatMap(floor -> floor.layout());
+        Optional<FloorLayout> layout = com.cobbletowers.route.FloorLayouts.layoutOf(TowerDefinitionRegistry.content(), run, run.floorIndex());
         if (level == null || layout.isEmpty()) return false;
         if (!vendorsOf(server, run).isEmpty()) return true;
 

@@ -48,11 +48,12 @@ record FloorSetup(PersistedRun run, TowerContent content, TowerDefinition tower,
             return Optional.empty();
         }
         ServerLevel level = TowerDimension.level(server);
-        if (level == null || run.cell().isEmpty() || floor.get().layout().isEmpty()) {
+        Optional<FloorLayout> chosen = com.cobbletowers.route.FloorLayouts.layoutOf(content, run, run.floorIndex());
+        if (level == null || run.cell().isEmpty() || chosen.isEmpty()) {
             if (report) TowerLog.error("Run {} has no built floor to fight on", run.runId());
             return Optional.empty();
         }
-        FloorLayout layout = floor.get().layout().get();
+        FloorLayout layout = chosen.get();
         // Asked of the preparer, never recomputed: a second calculation put the entry anchor in the void.
         Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), layout);
         if (origin.isEmpty()) {

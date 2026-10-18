@@ -14,7 +14,8 @@
           "lines": [
             "[+] Minor risk  *  +3% to your final payout",
             "[+] Your scouts see 3 floors further ahead.",
-            "The risk you carry is paid out when the tower ends."
+            "The risk you carry is paid out when the tower ends.",
+            "Then: straight to the next battle."
           ]
         },
         {
@@ -26,7 +27,8 @@
           "lines": [
             "[+] Moderate risk  *  +8% to your final payout",
             "[-] No items in battle: trust your team.",
-            "The risk you carry is paid out when the tower ends."
+            "The risk you carry is paid out when the tower ends.",
+            "Then: Forge room on the way."
           ]
         },
         {
@@ -38,7 +40,9 @@
           "lines": [
             "[+] Moderate risk  *  +8% to your final payout",
             "The ground shifts: Electric terrain in every battle.",
-            "The risk you carry is paid out when the tower ends."
+            "The risk you carry is paid out when the tower ends.",
+            "Then: Rest room on the way.",
+            "Fought in Duskvale Tower."
           ]
         }
       ],
@@ -127,7 +131,64 @@
             "steel"
           ]
         }
-      ]
+      ],
+      "route": {
+        "lane": -1,
+        "now": [
+          {
+            "lane": 0,
+            "card": 0,
+            "kind": "BATTLE",
+            "arena": ""
+          },
+          {
+            "lane": 1,
+            "card": 1,
+            "kind": "FORGE",
+            "arena": ""
+          },
+          {
+            "lane": 2,
+            "card": 2,
+            "kind": "REST",
+            "arena": "cobbletowers:duskvale"
+          }
+        ],
+        "ahead": [
+          {
+            "floor": 2,
+            "milestone": false,
+            "kinds": [
+              "SHRINE",
+              "BATTLE",
+              "VAULT"
+            ]
+          },
+          {
+            "floor": 3,
+            "milestone": false,
+            "kinds": [
+              "BATTLE",
+              "GAMBLER",
+              "LIBRARY"
+            ]
+          },
+          {
+            "floor": 4,
+            "milestone": false,
+            "kinds": [
+              "POOL",
+              "BATTLE",
+              "REST"
+            ]
+          },
+          {
+            "floor": 5,
+            "milestone": true,
+            "kinds": []
+          }
+        ]
+      }
     }
   }
 }

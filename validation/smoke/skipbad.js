@@ -16,6 +16,14 @@ module.exports = function skipUnparseable(bot) {
     };
   }
   patch();
+  // A server that makes its resource pack required (Polymer auto-host) holds the login until the client has been through the real
+  // sequence: accepted, downloaded, loaded. mineflayer's own accept sends accepted and loaded only, which that server does not take.
+  bot._client.on('add_resource_pack', async (data) => {
+    const send = (result) => { try { bot._client.write('resource_pack_receive', { uuid: data.uuid, result }); } catch (err) { /* the bot is gone */ } };
+    send(3);
+    try { const reply = await fetch(data.url); await reply.arrayBuffer(); send(4); } catch (err) { /* a pack that cannot be fetched still ends in "loaded" for a bot */ }
+    send(0);
+  });
   // the play-state deserializer is a new object once the login finishes
   bot._client.on('state', patch);
 };

@@ -98,10 +98,10 @@ async function open(look, size = { width: 1280, height: 720 }) {
   await p.close();
 }
 
-// 4. the Desk intermission: choose, confirm, ready, cash out
+// 4. the Desk intermission (a plain draft, no route): choose, confirm, ready, cash out
 {
   const p = await open('desk');
-  await p.send('IntermissionState', fixture('IntermissionState'));
+  await p.send('IntermissionState', fixture('IntermissionState', (d) => { d.extras.route = { lane: -1, now: [], ahead: [] }; }));
   await p.waitForSelector('.fd .dmc');
   check('three offers, none selected, Confirm asks to choose', (await p.locator('.fd .dmc').count()) === 3 && (await p.locator('.fd .dmc.sel').count()) === 0 && /Choose a card/.test(await p.locator('.fd .dft .dbtn').first().innerText()));
   await p.locator('.fd .dmc').nth(1).click();
@@ -113,10 +113,38 @@ async function open(look, size = { width: 1280, height: 720 }) {
   check('Confirm, Vendor and Cash out send the intermission actions', kinds.includes('IntermissionAction:PICK_CARD:1') && kinds.includes('IntermissionAction:VENDOR:0') && kinds.includes('IntermissionAction:CASH_OUT:0'), kinds.join(','));
   check('the floor ladder shows ten floors with two milestones', (await p.locator('.fd .dnd').count()) === 10 && (await p.locator('.fd .dnd.ms').count()) === 2);
   // a settled draft shows the chosen card and a refresh keeps the player's choice
-  await p.send('IntermissionState', fixture('IntermissionState', (d) => { d.draft.state = 2; d.draft.chosen = 2; d.draft.cards[2].votes = 2; }));
+  await p.send('IntermissionState', fixture('IntermissionState', (d) => { d.extras.route = { lane: -1, now: [], ahead: [] }; d.draft.state = 2; d.draft.chosen = 2; d.draft.cards[2].votes = 2; }));
   await p.waitForTimeout(150);
   check('a settled draft marks the chosen card and disables the offers', (await p.locator('.fd .dmc.chosen').count()) === 1 && (await p.locator('.fd .dmc:disabled').count()) === 3);
   check('no console errors (desk)', p.errors.length === 0, p.errors.join(' | '));
+  await p.close();
+}
+// 4b. the route map: stops, lanes, voting a stop, a blocked lane, the older server
+{
+  const p = await open('desk');
+  await p.send('IntermissionState', fixture('IntermissionState'));
+  await p.waitForSelector('.fd .dstop.now');
+  check('a route step draws the map: three stops to choose and the scouted steps after them', (await p.locator('.fd .dstop.now').count()) === 3 && (await p.locator('.fd .dstop.ahead').count()) === 10 && (await p.locator('.fd .dchoices').count()) === 0);
+  check('the stops name their kind, their modifier and their payout', /Forge/.test(await p.locator('.fd .dstop.now').nth(1).innerText()) && /Empty Pockets/.test(await p.locator('.fd .dstop.now').nth(1).innerText()) && /\+8%/.test(await p.locator('.fd .dstop.now').nth(1).innerText()));
+  await p.locator('.fd .dstop.now').nth(2).click();
+  check('choosing a stop selects it, shows its details (with what comes after) and enables Confirm', (await p.locator('.fd .dstop.now.sel').count()) === 1 && /Rest room on the way/.test(await p.locator('.fd .dside').innerText()) && !(await p.locator('.fd .dft .dbtn').first().isDisabled()));
+  await p.locator('.fd .dft .dbtn').first().click();
+  const kinds = await p.sentKinds();
+  check('Confirm votes the card that rides on that stop', kinds.includes('IntermissionAction:PICK_CARD:2'), kinds.join(','));
+  await p.send('IntermissionState', fixture('IntermissionState', (d) => { d.floor = 3; d.extras.route.lane = 0; d.extras.route.now = [{ lane: 0, card: 0, kind: 'SHRINE' }, { lane: 1, card: 1, kind: 'BATTLE' }]; d.draft.cards = d.draft.cards.slice(0, 2); }));
+  await p.waitForTimeout(150);
+  check('a lane the party cannot reach is blocked and cannot be clicked', (await p.locator('.fd .dstop.blocked').count()) >= 1 && (await p.locator('.fd .dstop.now').count()) === 2);
+  await p.send('IntermissionState', fixture('IntermissionState', (d) => { d.draft.state = 2; d.draft.chosen = 1; }));
+  await p.waitForTimeout(150);
+  check('once settled the stops are disabled and the chosen one is marked', (await p.locator('.fd .dstop.now:disabled').count()) === 3 && (await p.locator('.fd .dstop.now.chosen').count()) === 1);
+  check('no console errors (route)', p.errors.length === 0, p.errors.join(' | '));
+  await p.close();
+}
+{
+  const p = await open('desk');
+  await p.send('IntermissionState', fixture('IntermissionState', (d) => { delete d.extras.route; }));
+  await p.waitForSelector('.fd .dmc');
+  check('an older server with no route draws the plain offers', (await p.locator('.fd .dmc').count()) === 3 && (await p.locator('.fd .dstop').count()) === 0 && p.errors.length === 0, p.errors.join(' | '));
   await p.close();
 }
 // 5. an intermission with no extras at all (an older server) still draws

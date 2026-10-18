@@ -144,6 +144,27 @@ public final class IntermissionEvents {
 
     private static volatile Room FORCED_ROOM;
 
+    /** Whether {@code room} could be offered now (P50: a route stop only opens a room that can do something). */
+    public static boolean canOffer(TowerContent content, PersistedRun run, int floorIndex, Room room, ToLongFunction<UUID> balance) {
+        return enabled() && eligible(content, run, floorIndex, room, balance);
+    }
+
+    /**
+     * The room the stop the party chose opens (P50): the stop's own room if it can still do something, the Echo Duel at a milestone
+     * when there is one to meet, and a dev-build forced room first (as {@link #roomFor} does).
+     */
+    public static Optional<Room> roomForNode(TowerContent content, PersistedRun run, int floorIndex, boolean echoAvailable,
+                                             ToLongFunction<UUID> balance, Optional<Room> node) {
+        if (!enabled()) return Optional.empty();
+        if (content.milestoneAt(run.towerId(), floorIndex).isPresent()) return echoAvailable ? Optional.of(Room.ECHO_DUEL) : Optional.empty();
+        Room asked = FORCED_ROOM;
+        if (asked != null) {
+            FORCED_ROOM = null;
+            return eligible(content, run, floorIndex, asked, balance) ? Optional.of(asked) : Optional.empty();
+        }
+        return node.filter(room -> eligible(content, run, floorIndex, room, balance));
+    }
+
     /** Dev build test seam: the next ordinary room is this one if it is eligible. */
     public static void forceNextRoom(Room room) {
         FORCED_ROOM = room;

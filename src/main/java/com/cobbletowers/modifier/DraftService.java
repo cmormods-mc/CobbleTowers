@@ -148,6 +148,72 @@ public final class DraftService {
         return List.copyOf(cards);
     }
 
+    /**
+     * Whether ordinary drafts are steps of the route (P50). Off with {@code -Dcobbletowers.route=off}, and whenever rooms are off
+     * ({@code -Dcobbletowers.events=off}): the draft alone, as before.
+     */
+    public static boolean routeEnabled() {
+        return com.cobbletowers.intermission.IntermissionEvents.enabled()
+                && !"off".equalsIgnoreCase(System.getProperty("cobbletowers.route", "on"));
+    }
+
+    /** What a run's weekly rule and trial change about the stops of its route. */
+    public static com.cobbletowers.route.RouteGraph.Rules routeRules(PersistedRun run) {
+        return new com.cobbletowers.route.RouteGraph.Rules(com.cobbletowers.trial.TrialRules.hasRule(run, "no_healing_rooms"),
+                com.cobbletowers.trial.TrialRules.hasRule(run, "relics_every_second_floor"), com.cobbletowers.trial.TrialRules.roomBias(run));
+    }
+
+    /**
+     * The step after this floor as a draft: the cards that ride on the lanes the party can reach, each a stop of some kind. The
+     * kind a stop shows is what it will do: a room that could do nothing now (a Shrine with no relic room) is a plain battle.
+     */
+    static PersistedDraft routeDraft(TowerContent content, PersistedRun run, List<ResourceLocation> cards,
+                                     java.util.function.ToLongFunction<UUID> balance) {
+        int floor = run.floorIndex();
+        var kinds = com.cobbletowers.route.RouteGraph.kindsAt(run.seed(), floor, routeRules(run));
+        List<ResourceLocation> offered = new ArrayList<>();
+        List<Integer> lanes = new ArrayList<>();
+        List<String> named = new ArrayList<>();
+        List<String> arenas = new ArrayList<>();
+        List<String> places = new ArrayList<>();
+        int detour = detourFor(content, run, floor, places);
+        List<Integer> reach = new ArrayList<>(com.cobbletowers.route.RouteGraph.reachable(run.modifiers().lastLane()));
+        if (reach.stream().noneMatch(lane -> lane < cards.size() && lane < kinds.size())) reach = List.of(0);
+        for (int lane : reach) {
+            if (lane >= cards.size() || lane >= kinds.size()) continue;
+            var kind = kinds.get(lane);
+            if (kind.room().isPresent() && !com.cobbletowers.intermission.IntermissionEvents.canOffer(content, run, floor, kind.room().get(), balance)) {
+                kind = com.cobbletowers.route.RouteGraph.Kind.BATTLE;
+            }
+            offered.add(cards.get(lane));
+            lanes.add(lane);
+            named.add(kind.name());
+            arenas.add(lane == detour ? places.get(0) : "");
+        }
+        return PersistedDraft.openingRoute(floor, offered, lanes, named, arenas);
+    }
+
+    /**
+     * The lane of this step whose battle is a detour to another region's building (-1 for none); {@code places} gets that building's tower id.
+     * No detour for a trial (its floors are the shared route), a tower that is not in the catalog, or when the next floor is a milestone.
+     */
+    static int detourFor(TowerContent content, PersistedRun run, int floor, List<String> places) {
+        if (run.options().isTrial() || !content.towers().containsKey(run.towerId())) return -1;
+        if (content.milestoneAt(run.towerId(), floor + 1).isPresent() || content.floorAt(run.towerId(), floor + 1).flatMap(f -> f.layout()).isEmpty()) return -1;
+        int lane = com.cobbletowers.route.RouteGraph.detourLane(run.seed(), floor);
+        if (lane < 0) return -1;
+        List<ResourceLocation> others = new ArrayList<>();
+        for (var tower : content.catalogTowers()) {
+            if (tower.id().equals(run.towerId()) || tower.id().getPath().equals("test")) continue;
+            if (content.floorAt(tower.id(), floor + 1).flatMap(f -> f.layout()).isPresent()) others.add(tower.id());
+        }
+        others.sort(java.util.Comparator.comparing(ResourceLocation::toString));
+        int pick = com.cobbletowers.route.RouteGraph.detourPlace(run.seed(), floor, others.size());
+        if (pick < 0) return -1;
+        places.add(others.get(pick).toString());
+        return lane;
+    }
+
     /** Who is entitled to vote: everybody still in the run who could fight (TDS #23). */
     public static List<UUID> voters(PersistedRun run) {
         List<UUID> voters = new ArrayList<>();
@@ -197,7 +263,9 @@ public final class DraftService {
         }
 
         boolean lockIn = lockInDue(run.modifiers());
-        PersistedDraft draft = PersistedDraft.opening(run.floorIndex(), lockIn, cards);
+        // a lock-in picks from what is held, and a milestone pays a relic: neither is a step of the route
+        boolean step = routeEnabled() && !lockIn && content.milestoneAt(run.towerId(), run.floorIndex()).isEmpty();
+        PersistedDraft draft = step ? routeDraft(content, run, cards, balances(server)) : PersistedDraft.opening(run.floorIndex(), lockIn, cards);
         // Checkpointed, because TDS #145 lists intermission among the forced checkpoints and a draft
         // lost to a crash would come back as three different cards.
         TowerRuns.save(server, run.withModifiers(run.modifiers().withDraft(draft), now), true);
@@ -252,6 +320,17 @@ public final class DraftService {
                         ? run.modifiers().lockingIn(won).withDraft(resolved)
                         : run.modifiers().accumulating(won, draft.floorIndex() + 1).withDraft(resolved);
 
+        if (draft.route()) {
+            next = next.withRouteStep(draft.floorIndex(), draft.lanes().get(result.cardIndex()));
+            String arena = draft.arenas().get(result.cardIndex());
+            if (!arena.isEmpty()) {
+                ResourceLocation place = ResourceLocation.tryParse(arena);
+                if (place != null) next = next.withArena(draft.floorIndex() + 1, place);
+            }
+            TowerLog.info("Run {} took lane {} ({}) at floor {}", runId, draft.lanes().get(result.cardIndex()),
+                    draft.kinds().get(result.cardIndex()), draft.floorIndex());
+        }
+
         if (draft.relic()) {
             PersistedRun afterRelic = run.withModifiers(next, now);
             TowerLog.info("Run {} found relic {} at floor {}{}", runId, won, draft.floorIndex(),
@@ -280,9 +359,12 @@ public final class DraftService {
             TowerLog.info("Run {} opened a RELIC draft at floor {}: {}", runId, draft.floorIndex(), relics);
         } else {
             // No relic to give: a non-milestone floor may have an event room instead.
-            Optional<com.cobbletowers.intermission.IntermissionEvents.Room> room =
-                    com.cobbletowers.intermission.IntermissionEvents.roomFor(content, after, draft.floorIndex(),
-                            com.cobbletowers.echo.EchoService.duelAvailable(server, after, draft.floorIndex()), balances(server));
+            boolean echo = com.cobbletowers.echo.EchoService.duelAvailable(server, after, draft.floorIndex());
+            // a route step opens the room of the stop that was taken; a draft before routes rolls one as it always did
+            Optional<com.cobbletowers.intermission.IntermissionEvents.Room> room = draft.route()
+                    ? com.cobbletowers.intermission.IntermissionEvents.roomForNode(content, after, draft.floorIndex(), echo, balances(server),
+                            com.cobbletowers.route.RouteGraph.Kind.parse(draft.kinds().get(result.cardIndex())).room())
+                    : com.cobbletowers.intermission.IntermissionEvents.roomFor(content, after, draft.floorIndex(), echo, balances(server));
             if (room.isPresent()) {
                 after = after.withModifiers(next.withDraft(PersistedDraft.openingEvent(draft.floorIndex(),
                         com.cobbletowers.intermission.IntermissionEvents.cardsOf(room.get()))), now);

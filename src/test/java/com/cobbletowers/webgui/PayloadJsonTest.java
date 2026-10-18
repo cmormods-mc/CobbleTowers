@@ -158,8 +158,10 @@ class PayloadJsonTest {
     @Test
     @DisplayName("the intermission carries the team's health and the run's place in its tower for the Frontier Desk page (P51)")
     void intermissionExtras() {
+        var route = new IntermissionStatePayload.Route(1, List.of(new IntermissionStatePayload.Route.Node(0, 0, "REST", ""), new IntermissionStatePayload.Route.Node(1, 1, "FORGE", "cobbletowers:duskvale")),
+                List.of(new IntermissionStatePayload.Route.Step(5, false, List.of("BATTLE", "SHRINE", "REST")), new IntermissionStatePayload.Route.Step(6, true, List.of())));
         var extras = new IntermissionStatePayload.Extras("Tideforge Tower", 4, 10, List.of(5, 10),
-                List.of(new com.cobbletowers.network.TowerHallStatePayload.Mon("Arcanine", "arcanine", 50, false, 71, List.of("fire"))));
+                List.of(new com.cobbletowers.network.TowerHallStatePayload.Mon("Arcanine", "arcanine", 50, false, 71, List.of("fire"))), route);
         var sent = new IntermissionStatePayload(5, new IntermissionStatePayload.Draft(0, List.of(), -1, -1), List.of(), -1, "", true, extras);
         JsonObject out = PayloadJson.envelope(sent).getAsJsonObject("data").getAsJsonObject("extras");
         assertEquals("Tideforge Tower", out.get("tower").getAsString());
@@ -167,9 +169,18 @@ class PayloadJsonTest {
         assertEquals(10, out.get("cycleLength").getAsInt());
         assertEquals(2, out.getAsJsonArray("milestones").size());
         assertEquals(71, out.getAsJsonArray("party").get(0).getAsJsonObject().get("hp").getAsInt());
+        JsonObject r = out.getAsJsonObject("route");
+        assertEquals(1, r.get("lane").getAsInt());
+        assertEquals("FORGE", r.getAsJsonArray("now").get(1).getAsJsonObject().get("kind").getAsString());
+        assertEquals(1, r.getAsJsonArray("now").get(1).getAsJsonObject().get("card").getAsInt());
+        assertEquals("cobbletowers:duskvale", r.getAsJsonArray("now").get(1).getAsJsonObject().get("arena").getAsString());
+        assertEquals("", r.getAsJsonArray("now").get(0).getAsJsonObject().get("arena").getAsString());
+        assertTrue(r.getAsJsonArray("ahead").get(1).getAsJsonObject().get("milestone").getAsBoolean());
+        assertEquals(3, r.getAsJsonArray("ahead").get(0).getAsJsonObject().getAsJsonArray("kinds").size());
         // the six-argument constructor the native screens use sends no extras
         var plain = new IntermissionStatePayload(5, new IntermissionStatePayload.Draft(0, List.of(), -1, -1), List.of(), -1, "", true);
         assertEquals(0, PayloadJson.envelope(plain).getAsJsonObject("data").getAsJsonObject("extras").get("cycleLength").getAsInt());
+        assertEquals(0, PayloadJson.envelope(plain).getAsJsonObject("data").getAsJsonObject("extras").getAsJsonObject("route").getAsJsonArray("now").size());
     }
 
     @Test

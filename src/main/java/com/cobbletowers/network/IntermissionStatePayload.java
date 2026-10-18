@@ -29,14 +29,43 @@ public record IntermissionStatePayload(int floor, Draft draft, List<Member> memb
      * @param party up to six Pokemon, party order
      */
     public record Extras(String tower, int cycleFloor, int cycleLength, List<Integer> milestones,
-                         List<TowerHallStatePayload.Mon> party) {
-        public static final Extras NONE = new Extras("", 0, 0, List.of(), List.of());
+                         List<TowerHallStatePayload.Mon> party, Route route) {
+        public static final Extras NONE = new Extras("", 0, 0, List.of(), List.of(), Route.NONE);
         static final StreamCodec<RegistryFriendlyByteBuf, Extras> CODEC = StreamCodec.composite(
                 ByteBufCodecs.stringUtf8(64), Extras::tower,
                 ByteBufCodecs.VAR_INT, Extras::cycleFloor,
                 ByteBufCodecs.VAR_INT, Extras::cycleLength,
                 ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(64)), Extras::milestones,
-                TowerHallStatePayload.Mon.CODEC.apply(ByteBufCodecs.list(6)), Extras::party, Extras::new);
+                TowerHallStatePayload.Mon.CODEC.apply(ByteBufCodecs.list(6)), Extras::party,
+                Route.CODEC, Extras::route, Extras::new);
+    }
+
+    /**
+     * The route between floors (P50) as the page draws it.
+     * @param lane the lane the party stands on, or -1 when it has not taken a step
+     * @param now the stops of the step on the table: lane, the index of the card riding on it, its kind (a RouteGraph.Kind name), and the tower whose
+     *     building its battle is fought in when that is a detour (empty for the run's own); empty when this step is not a route step
+     * @param ahead the steps scouting can see, with the kinds of their stops (empty for a milestone, which pays a relic)
+     */
+    public record Route(int lane, List<Node> now, List<Step> ahead) {
+        public static final Route NONE = new Route(-1, List.of(), List.of());
+
+        public record Node(int lane, int card, String kind, String arena) {
+            static final StreamCodec<RegistryFriendlyByteBuf, Node> CODEC = StreamCodec.composite(
+                    ByteBufCodecs.VAR_INT, Node::lane, ByteBufCodecs.VAR_INT, Node::card, ByteBufCodecs.stringUtf8(16), Node::kind,
+                    ByteBufCodecs.stringUtf8(64), Node::arena, Node::new);
+        }
+
+        public record Step(int floor, boolean milestone, List<String> kinds) {
+            static final StreamCodec<RegistryFriendlyByteBuf, Step> CODEC = StreamCodec.composite(
+                    ByteBufCodecs.VAR_INT, Step::floor, ByteBufCodecs.BOOL, Step::milestone,
+                    ByteBufCodecs.stringUtf8(16).apply(ByteBufCodecs.list(3)), Step::kinds, Step::new);
+        }
+
+        static final StreamCodec<RegistryFriendlyByteBuf, Route> CODEC = StreamCodec.composite(
+                ByteBufCodecs.VAR_INT, Route::lane,
+                Node.CODEC.apply(ByteBufCodecs.list(3)), Route::now,
+                Step.CODEC.apply(ByteBufCodecs.list(8)), Route::ahead, Route::new);
     }
 
     /**
