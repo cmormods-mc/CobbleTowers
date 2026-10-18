@@ -39,4 +39,12 @@ class HallExtrasTest {
         assertEquals("M5", extras.party().get(5).name());
         assertEquals("", extras.runTower());
     }
+
+    @Test
+    void spriteNameKeepsLettersAndDigitsOnly() {
+        assertEquals("nidoranf", HallExtras.spriteName("nidoran_f"));
+        assertEquals("mrmime", HallExtras.spriteName("mr_mime"));
+        assertEquals("hooh", HallExtras.spriteName("ho-oh"));
+        assertEquals("porygonz", HallExtras.spriteName("Porygon-Z"));
+    }
 }

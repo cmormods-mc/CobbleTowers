@@ -20,14 +20,9 @@ public final class PartyReader {
             List<String> types = new ArrayList<>();
             for (com.cobblemon.mod.common.api.types.ElementalType type : species.getTypes()) types.add(type.getName());
             cards.add(new com.cobbletowers.network.TowerHallStatePayload.Mon(pokemon.getDisplayName(false).getString(),
-                    spriteName(species.getName()), pokemon.getLevel(), pokemon.isFainted(), types));
+                    com.cobbletowers.menu.HallExtras.spriteName(species.getResourceIdentifier().getPath()), pokemon.getLevel(), pokemon.isFainted(), types));
         }
         return cards;
-    }
-
-    /** The sprite file name for a species name: lower case, letters and digits only ("Mr. Mime" is mrmime). */
-    public static String spriteName(String speciesName) {
-        return speciesName.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]", "");
     }
 
     /** Party order, fainted members included: whether they matter is the ruleset's call. */

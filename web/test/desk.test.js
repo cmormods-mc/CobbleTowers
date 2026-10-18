@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { defaultPick, prettyStatus, rankTone, residentsOf, shortName, standingOf, standingText, teamSummary } from '../src/desk/standings.js';
+import { hasSprite, defaultPick, prettyStatus, rankTone, residentsOf, shortName, standingOf, standingText, teamSummary } from '../src/desk/standings.js';
 
 const st = (level, rank, toNext) => ({ tower: 'cobbletowers:tideforge', level, rank, toNext, ascension: 0 });
 
@@ -56,4 +56,9 @@ test('tower names lose their suffix and the run status is made readable', () => 
   assert.equal(prettyStatus('Floor 6 / INTERMISSION'), 'Floor 6 · Intermission');
   assert.equal(prettyStatus('Floor 2 / IN PROGRESS'), 'Floor 2 · In progress');
   assert.equal(prettyStatus(''), '');
+});
+
+test('the sprite sheet holds every partner sprite, not only the species the data names', () => {
+  for (const name of ['mrmime', 'nidoranf', 'hooh', 'porygonz', 'pikachu', 'arceus']) assert.ok(hasSprite(name), name);
+  assert.ok(!hasSprite('notapokemon'));
 });

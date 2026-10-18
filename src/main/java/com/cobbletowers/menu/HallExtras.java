@@ -20,6 +20,11 @@ public final class HallExtras {
         return new Standing(tower, rank, shown, nextRankAt < 0 ? -1 : Math.max(0, nextRankAt - shown), Math.max(0, ascension));
     }
 
+    /** The sprite file name for a species id path: lower case, letters and digits only ("nidoran_f" is nidoranf, "mr_mime" is mrmime). */
+    public static String spriteName(String speciesIdPath) {
+        return speciesIdPath.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]", "");
+    }
+
     /** At most six Pokemon, in party order. */
     public static Extras of(String runTower, List<Mon> party, List<Standing> standings) {
         return new Extras(runTower == null ? "" : runTower, party.size() > 6 ? List.copyOf(party.subList(0, 6)) : List.copyOf(party),
