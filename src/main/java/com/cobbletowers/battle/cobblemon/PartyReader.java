@@ -12,6 +12,24 @@ public final class PartyReader {
 
     private PartyReader() {}
 
+    /** The party as the web Hall draws it: display name, sprite name, level, fainted, types. Party order. */
+    public static List<com.cobbletowers.network.TowerHallStatePayload.Mon> cards(ServerPlayer player) {
+        List<com.cobbletowers.network.TowerHallStatePayload.Mon> cards = new ArrayList<>();
+        for (Pokemon pokemon : Cobblemon.INSTANCE.getStorage().getParty(player)) {
+            com.cobblemon.mod.common.pokemon.Species species = pokemon.getSpecies();
+            List<String> types = new ArrayList<>();
+            for (com.cobblemon.mod.common.api.types.ElementalType type : species.getTypes()) types.add(type.getName());
+            cards.add(new com.cobbletowers.network.TowerHallStatePayload.Mon(pokemon.getDisplayName(false).getString(),
+                    spriteName(species.getName()), pokemon.getLevel(), pokemon.isFainted(), types));
+        }
+        return cards;
+    }
+
+    /** The sprite file name for a species name: lower case, letters and digits only ("Mr. Mime" is mrmime). */
+    public static String spriteName(String speciesName) {
+        return speciesName.toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9]", "");
+    }
+
     /** Party order, fainted members included: whether they matter is the ruleset's call. */
     public static List<PartyMember> members(ServerPlayer player) {
         List<PartyMember> members = new ArrayList<>();

@@ -10,7 +10,10 @@ test('defaults when nothing or junk is stored; a saved choice comes back', () =>
   assert.deepEqual(load(store({ 'cobbletowers.ui': '{"motion":"yes"}' })), DEFAULTS);
   const s = store({});
   save({ motion: false, pixelFont: true }, s);
-  assert.deepEqual(load(s), { motion: false, pixelFont: true });
+  assert.deepEqual(load(s), { motion: false, pixelFont: true, look: 'native' });
+  save({ motion: true, pixelFont: true, look: 'desk' }, s);
+  assert.equal(load(s).look, 'desk');
+  assert.equal(load(store({ 'cobbletowers.ui': '{"look":"weird"}' })).look, 'native');
 });
 
 test('apply sets the root classes', () => {

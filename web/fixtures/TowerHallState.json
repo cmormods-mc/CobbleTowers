@@ -119,7 +119,106 @@
       "message": "",
       "open": false
     },
-    "runStatus": "",
-    "canResume": false
+    "runStatus": "Floor 6 / INTERMISSION",
+    "canResume": true,
+    "extras": {
+      "runTower": "cobbletowers:neutral",
+      "party": [
+        {
+          "name": "Arcanine",
+          "species": "arcanine",
+          "level": 50,
+          "fainted": false,
+          "types": [
+            "fire"
+          ]
+        },
+        {
+          "name": "Gliscor",
+          "species": "gliscor",
+          "level": 50,
+          "fainted": false,
+          "types": [
+            "ground",
+            "flying"
+          ]
+        },
+        {
+          "name": "Umbreon",
+          "species": "umbreon",
+          "level": 50,
+          "fainted": false,
+          "types": [
+            "dark"
+          ]
+        },
+        {
+          "name": "Ludicolo",
+          "species": "ludicolo",
+          "level": 50,
+          "fainted": true,
+          "types": [
+            "water",
+            "grass"
+          ]
+        },
+        {
+          "name": "Mewtwo",
+          "species": "mewtwo",
+          "level": 50,
+          "fainted": false,
+          "types": [
+            "psychic"
+          ]
+        },
+        {
+          "name": "Lucario",
+          "species": "lucario",
+          "level": 50,
+          "fainted": false,
+          "types": [
+            "fighting",
+            "steel"
+          ]
+        }
+      ],
+      "standings": [
+        {
+          "tower": "cobbletowers:duskvale",
+          "rank": "Unranked",
+          "level": 0,
+          "toNext": 3,
+          "ascension": 0
+        },
+        {
+          "tower": "cobbletowers:neutral",
+          "rank": "Gold",
+          "level": 14,
+          "toNext": -1,
+          "ascension": 1
+        },
+        {
+          "tower": "cobbletowers:rootvale",
+          "rank": "Bronze",
+          "level": 2,
+          "toNext": 4,
+          "ascension": 0
+        },
+        {
+          "tower": "cobbletowers:test",
+          "rank": "Unranked",
+          "level": 0,
+          "toNext": 3,
+          "ascension": 0
+        },
+        {
+          "tower": "cobbletowers:tideforge",
+          "rank": "Silver",
+          "level": 5,
+          "toNext": 2,
+          "ascension": 0
+        }
+      ]
+    }
   }
 }

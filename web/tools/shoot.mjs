@@ -34,6 +34,10 @@ export const SHOTS = {
   draft_sealed: { payloads: [fixture('RentalDraft', openDraft)] },
   draft_choose: { payloads: [fixture('RentalDraft', openDraft)], steps: async (page) => { await page.click('.pack'); await page.waitForSelector('.card.pick', { timeout: 8000 }); await page.click('.card.pick >> nth=1'); } },
   hall: { payloads: [fixture('TowerHallState')] },
+  desk_hall: { payloads: [fixture('TowerHallState')], look: 'desk' },
+  desk_hall_noRun: { payloads: [fixture('TowerHallState', (d) => { d.runStatus = ''; d.canResume = false; d.extras.runTower = ''; d.extras.party[3].fainted = false; })], look: 'desk' },
+  desk_hall_empty: { payloads: [fixture('TowerHallState', (d) => { d.runStatus = ''; d.canResume = false; d.extras.runTower = ''; d.extras.party = []; d.extras.standings = []; d.towers = d.towers.slice(0, 2); })], look: 'desk' },
+  desk_hall_pick: { payloads: [fixture('TowerHallState')], look: 'desk', steps: async (page) => { await page.click('.trow >> nth=2'); } },
   hall_four: { payloads: [fixture('TowerHallState', (d) => { d.towers = d.towers.slice(0, 4); })] },
   hall_social: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.click('text=Social >> nth=0'); } },
   hall_trials: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.click('button:has-text("Trials")'); } },
@@ -73,11 +77,13 @@ export const SHOTS = {
 
 const browser = await chromium.launch();
 for (const [name, shot] of Object.entries(SHOTS)) {
+  if (process.env.ONLY && !name.startsWith(process.env.ONLY)) continue;
   const page = await browser.newPage({ viewport: { width: +(process.env.W || 1280), height: +(process.env.H || 720) } });
   page.on('console', (m) => { if (m.type() === 'error') console.log(`[${name}] console error: ${m.text()}`); });
   page.on('pageerror', (e) => console.log(`[${name}] page error: ${e.message}`));
   // the Hall opens its guide by itself the first time; every shot but the guide's own has seen it
   if (name !== 'guide_first') await page.addInitScript(() => { try { localStorage.setItem('cobbletowers.guideSeen', '1'); } catch (err) { /* none */ } });
+  if (shot.look) await page.addInitScript((look) => { try { localStorage.setItem('cobbletowers.ui', JSON.stringify({ look })); } catch (err) { /* none */ } }, shot.look);
   await page.goto(pathToFileURL(dist).href + (shot.hud ? '#hud' : ''));
   await page.waitForFunction(() => window.TowerDev);
   for (const [kind, data] of shot.payloads) await page.evaluate(([k, d]) => window.TowerDev.dispatch(k, d), [kind, data]);

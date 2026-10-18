@@ -8,6 +8,7 @@ import { Intermission } from './screens/Intermission.js';
 import { Draft } from './screens/Draft.js';
 import { Hud } from './screens/Hud.js';
 import { Hall, useBusyTimeout } from './screens/Hall.js';
+import { DeskHall } from './desk/DeskHall.js';
 import { Lobby } from './screens/Lobby.js';
 import { Party } from './screens/Party.js';
 import { Mastery } from './screens/Mastery.js';
@@ -57,6 +58,7 @@ export function App() {
   const pick = useStore((s) => s.pick);
   const page = useStore((s) => s.page);
   const busyAt = useStore((s) => s.busyAt);
+  const look = useStore((s) => s.look);
   useBusyTimeout(busyAt);
   useFit();
   // a reward or the vendor drawn over the waiting page is still drawn in GUI pixels, so it needs the native layout too
@@ -74,6 +76,7 @@ export function App() {
         : screen === 'hall' && view === 'mastery' && mast ? html`<${Mastery} state=${mast} />`
         : screen === 'hall' && view === 'party' && reg ? html`<${Party} reg=${reg} />`
         : screen === 'hall' && view === 'lobby' && play ? html`<${Lobby} state=${play} />`
+        : screen === 'hall' && look === 'desk' && view === 'hall' && tab === 'towers' && hall ? html`<${DeskHall} hall=${hall} busy=${!!busyAt} />`
         : screen === 'hall' && (hall || view === 'feature') ? html`<${Hall} hall=${hall} tab=${tab} page=${page} view=${view} pick=${pick} busy=${!!busyAt} />`
         : html`<${Waiting} />`}
       ${reward ? html`<${RewardModal} reward=${reward} onClose=${closeRewardNow} />`

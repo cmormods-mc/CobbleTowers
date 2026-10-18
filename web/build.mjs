@@ -42,6 +42,8 @@ for (const dir of ['pixel', 'byzantine']) {
 copy(path.join(res, 'textures/gui/raid_points.png'), 'assets/gui/raid_points.png');
 copy(path.join(here, 'fonts/Jersey15-Regular.ttf'), 'assets/font/Jersey15-Regular.ttf');
 copy(path.join(here, 'fonts/Jersey15-OFL.txt'), 'assets/font/Jersey15-OFL.txt');
+copy(path.join(here, 'fonts/Outfit-Variable.ttf'), 'assets/font/Outfit-Variable.ttf');
+copy(path.join(here, 'fonts/Outfit-OFL.txt'), 'assets/font/Outfit-OFL.txt');
 
 // ---- the mod's procedural art (icons, landscapes), drawn here the way the native screens draw it
 const put = (to, buf) => { fs.mkdirSync(path.dirname(path.join(out, to)), { recursive: true }); fs.writeFileSync(path.join(out, to), buf); };

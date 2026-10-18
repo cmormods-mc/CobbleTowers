@@ -1,0 +1,76 @@
+/* Frontier Desk (P51): light, clean, team-first. One unit, --u, is 1% of the largest 16:9 box that fits the window, so sizes scale
+   together; the layout itself is flex and grid and fills the window. Scoped under .fd, so the native look is untouched. */
+@font-face { font-family: "Outfit"; src: url(assets/font/Outfit-Variable.ttf); font-weight: 100 900; font-display: block; }
+.fd { --u: min(1vw, 1.7778vh); position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; overflow: hidden; line-height: 1.25; user-select: none; }
+.fd * { box-sizing: border-box; image-rendering: auto; }
+.fd .sprite-em, .fd .sp, .fd canvas { image-rendering: pixelated; }
+/* type chips shared by all three */
+.fd .ty { display:inline-block; font:700 calc(var(--u) * 1)/1 Outfit; letter-spacing:.03em; text-transform:uppercase; padding:calc(var(--u) * .32) calc(var(--u) * .7); background:var(--c); color:#fff; border-radius:calc(var(--u) * .5); }
+.fd .t-fire{--c:#e8702a}.fd .t-water{--c:#3b82d6}.fd .t-grass{--c:#3fa34d}.fd .t-dark{--c:#4f4a52}.fd .t-psychic{--c:#d9468f}.fd .t-ground{--c:#a8742c}.fd .t-flying{--c:#6aa9d8}.fd .t-fighting{--c:#c23b32}.fd .t-steel{--c:#7c8aa0}.fd .t-ghost{--c:#6b4f9a}.fd .t-dragon{--c:#5a49c9}.fd .t-normal{--c:#8a8575}.fd .t-rock{--c:#9a8648}.fd .t-poison{--c:#9a4db3}.fd .t-bug{--c:#7ea02a}.fd .t-ice{--c:#5fb8c9}.fd .t-fairy{--c:#e08ab8}
+
+.fd { --ink:#16202e; --mut:#66758a; --line:#d8e0eb; --pri:#2563eb; --go:#16a34a; --warn:#d98a06; --bad:#d6264e; font-family:"Outfit",sans-serif; font-weight:500;
+  background:linear-gradient(#f4f7fb,#e4eaf3); color:var(--ink); }
+.fd .scr { flex-direction:column; }
+.fd .dtop { display:flex; align-items:center; gap:calc(var(--u) * 2); padding:calc(var(--u) * 1) calc(var(--u) * 2.4); background:#fff; border-bottom:calc(var(--u) * .15) solid var(--line); }
+.fd .logo { font:800 calc(var(--u) * 1.8)/1 Outfit; letter-spacing:.02em; } .fd .logo b { color:var(--pri); }
+.fd .pills { display:flex; gap:calc(var(--u) * .3); background:#eaeff7; padding:calc(var(--u) * .35); border-radius:calc(var(--u) * 2); }
+.fd .pills a { padding:calc(var(--u) * .5) calc(var(--u) * 1.5); border-radius:calc(var(--u) * 2); font:600 calc(var(--u) * 1.35) Outfit; color:var(--mut); } .fd .pills a.on { background:#fff; color:var(--ink); box-shadow:0 calc(var(--u) * .1) calc(var(--u) * .5) #0003; } .fd .pills a i { font-style:normal; background:var(--bad); color:#fff; font-size:calc(var(--u) * 1); padding:calc(var(--u) * .1) calc(var(--u) * .5); border-radius:calc(var(--u) * 1); margin-left:calc(var(--u) * .4); }
+.fd .sp2 { flex:1; } .fd .dcur { font:700 calc(var(--u) * 1.35) Outfit; background:#fff4d6; color:#8a5a00; padding:calc(var(--u) * .4) calc(var(--u) * 1.1); border-radius:calc(var(--u) * 2); } .fd .x { width:calc(var(--u) * 2.8); height:calc(var(--u) * 2.8); border-radius:50%; border:calc(var(--u) * .15) solid var(--line); background:#fff; color:var(--mut); font-size:calc(var(--u) * 1.5); }
+.fd .dbody { flex:1; display:grid; gap:calc(var(--u) * 2); padding:calc(var(--u) * 1.8) calc(var(--u) * 2.4) calc(var(--u) * 1.6); min-height:0; }
+.fd .dcard { background:#fff; border:calc(var(--u) * .15) solid var(--line); border-radius:calc(var(--u) * 1.4); box-shadow:0 calc(var(--u) * .3) 0 #dbe3ee; min-width:0; }
+.fd h3 { margin:0; font:800 calc(var(--u) * 1.6)/1 Outfit; } .fd .lbl { font:700 calc(var(--u) * 1.05)/1 Outfit; letter-spacing:.12em; text-transform:uppercase; color:var(--mut); }
+.fd .ch { display:flex; justify-content:space-between; align-items:center; padding:calc(var(--u) * 1.2) calc(var(--u) * 1.4) calc(var(--u) * .6); }
+.fd .team { display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:calc(var(--u) * .8); padding:calc(var(--u) * .4) calc(var(--u) * 1.2) calc(var(--u) * 1.2); flex:1; }
+.fd .dcard.dcol { display:flex; flex-direction:column; }
+.fd .mon { display:flex; align-items:center; gap:calc(var(--u) * .5); padding:calc(var(--u) * .5) calc(var(--u) * .7); border:calc(var(--u) * .15) solid var(--line); border-radius:calc(var(--u) * 1.1); background:linear-gradient(#fff,#f5f8fc); min-width:0; }
+.fd .mon b { display:block; font:700 calc(var(--u) * 1.3)/1.1 Outfit; } .fd .mon small { display:block; color:var(--mut); font-size:calc(var(--u) * 1); margin-bottom:calc(var(--u) * .3); } .fd .mon .tys { display:flex; gap:calc(var(--u) * .25); flex-wrap:wrap; }
+.fd .elig { margin:0 calc(var(--u) * 1.2) calc(var(--u) * 1.2); padding:calc(var(--u) * .8) calc(var(--u) * 1.1); background:#e9f8ee; border-radius:calc(var(--u) * 1); color:#14693a; font:600 calc(var(--u) * 1.2) Outfit; display:flex; gap:calc(var(--u) * .8); align-items:center; }
+.fd .cont { display:flex; align-items:center; gap:calc(var(--u) * 1.2); padding:calc(var(--u) * .9) calc(var(--u) * 1.4); background:linear-gradient(90deg,#1f2c47,#2e4272); color:#fff; border-radius:calc(var(--u) * 1.4); font-size:calc(var(--u) * 1.35); }
+.fd .cont b { font:800 calc(var(--u) * 1.6) Outfit; display:block; } .fd .cont small { color:#b9c6e6; font-size:calc(var(--u) * 1.1); }
+.fd .dbtn { border:0; border-radius:calc(var(--u) * 1.1); padding:calc(var(--u) * .8) calc(var(--u) * 1.8); font:800 calc(var(--u) * 1.5) Outfit; color:#fff; background:var(--go); box-shadow:0 calc(var(--u) * .35) 0 #0d6d31; } .fd .dbtn.pri { background:var(--pri); box-shadow:0 calc(var(--u) * .35) 0 #173f99; } .fd .dbtn.gh { background:#fff; color:var(--ink); box-shadow:0 calc(var(--u) * .3) 0 var(--line); border:calc(var(--u) * .15) solid var(--line); } .fd .dbtn.dsm { padding:calc(var(--u) * .55) calc(var(--u) * 1.2); font-size:calc(var(--u) * 1.25); } .fd .dbtn[disabled] { background:#cdd5e2; box-shadow:0 calc(var(--u) * .3) 0 #aeb8cb; }
+.fd .trow { display:grid; grid-template-columns:calc(var(--u) * 26) 1fr auto; gap:calc(var(--u) * 1.4); align-items:center; padding:calc(var(--u) * .6) calc(var(--u) * 1.4) calc(var(--u) * .6) calc(var(--u) * .6); background:#fff; border:calc(var(--u) * .2) solid var(--line); border-radius:calc(var(--u) * 1.4); box-shadow:0 calc(var(--u) * .3) 0 #dbe3ee; }
+.fd .trow.sel { border-color:var(--pri); box-shadow:0 0 0 calc(var(--u) * .3) #bcd2fb, 0 calc(var(--u) * .3) 0 #dbe3ee; }
+.fd .trow .dpano { height:calc(var(--u) * 6.5); border-radius:calc(var(--u) * 1); width:calc(var(--u) * 26); } .fd .trow b { font:800 calc(var(--u) * 1.9)/1 Outfit; display:block; } .fd .trow small { color:var(--mut); font-size:calc(var(--u) * 1.15); display:block; margin:calc(var(--u) * .35) 0 calc(var(--u) * .5); }
+.fd .medal { display:inline-flex; align-items:center; gap:calc(var(--u) * .4); font:700 calc(var(--u) * 1.1) Outfit; padding:calc(var(--u) * .25) calc(var(--u) * .8); border-radius:calc(var(--u) * 2); background:var(--m,#eceff5); color:var(--mc,#556); }
+.fd .m-b { --m:#f5e3d1; --mc:#8a4a1c; } .fd .m-s { --m:#e6eaf0; --mc:#4c5a70; } .fd .m-g { --m:#fff0bf; --mc:#876200; } .fd .m-n { --m:#eceff5; --mc:#778; }
+.fd .res { display:flex; align-items:center; } .fd .res .sp { width:calc(var(--u) * 4.4); margin-left:calc(var(--u) * -.8); filter:drop-shadow(0 calc(var(--u) * .2) 0 #0002); } .fd .res .sp:first-child { margin:0; }
+.fd .path { display:flex; align-items:center; gap:calc(var(--u) * .5); padding:calc(var(--u) * .9) calc(var(--u) * 2.4); background:#fff; border-bottom:calc(var(--u) * .15) solid var(--line); }
+.fd .nd { width:calc(var(--u) * 2.6); height:calc(var(--u) * 2.6); border-radius:50%; display:grid; place-items:center; font:700 calc(var(--u) * 1.1) Outfit; background:#e8edf5; color:var(--mut); } .fd .nd.done { background:var(--go); color:#fff; } .fd .nd.now { background:var(--pri); color:#fff; box-shadow:0 0 0 calc(var(--u) * .3) #bcd2fb; } .fd .nd.ms { border-radius:calc(var(--u) * .7); background:#fff0bf; color:#876200; }
+.fd .bar { flex:1; height:calc(var(--u) * .35); background:#e1e7f0; min-width:0; } .fd .bar.on { background:var(--go); }
+.fd .mc { padding:calc(var(--u) * 1.2); display:flex; flex-direction:column; gap:calc(var(--u) * .8); text-align:left; border:calc(var(--u) * .2) solid var(--line); background:#fff; border-radius:calc(var(--u) * 1.4); box-shadow:0 calc(var(--u) * .3) 0 #dbe3ee; position:relative; }
+.fd .mc.sel { border-color:var(--pri); box-shadow:0 0 0 calc(var(--u) * .3) #bcd2fb, 0 calc(var(--u) * .3) 0 #dbe3ee; }
+.fd .mc .ic { width:calc(var(--u) * 5); height:calc(var(--u) * 5); border-radius:calc(var(--u) * 1.2); background:#eef3fb; display:grid; place-items:center; color:#d6264e; }
+.fd .mc h4 { margin:0; font:800 calc(var(--u) * 2)/1 Outfit; } .fd .mc .pl { display:flex; gap:calc(var(--u) * .5); align-items:flex-start; font-size:calc(var(--u) * 1.2); line-height:1.25; } .fd .mc .pl i { font-style:normal; flex:none; width:calc(var(--u) * 1.8); height:calc(var(--u) * 1.8); border-radius:50%; display:grid; place-items:center; font:800 calc(var(--u) * 1.2) Outfit; color:#fff; background:var(--go); } .fd .mc .pl.c i { background:var(--bad); } .fd .mc .pl.n i { background:#9aa6ba; }
+.fd .mc .pay { margin-top:auto; padding-top:calc(var(--u) * .8); border-top:calc(var(--u) * .15) solid var(--line); display:flex; justify-content:space-between; font-size:calc(var(--u) * 1.15); color:var(--mut); } .fd .mc .pay b { color:var(--go); font:800 calc(var(--u) * 1.8) Outfit; }
+.fd .hp { height:calc(var(--u) * .7); background:#e1e7f0; border-radius:calc(var(--u) * 1); overflow:hidden; } .fd .hp i { display:block; height:100%; background:var(--go); }
+.fd .fl { display:flex; align-items:center; gap:calc(var(--u) * .8); padding:calc(var(--u) * .7) calc(var(--u) * 1); border-radius:calc(var(--u) * 1.1); background:#f4f7fb; margin:0 calc(var(--u) * 1.2) calc(var(--u) * .7); font-size:calc(var(--u) * 1.15); } .fd .fl b { font:800 calc(var(--u) * 1.3) Outfit; width:calc(var(--u) * 4.2); } .fd .fl.q { color:var(--mut); }
+.fd .fl .sp { width:calc(var(--u) * 4.4); } .fd .fl .sil { filter:brightness(0) opacity(.35); }
+.fd .dft { display:flex; align-items:center; gap:calc(var(--u) * 1); padding:calc(var(--u) * 1.1) calc(var(--u) * 2.4); background:#fff; border-top:calc(var(--u) * .15) solid var(--line); } .fd .dft .st { flex:1; color:var(--mut); font-size:calc(var(--u) * 1.2); }
+.fd .pc { padding:calc(var(--u) * 1.2); display:flex; flex-direction:column; gap:calc(var(--u) * .7); } .fd .pc .hd { display:flex; align-items:center; gap:calc(var(--u) * .8); } .fd .av { width:calc(var(--u) * 3.4); height:calc(var(--u) * 3.4); border-radius:50%; background:var(--c,#4aa3d6); display:grid; place-items:center; color:#fff; font:800 calc(var(--u) * 1.5) Outfit; }
+.fd .pc .hd b { font:800 calc(var(--u) * 1.5)/1 Outfit; display:block; } .fd .pc .hd small { font-size:calc(var(--u) * 1.1); } .fd .cardslot { display:flex; align-items:center; gap:calc(var(--u) * .6); padding:calc(var(--u) * .5) calc(var(--u) * .7); border:calc(var(--u) * .15) solid var(--line); border-radius:calc(var(--u) * 1); font-size:calc(var(--u) * 1.15); font-weight:600; min-height:calc(var(--u) * 4.6); }
+.fd .cardslot.back { background:repeating-linear-gradient(45deg,#3b5bdb 0 calc(var(--u) * .5),#324fc4 calc(var(--u) * .5) calc(var(--u) * 1)); border-color:#324fc4; color:#fff; justify-content:center; } .fd .cardslot.empty { border-style:dashed; color:var(--mut); justify-content:center; }
+.fd .seg { display:flex; flex-wrap:wrap; gap:calc(var(--u) * .5); } .fd .seg span { padding:calc(var(--u) * .55) calc(var(--u) * 1.1); border-radius:calc(var(--u) * 1); background:#eaeff7; font:600 calc(var(--u) * 1.2) Outfit; color:var(--mut); } .fd .seg span.on { background:var(--pri); color:#fff; }
+.fd .lv { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:calc(var(--u) * .5); padding:calc(var(--u) * 1); border-radius:calc(var(--u) * 1.3); background:#fff; border:calc(var(--u) * .2) solid var(--line); font:700 calc(var(--u) * 1.2) Outfit; color:var(--mut); position:relative; }
+.fd .lv .n { position:absolute; left:calc(var(--u) * .8); top:calc(var(--u) * .5); font-size:calc(var(--u) * 1.1); } .fd .lv.got { background:#f1f5fa; } .fd .lv.got:after { content:"✓"; position:absolute; right:calc(var(--u) * .7); bottom:calc(var(--u) * .3); color:var(--go); font-size:calc(var(--u) * 1.8); }
+.fd .lv.now { border-color:#e0a406; background:#fff8dd; color:var(--ink); box-shadow:0 0 0 calc(var(--u) * .3) #fbe49a; } .fd .lv.lock { opacity:.55; }
+
+
+.fd .sp { display: inline-block; flex: none; aspect-ratio: 3 / 2; background: url(assets/partners.png) no-repeat;
+  background-size: calc(var(--aw) / var(--w) * 100%) calc(var(--ah) / var(--h) * 100%);
+  background-position: calc(var(--x) / (var(--aw) - var(--w)) * 100%) calc(var(--y) / (var(--ah) - var(--h)) * 100%); }
+.fd .sp.ball { aspect-ratio: 1; background: radial-gradient(circle at 35% 30%, #fff 0 11%, #e04040 13% 48%, #8a1c1c 50%); border-radius: 50%; }
+.fd .dpano { display: block; width: 100%; height: 100%; }
+.fd .trow .pbox { height: calc(var(--u) * 6.5); border-radius: calc(var(--u) * 1); overflow: hidden; width: calc(var(--u) * 26); }
+.fd .dsm { font-size: calc(var(--u) * 1.2); }
+.fd .tl { background: none; border: 0; color: var(--mut); font: 600 calc(var(--u) * 1.15) Outfit; cursor: pointer; padding: calc(var(--u) * .3) calc(var(--u) * .6); }
+.fd .tl:hover { color: var(--ink); }
+.fd .trow { cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.fd .dbody > * { min-height: 0; }
+.fd .rows { display: flex; flex-direction: column; gap: calc(var(--u) * .9); overflow-y: auto; min-height: 0; flex: 1; padding: calc(var(--u) * .4) calc(var(--u) * .6) calc(var(--u) * .6) calc(var(--u) * .2); scrollbar-width: thin; }
+.fd .mon.out { opacity: .55; } .fd .mon .out { color: var(--bad); font: 700 calc(var(--u) * 1) Outfit; }
+.fd .dbtn:focus-visible, .fd .trow:focus-visible, .fd .pills a:focus-visible, .fd .tl:focus-visible { outline: 3px solid var(--pri); outline-offset: 2px; }
+.fd .pills a { cursor: pointer; }
+.fd .m-p { --m:#e8f1fb; --mc:#2a5f9a; } .fd .m-d { --m:#dff6fa; --mc:#12788a; } .fd .m-m { --m:#efe6fb; --mc:#6a3fb0; } .fd .m-c { --m:#fde6ea; --mc:#b5233f; }
+.fd .empty { padding: calc(var(--u) * 2); color: var(--mut); text-align: center; }
+.fd .dft .st { flex: 1; }
+.fd .gen { border: 0; }

@@ -129,6 +129,32 @@ class PayloadJsonTest {
     }
 
     @Test
+    @DisplayName("the Hall carries the team, the run's tower and the mastery standings the Frontier Desk page reads (P51)")
+    void hallExtras() throws IOException {
+        var tide = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge");
+        var extras = new com.cobbletowers.network.TowerHallStatePayload.Extras("cobbletowers:tideforge",
+                List.of(new com.cobbletowers.network.TowerHallStatePayload.Mon("Arcanine", "arcanine", 50, false, List.of("fire")),
+                        new com.cobbletowers.network.TowerHallStatePayload.Mon("Gliscor", "gliscor", 50, true, List.of("ground", "flying"))),
+                List.of(new com.cobbletowers.network.TowerHallStatePayload.Standing(tide, "Silver", 5, 2, 1)));
+        var sent = new com.cobbletowers.network.TowerHallStatePayload(List.of(), List.of(), null, "Floor 6 / INTERMISSION", true, extras);
+        JsonObject data = PayloadJson.envelope(sent).getAsJsonObject("data");
+        JsonObject out = data.getAsJsonObject("extras");
+        assertEquals("cobbletowers:tideforge", out.get("runTower").getAsString());
+        JsonObject gliscor = out.getAsJsonArray("party").get(1).getAsJsonObject();
+        assertEquals("gliscor", gliscor.get("species").getAsString());
+        assertTrue(gliscor.get("fainted").getAsBoolean());
+        assertEquals(2, gliscor.getAsJsonArray("types").size());
+        JsonObject standing = out.getAsJsonArray("standings").get(0).getAsJsonObject();
+        assertEquals("cobbletowers:tideforge", standing.get("tower").getAsString());
+        assertEquals("Silver", standing.get("rank").getAsString());
+        assertEquals(2, standing.get("toNext").getAsInt());
+        assertEquals(1, standing.get("ascension").getAsInt());
+        // the five-argument constructor the native screens use sends no extras, which the page treats as an empty team
+        var plain = new com.cobbletowers.network.TowerHallStatePayload(List.of(), List.of(), null, "", false);
+        assertEquals(0, PayloadJson.envelope(plain).getAsJsonObject("data").getAsJsonObject("extras").getAsJsonArray("party").size());
+    }
+
+    @Test
     @DisplayName("a feature menu keeps its entries, their lines and the actions on both levels")
     void featureMenu() throws IOException {
         var buy = new com.cobbletowers.network.TowerFeatureState.Action("title-wear", "Wear this title", "champion", "Wear Champion?", "");

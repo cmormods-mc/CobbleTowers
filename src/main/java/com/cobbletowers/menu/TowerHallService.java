@@ -60,7 +60,33 @@ public final class TowerHallService {
         String status = TowerRuns.forPlayer(player.getUUID()).filter(r -> !r.isRetired())
                 .map(r -> "Floor " + r.floorIndex() + " / " + r.state().name().replace('_', ' ')).orElse("");
         com.cobbletowers.network.ClientUi.send(player, new TowerHallStatePayload(towers, trials, play, status,
-                IntermissionService.isAtIntermission(player)));
+                IntermissionService.isAtIntermission(player), safeExtras(server, player)));
+    }
+
+    /** The extras are decoration: whatever goes wrong reading them, the Hall still opens, without them. */
+    private static TowerHallStatePayload.Extras safeExtras(MinecraftServer server, ServerPlayer player) {
+        try {
+            return extras(server, player);
+        } catch (RuntimeException ex) {
+            com.cobbletowers.TowerLog.warn("Hall extras for {} could not be built: {}", player.getGameProfile().getName(), ex.toString());
+            return TowerHallStatePayload.Extras.NONE;
+        }
+    }
+
+    /** The team, the run's tower and the player's mastery standing per tower, for the Frontier Desk Hall (P51). */
+    private static TowerHallStatePayload.Extras extras(MinecraftServer server, ServerPlayer player) {
+        var store = com.cobbletowers.persistence.TowerMasteryStore.get(server);
+        List<TowerHallStatePayload.Standing> standings = new ArrayList<>();
+        for (ResourceLocation tower : TowerDefinitionRegistry.content().sortedTowerIds()) {
+            var progress = store.progressOf(player.getUUID(), tower);
+            int level = progress.level();
+            standings.add(HallExtras.standing(tower, level, progress.ascensionReached(),
+                    com.cobbletowers.mastery.MasteryPerks.rankOf(tower, level),
+                    com.cobbletowers.mastery.MasteryPerks.nextRankAt(tower, level)));
+        }
+        String runTower = TowerRuns.forPlayer(player.getUUID()).filter(r -> !r.isRetired())
+                .map(r -> r.towerId().toString()).orElse("");
+        return HallExtras.of(runTower, com.cobbletowers.battle.cobblemon.PartyReader.cards(player), standings);
     }
 
     static String revision(TrialSchedule.Instance trial) {

@@ -34,6 +34,7 @@ export const initial = Object.freeze({
   fUncertain: false, // no reply in time: refresh before another action
   ret: null,         // the screen a feature menu was opened over (e.g. 'intermission'), returned to when it closes
   fui: freshUi(),
+  look: 'native',    // 'native' or 'desk': which look the Hall's Play page has (P51), from the page settings
   offline: false,    // the page has heard nothing from the server for a while (a banner says so)
   notice: null,      // {text, id}: the last message the server attached to a payload
   noticeId: 0,
@@ -123,6 +124,7 @@ export const goTo = (state, view, pick = '') => ({ ...state, view, pick, stack: 
 export const goBack = (state) => (state.stack.length
   ? { ...state, view: state.stack[state.stack.length - 1], stack: state.stack.slice(0, -1) } : { ...state, view: 'hall' });
 export const setTab = (state, tab) => ({ ...state, tab, view: 'hall', stack: [], page: 0 });
+export const setLook = (state, look) => (state.look === look ? state : { ...state, look });
 export const setPage = (state, page) => ({ ...state, page });
 /** A hall request went out; the next hall or lobby state (or the timeout) clears it. */
 export const begin = (state, now) => (state.busyAt ? state : { ...state, busyAt: now });

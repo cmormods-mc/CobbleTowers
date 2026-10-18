@@ -10,7 +10,44 @@ import net.minecraft.resources.ResourceLocation;
 
 /** Read-only Hall snapshot. A separate channel leaves the existing lobby protocol unchanged. */
 public record TowerHallStatePayload(List<Destination> towers, List<Trial> trials,
-                                    PlayStatePayload play, String runStatus, boolean canResume) implements CustomPacketPayload {
+                                    PlayStatePayload play, String runStatus, boolean canResume,
+                                    Extras extras) implements CustomPacketPayload {
+
+    /** The native screens do not use the extras (P51), so they keep building the snapshot without them. */
+    public TowerHallStatePayload(List<Destination> towers, List<Trial> trials, PlayStatePayload play, String runStatus,
+                                 boolean canResume) {
+        this(towers, trials, play, runStatus, canResume, Extras.NONE);
+    }
+
+    /** One Pokemon of the player's party, as the web Hall draws it. {@code species} is the sprite name. */
+    public record Mon(String name, String species, int level, boolean fainted, List<String> types) {
+        static final StreamCodec<RegistryFriendlyByteBuf, Mon> CODEC = StreamCodec.composite(
+                ByteBufCodecs.stringUtf8(64), Mon::name,
+                ByteBufCodecs.stringUtf8(64), Mon::species,
+                ByteBufCodecs.VAR_INT, Mon::level,
+                ByteBufCodecs.BOOL, Mon::fainted,
+                ByteBufCodecs.stringUtf8(16).apply(ByteBufCodecs.list(4)), Mon::types, Mon::new);
+    }
+
+    /** A player's mastery standing in one tower: the rank, the level, the gap to the next rank (-1 at the top). */
+    public record Standing(ResourceLocation tower, String rank, int level, int toNext, int ascension) {
+        static final StreamCodec<RegistryFriendlyByteBuf, Standing> CODEC = StreamCodec.composite(
+                ResourceLocation.STREAM_CODEC, Standing::tower,
+                ByteBufCodecs.stringUtf8(64), Standing::rank,
+                ByteBufCodecs.VAR_INT, Standing::level,
+                ByteBufCodecs.VAR_INT, Standing::toNext,
+                ByteBufCodecs.VAR_INT, Standing::ascension, Standing::new);
+    }
+
+    /** What the Frontier Desk Hall (P51) shows beyond the native snapshot. */
+    public record Extras(String runTower, List<Mon> party, List<Standing> standings) {
+        public static final Extras NONE = new Extras("", List.of(), List.of());
+        static final StreamCodec<RegistryFriendlyByteBuf, Extras> CODEC = StreamCodec.composite(
+                ByteBufCodecs.stringUtf8(64), Extras::runTower,
+                Mon.CODEC.apply(ByteBufCodecs.list(6)), Extras::party,
+                Standing.CODEC.apply(ByteBufCodecs.list(256)), Extras::standings, Extras::new);
+    }
+
     public record Destination(ResourceLocation id, String name, int floors, int milestones, boolean ascends) {
         static final StreamCodec<RegistryFriendlyByteBuf, Destination> CODEC = StreamCodec.composite(
                 ResourceLocation.STREAM_CODEC, Destination::id,
@@ -36,7 +73,8 @@ public record TowerHallStatePayload(List<Destination> towers, List<Trial> trials
             Trial.CODEC.apply(ByteBufCodecs.list(2)), TowerHallStatePayload::trials,
             PlayStatePayload.STREAM_CODEC, TowerHallStatePayload::play,
             ByteBufCodecs.stringUtf8(1024), TowerHallStatePayload::runStatus,
-            ByteBufCodecs.BOOL, TowerHallStatePayload::canResume, TowerHallStatePayload::new);
+            ByteBufCodecs.BOOL, TowerHallStatePayload::canResume,
+            Extras.CODEC, TowerHallStatePayload::extras, TowerHallStatePayload::new);
 
     @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
 }
