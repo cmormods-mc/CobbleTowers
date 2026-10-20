@@ -293,6 +293,14 @@ public final class MasteryService {
      * The card at the end of a run (P32d): built from the run, its stats, and what the trial judge and the unlocks
      * left behind.
      */
+    /** The route the run took as one line; empty with no route. */
+    private static String routeLineOf(TowerContent content, PersistedRun run) {
+        return com.cobbletowers.route.RouteText.line(com.cobbletowers.route.RouteText.stops(run.modifiers(), place -> {
+            TowerDefinition other = content.towers().get(place);
+            return other == null ? place.getPath() : other.displayName().replaceFirst(" Tower$", "");
+        }));
+    }
+
     private static void sendReport(MinecraftServer server, PersistedRun run, RunState from, RunState to) {
         TowerRunStatsStore.Stats stats = TowerRunStatsStore.get(server).peek(run.runId());
         RunSummaries.Gathered gathered = RunSummaries.take(run.runId());
@@ -324,7 +332,7 @@ public final class MasteryService {
                 tower == null ? 0 : tower.ascensionOf(run.floorIndex()), stats == null ? 0 : stats.activeMillis,
                 stats == null ? 0 : stats.faints, stats == null ? 0 : stats.bestFlawlessStreak, modifiers, purchases,
                 gathered.trialScore().orElse(difficulty), gathered.trialScore().isPresent(), gathered.unlocked(),
-                gathered.streakLine());
+                gathered.streakLine(), routeLineOf(content, run));
         List<String> names = new ArrayList<>();
         for (PersistedParticipant participant : run.participants()) names.add(member(server, participant.playerId()).name());
         String team = String.join(", ", names);

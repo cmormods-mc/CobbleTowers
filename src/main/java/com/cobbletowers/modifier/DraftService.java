@@ -321,7 +321,7 @@ public final class DraftService {
                         : run.modifiers().accumulating(won, draft.floorIndex() + 1).withDraft(resolved);
 
         if (draft.route()) {
-            next = next.withRouteStep(draft.floorIndex(), draft.lanes().get(result.cardIndex()));
+            next = next.withRouteStep(draft.floorIndex(), draft.lanes().get(result.cardIndex()), draft.kinds().get(result.cardIndex()));
             String arena = draft.arenas().get(result.cardIndex());
             if (!arena.isEmpty()) {
                 ResourceLocation place = ResourceLocation.tryParse(arena);

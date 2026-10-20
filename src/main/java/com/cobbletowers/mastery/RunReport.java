@@ -17,14 +17,23 @@ import java.util.List;
  * @param score the difficulty score, or the trial score when {@code trial} is set
  * @param achievements unlocked during the run, by name
  * @param streakLine the daily streak line, empty if none
+ * @param routeLine the stops the run took (P50) as one line, empty if it took no route
  */
 public record RunReport(String tower, String mode, String outcome, int floorsCleared, int ascension, long activeMillis, int faints,
                         int bestFlawlessRun, List<String> modifiers, int purchases, int score, boolean trial,
-                        List<String> achievements, String streakLine) {
+                        List<String> achievements, String streakLine, String routeLine) {
 
     public RunReport {
         modifiers = List.copyOf(modifiers);
         achievements = List.copyOf(achievements);
+    }
+
+    /** A report with no route, which is what a run with routes off or from before P50 has. */
+    public RunReport(String tower, String mode, String outcome, int floorsCleared, int ascension, long activeMillis, int faints,
+                     int bestFlawlessRun, List<String> modifiers, int purchases, int score, boolean trial,
+                     List<String> achievements, String streakLine) {
+        this(tower, mode, outcome, floorsCleared, ascension, activeMillis, faints, bestFlawlessRun, modifiers, purchases, score, trial,
+                achievements, streakLine, "");
     }
 
     /** The card, one line each. */
@@ -36,6 +45,7 @@ public record RunReport(String tower, String mode, String outcome, int floorsCle
         lines.add("  " + (faints == 0 ? "No Pokemon fainted" : faints + " Pokemon fainted")
                 + (bestFlawlessRun > 1 ? "; best flawless streak " + bestFlawlessRun + " floors" : "")
                 + (purchases > 0 ? "; " + purchases + " vendor purchase" + (purchases == 1 ? "" : "s") : ""));
+        if (!routeLine.isEmpty()) lines.add("  Route: " + routeLine);
         if (!modifiers.isEmpty()) lines.add("  Modifiers: " + String.join(", ", modifiers));
         lines.add("  " + (trial ? "Trial score " : "Difficulty score ") + score);
         if (!achievements.isEmpty()) lines.add("  Unlocked: " + String.join(", ", achievements));

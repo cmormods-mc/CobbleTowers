@@ -89,4 +89,26 @@ class RouteStateTest {
         org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
                 () -> PersistedDraft.openingRoute(2, List.of(TestRuns.id("a"), TestRuns.id("b")), List.of(0), List.of("REST")));
     }
+
+    @Test
+    void theKindOfEachStopIsKeptWithItsStepAndRoundTrips() {
+        RunModifierState state = RunModifierState.EMPTY.withRouteStep(1, 2, "FORGE").withRouteStep(2, 1, "BATTLE");
+        assertEquals("FORGE", state.routeKindAt(0));
+        assertEquals("BATTLE", state.routeKindAt(1));
+        assertEquals("", state.routeKindAt(2));
+        RunModifierState back = RunModifierState.fromTag(state.toTag());
+        assertEquals(List.of("FORGE", "BATTLE"), back.routeKinds());
+        assertEquals(state.routeSteps(), back.routeSteps());
+    }
+
+    @Test
+    void stepsTakenBeforeKindsWereKeptAreBlankAndLaterOnesStayAligned() {
+        // an old save: two steps, no kinds
+        CompoundTag old = RunModifierState.EMPTY.withRouteStep(1, 2).withRouteStep(2, 1).toTag();
+        old.remove("route_kinds");
+        RunModifierState state = RunModifierState.fromTag(old).withRouteStep(3, 0, "REST");
+        assertEquals("", state.routeKindAt(0));
+        assertEquals("", state.routeKindAt(1));
+        assertEquals("REST", state.routeKindAt(2));
+    }
 }

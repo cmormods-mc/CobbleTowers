@@ -23,6 +23,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param relicFloors the same for {@code relics}
  * @param routeSteps the route taken (P50): pairs of {@code floor, lane}, one per route step settled, in order
  * @param arenas the detours taken (P50 stage 2): {@code "floor=tower id"}, the building a floor is fought in when it is not the run's own
+ * @param routeKinds what each route step was, one stop-kind name per {@code routeSteps} pair (shorter, or empty, for steps taken before this was kept)
  */
 public record RunModifierState(
         List<ResourceLocation> accumulated,
@@ -32,7 +33,8 @@ public record RunModifierState(
         List<Integer> accumulatedFloors,
         List<Integer> relicFloors,
         List<Integer> routeSteps,
-        List<String> arenas) {
+        List<String> arenas,
+        List<String> routeKinds) {
 
     /** Relics a run can hold at once; a milestone offers none past this. */
     public static final int MAX_RELICS = 6;
@@ -57,6 +59,13 @@ public record RunModifierState(
         this(accumulated, lockedIn, draft, relics, accumulatedFloors, relicFloors, List.of());
     }
 
+    /** A state with no stop kinds kept. */
+    public RunModifierState(List<ResourceLocation> accumulated, List<ResourceLocation> lockedIn, Optional<PersistedDraft> draft,
+                            List<ResourceLocation> relics, List<Integer> accumulatedFloors, List<Integer> relicFloors, List<Integer> routeSteps,
+                            List<String> arenas) {
+        this(accumulated, lockedIn, draft, relics, accumulatedFloors, relicFloors, routeSteps, arenas, List.of());
+    }
+
     /** A state with no detour taken. */
     public RunModifierState(List<ResourceLocation> accumulated, List<ResourceLocation> lockedIn, Optional<PersistedDraft> draft,
                             List<ResourceLocation> relics, List<Integer> accumulatedFloors, List<Integer> relicFloors, List<Integer> routeSteps) {
@@ -65,6 +74,7 @@ public record RunModifierState(
 
     public RunModifierState {
         arenas = List.copyOf(arenas);
+        routeKinds = List.copyOf(routeKinds);
         routeSteps = List.copyOf(routeSteps);
         accumulated = List.copyOf(accumulated);
         lockedIn = List.copyOf(lockedIn);
@@ -90,12 +100,12 @@ public record RunModifierState(
     }
 
     public RunModifierState withDraft(PersistedDraft opened) {
-        return new RunModifierState(accumulated, lockedIn, Optional.of(opened), relics, accumulatedFloors, relicFloors, routeSteps, arenas);
+        return new RunModifierState(accumulated, lockedIn, Optional.of(opened), relics, accumulatedFloors, relicFloors, routeSteps, arenas, routeKinds);
     }
 
     /** The same state with the draft cleared away, e.g. when a run moves on to the next floor. */
     public RunModifierState withoutDraft() {
-        return new RunModifierState(accumulated, lockedIn, Optional.empty(), relics, accumulatedFloors, relicFloors, routeSteps, arenas);
+        return new RunModifierState(accumulated, lockedIn, Optional.empty(), relics, accumulatedFloors, relicFloors, routeSteps, arenas, routeKinds);
     }
 
     /** The same state having taken {@code modifier} (floor not recorded). */
@@ -109,7 +119,7 @@ public record RunModifierState(
         List<Integer> floors = padded(accumulatedFloors, accumulated.size());
         next.add(modifier);
         floors.add(floor);
-        return new RunModifierState(next, lockedIn, draft, relics, floors, relicFloors, routeSteps, arenas);
+        return new RunModifierState(next, lockedIn, draft, relics, floors, relicFloors, routeSteps, arenas, routeKinds);
     }
 
     /** The floor the {@code index}th held modifier first applied to, 0 when it was not recorded. */
@@ -133,7 +143,7 @@ public record RunModifierState(
         if (lockedIn.contains(modifier)) return this;
         List<ResourceLocation> next = new ArrayList<>(lockedIn);
         next.add(modifier);
-        return new RunModifierState(accumulated, next, draft, relics, accumulatedFloors, relicFloors, routeSteps, arenas);
+        return new RunModifierState(accumulated, next, draft, relics, accumulatedFloors, relicFloors, routeSteps, arenas, routeKinds);
     }
 
     /** The same state having found {@code relic} (floor not recorded). */
@@ -147,7 +157,7 @@ public record RunModifierState(
         List<Integer> floors = padded(relicFloors, relics.size());
         next.add(relic);
         floors.add(floor);
-        return new RunModifierState(accumulated, lockedIn, draft, next, accumulatedFloors, floors, routeSteps, arenas);
+        return new RunModifierState(accumulated, lockedIn, draft, next, accumulatedFloors, floors, routeSteps, arenas, routeKinds);
     }
 
     /** The same state having lost {@code relic} (a lost gamble, P34b). */
@@ -159,7 +169,7 @@ public record RunModifierState(
             next.remove(at);
             floors.remove(at);
         }
-        return new RunModifierState(accumulated, lockedIn, draft, next, accumulatedFloors, floors, routeSteps, arenas);
+        return new RunModifierState(accumulated, lockedIn, draft, next, accumulatedFloors, floors, routeSteps, arenas, routeKinds);
     }
 
     /** The lane of the last route step the run took, or -1 when it has not taken one (the next step can start anywhere). */
@@ -175,10 +185,24 @@ public record RunModifierState(
 
     /** The same state having taken lane {@code lane} at the step after {@code floor}. */
     public RunModifierState withRouteStep(int floor, int lane) {
+        return withRouteStep(floor, lane, "");
+    }
+
+    /** As above, keeping what the stop was ({@code kind}: a {@code RouteGraph.Kind} name) so the run can be told afterwards. */
+    public RunModifierState withRouteStep(int floor, int lane, String kind) {
         List<Integer> next = new ArrayList<>(routeSteps);
         next.add(floor);
         next.add(lane);
-        return new RunModifierState(accumulated, lockedIn, draft, relics, accumulatedFloors, relicFloors, next, arenas);
+        // keep the kinds in step with the pairs: a state from before kinds were kept is padded with blanks
+        List<String> nextKinds = new ArrayList<>(routeKinds);
+        while (nextKinds.size() < routeSteps.size() / 2) nextKinds.add("");
+        nextKinds.add(kind);
+        return new RunModifierState(accumulated, lockedIn, draft, relics, accumulatedFloors, relicFloors, next, arenas, nextKinds);
+    }
+
+    /** What route step number {@code index} (0 first) was, or empty when it is not known. */
+    public String routeKindAt(int index) {
+        return index >= 0 && index < routeKinds.size() ? routeKinds.get(index) : "";
     }
 
     /** The building floor {@code floor} is fought in when a detour sent the party elsewhere; empty for the run's own tower. */
@@ -194,7 +218,7 @@ public record RunModifierState(
     public RunModifierState withArena(int floor, ResourceLocation tower) {
         List<String> next = new ArrayList<>(arenas);
         next.add(floor + "=" + tower);
-        return new RunModifierState(accumulated, lockedIn, draft, relics, accumulatedFloors, relicFloors, routeSteps, next);
+        return new RunModifierState(accumulated, lockedIn, draft, relics, accumulatedFloors, relicFloors, routeSteps, next, routeKinds);
     }
 
     /** Whether there is room for another relic. */
@@ -211,6 +235,7 @@ public record RunModifierState(
         tag.put("accumulated_floors", new net.minecraft.nbt.IntArrayTag(accumulatedFloors.stream().mapToInt(Integer::intValue).toArray()));
         tag.put("relic_floors", new net.minecraft.nbt.IntArrayTag(relicFloors.stream().mapToInt(Integer::intValue).toArray()));
         if (!routeSteps.isEmpty()) tag.put("route", new net.minecraft.nbt.IntArrayTag(routeSteps.stream().mapToInt(Integer::intValue).toArray()));
+        if (!routeKinds.isEmpty()) tag.put("route_kinds", stringList(routeKinds));
         if (!arenas.isEmpty()) {
             ListTag places = new ListTag();
             for (String arena : arenas) places.add(StringTag.valueOf(arena));
@@ -230,14 +255,25 @@ public record RunModifierState(
                 readFloors(tag, "accumulated_floors"),
                 readFloors(tag, "relic_floors"),
                 readFloors(tag, "route"),
-                readArenas(tag));
+                readArenas(tag),
+                readStrings(tag, "route_kinds"));
     }
 
     private static List<String> readArenas(CompoundTag tag) {
+        return readStrings(tag, "arenas");
+    }
+
+    private static List<String> readStrings(CompoundTag tag, String key) {
         List<String> out = new ArrayList<>();
-        ListTag stored = tag.getList("arenas", Tag.TAG_STRING);
+        ListTag stored = tag.getList(key, Tag.TAG_STRING);
         for (int i = 0; i < stored.size(); i++) out.add(stored.getString(i));
         return out;
+    }
+
+    private static ListTag stringList(List<String> values) {
+        ListTag list = new ListTag();
+        for (String value : values) list.add(StringTag.valueOf(value));
+        return list;
     }
 
     /** Absent in a run saved before floors were recorded: nothing is known, which reads as 0. */

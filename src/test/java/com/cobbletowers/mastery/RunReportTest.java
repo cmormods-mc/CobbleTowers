@@ -43,4 +43,14 @@ class RunReportTest {
                 List.of(), "");
         assertEquals("Ash, Misty: Duskvale Tower (Monotype), 10 floors in 25:00, Ascension 1, flawless, score 55", report.shareLine("Ash, Misty"));
     }
+
+    @Test
+    @DisplayName("the route the run took is one line after the fight facts, and left out when there is none")
+    void routeLine() {
+        RunReport report = new RunReport("Tideforge Tower", "", "completed", 3, 0, 60_000, 0, 3, List.of(), 0, 10, false, List.of(), "",
+                "Battle > Forge > Rest");
+        assertTrue(report.lines().contains("  Route: Battle > Forge > Rest"), report.lines().toString());
+        assertTrue(new RunReport("T", "", "wiped", 1, 0, 1000, 0, 1, List.of(), 0, 1, false, List.of(), "").lines().stream()
+                .noneMatch(line -> line.contains("Route")));
+    }
 }

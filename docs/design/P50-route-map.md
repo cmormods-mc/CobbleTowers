@@ -119,4 +119,4 @@ A route step can have **one stop whose battle is fought in another tower's build
 
 * Warm window: **measured** (above); detours pay the rebuild, stage 1 changes no structure.
 * Room frequency is still untuned; the weights are the existing room weights plus a battle weight of 40.
-* A run's route is not yet recorded in Echoes or the run report.
+* **Route in Echoes and the run report (built):** each settled route step now keeps its stop kind (`RunModifierState.routeKinds`, tag `route_kinds`, old saves read as blanks, shown as "Stop"). `RouteText.stops/line` turn that into "Battle > Forge > Rest" (detours as "Battle (Rootvale)", cut at 10 stops with "+N more"). The run report card gains a "Route:" line; an Echo stores the line (`route` in the Echo tag, empty for older Echoes) and shows it in the Echo gallery and `/tower echo`. Not checked on the live rig yet.

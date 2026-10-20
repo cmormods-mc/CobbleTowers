@@ -55,7 +55,7 @@ public final class EchoService {
                 List<String> team = teamOf(player);
                 if (team.isEmpty()) continue;
                 echoes.add(new Echo(UUID.randomUUID(), player.getUUID(), player.getGameProfile().getName(), run.towerId(),
-                        run.runId(), team, System.currentTimeMillis(), 0, 0, season));
+                        run.runId(), team, System.currentTimeMillis(), 0, 0, season, routeLine(run)));
                 player.sendSystemMessage(Component.literal("Your team made the top " + EchoPolicy.TOP_N + " of "
                         + run.towerId().getPath() + ": it is now an Echo other challengers may meet. "
                         + "Opt out any time with /tower echo off."));
@@ -67,6 +67,15 @@ public final class EchoService {
         if (dropped > 0) TowerLog.info("{} Echo(es) of {} left the pool (no longer in the top {})", dropped,
                 run.towerId(), EchoPolicy.TOP_N);
         echoes.checkpoint(server);
+    }
+
+    /** The stops the run took as one line, for the Echo to carry (P50); empty with no route. */
+    static String routeLine(PersistedRun run) {
+        var content = TowerDefinitionRegistry.content();
+        return com.cobbletowers.route.RouteText.line(com.cobbletowers.route.RouteText.stops(run.modifiers(), place -> {
+            TowerDefinition other = content.towers().get(place);
+            return other == null ? place.getPath() : other.displayName().replaceFirst(" Tower$", "");
+        }));
     }
 
     /** The player's live party as property strings, at most {@value EchoPolicy#MAX_TEAM}. */

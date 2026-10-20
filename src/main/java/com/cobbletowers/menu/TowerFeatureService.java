@@ -180,7 +180,8 @@ public final class TowerFeatureService {
                 title="Echo gallery";var store=TowerEchoStore.get(server);boolean off=store.isOptedOut(id);
                 entries.add(entry("recording","Recording "+(off?"disabled":"enabled"),List.of("Qualifying top-ten regional teams can become Echo opponents.","Echo duels appear through run events; this gallery does not launch a duel.")));
                 for(var echo:store.ownedBy(id))entries.add(entry(echo.id().toString(),echo.tower().getPath()+" / "+(echo.season()>0?"Season "+echo.season():"All-time"),List.of(
-                        "Team: "+String.join(", ",echo.team().stream().map(EchoPolicy::speciesOf).toList()),"Challengers faced: "+echo.faced(),"Duels won: "+echo.beat())));
+                        "Team: "+String.join(", ",echo.team().stream().map(EchoPolicy::speciesOf).toList()),"Challengers faced: "+echo.faced(),"Duels won: "+echo.beat(),
+                        echo.route().isEmpty()?"":"Route: "+echo.route()).stream().filter(line->!line.isEmpty()).toList()));
                 actions.add(action(off?"echo-on":"echo-off",off?"Enable recording":"Disable recording","",off?"Future qualifying runs may be recorded; removed Echoes are not restored.":"This removes your recorded Echoes from the pool immediately. Continue?",""));
             }
             case "club" -> {

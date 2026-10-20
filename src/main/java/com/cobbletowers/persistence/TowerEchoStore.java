@@ -118,6 +118,7 @@ public final class TowerEchoStore extends TowerStore {
             entry.putInt("faced", echo.faced());
             entry.putInt("beat", echo.beat());
             entry.putInt("season", echo.season());
+            if (!echo.route().isEmpty()) entry.putString("route", echo.route());
             ListTag team = new ListTag();
             for (String member : echo.team()) team.add(StringTag.valueOf(member));
             entry.put("team", team);
@@ -146,7 +147,7 @@ public final class TowerEchoStore extends TowerStore {
             for (int j = 0; j < members.size(); j++) team.add(members.getString(j));
             store.echoes.put(entry.getUUID("id"), new Echo(entry.getUUID("id"), entry.getUUID("owner"),
                     entry.getString("name"), tower, entry.getUUID("run"), team, entry.getLong("at"), entry.getInt("faced"),
-                    entry.getInt("beat"), entry.getInt("season")));
+                    entry.getInt("beat"), entry.getInt("season"), entry.getString("route")));
         }
         ListTag out = tag.getList("opted_out", Tag.TAG_COMPOUND);
         for (int i = 0; i < out.size(); i++) store.optedOut.add(out.getCompound(i).getUUID("player"));

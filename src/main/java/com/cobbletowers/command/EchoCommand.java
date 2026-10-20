@@ -76,7 +76,8 @@ public final class EchoCommand {
         }
         for (Echo echo : mine) {
             say(context, echo.tower().getPath() + ": " + echo.team().stream().map(EchoPolicy::speciesOf)
-                    .collect(java.util.stream.Collectors.joining(", ")) + " -- met by " + echo.faced() + " challenger(s), won " + echo.beat() + " duel(s)");
+                    .collect(java.util.stream.Collectors.joining(", ")) + " -- met by " + echo.faced() + " challenger(s), won " + echo.beat() + " duel(s)"
+                    + (echo.route().isEmpty() ? "" : " -- route: " + echo.route()));
         }
         return 1;
     }

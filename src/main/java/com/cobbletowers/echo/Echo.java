@@ -14,12 +14,19 @@ import net.minecraft.resources.ResourceLocation;
  * @param faced challengers who met one of its Pokemon
  * @param beat how many of those it beat
  * @param season the season earned in (P36c), 0 with seasons off
+ * @param route the stops the earning run took (P50) as one line, empty if it took none
  */
 public record Echo(UUID id, UUID owner, String name, ResourceLocation tower, UUID runId, List<String> team, long at, int faced, int beat,
-                   int season) {
+                   int season, String route) {
 
     public Echo {
         team = List.copyOf(team);
+        route = route == null ? "" : route;
+    }
+
+    public Echo(UUID id, UUID owner, String name, ResourceLocation tower, UUID runId, List<String> team, long at, int faced, int beat,
+                int season) {
+        this(id, owner, name, tower, runId, team, at, faced, beat, season, "");
     }
 
     public Echo(UUID id, UUID owner, String name, ResourceLocation tower, UUID runId, List<String> team, long at, int faced) {
@@ -31,10 +38,10 @@ public record Echo(UUID id, UUID owner, String name, ResourceLocation tower, UUI
     }
 
     public Echo withFaced(int next) {
-        return new Echo(id, owner, name, tower, runId, team, at, next, beat, season);
+        return new Echo(id, owner, name, tower, runId, team, at, next, beat, season, route);
     }
 
     public Echo withBeat(int next) {
-        return new Echo(id, owner, name, tower, runId, team, at, faced, next, season);
+        return new Echo(id, owner, name, tower, runId, team, at, faced, next, season, route);
     }
 }
