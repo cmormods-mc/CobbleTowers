@@ -96,3 +96,8 @@ With this the Desk look covers **every page and pop-up the web UI has**. `desk/D
 * Fix found by the screenshots: Desk class names `.lv`, `.fl` and the type-chip `.ty` leaked into the rental cards and their labels; renamed (`dlv`, `dfl`) or scoped away from the table.
 
 Everything is still opt-in (Settings > Look, default Native). Turning it on for everyone is one default in `web/src/settings.js` (`DEFAULTS.look`) and the same value in `load()`; that is the owner's call. `desk-check.mjs` has about 75 browser checks.
+
+## Dark themes (2026-10-20)
+
+The Desk look is now **dark by default**. Every surface, line and text colour in `desk.css` is a token on `.fd` (`--bg1 --bg2 --surf --surf2 --track --line --ink --mut --soft --faint --glow --hov --on --pri --acc`, plus chip pairs `--abg/--afg` amber, `--gbg/--gfg` good, `--bbg/--bfg` blue, `--nbg/--nfg` neutral, `--rbg/--rfg` bad). Four themes, chosen in the Desk Settings page (Theme row) and kept with the other page settings (`settings.js`, `THEMES`, `DEFAULTS.theme = 'midnight'`): **Midnight** (the base values, no class), **Graphite**, **Harbor**, **Dusk** (`html.th-graphite|th-harbor|th-dusk`, which only redefine tokens). Pill-style status colours (type chips, rank medals, route kinds) keep their meaning in every theme; the pages' inline pastel boxes became `.elig.warn|bad|info`. The rental draft table stays lapis and gold in every theme. All themes are dark; there is no light theme any more. The native look is unchanged.
+

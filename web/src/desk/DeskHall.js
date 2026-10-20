@@ -61,8 +61,8 @@ function Team({ party, mode }) {
     ${party.length === 0 ? html`<div class="empty">Put Pokémon in your party to climb.</div>` : html`<div class="team">${party.map((m, i) => html`<div class=${'mon' + (m.fainted ? ' out' : '')} key=${i}>
       <${DeskSprite} name=${m.species} w=${6.4} />
       <div><b>${m.name}</b><small>Lv ${m.level}${m.fainted ? html` <span class="out">Fainted</span>` : null}</small><div class="tys">${m.types.map((t) => html`<span key=${t} class=${'ty t-' + t}>${t}</span>`)}</div></div></div>`)}</div>`}
-    ${sum.fainted ? html`<div class="elig" style="background:#fdeaee;color:#9b1c38">${sum.fainted === 1 ? '1 Pokémon is fainted' : sum.fainted + ' Pokémon are fainted'}. Heal before you climb.</div>` : null}
-    ${mode ? html`<div class="elig" style=${mode.ok ? '' : 'background:#fff4d6;color:#7a5200'}>${mode.text}</div>` : null}</div>`;
+    ${sum.fainted ? html`<div class="elig bad">${sum.fainted === 1 ? '1 Pokémon is fainted' : sum.fainted + ' Pokémon are fainted'}. Heal before you climb.</div>` : null}
+    ${mode ? html`<div class=${'elig' + (mode.ok ? '' : ' warn')}>${mode.text}</div>` : null}</div>`;
 }
 
 function TowerRow({ t, extras, selected, onPick }) {
@@ -74,7 +74,7 @@ function TowerRow({ t, extras, selected, onPick }) {
     <div><b>${shortName(t.name)}</b><small>${t.floors} floors · ${t.milestones} milestones${t.ascends ? ' · Ascends' : ''}</small>
       <span class=${'medal m-' + rankTone(st)}>${standingText(st)}</span>
       ${st && st.ascension > 0 ? html` <span class="medal m-m">Ascension ${st.ascension}</span>` : null}
-      ${run ? html` <span class="medal" style="--m:#dcebff;--mc:#1b4fb8">Run in progress</span>` : null}</div>
+      ${run ? html` <span class="medal m-p">Run in progress</span>` : null}</div>
     <div class="res">${res.map((s) => html`<${DeskSprite} key=${s} name=${s} w=${4.4} />`)}</div></button>`;
 }
 

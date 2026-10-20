@@ -54,7 +54,7 @@ export function DeskLobby({ state }) {
           onClick=${() => play('SELECT_TOWER', t.id)}><div class="pbox"><${DeskPano} region=${regionOf(t.id)} /></div><div><b>${shortName(t.displayName)}</b><small>${t.id === lobby.selected ? 'Selected' : 'Open expedition'}</small></div></button>`)}</div></div>
       <div class="dcard dcol"><div class="ch"><h3>Party</h3><span class="lbl">${seats.filter((s) => s.kind === 'player').length} of ${seats.length}</span></div>
         <div class="dseats">${seats.map((s, i) => html`<${Seat} key=${i} seat=${s} invite=${v.invite && i === firstOpen} party=${party} levels=${state.partyLevels} roster=${s.kind === 'player' ? rosterOf(state, s.name) : []} />`)}</div>
-        ${message ? html`<div class="elig" style="background:#eef3fc;color:#2a4a8a">${message}</div>` : null}</div>
+        ${message ? html`<div class="elig info">${message}</div>` : null}</div>
       <div class="dcard dcol dside"><div class="ch"><h3>Settings</h3><span class="lbl">${modeName(state)}</span></div>
         <div class="dctl">
           ${v.modes ? html`<span class="lbl">Mode</span><div class="seg">${v.modes.ids.map((id, i) => html`<button key=${id} class=${v.modes.chosen === id ? 'on' : ''} disabled=${!v.modes.enabled} aria-pressed=${v.modes.chosen === id}

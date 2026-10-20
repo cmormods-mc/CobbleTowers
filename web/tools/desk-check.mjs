@@ -83,6 +83,29 @@ async function open(look, size = { width: 1280, height: 720 }) {
   await p.close();
 }
 
+// 2b. the colour theme: midnight by default (no class), the other three one click away, remembered, and the page really changes colour
+{
+  const p = await open('desk');
+  await p.send('TowerHallState', fixture('TowerHallState'));
+  await p.waitForSelector('.fd .trow');
+  const bg = () => p.evaluate(() => getComputedStyle(document.querySelector('.fd')).backgroundImage + '|' + getComputedStyle(document.querySelector('.fd .dcard')).backgroundColor);
+  const lum = (rgb) => { const m = rgb.match(/rgb\((\d+), (\d+), (\d+)\)/); return m ? (+m[1] + +m[2] + +m[3]) / 3 : 255; };
+  const card = () => p.evaluate(() => getComputedStyle(document.querySelector('.fd .dcard')).backgroundColor);
+  check('the Desk is dark by default: no theme class on the page and a dark card', (await p.evaluate(() => document.documentElement.className.includes('th-'))) === false && lum(await card()) < 70);
+  const before = await bg();
+  await p.locator('.fd .tl', { hasText: 'Settings' }).click();
+  check('Settings lists the four themes with Midnight chosen', (await p.locator('.fd .seg[aria-label="Theme"] button').allInnerTexts()).join() === 'Midnight,Graphite,Harbor,Dusk'
+    && (await p.locator('.fd .seg[aria-label="Theme"] button.on').innerText()) === 'Midnight');
+  await p.locator('.fd .seg[aria-label="Theme"] button', { hasText: 'Harbor' }).click();
+  check('choosing Harbor puts th-harbor on the page, saves it, and changes the colours', (await p.evaluate(() => document.documentElement.classList.contains('th-harbor'))) === true
+    && (await p.evaluate(() => JSON.parse(localStorage.getItem('cobbletowers.ui')).theme)) === 'harbor' && (await bg()) !== before);
+  await p.locator('.fd .seg[aria-label="Theme"] button', { hasText: 'Dusk' }).click();
+  check('choosing Dusk takes th-harbor off again', (await p.evaluate(() => [...document.documentElement.classList].filter((c) => c.startsWith('th-')).join())) === 'th-dusk');
+  await p.locator('.fd .seg[aria-label="Theme"] button', { hasText: 'Midnight' }).click();
+  check('Midnight clears the theme class', (await p.evaluate(() => document.documentElement.className.includes('th-'))) === false);
+  await p.close();
+}
+
 // 3. the Look setting switches (the Desk settings page, and the native one for the way back)
 {
   const p = await open('desk');

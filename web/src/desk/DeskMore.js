@@ -8,7 +8,7 @@ import { goBack } from '../reducer.js';
 import { badgeView, boardLines, TABS, towerLabel } from '../mastery.js';
 import { guideLines } from '../screens/Guide.js';
 import { requestBadge, requestMastery } from '../screens/Mastery.js';
-import { apply, load, save } from '../settings.js';
+import { apply, load, save, THEMES } from '../settings.js';
 import { setLook } from '../reducer.js';
 import { DeskSprite, TopBar } from './DeskHall.js';
 import { chooserHint, monCards } from './partyView.js';
@@ -64,12 +64,15 @@ export function DeskSettings() {
   const [s, setS] = useState(load());
   const flip = (key) => { const next = { ...s, [key]: !s[key] }; setS(next); save(next); apply(next); };
   const setLookTo = (look) => { const next = { ...s, look }; setS(next); save(next); update((st) => setLook(st, look)); };
+  const setThemeTo = (theme) => { const next = { ...s, theme }; setS(next); save(next); apply(next); };
   const row = (title, sub, on, onClick, label) => html`<div class="dsetrow"><div><b>${title}</b><span>${sub}</span></div>
     <button class=${'dbtn dsm' + (on ? '' : ' gh')} aria-pressed=${on} onClick=${onClick}>${label}</button></div>`;
   return html`<div class="fd"><${TopBar} back=${back} />
     <div class="dbody" style="grid-template-columns:1fr;flex:1"><div class="dcard dcol"><div class="ch"><h3>Settings</h3><span class="lbl">kept in this browser</span></div>
       <div class="dlines" style="flex:1">
         ${row('Look', 'Frontier Desk is the new look for every page; Native is the original.', s.look === 'desk', () => setLookTo(s.look === 'desk' ? 'native' : 'desk'), s.look === 'desk' ? 'Frontier Desk' : 'Native')}
+        <div class="dsetrow"><div><b>Theme</b><span>The Frontier Desk colours. All four are dark.</span></div>
+          <div class="seg" role="group" aria-label="Theme">${Object.entries(THEMES).map(([id, name]) => html`<button key=${id} class=${s.theme === id ? 'on' : ''} aria-pressed=${s.theme === id} onClick=${() => setThemeTo(id)}>${name}</button>`)}</div></div>
         ${row('Animations', 'Reduced motion keeps every choice available.', s.motion, () => flip('motion'), s.motion ? 'On' : 'Off')}
         ${row('Pixel font', 'Only the Native look uses it.', s.pixelFont, () => flip('pixelFont'), s.pixelFont ? 'On' : 'Off')}
         <div class="dsub">Game volume stays in Minecraft's sound settings; the tower pages make no sounds of their own. Tower keys are set in Minecraft's controls screen, under Miscellaneous.</div>

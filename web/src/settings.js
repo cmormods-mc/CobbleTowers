@@ -1,13 +1,15 @@
 // The page's own presentation settings (the native TowerUiSettings): kept in the browser, applied as classes on <html>.
 
 const KEY = 'cobbletowers.ui';
-export const DEFAULTS = Object.freeze({ motion: true, pixelFont: true, look: 'native' });
+/** The Frontier Desk's colour themes: all dark. Midnight is the base styling, so it needs no class on the root. */
+export const THEMES = Object.freeze({ midnight: 'Midnight', graphite: 'Graphite', harbor: 'Harbor', dusk: 'Dusk' });
+export const DEFAULTS = Object.freeze({ motion: true, pixelFont: true, look: 'native', theme: 'midnight' });
 
 /** Reads what is stored; anything unreadable or missing falls back to the default. */
 export function load(storage = globalThis.localStorage) {
   try {
     const saved = JSON.parse(storage.getItem(KEY) || '{}');
-    return { motion: typeof saved.motion === 'boolean' ? saved.motion : DEFAULTS.motion, pixelFont: typeof saved.pixelFont === 'boolean' ? saved.pixelFont : DEFAULTS.pixelFont, look: saved.look === 'desk' ? 'desk' : 'native' };
+    return { motion: typeof saved.motion === 'boolean' ? saved.motion : DEFAULTS.motion, pixelFont: typeof saved.pixelFont === 'boolean' ? saved.pixelFont : DEFAULTS.pixelFont, look: saved.look === 'desk' ? 'desk' : 'native', theme: Object.hasOwn(THEMES, saved.theme) ? saved.theme : DEFAULTS.theme };
   } catch (e) {
     return { ...DEFAULTS };
   }
@@ -21,4 +23,5 @@ export function save(settings, storage = globalThis.localStorage) {
 export function apply(settings, root = document.documentElement) {
   root.classList.toggle('calm', !settings.motion);
   root.classList.toggle('plainfont', !settings.pixelFont);
+  for (const id of Object.keys(THEMES)) if (id !== DEFAULTS.theme) root.classList.toggle('th-' + id, settings.theme === id);
 }

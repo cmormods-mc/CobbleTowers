@@ -28,7 +28,7 @@ export function DeskTowerBrief({ hall, id, busy }) {
       <div class="dcard dcol" style="padding:calc(var(--u) * 1.6);gap:calc(var(--u) * 1.2)"><h3>Start an expedition</h3>
         <div class="dsub">Selecting this tower creates or updates your lobby. Review the mode, your party and invitations there before starting.</div>
         <button class="dbtn" disabled=${!!why} onClick=${() => request('tower', id)}>Select tower & open lobby</button>
-        ${why ? html`<div class="elig" style="margin:0;background:#fff4d6;color:#7a5200">${why}</div>` : null}</div></div></div>`;
+        ${why ? html`<div class="elig warn" style="margin:0">${why}</div>` : null}</div></div></div>`;
 }
 
 /** A trial's briefing: its rules, and the way into a lobby for it. */
@@ -45,7 +45,7 @@ export function DeskTrialBrief({ hall, kind, busy }) {
       <div class="dcard dcol" style="padding:calc(var(--u) * 1.6);gap:calc(var(--u) * 1.2)"><h3>Take the trial</h3>
         <div class="dsub">${lines.note || 'Preparing opens a lobby; nothing launches yet.'}</div>
         <button class="dbtn" disabled=${!t || !!why} onClick=${() => t && request('trial', kind, t.revision)}>Prepare trial lobby</button>
-        ${why && t ? html`<div class="elig" style="margin:0;background:#fff4d6;color:#7a5200">${why}</div>` : null}</div></div></div>`;
+        ${why && t ? html`<div class="elig warn" style="margin:0">${why}</div>` : null}</div></div></div>`;
 }
 
 /** The Trials page: today's and this week's trial, each with its rules at a glance. */
