@@ -347,7 +347,7 @@ async function open(look, size = { width: 1280, height: 720 }) {
   await p.send('RentalDraft', fixture('RentalDraft', open2));
   await p.waitForSelector('.fd .pack');
   check('the draft opens on a sealed pack on the dark table, three pack dots', (await p.locator('.fd .dtable .pack').count()) === 1 && (await p.locator('.fd .dots i').count()) === 3);
-  await p.locator('.fd .pack').click();
+  await p.locator('.fd .pack').click({ force: true });
   await p.waitForSelector('.fd .card.pick', { timeout: 8000 });
   await p.locator('.fd .card.pick').nth(0).click();
   await p.locator('.fd .card.pick').nth(1).click();

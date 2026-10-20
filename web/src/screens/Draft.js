@@ -80,7 +80,7 @@ export function Done({ draft, desk }) {
   const cs = cardScale() * 0.73;
   return html`
     <div class="fl c-bronze">Your rental team</div>
-    <div style="display:flex;gap:10px">${team.map((c) => html`<${RentalCard} card=${c} cs=${cs} />`)}</div>
+    <div class=${desk ? 'dteam' : ''} style="display:flex;gap:10px">${team.map((c) => html`<${RentalCard} card=${c} cs=${cs} />`)}</div>
     <div class="fl c-text">Your team is drafted.</div>
     <div style="display:flex;gap:12px">
       <${Btn} desk=${desk} w=${80} kind="dark" onClick=${() => act('RentalDraftAction', { action: 'RESTART', a: 0, b: 0 })}>Draft again<//>

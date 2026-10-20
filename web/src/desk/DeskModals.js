@@ -40,7 +40,7 @@ export function DeskReward({ reward, onClose }) {
   const label = grant ? grant.label || pretty(idTail(grant.item)) : '';
   return html`<div class="fd dover" role="dialog" aria-label="Rewards secured"><div class="dmodal">
     <span class="lbl">Rewards secured</span><h3 style="font-size:calc(var(--u) * 2.4)">Through floor ${reward.floorIndex}</h3>
-    ${grant ? html`<div class="dgrant"><${GrantPicture} grant=${grant} w=${9} /><b>${label}</b><span>× ${grant.amount}</span></div>` : html`<div class="empty">No rewards in this grant.</div>`}
+    ${grant ? html`<div class="dgrant" key=${at0}><${GrantPicture} grant=${grant} w=${9} /><b>${label}</b><span>× ${grant.amount}</span></div>` : html`<div class="empty">No rewards in this grant.</div>`}
     ${grants.length > 1 ? html`<div class="dpager"><button class="dbtn gh dsm" aria-label="Previous reward" onClick=${() => setPage(step(at0, -1, grants.length))}>‹</button><span>${at0 + 1} / ${grants.length}</span>
       <button class="dbtn gh dsm" aria-label="Next reward" onClick=${() => setPage(step(at0, 1, grants.length))}>›</button></div>` : null}
     <button class="dbtn" onClick=${onClose}>Continue</button></div></div>`;

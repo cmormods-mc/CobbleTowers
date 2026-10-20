@@ -99,7 +99,7 @@
     </div>
     <div class="fl c-muted">A team may keep at most ${er} legendary or mythic Pokémon.</div>`}function Co({draft:e,desk:t}){let o=Qe(()=>or(e),[e.packs]),n=tr()*.73;return i`
     <div class="fl c-bronze">Your rental team</div>
-    <div style="display:flex;gap:10px">${o.map(r=>i`<${Ot} card=${r} cs=${n} />`)}</div>
+    <div class=${t?"dteam":""} style="display:flex;gap:10px">${o.map(r=>i`<${Ot} card=${r} cs=${n} />`)}</div>
     <div class="fl c-text">Your team is drafted.</div>
     <div style="display:flex;gap:12px">
       <${ot} desk=${t} w=${80} kind="dark" onClick=${()=>R("RentalDraftAction",{action:"RESTART",a:0,b:0})}>Draft again<//>
@@ -120,7 +120,7 @@
     <div class="dbody" style="grid-template-columns:1fr;flex:1"><div class="ns dtable" style=${`--g:${S.g}px`}><div class="dstage2">
       ${e.complete?i`<${Co} draft=${e} desk=${!0} />`:i`<${_o} draft=${e} desk=${!0} />`}</div></div></div></div>`}function lr({reward:e,onClose:t}){let[o,n]=L(0),r=e.grants,s=Math.min(o,Math.max(0,r.length-1)),a=r[s],l=a?a.label||me(Oe(a.item)):"";return i`<div class="fd dover" role="dialog" aria-label="Rewards secured"><div class="dmodal">
     <span class="lbl">Rewards secured</span><h3 style="font-size:calc(var(--u) * 2.4)">Through floor ${e.floorIndex}</h3>
-    ${a?i`<div class="dgrant"><${xi} grant=${a} w=${9} /><b>${l}</b><span>× ${a.amount}</span></div>`:i`<div class="empty">No rewards in this grant.</div>`}
+    ${a?i`<div class="dgrant" key=${s}><${xi} grant=${a} w=${9} /><b>${l}</b><span>× ${a.amount}</span></div>`:i`<div class="empty">No rewards in this grant.</div>`}
     ${r.length>1?i`<div class="dpager"><button class="dbtn gh dsm" aria-label="Previous reward" onClick=${()=>n(Fo(s,-1,r.length))}>‹</button><span>${s+1} / ${r.length}</span>
       <button class="dbtn gh dsm" aria-label="Next reward" onClick=${()=>n(Fo(s,1,r.length))}>›</button></div>`:null}
     <button class="dbtn" onClick=${t}>Continue</button></div></div>`}function cr({vendor:e,onClose:t}){let[o,n]=L(0),[r,s]=L(0),a=e.team,l=e.services,d=a[Math.min(o,a.length-1)],c=l[Math.min(r,l.length-1)];return i`<div class="fd dover" role="dialog" aria-label="Tower supplies"><div class="dmodal wide">
