@@ -15,15 +15,43 @@ public final class PartyReader {
     /** The party as the web Hall draws it: display name, sprite name, level, fainted, types. Party order. */
     public static List<com.cobbletowers.network.TowerHallStatePayload.Mon> cards(ServerPlayer player) {
         List<com.cobbletowers.network.TowerHallStatePayload.Mon> cards = new ArrayList<>();
-        for (Pokemon pokemon : Cobblemon.INSTANCE.getStorage().getParty(player)) {
-            com.cobblemon.mod.common.pokemon.Species species = pokemon.getSpecies();
-            List<String> types = new ArrayList<>();
-            for (com.cobblemon.mod.common.api.types.ElementalType type : species.getTypes()) types.add(type.getName());
-            cards.add(new com.cobbletowers.network.TowerHallStatePayload.Mon(pokemon.getDisplayName(false).getString(),
-                    com.cobbletowers.menu.HallExtras.spriteName(species.getResourceIdentifier().getPath()), pokemon.getLevel(), pokemon.isFainted(),
-                    com.cobbletowers.menu.HallExtras.hpPercent(pokemon.getCurrentHealth(), pokemon.getMaxHealth()), types));
+        for (Pokemon pokemon : Cobblemon.INSTANCE.getStorage().getParty(player)) cards.add(card(pokemon));
+        return cards;
+    }
+
+    /**
+     * What a lobby shows of the Pokemon a player is bringing: the ones they registered (party or box), else the first
+     * {@code limit} of the party.
+     */
+    public static List<com.cobbletowers.network.TowerHallStatePayload.Mon> registeredCards(ServerPlayer player, List<java.util.UUID> chosen,
+                                                                                         int limit) {
+        List<com.cobbletowers.network.TowerHallStatePayload.Mon> cards = new ArrayList<>();
+        if (chosen.isEmpty()) {
+            for (Pokemon pokemon : Cobblemon.INSTANCE.getStorage().getParty(player)) {
+                if (cards.size() >= limit) break;
+                cards.add(card(pokemon));
+            }
+            return cards;
+        }
+        java.util.Map<java.util.UUID, Pokemon> owned = new java.util.HashMap<>();
+        for (Pokemon pokemon : Cobblemon.INSTANCE.getStorage().getParty(player)) owned.put(pokemon.getUuid(), pokemon);
+        for (com.cobblemon.mod.common.api.storage.pc.PCBox box : Cobblemon.INSTANCE.getStorage().getPC(player).getBoxes()) {
+            for (Pokemon pokemon : box.getNonEmptySlots().values()) owned.put(pokemon.getUuid(), pokemon);
+        }
+        for (java.util.UUID id : chosen) {
+            Pokemon pokemon = owned.get(id);
+            if (pokemon != null && cards.size() < limit) cards.add(card(pokemon));
         }
         return cards;
+    }
+
+    private static com.cobbletowers.network.TowerHallStatePayload.Mon card(Pokemon pokemon) {
+        com.cobblemon.mod.common.pokemon.Species species = pokemon.getSpecies();
+        List<String> types = new ArrayList<>();
+        for (com.cobblemon.mod.common.api.types.ElementalType type : species.getTypes()) types.add(type.getName());
+        return new com.cobbletowers.network.TowerHallStatePayload.Mon(pokemon.getDisplayName(false).getString(),
+                com.cobbletowers.menu.HallExtras.spriteName(species.getResourceIdentifier().getPath()), pokemon.getLevel(), pokemon.isFainted(),
+                com.cobbletowers.menu.HallExtras.hpPercent(pokemon.getCurrentHealth(), pokemon.getMaxHealth()), types);
     }
 
     /** Party order, fainted members included: whether they matter is the ruleset's call. */

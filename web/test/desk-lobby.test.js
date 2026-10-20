@@ -51,3 +51,12 @@ test('the Start hint says why it is waiting', () => {
   const guest = play((d) => { d.lobby.role = 2; });
   assert.equal(startHint(lobbyView(guest), guest), '');
 });
+
+test('rosterOf: a teammate\'s Pokémon by name; empty when unknown or the server sends none', async () => {
+  const { rosterOf } = await import('../src/desk/seats.js');
+  const mon = { name: 'Arcanine', species: 'arcanine', level: 50, fainted: false, hp: 100, types: ['fire'] };
+  const play = { lobby: { options: { rosters: [{ name: 'Sam', team: [mon] }] } } };
+  assert.deepEqual(rosterOf(play, 'Sam'), [mon]);
+  assert.deepEqual(rosterOf(play, 'Jo'), []);
+  assert.deepEqual(rosterOf({ lobby: { options: {} } }, 'Sam'), []);
+});

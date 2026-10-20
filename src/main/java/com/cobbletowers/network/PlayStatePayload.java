@@ -84,15 +84,31 @@ public record PlayStatePayload(List<Tower> towers, Lobby lobby, List<Integer> pa
      * What the host can choose before starting: how deep (P30) and which mode (P32). Nested to stay under the codec's
      * field limit.
      */
-    public record Options(Depth depth, Modes modes) {
+    public record Options(Depth depth, Modes modes, List<Roster> rosters) {
         static final StreamCodec<RegistryFriendlyByteBuf, Options> STREAM_CODEC = StreamCodec.composite(
                 Depth.STREAM_CODEC, Options::depth,
                 Modes.STREAM_CODEC, Options::modes,
+                Roster.STREAM_CODEC.apply(ByteBufCodecs.list(8)), Options::rosters,
                 Options::new);
+
+        public Options(Depth depth, Modes modes) {
+            this(depth, modes, List.of());
+        }
 
         public static Options none() {
             return new Options(Depth.none(), Modes.none());
         }
+    }
+
+    /**
+     * The Pokemon a teammate is bringing (P51), shown to the other players on the team and never to someone still only invited.
+     * @param name the player's name, as in {@link Member}
+     */
+    public record Roster(String name, List<TowerHallStatePayload.Mon> team) {
+        static final StreamCodec<RegistryFriendlyByteBuf, Roster> STREAM_CODEC = StreamCodec.composite(
+                ByteBufCodecs.STRING_UTF8, Roster::name,
+                TowerHallStatePayload.Mon.CODEC.apply(ByteBufCodecs.list(6)), Roster::team,
+                Roster::new);
     }
 
     /**

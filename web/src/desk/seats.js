@@ -17,6 +17,9 @@ export function seatsOf(view, me) {
   return seats;
 }
 
+/** The Pokémon a teammate is bringing, from the server's rosters (none for you, for someone not on the team yet, or from an older server). */
+export const rosterOf = (play, name) => (play.lobby.options.rosters ?? []).find((r) => r.name === name)?.team ?? [];
+
 /** What a seat says under the name: the role, then the state. */
 export function seatLine(seat) {
   if (seat.kind === 'open') return 'Open seat';

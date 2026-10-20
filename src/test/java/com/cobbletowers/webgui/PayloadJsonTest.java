@@ -129,6 +129,21 @@ class PayloadJsonTest {
     }
 
     @Test
+    @DisplayName("the lobby carries what each teammate is bringing (P51)")
+    void lobbyRosters() {
+        var mon = new com.cobbletowers.network.TowerHallStatePayload.Mon("Arcanine", "arcanine", 50, false, 100, List.of("fire"));
+        var options = new com.cobbletowers.network.PlayStatePayload.Options(com.cobbletowers.network.PlayStatePayload.Depth.none(),
+                com.cobbletowers.network.PlayStatePayload.Modes.none(),
+                List.of(new com.cobbletowers.network.PlayStatePayload.Roster("Sam", List.of(mon))));
+        var sent = new com.cobbletowers.network.PlayStatePayload(List.of(),
+                new com.cobbletowers.network.PlayStatePayload.Lobby(1, "", "Alex", List.of(), -1, options), List.of(), "", false);
+        JsonObject roster = PayloadJson.envelope(sent).getAsJsonObject("data").getAsJsonObject("lobby").getAsJsonObject("options")
+                .getAsJsonArray("rosters").get(0).getAsJsonObject();
+        assertEquals("Sam", roster.get("name").getAsString());
+        assertEquals("arcanine", roster.getAsJsonArray("team").get(0).getAsJsonObject().get("species").getAsString());
+    }
+
+    @Test
     @DisplayName("the Hall carries the team, the run's tower and the mastery standings the Frontier Desk page reads (P51)")
     void hallExtras() throws IOException {
         var tide = ResourceLocation.fromNamespaceAndPath("cobbletowers", "tideforge");

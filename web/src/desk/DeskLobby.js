@@ -7,7 +7,7 @@ import { get, update } from '../store.js';
 import { goBack } from '../reducer.js';
 import { lobbyView, partyLine, regionOf } from '../lobby.js';
 import { DeskPano, DeskSprite } from './DeskHall.js';
-import { modeName, seatLine, seatsOf, startHint } from './seats.js';
+import { modeName, rosterOf, seatLine, seatsOf, startHint } from './seats.js';
 import { shortName } from './standings.js';
 
 const play = (action, argument = '') => act('PlayAction', { action, argument });
@@ -20,7 +20,7 @@ function Invite() {
     <button class="dbtn dsm" onClick=${send}>Invite</button></div>`;
 }
 
-function Seat({ seat, invite, party, levels }) {
+function Seat({ seat, invite, party, levels, roster }) {
   if (seat.kind === 'open') {
     return html`<div class="dseat open"><div class="dopen">Open seat</div>${invite ? html`<${Invite} />` : null}</div>`;
   }
@@ -28,7 +28,7 @@ function Seat({ seat, invite, party, levels }) {
     <div class="dseathead"><span class="av">${seat.name.charAt(0).toUpperCase()}</span>
       <div style="flex:1;min-width:0"><b>${seat.name}${seat.me ? ' (you)' : ''}</b><small>${seatLine(seat)}</small></div>
       ${seat.status ? html`<span class=${'stp stp-' + seat.pill}>${seat.status.charAt(0).toUpperCase() + seat.status.slice(1)}</span>` : null}</div>
-    ${seat.me ? html`<div class="dseatparty">${party.length ? party.map((m, i) => html`<span key=${i} class=${m.fainted ? 'out' : ''} title=${m.name + ' Lv ' + m.level}><${DeskSprite} name=${m.species} w=${4.6} /></span>`) : html`<small>Your party: ${partyLine(levels)}</small>`}</div>` : null}
+    ${seat.me ? html`<div class="dseatparty">${party.length ? party.map((m, i) => html`<span key=${i} class=${m.fainted ? 'out' : ''} title=${m.name + ' Lv ' + m.level}><${DeskSprite} name=${m.species} w=${4.6} /></span>`) : html`<small>Your party: ${partyLine(levels)}</small>`}</div>` : roster.length ? html`<div class="dseatparty">${roster.map((m, i) => html`<span key=${i} class=${m.fainted ? 'out' : ''} title=${m.name + ' Lv ' + m.level}><${DeskSprite} name=${m.species} w=${4.6} /></span>`)}</div>` : null}
   </div>`;
 }
 
@@ -53,7 +53,7 @@ export function DeskLobby({ state }) {
         <div class="rows">${state.towers.map((t) => html`<button key=${t.id} class=${'trow dl' + (t.id === lobby.selected ? ' sel' : '')} disabled=${!v.canChoose} aria-pressed=${t.id === lobby.selected}
           onClick=${() => play('SELECT_TOWER', t.id)}><div class="pbox"><${DeskPano} region=${regionOf(t.id)} /></div><div><b>${shortName(t.displayName)}</b><small>${t.id === lobby.selected ? 'Selected' : 'Open expedition'}</small></div></button>`)}</div></div>
       <div class="dcard dcol"><div class="ch"><h3>Party</h3><span class="lbl">${seats.filter((s) => s.kind === 'player').length} of ${seats.length}</span></div>
-        <div class="dseats">${seats.map((s, i) => html`<${Seat} key=${i} seat=${s} invite=${v.invite && i === firstOpen} party=${party} levels=${state.partyLevels} />`)}</div>
+        <div class="dseats">${seats.map((s, i) => html`<${Seat} key=${i} seat=${s} invite=${v.invite && i === firstOpen} party=${party} levels=${state.partyLevels} roster=${s.kind === 'player' ? rosterOf(state, s.name) : []} />`)}</div>
         ${message ? html`<div class="elig" style="background:#eef3fc;color:#2a4a8a">${message}</div>` : null}</div>
       <div class="dcard dcol dside"><div class="ch"><h3>Settings</h3><span class="lbl">${modeName(state)}</span></div>
         <div class="dctl">

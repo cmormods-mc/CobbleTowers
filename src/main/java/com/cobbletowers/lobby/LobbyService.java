@@ -13,6 +13,7 @@ import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinition;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.network.PlayStatePayload;
+import com.cobbletowers.network.TowerHallStatePayload;
 import com.cobbletowers.network.RegistrationStatePayload;
 import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.runtime.PartyValidation.PartyMember;
@@ -620,9 +621,41 @@ public final class LobbyService {
                     new PlayStatePayload.Readiness(lobby.modeConfirmed(), RentalDraftService.draftOf(me).filter(RentalDraft::complete).isPresent(),
                             lobby.isReady(me), lobby.isReady(lobby.host())));
         }
+        List<PlayStatePayload.Roster> rosters = lobby != null && (role == 1 || role == 3) ? rosters(server, player, lobby) : List.of();
         return new PlayStatePayload(towers,
                 new PlayStatePayload.Lobby(role, selected, hostName, members, countdown,
-                        new PlayStatePayload.Options(depth, modes)), levels, message, open);
+                        new PlayStatePayload.Options(depth, modes, rosters)), levels, message, open);
+    }
+
+    /**
+     * What each other player on the team is bringing (P51): their registered Pokemon, or the drafted team in a rental
+     * lobby once the draft is finished. Only for someone already on the team; an invitee sees nobody's.
+     */
+    private static List<PlayStatePayload.Roster> rosters(MinecraftServer server, ServerPlayer viewer, TowerLobby lobby) {
+        List<PlayStatePayload.Roster> out = new ArrayList<>();
+        boolean rental = RentalDraftService.isRentalLobby(lobby);
+        int limit = registerLimit(lobby);
+        for (UUID id : lobby.team()) {
+            if (id.equals(viewer.getUUID())) continue;
+            ServerPlayer other = server.getPlayerList().getPlayer(id);
+            if (other == null) continue;
+            List<TowerHallStatePayload.Mon> cards;
+            try {
+                cards = rental ? RentalDraftService.draftOf(id).filter(RentalDraft::complete)
+                                .map(d -> d.team().stream().map(LobbyService::rentalCard).toList()).orElse(List.of())
+                        : PartyReader.registeredCards(other, lobby.chosenOf(id), limit);
+            } catch (RuntimeException ex) {
+                TowerLog.warn("Lobby roster for {} could not be read: {}", name(other), ex.toString());
+                cards = List.of();
+            }
+            if (!cards.isEmpty()) out.add(new PlayStatePayload.Roster(name(other), cards));
+        }
+        return out;
+    }
+
+    private static TowerHallStatePayload.Mon rentalCard(com.cobbletowers.definition.RentalSetDefinition set) {
+        return new TowerHallStatePayload.Mon(set.species(), com.cobbletowers.menu.HallExtras.spriteName(set.species()), set.level(), false, 100,
+                set.types());
     }
 
     // ---- helpers -------------------------------------------------------------------------------
