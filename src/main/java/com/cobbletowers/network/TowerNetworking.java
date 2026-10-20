@@ -216,6 +216,13 @@ public final class TowerNetworking {
         // caller's screen to show the balance and remaining-purchase count it actually has now.
         ParticipantService.runOf(buyer.getUUID())
                 .ifPresent(current -> sendVendorCatalog(server, buyer, current, message));
+        if (result == VendorPurchaseService.Result.SUCCESS) {
+            // The party's health or status may have changed (a heal): the intermission screen behind the vendor shows it, so it is sent again,
+            // to the buyer and to the teammate who got the service.
+            IntermissionService.refresh(server, buyer);
+            ServerPlayer target = server.getPlayerList().getPlayer(payload.targetPlayerId());
+            if (target != null && !target.getUUID().equals(buyer.getUUID())) IntermissionService.refresh(server, target);
+        }
     }
 
     private static String nameOf(MinecraftServer server, UUID playerId) {

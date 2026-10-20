@@ -120,6 +120,11 @@ public final class IntermissionService {
         return "";
     }
 
+    /** Sends the player's screen again without opening it: an open screen updates, a closed one stays closed (a vendor purchase changed the party's health). */
+    public static void refresh(MinecraftServer server, ServerPlayer player) {
+        intermissionRunOf(player).ifPresent(run -> send(server, run, player, "", false));
+    }
+
     public static void openScreen(MinecraftServer server, ServerPlayer player, String message) {
         intermissionRunOf(player).ifPresent(run -> send(server, run, player, message, true));
     }
