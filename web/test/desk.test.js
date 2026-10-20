@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hasSprite, defaultPick, prettyStatus, rankTone, residentsOf, shortName, standingOf, standingText, teamSummary } from '../src/desk/standings.js';
+import { modeLine, hasSprite, defaultPick, prettyStatus, rankTone, residentsOf, shortName, standingOf, standingText, teamSummary } from '../src/desk/standings.js';
 
 const st = (level, rank, toNext) => ({ tower: 'cobbletowers:tideforge', level, rank, toNext, ascension: 0 });
 
@@ -61,4 +61,12 @@ test('tower names lose their suffix and the run status is made readable', () => 
 test('the sprite sheet holds every partner sprite, not only the species the data names', () => {
   for (const name of ['mrmime', 'nidoranf', 'hooh', 'porygonz', 'pikachu', 'arceus']) assert.ok(hasSprite(name), name);
   assert.ok(!hasSprite('notapokemon'));
+});
+
+test('modeLine: nothing without a lobby mode, a pass line, and a count when the team breaks it', () => {
+  assert.equal(modeLine(null), null);
+  assert.equal(modeLine({ modeName: '', modeProblems: [] }), null);
+  assert.deepEqual(modeLine({ modeName: 'Monotype', modeProblems: [] }), { ok: true, text: 'Your team fits Monotype.' });
+  assert.deepEqual(modeLine({ modeName: 'Monotype', modeProblems: ['a'] }), { ok: false, text: '1 Pokémon breaks Monotype.' });
+  assert.equal(modeLine({ modeName: 'Monotype', modeProblems: ['a', 'b', 'c'] }).text, '3 Pokémon break Monotype.');
 });

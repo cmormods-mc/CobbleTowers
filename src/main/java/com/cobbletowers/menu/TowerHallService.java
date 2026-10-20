@@ -86,7 +86,27 @@ public final class TowerHallService {
         }
         String runTower = TowerRuns.forPlayer(player.getUUID()).filter(r -> !r.isRetired())
                 .map(r -> r.towerId().toString()).orElse("");
-        return HallExtras.of(runTower, com.cobbletowers.battle.cobblemon.PartyReader.cards(player), standings);
+        var base = HallExtras.of(runTower, com.cobbletowers.battle.cobblemon.PartyReader.cards(player), standings);
+        return withLobbyMode(player, base);
+    }
+
+    /** If the player's lobby has a mode with party clauses (Level Cap, Monotype...), says whether the team fits it. */
+    private static TowerHallStatePayload.Extras withLobbyMode(ServerPlayer player, TowerHallStatePayload.Extras base) {
+        var lobby = LobbyService.lobbyOf(player.getUUID());
+        if (lobby.isEmpty()) return base;
+        var playlist = lobby.get().playlist().flatMap(PlaylistRegistry::get);
+        if (playlist.isEmpty()) return base;
+        var picked = lobby.get().chosenOf(player.getUUID());
+        List<com.cobbletowers.runtime.PartyValidation.PartyMember> members;
+        if (picked.isEmpty()) {
+            members = com.cobbletowers.battle.cobblemon.PartyReader.members(player);
+        } else {
+            var snapshot = PartyStorage.snapshot(player);
+            members = new ArrayList<>();
+            for (UUID id : picked) snapshot.member(id).ifPresent(members::add);
+        }
+        return HallExtras.withMode(base, playlist.get().displayName(),
+                HallExtras.modeProblems(members, LobbyService.registerLimit(lobby.get()), playlist.get().party()));
     }
 
     static String revision(TrialSchedule.Instance trial) {

@@ -3,6 +3,7 @@ package com.cobbletowers.menu;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.cobbletowers.network.TowerHallStatePayload.Mon;
+import com.cobbletowers.runtime.PartyValidation.PartyMember;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.resources.ResourceLocation;
@@ -38,6 +39,26 @@ class HallExtrasTest {
         assertEquals("M0", extras.party().get(0).name());
         assertEquals("M5", extras.party().get(5).name());
         assertEquals("", extras.runTower());
+    }
+
+    @Test
+    void modeProblemsJudgeOnlyWhatTheTowerWouldRegister() {
+        var cap = new com.cobbletowers.definition.PlaylistDefinition.Clauses(false, 50, false, java.util.Set.of(), 0);
+        var party = List.of(
+                new PartyMember(java.util.UUID.randomUUID(), 50, false, "arcanine", List.of("fire"), true, java.util.Set.of()),
+                new PartyMember(java.util.UUID.randomUUID(), 72, false, "gliscor", List.of("ground"), true, java.util.Set.of()));
+        assertEquals(1, HallExtras.modeProblems(party, 6, cap).size());
+        assertEquals(0, HallExtras.modeProblems(party, 1, cap).size());
+        assertEquals(0, HallExtras.modeProblems(party, 6, com.cobbletowers.definition.PlaylistDefinition.Clauses.NONE).size());
+    }
+
+    @Test
+    void withModeKeepsTheRestAndNeverNull() {
+        var base = HallExtras.of("x", List.of(), List.of());
+        var with = HallExtras.withMode(base, null, List.of("a"));
+        assertEquals("", with.modeName());
+        assertEquals("x", with.runTower());
+        assertEquals(List.of("a"), with.modeProblems());
     }
 
     @Test

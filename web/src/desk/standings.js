@@ -32,6 +32,20 @@ export function teamSummary(party) {
   };
 }
 
+/**
+ * The Hall's eligibility line: whether the team fits the mode of the player's lobby. Null when there is no lobby mode to judge
+ * (the server sends an empty `modeName`), so the card shows nothing rather than a guess.
+ * @returns {{ok: boolean, text: string} | null}
+ */
+export function modeLine(extras) {
+  const name = extras?.modeName;
+  if (!name) return null;
+  const problems = extras.modeProblems ?? [];
+  if (problems.length === 0) return { ok: true, text: 'Your team fits ' + name + '.' };
+  const n = problems.length;
+  return { ok: false, text: n === 1 ? '1 Pokémon breaks ' + name + '.' : n + ' Pokémon break ' + name + '.' };
+}
+
 /** The tower the Climb button starts with: the run's tower, else the first. */
 export const defaultPick = (hall) => hall.towers.find((t) => t.id === hall.extras?.runTower)?.id || hall.towers[0]?.id || '';
 

@@ -487,7 +487,7 @@ public final class LobbyService {
     }
 
     /** How many Pokemon the lobby's tower lets a player register. */
-    private static int registerLimit(TowerLobby lobby) {
+    public static int registerLimit(TowerLobby lobby) {
         TowerContent content = TowerDefinitionRegistry.content();
         TowerDefinition tower = content.towers().get(lobby.tower());
         RulesetDefinition ruleset = RulesetResolver.forTower(content, tower, lobby.playlist());

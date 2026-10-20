@@ -42,12 +42,17 @@ public record TowerHallStatePayload(List<Destination> towers, List<Trial> trials
     }
 
     /** What the Frontier Desk Hall (P51) shows beyond the native snapshot. */
-    public record Extras(String runTower, List<Mon> party, List<Standing> standings) {
+    public record Extras(String runTower, List<Mon> party, List<Standing> standings, String modeName, List<String> modeProblems) {
         public static final Extras NONE = new Extras("", List.of(), List.of());
+        public Extras(String runTower, List<Mon> party, List<Standing> standings) {
+            this(runTower, party, standings, "", List.of());
+        }
         static final StreamCodec<RegistryFriendlyByteBuf, Extras> CODEC = StreamCodec.composite(
                 ByteBufCodecs.stringUtf8(64), Extras::runTower,
                 Mon.CODEC.apply(ByteBufCodecs.list(6)), Extras::party,
-                Standing.CODEC.apply(ByteBufCodecs.list(256)), Extras::standings, Extras::new);
+                Standing.CODEC.apply(ByteBufCodecs.list(256)), Extras::standings,
+                ByteBufCodecs.stringUtf8(64), Extras::modeName,
+                ByteBufCodecs.stringUtf8(200).apply(ByteBufCodecs.list(12)), Extras::modeProblems, Extras::new);
     }
 
     public record Destination(ResourceLocation id, String name, int floors, int milestones, boolean ascends) {

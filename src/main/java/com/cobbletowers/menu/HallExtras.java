@@ -1,6 +1,9 @@
 package com.cobbletowers.menu;
 
+import com.cobbletowers.definition.PlaylistDefinition;
 import com.cobbletowers.network.TowerHallStatePayload.Extras;
+import com.cobbletowers.runtime.PartyValidation.PartyMember;
+import com.cobbletowers.runtime.PlaylistRules;
 import com.cobbletowers.network.TowerHallStatePayload.Mon;
 import com.cobbletowers.network.TowerHallStatePayload.Standing;
 import java.util.List;
@@ -29,6 +32,21 @@ public final class HallExtras {
     public static int hpPercent(int current, int max) {
         if (max <= 0 || current <= 0) return 0;
         return Math.min(100, Math.max(1, Math.round(current * 100f / max)));
+    }
+
+    /**
+     * Why the party would not pass the lobby's mode: the playlist's clauses applied to the Pokemon the tower would register
+     * (the first {@code registerLimit}, or the ones the player chose). Same rules as the start check; empty when it passes.
+     */
+    public static List<String> modeProblems(List<PartyMember> party, int registerLimit, PlaylistDefinition.Clauses clauses) {
+        List<PartyMember> registered = party.subList(0, Math.min(party.size(), Math.max(0, registerLimit)));
+        List<String> out = PlaylistRules.problems(registered, clauses);
+        return out.size() > 12 ? List.copyOf(out.subList(0, 12)) : out;
+    }
+
+    /** The same extras with the lobby's mode and why the team does not fit it. */
+    public static Extras withMode(Extras base, String modeName, List<String> problems) {
+        return new Extras(base.runTower(), base.party(), base.standings(), modeName == null ? "" : modeName, List.copyOf(problems));
     }
 
     /** At most six Pokemon, in party order. */

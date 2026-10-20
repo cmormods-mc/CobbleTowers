@@ -12,7 +12,7 @@ import { paintPanorama } from '../art/panorama.js';
 import { request } from '../screens/Hall.js';
 import { sendTrack } from '../screens/Tracks.js';
 import { sendFeature } from '../screens/Features.js';
-import { defaultPick, prettyStatus, rankTone, residentsOf, shortName, standingOf, standingText, teamSummary } from './standings.js';
+import { defaultPick, modeLine, prettyStatus, rankTone, residentsOf, shortName, standingOf, standingText, teamSummary } from './standings.js';
 
 /** A partner sprite from the shared sheet at a width in --u units; a ball when the sheet has no picture of it. */
 export function DeskSprite({ name, w = 5 }) {
@@ -55,13 +55,14 @@ export function TopBar({ active = 'towers', back }) {
     <button class="x" aria-label="Close" onClick=${closeGui}>×</button></div>`;
 }
 
-function Team({ party }) {
+function Team({ party, mode }) {
   const sum = teamSummary(party);
   return html`<div class="dcard dcol"><div class="ch"><h3>Your team</h3><span class="lbl">${sum.text}</span></div>
     ${party.length === 0 ? html`<div class="empty">Put Pokémon in your party to climb.</div>` : html`<div class="team">${party.map((m, i) => html`<div class=${'mon' + (m.fainted ? ' out' : '')} key=${i}>
       <${DeskSprite} name=${m.species} w=${6.4} />
       <div><b>${m.name}</b><small>Lv ${m.level}${m.fainted ? html` <span class="out">Fainted</span>` : null}</small><div class="tys">${m.types.map((t) => html`<span key=${t} class=${'ty t-' + t}>${t}</span>`)}</div></div></div>`)}</div>`}
-    ${sum.fainted ? html`<div class="elig" style="background:#fdeaee;color:#9b1c38">${sum.fainted === 1 ? '1 Pokémon is fainted' : sum.fainted + ' Pokémon are fainted'}. Heal before you climb.</div>` : null}</div>`;
+    ${sum.fainted ? html`<div class="elig" style="background:#fdeaee;color:#9b1c38">${sum.fainted === 1 ? '1 Pokémon is fainted' : sum.fainted + ' Pokémon are fainted'}. Heal before you climb.</div>` : null}
+    ${mode ? html`<div class="elig" style=${mode.ok ? '' : 'background:#fff4d6;color:#7a5200'}>${mode.text}</div>` : null}</div>`;
 }
 
 function TowerRow({ t, extras, selected, onPick }) {
@@ -90,7 +91,7 @@ export function DeskHall({ hall, busy }) {
   const lobbyRole = hall.play.lobby.role;
   return html`<div class="fd"><${TopBar} />
     <div class="dbody" style="grid-template-columns:34fr 66fr;flex:1">
-      <${Team} party=${extras?.party ?? []} />
+      <${Team} party=${extras?.party ?? []} mode=${modeLine(extras)} />
       <div style="display:flex;flex-direction:column;gap:calc(var(--u) * .9);min-height:0">
         ${inRun ? html`<div class="cont"><div style="flex:1"><small>Run in progress</small><b>${runTower ? shortName(runTower.name) + ' Tower' : 'Your tower'} · ${prettyStatus(hall.runStatus)}</b></div>
           <button class="dbtn dsm" disabled=${busy || !hall.canResume} onClick=${() => request('resume')}>${hall.canResume ? 'Return to run' : 'Back at the next intermission'}</button></div>`
