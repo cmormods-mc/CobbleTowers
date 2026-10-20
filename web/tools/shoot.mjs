@@ -71,6 +71,11 @@ export const SHOTS = {
   desk_hall: { payloads: [fixture('TowerHallState')], look: 'desk' },
   desk_hall_noRun: { payloads: [fixture('TowerHallState', (d) => { d.runStatus = ''; d.canResume = false; d.extras.runTower = ''; d.extras.party[3].fainted = false; })], look: 'desk' },
   desk_hall_empty: { payloads: [fixture('TowerHallState', (d) => { d.runStatus = ''; d.canResume = false; d.extras.runTower = ''; d.extras.party = []; d.extras.standings = []; d.towers = d.towers.slice(0, 2); })], look: 'desk' },
+  desk_hall_mode: { payloads: [fixture('TowerHallState', (d) => { d.extras.modeName = 'Monotype'; d.extras.modeProblems = ['Gliscor is not a Fire type', 'Lapras is not a Fire type', 'Ludicolo is not a Fire type']; })], look: 'desk' },
+  desk_hall_modeok: { payloads: [fixture('TowerHallState', (d) => { d.extras.modeName = 'Level Cap 50'; d.extras.modeProblems = []; })], look: 'desk' },
+  desk_lobby_rosters: { payloads: [fixture('TowerHallState'), fixture('PlayState', (d) => { d.lobby.hostName = 'Ash'; d.lobby.role = 3; d.lobby.members = [{ name: 'WebPlayer', accepted: true, ready: false }, { name: 'Misty', accepted: true, ready: false }];
+    const mon = (n, sp, ty) => ({ name: n, species: sp, level: 50, fainted: false, hp: 100, types: ty });
+    d.lobby.options.rosters = [{ name: 'Ash', team: [mon('Pikachu', 'pikachu', ['electric']), mon('Charizard', 'charizard', ['fire']), mon('Lapras', 'lapras', ['water'])] }, { name: 'Misty', team: [mon('Starmie', 'starmie', ['water']), mon('Gyarados', 'gyarados', ['water'])] }]; })], look: 'desk' },
   desk_hall_pick: { payloads: [fixture('TowerHallState')], look: 'desk', steps: async (page) => { await page.click('.trow >> nth=2'); } },
   hall_four: { payloads: [fixture('TowerHallState', (d) => { d.towers = d.towers.slice(0, 4); })] },
   hall_social: { payloads: [fixture('TowerHallState')], steps: async (page) => { await page.click('text=Social >> nth=0'); } },
