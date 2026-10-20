@@ -277,4 +277,34 @@
 .fd .dtile.open { animation: dpulse 2.2s ease-in-out infinite; }
 .fd .dtile .dtick { animation: dbounce .4s cubic-bezier(.2,.9,.3,1.2) both; }
 
+/* route map: the chosen line draws itself, your party breathes, stops arrive in order, a milestone glows slowly */
+@keyframes ddraw { from { stroke-dasharray: 0 3000; } to { stroke-dasharray: 3000 0; } }
+@keyframes dbreathe { 0%, 100% { scale: 1; } 50% { scale: 1.07; } }
+@keyframes dglow { 0%, 100% { box-shadow: 0 0 0 0 rgba(214,38,78,0); } 50% { box-shadow: 0 0 calc(var(--u) * 1.6) calc(var(--u) * .3) rgba(214,38,78,.45); } }
+@keyframes dslide { from { opacity: 0; translate: calc(var(--u) * -2) 0; } }
+.fd .dedges path.on { animation: ddraw .6s ease-out both; }
+.fd .dedges path.on:nth-child(2n) { animation-delay: .12s; } .fd .dedges path.on:nth-child(3n) { animation-delay: .24s; }
+.fd .dyou { animation: dbreathe 3s ease-in-out infinite; }
+.fd .dstop { animation: dpop .24s ease-out both; }
+.fd .dstop:nth-of-type(2n) { animation-delay: .05s; } .fd .dstop:nth-of-type(3n) { animation-delay: .1s; }
+.fd .dstop.now { transition: scale .15s ease-out, background-color .15s, box-shadow .15s; }
+.fd .dstop.now:hover:not(:disabled) { scale: 1.04; }
+.fd .dstop.ahead.rk-relic .dkind { animation: dglow 4s ease-in-out infinite; }
+
+/* Hall and lobby: rows lift and their landscape drifts, sprites bob on a staggered cycle, seats slide in, health bars move */
+.fd .trow, .fd .dbtn, .fd .mc, .fd .dmc, .fd .dgood { transition: translate .15s ease-out, box-shadow .15s ease-out; }
+.fd .trow:hover { translate: 0 calc(var(--u) * -.3); }
+.fd .trow .pbox .dpano { transition: scale .35s ease-out; } .fd .trow:hover .pbox .dpano { scale: 1.07; }
+.fd .team .mon .sp { animation: dfloat 3.2s ease-in-out infinite; }
+.fd .team .mon:nth-child(2n) .sp { animation-delay: -.8s; } .fd .team .mon:nth-child(3n) .sp { animation-delay: -1.6s; } .fd .team .mon:nth-child(5n) .sp { animation-delay: -2.4s; }
+.fd .dseat { animation: dslide .28s ease-out both; }
+.fd .hp i, .fd .dhp i { transition: width .4s ease-out, background-color .25s; }
+
+/* small touches: a springy press, pills that ease their highlight, a short fade onto each page */
+.fd .dbtn:not(:disabled):active, .fd .dstop.now:not(:disabled):active { translate: 0 calc(var(--u) * .25); transition-duration: .06s; }
+.fd .dbtn:not(:disabled):hover { translate: 0 calc(var(--u) * -.1); }
+.fd .dbtn { transition: translate .14s cubic-bezier(.3,1.7,.5,1), box-shadow .14s; }
+.fd .pills a { transition: background-color .18s, color .18s; }
+.fd .dbody { animation: dpop .2s ease-out both; }
+
 @media (prefers-reduced-motion: reduce) { .fd *, .fd *::before, .fd *::after { animation: none !important; transition: none !important; } }
