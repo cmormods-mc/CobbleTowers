@@ -75,8 +75,8 @@ export function App() {
   useNoticeTimeout(notice, () => update((s) => (s.notice === notice ? { ...s, notice: null } : s)));
 
   // the Frontier Desk look has its own toast, on the screens it draws
-  const deskNow = look === 'desk' && !reward && !(vendorOpen && vendor) && (screen === 'intermission' ? !!inter
-    : screen === 'hall' && (view === 'lobby' ? !!play : (view === 'hall' ? !!hall : view === 'tower' || view === 'trial' ? !!hall : view === 'mastery' ? !!mast : view === 'party' ? !!reg : true)));
+  const deskNow = look === 'desk' && (!!reward || (vendorOpen && !!vendor) || (screen === 'intermission' ? !!inter
+    : screen === 'hall' && (view === 'lobby' ? !!play : (view === 'hall' ? !!hall : view === 'tower' || view === 'trial' ? !!hall : view === 'mastery' ? !!mast : view === 'party' ? !!reg : true))));
   const closeRewardNow = () => { update(closeReward); act('IntermissionAction', { action: 'REFRESH', argument: 0 }); };
 
   return html`
