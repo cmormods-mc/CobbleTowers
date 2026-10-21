@@ -241,7 +241,7 @@
 /* the rental cards keep their own type gems and level text: the desk's chip and tile classes must not reach them */
 .fd .dtable .ty { display: flex; background: none; padding: 0; border-radius: 0; font: inherit; text-transform: none; color: inherit; letter-spacing: normal; }
 
-/* ---- motion (P51 flair): short, quiet, and only on things that mean something. `html.calm` (Settings > Motion) and the browser's reduce-motion setting turn all of it off. ---- */
+/* ---- motion (P51 flair): short, quiet, and only on things that mean something, and loops run a few cycles then rest: an idle page must not repaint forever (the browser draws off-screen, every repaint is a texture upload). `html.calm` (Settings > Motion) and the browser's reduce-motion setting turn all of it off. ---- */
 @keyframes dfloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 calc(var(--u) * -.7); } }
 @keyframes dglint { 0%, 55% { background-position: 160% 0; } 100% { background-position: -60% 0; } }
 @keyframes dsweep { 0% { background-position: -80% 0; } 100% { background-position: 180% 0; } }
@@ -254,12 +254,12 @@
 
 /* the lapis table: a faint band of light drifts across it, and the sealed pack floats and glints */
 .fd .dtable::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-  background: linear-gradient(105deg, transparent 35%, rgba(255,226,150,.07) 50%, transparent 65%) 0 0 / 60% 100% no-repeat; animation: dsweep 14s linear infinite; }
+  background: linear-gradient(105deg, transparent 35%, rgba(255,226,150,.07) 50%, transparent 65%) 0 0 / 60% 100% no-repeat; animation: dsweep 9s linear 1 both; }
 .fd .dstage2 { position: relative; z-index: 1; }
-.fd .dtable .pack:not(.tear) { animation: dfloat 3.6s ease-in-out infinite; }
+.fd .dtable .pack:not(.tear) { animation: dfloat 3.6s ease-in-out 3; }
 .fd .dtable .pack:not(.tear)::after { content: ""; position: absolute; left: 4%; right: 4%; bottom: 2%; top: calc(16px * var(--ps, 2)); pointer-events: none; mix-blend-mode: screen;
-  background: linear-gradient(115deg, transparent 38%, rgba(255,236,170,.5) 50%, transparent 62%) 160% 0 / 280% 100% no-repeat; animation: dglint 4.2s ease-in-out infinite; }
-.fd .dstage2 .dbtn:not(.gh):not(:disabled) { animation: dring 2.4s ease-in-out infinite; }
+  background: linear-gradient(115deg, transparent 38%, rgba(255,236,170,.5) 50%, transparent 62%) 160% 0 / 280% 100% no-repeat; animation: dglint 4.2s ease-in-out 2; }
+.fd .dstage2 .dbtn:not(.gh):not(:disabled) { animation: dring 2.4s ease-in-out 3; }
 .fd .dteam > * { animation: drise .55s cubic-bezier(.2,.8,.3,1) both; }
 .fd .dteam > :nth-child(2) { animation-delay: .09s; } .fd .dteam > :nth-child(3) { animation-delay: .18s; } .fd .dteam > :nth-child(4) { animation-delay: .27s; }
 .fd .dteam > :nth-child(5) { animation-delay: .36s; } .fd .dteam > :nth-child(6) { animation-delay: .45s; }
@@ -274,7 +274,7 @@
 .fd .dgrant > b, .fd .dgrant > span { animation: dpop .3s ease-out .22s both; }
 
 /* progress: a claimable tile breathes, and a tick pops when a tile becomes claimed */
-.fd .dtile.open { animation: dpulse 2.2s ease-in-out infinite; }
+.fd .dtile.open { animation: dpulse 2.2s ease-in-out 4; }
 .fd .dtile .dtick { animation: dbounce .4s cubic-bezier(.2,.9,.3,1.2) both; }
 
 /* route map: the chosen line draws itself, your party breathes, stops arrive in order, a milestone glows slowly */
@@ -284,19 +284,18 @@
 @keyframes dslide { from { opacity: 0; translate: calc(var(--u) * -2) 0; } }
 .fd .dedges path.on { animation: ddraw .6s ease-out both; }
 .fd .dedges path.on:nth-child(2n) { animation-delay: .12s; } .fd .dedges path.on:nth-child(3n) { animation-delay: .24s; }
-.fd .dyou { animation: dbreathe 3s ease-in-out infinite; }
+.fd .dyou { animation: dbreathe 2.6s ease-in-out 2; }
 .fd .dstop { animation: dpop .24s ease-out both; }
 .fd .dstop:nth-of-type(2n) { animation-delay: .05s; } .fd .dstop:nth-of-type(3n) { animation-delay: .1s; }
 .fd .dstop.now { transition: scale .15s ease-out, background-color .15s, box-shadow .15s; }
 .fd .dstop.now:hover:not(:disabled) { scale: 1.04; }
-.fd .dstop.ahead.rk-relic .dkind { animation: dglow 4s ease-in-out infinite; }
+.fd .dstop.ahead.rk-relic .dkind { animation: dglow 3s ease-in-out 2; }
 
 /* Hall and lobby: rows lift and their landscape drifts, sprites bob on a staggered cycle, seats slide in, health bars move */
 .fd .trow, .fd .dbtn, .fd .mc, .fd .dmc, .fd .dgood { transition: translate .15s ease-out, box-shadow .15s ease-out; }
 .fd .trow:hover { translate: 0 calc(var(--u) * -.3); }
 .fd .trow .pbox .dpano { transition: scale .35s ease-out; } .fd .trow:hover .pbox .dpano { scale: 1.07; }
-.fd .team .mon .sp { animation: dfloat 3.2s ease-in-out infinite; }
-.fd .team .mon:nth-child(2n) .sp { animation-delay: -.8s; } .fd .team .mon:nth-child(3n) .sp { animation-delay: -1.6s; } .fd .team .mon:nth-child(5n) .sp { animation-delay: -2.4s; }
+.fd .team .mon:hover .sp { animation: dfloat 1.4s ease-in-out infinite; }
 .fd .dseat { animation: dslide .28s ease-out both; }
 .fd .hp i, .fd .dhp i { transition: width .4s ease-out, background-color .25s; }
 
@@ -306,5 +305,8 @@
 .fd .dbtn { transition: translate .14s cubic-bezier(.3,1.7,.5,1), box-shadow .14s; }
 .fd .pills a { transition: background-color .18s, color .18s; }
 .fd .dbody { animation: dpop .2s ease-out both; }
+
+/* a hidden page does not animate (main.js sets html.paused) */
+html.paused .fd *, html.paused .fd *::before, html.paused .fd *::after { animation-play-state: paused !important; }
 
 @media (prefers-reduced-motion: reduce) { .fd *, .fd *::before, .fd *::after { animation: none !important; transition: none !important; } }

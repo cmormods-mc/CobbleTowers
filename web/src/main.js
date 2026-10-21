@@ -14,6 +14,7 @@ update((s) => setLook(s, load().look));
 if (isHud) document.documentElement.classList.add('hud-mode');
 render(isHud ? html`<${HudApp} />` : html`<${App} />`, document.getElementById(isHud ? 'hud-root' : 'main-root'));
 connect(dispatch);
+document.addEventListener('visibilitychange', () => document.documentElement.classList.toggle('paused', document.visibilityState === 'hidden'));
 if (!isHud) watchServer((offline) => update((s) => (s.offline === offline ? s : { ...s, offline })));
 
 // For tests and for poking a live page from the console: feed a payload as if the server had sent it.

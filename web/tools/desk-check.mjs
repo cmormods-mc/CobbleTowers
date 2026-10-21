@@ -419,6 +419,20 @@ async function open(look, size = { width: 1280, height: 720 }) {
   check('before the server says anything the Desk waiting card shows', /Waiting for the tower/.test(await w.locator('.fd').innerText()));
   await w.close();
 }
+// 6b. an idle page goes quiet: the browser draws off-screen, so a loop that never ends means a texture upload every frame, forever
+{
+  const running = (p) => p.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running').length);
+  const p = await open('desk');
+  await p.send('TowerHallState', fixture('TowerHallState'));
+  await p.waitForSelector('.fd .trow');
+  await p.waitForTimeout(2500);
+  check('the Hall runs no animation once it has settled', (await running(p)) === 0, String(await running(p)));
+  await p.send('IntermissionState', fixture('IntermissionState'));
+  await p.waitForSelector('.fd .dstop.now');
+  await p.waitForTimeout(6500);
+  check('the route map runs no animation after its entrance', (await running(p)) === 0, String(await running(p)));
+  await p.close();
+}
 // 6. sizes: nothing overflows the window
 for (const [w, h] of [[800, 500], [1280, 720], [1920, 1080], [2560, 1080]]) {
   const p = await open('desk', { width: w, height: h });
