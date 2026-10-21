@@ -1,6 +1,6 @@
 /* Jersey 15 (SIL OFL): a strict pixel-grid font. The mod's own Pixelify Sans blurs its small "C" into an "O" and draws the digit 5 like an S
    below about 30px, which reads badly on a page. size-adjust makes Jersey's smaller body match the sizes the layout was drawn at. */
-@font-face { font-family: "Jersey"; src: url(assets/font/Jersey15-Regular.ttf); size-adjust: 125%; font-display: block; }
+@font-face { font-family: "Jersey"; src: url(assets/font/Jersey15-Regular.woff2) format("woff2"); size-adjust: 125%; font-display: block; }
 
 :root {
   --dark: #211510; --brown: #67452c; --bronze: #a77b46; --burg: #773c38; --parch: #e5cca1; --cream: #f8e7c2;

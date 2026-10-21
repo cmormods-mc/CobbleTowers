@@ -419,6 +419,24 @@ async function open(look, size = { width: 1280, height: 720 }) {
   check('before the server says anything the Desk waiting card shows', /Waiting for the tower/.test(await w.locator('.fd').innerText()));
   await w.close();
 }
+// 6a. the shipped assets decode: both fonts load from their WOFF2 subsets and the sprite sheet (lossless WebP) paints a sprite
+{
+  const p = await open('desk');
+  const failures = [];
+  p.on('requestfailed', (r) => failures.push(r.url()));
+  await p.send('TowerHallState', fixture('TowerHallState'));
+  await p.waitForSelector('.fd .mon .sp');
+  const fonts = await p.evaluate(async () => { await Promise.all([document.fonts.load('16px Outfit'), document.fonts.load('16px Jersey')]); return [...document.fonts].map((f) => f.family + ':' + f.status).join(','); });
+  check('both fonts load', /Outfit[^,]*:loaded/.test(fonts) && /Jersey[^,]*:loaded/.test(fonts) && !/error/.test(fonts), fonts);
+  const sprite = await p.evaluate(async () => {
+    const url = getComputedStyle(document.querySelector('.fd .mon .sp')).backgroundImage.match(/url\("?([^")]+)"?\)/)[1];
+    const img = new Image(); img.src = url; await img.decode();
+    return [url.split('/').pop(), img.naturalWidth, img.naturalHeight];
+  });
+  check('the sprite sheet decodes as a 512x4096 WebP', sprite.join() === 'partners.webp,512,4096', sprite.join());
+  check('no asset failed to load', failures.length === 0, failures.join(' '));
+  await p.close();
+}
 // 6b. an idle page goes quiet: the browser draws off-screen, so a loop that never ends means a texture upload every frame, forever
 {
   const running = (p) => p.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running').length);

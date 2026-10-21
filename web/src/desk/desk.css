@@ -1,6 +1,6 @@
 /* Frontier Desk (P51): light, clean, team-first. One unit, --u, is 1% of the largest 16:9 box that fits the window, so sizes scale
    together; the layout itself is flex and grid and fills the window. Scoped under .fd, so the native look is untouched. */
-@font-face { font-family: "Outfit"; src: url(assets/font/Outfit-Variable.ttf); font-weight: 100 900; font-display: block; }
+@font-face { font-family: "Outfit"; src: url(assets/font/Outfit-Variable.woff2) format("woff2"); font-weight: 100 900; font-display: block; }
 .fd { --u: min(1vw, 1.7778vh); position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; overflow: hidden; line-height: 1.25; user-select: none; }
 .fd * { box-sizing: border-box; image-rendering: auto; }
 .fd .sprite-em, .fd .sp, .fd canvas, .fd .dico { image-rendering: pixelated; }
@@ -62,7 +62,7 @@
 .fd .dlv.now { border-color:var(--aline); background:var(--abg); color:var(--ink); box-shadow:0 0 0 calc(var(--u) * .3) var(--aglow); } .fd .dlv.lock { opacity:.55; }
 
 
-.fd .sp { display: inline-block; flex: none; aspect-ratio: 3 / 2; background: url(assets/partners.png) no-repeat;
+.fd .sp { display: inline-block; flex: none; aspect-ratio: 3 / 2; background: url(assets/partners.webp) no-repeat;
   background-size: calc(var(--aw) / var(--w) * 100%) calc(var(--ah) / var(--h) * 100%);
   background-position: calc(var(--x) / (var(--aw) - var(--w)) * 100%) calc(var(--y) / (var(--ah) - var(--h)) * 100%); }
 .fd .sp.ball { aspect-ratio: 1; background: radial-gradient(circle at 35% 30%, #fff 0 11%, #e04040 13% 48%, #8a1c1c 50%); border-radius: 50%; }

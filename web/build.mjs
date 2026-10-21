@@ -6,6 +6,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
+import { PNG } from 'pngjs';
+import encodeWebp, { init as initWebp } from '@jsquash/webp/encode.js';
 import { genData } from './tools/gen-data.mjs';
 import { packAtlas } from './tools/atlas.mjs';
 import { iconSheet, ICON_NAMES } from './tools/native-art.mjs';
@@ -26,7 +28,10 @@ fs.writeFileSync(path.join(here, 'src/gen/data.js'), 'export default ' + JSON.st
 // every partner sprite (1,025), not just the species the data names: the Hall draws whatever is in a player's party (P51)
 const sprites = fs.readdirSync(path.join(res, 'textures/gui/partners')).filter((n) => n.endsWith('.png')).map((n) => n.slice(0, -4)).sort();
 const sheet = packAtlas(sprites.map((s) => ({ name: s, file: path.join(res, 'textures/gui/partners', s + '.png') })), 512);
-fs.writeFileSync(path.join(out, 'assets/partners.png'), sheet.png);
+// shipped as lossless WebP (777 KB as PNG, 207 KB as WebP, every pixel identical); the page and WebGUI's asset store both know image/webp
+await initWebp(await WebAssembly.compile(fs.readFileSync(path.join(here, 'node_modules/@jsquash/webp/codec/enc/webp_enc_simd.wasm'))));
+const raw = PNG.sync.read(sheet.png);
+fs.writeFileSync(path.join(out, 'assets/partners.webp'), Buffer.from(await encodeWebp({ data: new Uint8ClampedArray(raw.data), width: raw.width, height: raw.height }, { lossless: 1, exact: 1, quality: 100, method: 4 })));
 fs.writeFileSync(path.join(here, 'src/gen/atlas.js'), 'export const ATLAS = ' + JSON.stringify({ width: sheet.width, height: sheet.height, map: sheet.map }) + ';\n');
 
 // ---- the mod's own item pictures (armor, key, trim template): third-party items (Cobblemon, vanilla) are not redistributed and show a gift
@@ -41,9 +46,9 @@ for (const dir of ['pixel', 'byzantine']) {
   for (const f of fs.readdirSync(path.join(res, 'textures/gui', dir)).filter((n) => n.endsWith('.png'))) copy(path.join(res, 'textures/gui', dir, f), `assets/gui/${dir}/${f}`);
 }
 copy(path.join(res, 'textures/gui/raid_points.png'), 'assets/gui/raid_points.png');
-copy(path.join(here, 'fonts/Jersey15-Regular.ttf'), 'assets/font/Jersey15-Regular.ttf');
+copy(path.join(here, 'fonts/Jersey15-Regular.woff2'), 'assets/font/Jersey15-Regular.woff2');
 copy(path.join(here, 'fonts/Jersey15-OFL.txt'), 'assets/font/Jersey15-OFL.txt');
-copy(path.join(here, 'fonts/Outfit-Variable.ttf'), 'assets/font/Outfit-Variable.ttf');
+copy(path.join(here, 'fonts/Outfit-Variable.woff2'), 'assets/font/Outfit-Variable.woff2');
 copy(path.join(here, 'fonts/Outfit-OFL.txt'), 'assets/font/Outfit-OFL.txt');
 
 // ---- the mod's procedural art (icons, landscapes), drawn here the way the native screens draw it

@@ -29,7 +29,7 @@
 .eff .dot { width: 12px; height: 12px; background: var(--c); border: 2px solid var(--dark); flex: none; }
 
 .sprite { display: inline-block; flex: none; background-repeat: no-repeat; width: calc(var(--w) * var(--s, 1) * 1px); height: calc(var(--h) * var(--s, 1) * 1px);
-  background-image: url(assets/partners.png); background-size: calc(var(--aw) * var(--s, 1) * 1px) calc(var(--ah) * var(--s, 1) * 1px);
+  background-image: url(assets/partners.webp); background-size: calc(var(--aw) * var(--s, 1) * 1px) calc(var(--ah) * var(--s, 1) * 1px);
   background-position: calc(var(--x) * var(--s, 1) * -1px) calc(var(--y) * var(--s, 1) * -1px); }
 
 .veil { position: absolute; inset: 0; background: rgba(10, 5, 3, .72); display: grid; place-items: center; z-index: 20; animation: veil .18s ease-out both; }
