@@ -2,15 +2,13 @@ plugins {
     id 'fabric-loom' version '1.13.6'
 }
 
-// `-Pdev` builds the test jar: the Test Tower, the test commands and the client screenshot/remote tooling are in it, and
-// the name ends in -dev. The default build is the release and leaves them out.
+// `-Pdev` builds the test jar: the Test Tower and the test commands are in it, and the name ends in -dev. The default build is
+// the release and leaves them out.
+// The jar is server-only: the web UI (WebGUI) is the only UI, so there are no client classes and the mod file says "server".
+// The old in-game screens are kept, unbuilt, in archive/native-ui.
 def devBuild = project.hasProperty('dev')
-// `-Pserveronly` builds the server jar of the P43 goal: no client classes and a mod file that says "server", so it can sit on a
-// server that players join with Cobblemon and WebGUI alone. The default build still carries the native client screens.
-def serverOnly = project.hasProperty('serveronly')
 version = '0.29.1-cobblemon-182'
 if (devBuild) version = version + '-dev'
-if (serverOnly) version = version + '-server'
 group = 'com.cobbletowers'
 
 base {
@@ -19,19 +17,6 @@ base {
 
 loom {
     accessWidenerPath = file('src/main/resources/cobbletowers.accesswidener')
-    // First client-only code this mod has (P11): a spectator HUD and a reward reveal screen. Every
-    // phase before this was server-authoritative logic with no client presentation at all, so there
-    // was nothing for a split source set to separate out until now.
-    splitEnvironmentSourceSets()
-
-    // Without this, `client`'s compiled output never reaches the packaged jar -- splitting the source
-    // set only separates the compile units, it does not bundle them back together on its own.
-    mods {
-        register('cobbletowers') {
-            sourceSet sourceSets.main
-            sourceSet sourceSets.client
-        }
-    }
 }
 
 repositories {
@@ -106,14 +91,12 @@ java {
 }
 
 // Test-only code and data, left out of a release: see Dev.java.
-def devOnlyClasses = ['com/cobbletowers/dev/**', 'com/cobbletowers/client/ClientDevTools*', 'com/cobbletowers/client/ScreenshotHarness*',
-        'com/cobbletowers/client/ClientRemote*', 'com/cobbletowers/client/FeatureScreenSamples*', 'com/cobbletowers/client/FrameSampler*']
+def devOnlyClasses = ['com/cobbletowers/dev/**']
 def devOnlyData = ['data/cobbletowers/cobbletowers/towers/test.json', 'data/cobbletowers/cobbletowers/floors/test/**',
         'data/cobbletowers/structure/poke_tower.nbt']
 
 tasks.named('jar') {
     if (!devBuild) exclude devOnlyClasses
-    if (serverOnly) exclude 'com/cobbletowers/client/**'
 }
 
 processResources {
@@ -122,10 +105,8 @@ processResources {
     // which Gradle deprecates and the configuration cache forbids.
     def modVersion = project.version
     inputs.property 'version', modVersion
-    def modEnvironment = serverOnly ? 'server' : '*'
-    def clientEntrypoint = serverOnly ? '' : ', "client": ["com.cobbletowers.client.CobbleTowersClient"]'
-    inputs.property 'environment', modEnvironment
+    inputs.property 'environment', 'server'
     filesMatching('fabric.mod.json') {
-        expand version: modVersion, environment: modEnvironment, clientEntrypoint: clientEntrypoint
+        expand version: modVersion, environment: 'server'
     }
 }

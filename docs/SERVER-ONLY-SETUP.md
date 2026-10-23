@@ -3,8 +3,7 @@
 Players join with **Cobblemon, WebGUI and Rinku** only. CobbleTowers stays on the server.
 
 ## Build
-- `./gradlew build -Pserveronly` makes `CobbleTowers-<version>-server.jar`: no `com.cobbletowers.client` classes, `"environment": "server"`, no client entrypoint.
-- `./gradlew build` still makes the normal jar, which also carries the native client screens (for players who have it, and for `fallback` mode).
+- `./gradlew build` makes `CobbleTowers-<version>.jar`: no `com.cobbletowers.client` classes, `"environment": "server"`, no client entrypoint. It is the only build; the old native screens are archived in `archive/native-ui`.
 - Smoke rigs and bots need `-Pdev` (see `docs/design/...`); the server-only jar is a release artifact. Checked 2026-10-14: the server-only jar boots on the Fabric server, loads, and reaches "Done".
 
 ## Server `mods/`

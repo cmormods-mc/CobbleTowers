@@ -14,7 +14,7 @@
   "environment": "${environment}",
   "entrypoints": {
     "preLaunch": ["com.cobbletowers.TowerPreLaunch"],
-    "main": ["com.cobbletowers.CobbleTowers"]${clientEntrypoint}
+    "main": ["com.cobbletowers.CobbleTowers"]
   },
   "accessWidener": "cobbletowers.accesswidener",
   "mixins": ["mixins/cobbletowers.mixins.json"],
