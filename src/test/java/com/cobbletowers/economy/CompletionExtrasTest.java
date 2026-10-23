@@ -23,6 +23,7 @@ class CompletionExtrasTest {
     }
 
     @Test
+    @org.junit.jupiter.api.Disabled("armor sets are archived (archive/armor-sets)")
     @DisplayName("armor and booster packs come from the tower's own boss table, the same for a retry")
     void picksFromTheTowersTableAndIsStable() {
         var table = table("tideforge");
@@ -43,6 +44,7 @@ class CompletionExtrasTest {
     }
 
     @Test
+    @org.junit.jupiter.api.Disabled("armor sets are archived (archive/armor-sets)")
     @DisplayName("every shipped tower can pay armor and a pack from a completion")
     void everyTowerOffersBoth() {
         for (String tower : List.of("tideforge", "rootvale", "duskvale")) {

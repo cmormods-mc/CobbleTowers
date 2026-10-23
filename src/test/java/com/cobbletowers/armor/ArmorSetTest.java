@@ -113,6 +113,7 @@ class ArmorSetTest {
     }
 
     @Test
+    @org.junit.jupiter.api.Disabled("armor sets are archived: the reward tables no longer drop them (archive/armor-sets)")
     void theBundledRewardTablesDropEverySetWhereItsTierSaysAndNowhereElse() throws IOException {
         for (String set : SET_IDS) {
             String tower = TOWER_AND_TIER.get(set)[0];
