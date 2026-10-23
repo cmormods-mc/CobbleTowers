@@ -1,6 +1,6 @@
 # Release notes (draft, updated 2026-10-14)
 
-Version `0.29.1-cobblemon-182`. Covers the work after commit `9688678`. Items marked **(unverified)** are written but have not been seen in a real client or a full
+Version `1.0.0+fabric-1.21.1` (was `0.29.1-cobblemon-182`). Covers the work after commit `9688678`. Items marked **(unverified)** are written but have not been seen in a real client or a full
 human run; do not publish them as done until the checklist in `docs/RELEASE-CHECKLIST.md` is ticked.
 
 ## For players
