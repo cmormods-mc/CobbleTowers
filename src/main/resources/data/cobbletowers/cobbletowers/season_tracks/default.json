@@ -5,16 +5,24 @@
     {
       "grants": [
         {
-          "item": "cobbletowers:cobble_dollar",
-          "amount": 50
+          "item": "cobblemon:ultra_ball",
+          "amount": 15
         }
       ]
     },
     {
       "grants": [
         {
-          "item": "cobbletowers:cobble_dollar",
-          "amount": 50
+          "item": "cobblemon:rare_candy",
+          "amount": 3
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon:hyper_potion",
+          "amount": 5
         }
       ]
     },
@@ -23,14 +31,6 @@
         {
           "item": "cobbleraids:raid_points",
           "amount": 25
-        }
-      ]
-    },
-    {
-      "grants": [
-        {
-          "item": "cobbletowers:cobble_dollar",
-          "amount": 75
         }
       ]
     },
@@ -59,14 +59,30 @@
       "grants": [
         {
           "item": "cobbletowers:cobble_dollar",
-          "amount": 75
+          "amount": 750
         }
       ]
     },
     {
       "grants": [
         {
-          "item": "cobblemon:exp_candy_xl",
+          "item": "cobblemon:rare_candy",
+          "amount": 5
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon:full_restore",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobbletowers:tower_key",
           "amount": 1
         }
       ]
@@ -74,24 +90,8 @@
     {
       "grants": [
         {
-          "item": "cobbleraids:raid_points",
-          "amount": 25
-        }
-      ]
-    },
-    {
-      "grants": [
-        {
-          "item": "cobblemon-cards:booster_pack",
-          "amount": 1
-        }
-      ]
-    },
-    {
-      "grants": [
-        {
-          "item": "cobbletowers:cobble_dollar",
-          "amount": 100
+          "item": "cobblemon:revive",
+          "amount": 3
         }
       ]
     },
@@ -111,16 +111,16 @@
     {
       "grants": [
         {
-          "item": "cobblemon:exp_candy_xl",
-          "amount": 1
+          "item": "cobblemon:ultra_ball",
+          "amount": 15
         }
       ]
     },
     {
       "grants": [
         {
-          "item": "cobbletowers:cobble_dollar",
-          "amount": 100
+          "item": "cobblemon:hyper_potion",
+          "amount": 5
         }
       ]
     },
@@ -137,15 +137,15 @@
       "grants": [
         {
           "item": "cobbleraids:raid_points",
-          "amount": 50
+          "amount": 25
         }
       ]
     },
     {
       "grants": [
         {
-          "item": "cobbletowers:cobble_dollar",
-          "amount": 100
+          "item": "cobblemon:max_potion",
+          "amount": 3
         }
       ]
     },
@@ -165,40 +165,40 @@
     {
       "grants": [
         {
-          "item": "cobblemon:exp_candy_xl",
-          "amount": 1
-        }
-      ]
-    },
-    {
-      "grants": [
-        {
-          "item": "cobblemon-cards:booster_pack",
-          "amount": 1
-        }
-      ]
-    },
-    {
-      "grants": [
-        {
           "item": "cobbletowers:cobble_dollar",
-          "amount": 150
+          "amount": 750
         }
       ]
     },
     {
       "grants": [
         {
-          "item": "cobbleraids:raid_points",
-          "amount": 50
+          "item": "cobbletowers:tower_key",
+          "amount": 1
         }
       ]
     },
     {
       "grants": [
         {
-          "item": "cobblemon:exp_candy_xl",
-          "amount": 2
+          "item": "cobblemon:full_restore",
+          "amount": 3
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon:ultra_ball",
+          "amount": 15
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon:revive",
+          "amount": 4
         }
       ]
     },
@@ -218,24 +218,16 @@
     {
       "grants": [
         {
-          "item": "cobbletowers:cobble_dollar",
-          "amount": 150
+          "item": "cobblemon:hyper_potion",
+          "amount": 6
         }
       ]
     },
     {
       "grants": [
         {
-          "item": "cobbleraids:raid_points",
-          "amount": 50
-        }
-      ]
-    },
-    {
-      "grants": [
-        {
-          "item": "cobblemon:exp_candy_xl",
-          "amount": 2
+          "item": "cobblemon:max_revive",
+          "amount": 3
         }
       ]
     },
@@ -243,7 +235,15 @@
       "grants": [
         {
           "item": "cobbletowers:cobble_dollar",
-          "amount": 200
+          "amount": 750
+        }
+      ]
+    },
+    {
+      "grants": [
+        {
+          "item": "cobblemon:max_potion",
+          "amount": 4
         }
       ]
     },

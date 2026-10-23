@@ -146,10 +146,10 @@ class SeasonPointsTest {
                 }
             }
         }
-        assertEquals(1050, dollars);
-        assertEquals(200, raidPoints);
-        assertEquals(4, packs, "the halfway step pays an Ascension Core in place of the fifth pack");
-        assertEquals(7, candy);
+        assertEquals(2250, dollars);
+        assertEquals(50, raidPoints);
+        assertEquals(2, packs, "packs at steps 5 and 25 only");
+        assertEquals(0, candy, "XL candies were replaced by Rare Candies and heals");
         long banners = track.steps().stream().flatMap(step -> step.cosmetics().stream()).filter(name -> name.startsWith("banner_")).count();
         assertEquals(3, banners);
         SeasonTrackDefinition.Step finale = track.steps().get(29);
