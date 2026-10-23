@@ -50,6 +50,9 @@ public final class CobbleTowers implements ModInitializer {
         // tree down with it.
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             try {
+                // First, so the merged /cobbletowers root is operator-only: players never see it, only /tower.
+                dispatcher.register(net.minecraft.commands.Commands.literal("cobbletowers")
+                        .requires(source -> source.hasPermission(2)));
                 DefinitionsCommand.register(dispatcher);
                 RunsCommand.register(dispatcher);
                 com.cobbletowers.command.ArmorCommand.register(dispatcher);

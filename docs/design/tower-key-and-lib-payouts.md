@@ -60,4 +60,4 @@ slots needs its own blacklist for `cobbletowers:tower_key`. Mixins are compile-c
 
 Free run rule: available when the stored day is anything other than today (a clock moved back still frees a run).
 
-Typed commands (2026-10-23): the screens do everything the commands did, so `/tower` subcommands other than `menu`, `run`, `lobby`, `help`, `leave`, `accept`, `decline` and `report` need operator level 2 (`CommandGate`, applied in `PlayCommand`). The admin trees were already op-only. Chat hints now point at the Hall.
+Typed commands (2026-10-23): the screens do everything the commands did, so `/tower` subcommands other than `help`, `leave`, `accept`, `decline` and `report` (bare `/tower` opens the Hall; the `/cobbletowers` root is op-only, so players see only `/tower`) need operator level 2 (`CommandGate`, applied in `PlayCommand`). The admin trees were already op-only. Chat hints now point at the Hall.

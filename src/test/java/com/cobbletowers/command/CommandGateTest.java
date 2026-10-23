@@ -35,4 +35,25 @@ class CommandGateTest {
         assertTrue(vote.canUse(true));
         assertTrue(vote.getChild("deep") != null);
     }
+
+    @Test
+    @DisplayName("a player reaches an open subcommand through the /tower alias even though the /cobbletowers root is op-only")
+    void aliasOverOpRoot() throws Exception {
+        var dispatcher = new com.mojang.brigadier.CommandDispatcher<Boolean>();
+        dispatcher.register(LiteralArgumentBuilder.<Boolean>literal("cobbletowers").requires(op -> op));
+        var root = dispatcher.register(LiteralArgumentBuilder.<Boolean>literal("cobbletowers")
+                .then(CommandGate.opOnlyExcept(LiteralArgumentBuilder.<Boolean>literal("play")
+                        .then(LiteralArgumentBuilder.<Boolean>literal("help").executes(c -> 7))
+                        .then(LiteralArgumentBuilder.<Boolean>literal("start").executes(c -> 8)).build(),
+                        Set.of("help"), Boolean::booleanValue)));
+        dispatcher.register(LiteralArgumentBuilder.<Boolean>literal("tower").executes(c -> 1).redirect(root.getChild("play")));
+
+        assertTrue(dispatcher.execute("tower help", false) == 7);
+        assertTrue(dispatcher.execute("tower start", true) == 8);
+        org.junit.jupiter.api.Assertions.assertThrows(com.mojang.brigadier.exceptions.CommandSyntaxException.class,
+                () -> dispatcher.execute("tower start", false));
+        org.junit.jupiter.api.Assertions.assertThrows(com.mojang.brigadier.exceptions.CommandSyntaxException.class,
+                () -> dispatcher.execute("cobbletowers play help", false));
+        assertFalse(dispatcher.getRoot().getChild("cobbletowers").canUse(false));
+    }
 }

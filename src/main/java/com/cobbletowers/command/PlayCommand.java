@@ -23,9 +23,9 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class PlayCommand {
 
-    /** The typed commands a player keeps: open the screens, read the guide, leave, answer an invite, send feedback. */
+    /** The typed commands a player sees after /tower itself (which opens the screens): guide, leave, invite answer, feedback. */
     private static final java.util.Set<String> PLAYER_COMMANDS =
-            java.util.Set.of("menu", "run", "lobby", "help", "leave", "accept", "decline", "report");
+            java.util.Set.of("help", "leave", "accept", "decline", "report");
 
     private PlayCommand() {}
 

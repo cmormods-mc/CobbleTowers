@@ -156,7 +156,7 @@ public final class IntermissionService {
     /** Clickable shortcuts, so a closed menu is one click from open again. */
     private static Component shortcuts(PersistedRun run) {
         MutableComponent line = Component.literal("Tower: ").withStyle(ChatFormatting.GOLD);
-        line.append(button("[Open menu]", "/tower menu"));
+        line.append(button("[Open menu]", "/tower"));
         int cards = run.modifiers().draft().filter(d -> !d.resolved()).map(d -> d.cards().size()).orElse(0);
         return line;
     }
