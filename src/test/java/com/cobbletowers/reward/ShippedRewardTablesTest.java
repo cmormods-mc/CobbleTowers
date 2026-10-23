@@ -137,7 +137,7 @@ class ShippedRewardTablesTest {
                 List<RewardValuation.Grant> grants = cleanRun(table, seed);
 
                 int items = grants.stream().filter(g -> !g.item().getPath().equals("raid_points")
-                        && !g.item().getPath().equals("cobble_dollar") && !g.item().getNamespace().equals("ascensionlib")).mapToInt(RewardValuation.Grant::amount).sum();
+                        && !g.item().getPath().equals("cobble_dollar")).mapToInt(RewardValuation.Grant::amount).sum();
                 int raidPoints = grants.stream().filter(g -> g.item().getPath().equals("raid_points")).mapToInt(RewardValuation.Grant::amount).sum();
                 long candies = grants.stream().filter(g -> g.item().getPath().startsWith("exp_candy")).count();
                 long packs = grants.stream().filter(g -> g.item().getNamespace().equals("cobblemon-cards")).count();
@@ -146,10 +146,6 @@ class ShippedRewardTablesTest {
 
                 assertTrue(items >= 35 && items <= 120, where + " -- item count out of the modest range (measured 47-78 when written)");
                 assertTrue(raidPoints >= 90 && raidPoints <= 220, where + " -- Raid Points out of range (measured 100-145 when written)");
-                // AscensionLib materials (dust, facets, marks, scouters) are counted apart: dust comes in the hundreds.
-                int gems = grants.stream().filter(g -> g.item().getNamespace().equals("ascensionlib") && !g.item().getPath().equals("resonance_dust"))
-                        .mapToInt(RewardValuation.Grant::amount).sum();
-                assertTrue(gems <= 40, where + " -- " + gems + " facets, marks and scouters out of range");
                 assertTrue(candies >= 2, where + " -- the two guaranteed XL candies should always be there");
                 assertTrue(packs >= 2 && packs <= 12, where + " -- card pack grants out of range (mean about 3.4, 2-9 over 400 seeds when re-measured in P24; armor is archived, so a few more)");
                 // Exactly two guaranteed XL candies per participant, no more: one at each milestone.

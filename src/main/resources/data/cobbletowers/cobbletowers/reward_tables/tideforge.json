@@ -510,30 +510,6 @@
         "weight": 6,
         "min_floor": 7,
         "max_floor": 10
-      },
-      {
-        "item": "ascensionlib:resonance_dust",
-        "min_amount": 60,
-        "max_amount": 150,
-        "weight": 40
-      },
-      {
-        "item": "ascensionlib:scouter",
-        "min_amount": 1,
-        "max_amount": 2,
-        "weight": 20
-      },
-      {
-        "item": "ascensionlib:facet",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 10
-      },
-      {
-        "item": "ascensionlib:tower_mark",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 6
       }
     ]
   },
@@ -591,30 +567,6 @@
         },
         {
           "item": "cobblemon:deep_sea_tooth",
-          "min_amount": 1,
-          "max_amount": 1,
-          "weight": 8
-        },
-        {
-          "item": "ascensionlib:resonance_dust",
-          "min_amount": 100,
-          "max_amount": 250,
-          "weight": 25
-        },
-        {
-          "item": "ascensionlib:scouter",
-          "min_amount": 1,
-          "max_amount": 2,
-          "weight": 15
-        },
-        {
-          "item": "ascensionlib:facet",
-          "min_amount": 1,
-          "max_amount": 2,
-          "weight": 12
-        },
-        {
-          "item": "ascensionlib:tower_mark",
           "min_amount": 1,
           "max_amount": 1,
           "weight": 8
@@ -751,30 +703,6 @@
           "min_amount": 1,
           "max_amount": 1,
           "weight": 6
-        },
-        {
-          "item": "ascensionlib:resonance_dust",
-          "min_amount": 250,
-          "max_amount": 500,
-          "weight": 25
-        },
-        {
-          "item": "ascensionlib:scouter",
-          "min_amount": 2,
-          "max_amount": 3,
-          "weight": 12
-        },
-        {
-          "item": "ascensionlib:facet",
-          "min_amount": 2,
-          "max_amount": 3,
-          "weight": 18
-        },
-        {
-          "item": "ascensionlib:tower_mark",
-          "min_amount": 1,
-          "max_amount": 2,
-          "weight": 14
         }
       ]
     }
