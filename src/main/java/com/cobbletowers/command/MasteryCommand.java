@@ -117,7 +117,7 @@ public final class MasteryCommand {
             source.sendSuccess(() -> Component.literal("  " + tower.displayName() + ": " + MasteryView.progressLine(progress.level())
                     + "; " + progress.cyclesCleared() + " cycle(s) cleared, deepest Ascension " + progress.ascensionReached()), false);
         }
-        source.sendSuccess(() -> Component.literal("  /tower mastery <tower> lists the achievements.").withStyle(ChatFormatting.GRAY), false);
+        source.sendSuccess(() -> Component.literal("  The Mastery page lists the achievements.").withStyle(ChatFormatting.GRAY), false);
         return 1;
     }
 

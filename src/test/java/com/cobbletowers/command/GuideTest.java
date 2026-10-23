@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class GuideTest {
 
     @Test
-    @DisplayName("the guide file has a title and sections with short lines, and names the commands players need")
+    @DisplayName("the guide file has a title and sections with short lines, and names the typed commands players still have")
     void guide() {
         assertFalse(HelpCommand.title().isBlank());
         var sections = HelpCommand.sections();
@@ -24,7 +24,7 @@ class GuideTest {
                 all.append(line).append('\n');
             }
         }
-        for (String command : new String[] {"/tower help", "/tower report", "/tower badge", "/tower trial"}) {
+        for (String command : new String[] {"/tower help", "/tower report"}) {
             assertTrue(all.toString().contains(command), "the guide never mentions " + command);
         }
     }

@@ -39,13 +39,13 @@
       "heading": "Mastery and your name",
       "lines": [
         "Achievements in a tower raise your mastery level there. The icon and number beside your name show your best tower.",
-        "Pick which tower shows with /tower badge <tower>, or /tower badge off to hide it."
+        "Pick which tower shows, or hide it, in the Hall settings."
       ]
     },
     {
       "heading": "Useful commands",
       "lines": [
-        "/tower opens the Hall. /tower help shows this guide in chat. /tower trial shows today's trials. /tower report <text> tells us about a problem or an idea."
+        "/tower opens the Hall. /tower help shows this guide in chat. /tower report <text> tells us about a problem or an idea."
       ]
     }
   ]

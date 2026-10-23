@@ -105,13 +105,13 @@ public final class RentalDraftService {
         Optional<TowerLobby> lobby = LobbyService.lobbyOf(player.getUUID());
         if (lobby.isPresent() && isRentalLobby(lobby.get()) && !lobby.get().modeConfirmed()) return List.of(UNCONFIRMED);
         if (lobby.isEmpty() || !isRentalLobby(lobby.get())) {
-            return List.of("There is nothing to draft: pick a tower and /tower playlist rental first.");
+            return List.of("There is nothing to draft: pick a tower and the Rental playlist first.");
         }
         if (RentalSetRegistry.all().isEmpty()) return List.of("No rental sets are loaded.");
         RentalDraft draft = open(server, lobby.get(), player.getUUID());
         if (com.cobbletowers.network.ClientUi.canShow(player, RentalDraftPayload.TYPE)) {
             sendScreen(player, draft, "");
-            return List.of("Opening your packs. /tower draft text lists them in chat.");
+            return List.of("Opening your packs.");
         }
         return describe(draft);
     }
@@ -179,13 +179,13 @@ public final class RentalDraftService {
             lines.add("Your team is drafted:");
             int number = 1;
             for (RentalSetDefinition set : draft.team()) lines.add("  " + number++ + ". " + line(set));
-            lines.add("Use Ready on the play screen (/tower ready); the host can start once everyone is ready. /tower draft restart to draft again.");
+            lines.add("Use Ready on the play screen; the host can start once everyone is ready. Restart the draft there to draft again.");
             return lines;
         }
         int pack = draft.currentPack();
         RentalDraw.Pack current = draft.offer().packs().get(pack);
         lines.add("Pack " + (pack + 1) + " of " + RentalDraw.PACKS + (current.god() ? "  *** GOD PACK ***" : "")
-                + ": keep two. /tower draft pick <a> <b>");
+                + ": keep two on the draft screen.");
         for (int i = 0; i < current.cards().size(); i++) lines.add("  " + (i + 1) + ". " + line(current.cards().get(i)));
         if (!draft.team().isEmpty()) {
             lines.add("Kept so far: " + String.join(", ", draft.team().stream().map(RentalSetDefinition::displayName).toList()));
@@ -210,7 +210,7 @@ public final class RentalDraftService {
         LobbyService.refresh(server, lobby.get());
         return switch (result) {
             case OK -> describe(draft);
-            case ALREADY_COMPLETE -> List.of("Your draft is finished. /tower draft restart to draft again.");
+            case ALREADY_COMPLETE -> List.of("Your draft is finished. Restart it on the draft screen to draft again.");
             case NOT_THIS_PACK -> List.of("That is not the pack you are choosing from.");
             case WRONG_COUNT -> List.of("Keep exactly two cards.");
             case DUPLICATE -> List.of("Pick two different cards.");

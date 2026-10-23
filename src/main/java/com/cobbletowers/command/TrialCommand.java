@@ -88,7 +88,7 @@ public final class TrialCommand {
         store.setQuiet(player.getUUID(), quiet);
         store.checkpoint(context.getSource().getServer());
         context.getSource().sendSuccess(() -> Component.literal(quiet
-                ? "The login summary is off. /tower summary on turns it back on."
+                ? "The login summary is off. Turn it back on in the Hall settings."
                 : "The login summary is on."), false);
         return 1;
     }

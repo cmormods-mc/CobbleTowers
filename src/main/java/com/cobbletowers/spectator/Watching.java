@@ -66,7 +66,7 @@ public final class Watching {
         watcher.setCamera(target);
         com.cobbletowers.network.TowerNetworking.sendSpectatorPanel(watcher, SpectatorPresentation.panelFor(run.get(), target));
         TowerLog.info("{} is watching {} in run {}", watcher.getUUID(), target.getUUID(), run.get().runId());
-        return "Watching " + target.getGameProfile().getName() + ". Use /tower unwatch to go back.";
+        return "Watching " + target.getGameProfile().getName() + ". Leave the spectator view from the Hall to go back.";
     }
 
     /** Ends a watch by the watcher's own choice. */

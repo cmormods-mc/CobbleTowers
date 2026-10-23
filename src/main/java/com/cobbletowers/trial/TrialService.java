@@ -325,8 +325,8 @@ public final class TrialService {
         TowerTrialStore store = TowerTrialStore.get(server);
         Optional<TowerTrialStore.Attempt> attempt = store.attemptOf(player, trial.id());
         if (attempt.isEmpty()) {
-            lines.add("  Your scored attempt: not used yet. /tower trial play " + kind.name().toLowerCase(java.util.Locale.ROOT)
-                    + ", then /tower confirm and /tower start.");
+            lines.add("  Your scored attempt: not used yet. Play it from the Trials page: " + kind.name().toLowerCase(java.util.Locale.ROOT)
+                    + ", then confirm and start on the play screen.");
         } else if (!attempt.get().finished()) {
             lines.add("  Your scored attempt is in progress or was abandoned: it cannot be retried.");
         } else {

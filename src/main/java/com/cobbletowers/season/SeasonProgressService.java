@@ -109,7 +109,7 @@ public final class SeasonProgressService {
                 ServerPlayer online = server.getPlayerList().getPlayer(player);
                 if (online != null) {
                     online.sendSystemMessage(Component.literal("Season " + season + " track: step " + reached + "/" + track.get().stepCount()
-                            + " reached. Claim it from the Progress tab (or /tower track claim)."));
+                            + " reached. Claim it from the Progress tab."));
                 }
             }
             return;

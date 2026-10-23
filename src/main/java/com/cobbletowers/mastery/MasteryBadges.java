@@ -43,7 +43,7 @@ public final class MasteryBadges {
         boolean changed = store.setBadgePick(player, tower);
         if (changed) store.checkpoint(server);
         return new Outcome("Your badge now shows " + tower.get().getPath() + " (level " + level
-                + "). /tower badge auto goes back to your highest.", changed);
+                + "). The Hall can go back to your highest.", changed);
     }
 
     private static Optional<ResourceLocation> resolve(String text) {

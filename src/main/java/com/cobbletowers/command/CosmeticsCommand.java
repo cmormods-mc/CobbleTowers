@@ -64,7 +64,7 @@ public final class CosmeticsCommand {
         String which = com.cobbletowers.mastery.MasteryBadges.shownFor(server, player.getUUID())
                 .map(badge -> " It shows " + badge.tower().getPath() + " (level " + badge.level() + ", "
                         + (store.badgePickOf(player.getUUID()).isPresent() ? "pinned" : "automatic") + ").").orElse("");
-        return "Your mastery badge is " + shown + "." + which + " /tower badge on|off hides it, /tower badge <tower> pins one, /tower badge auto follows your highest.";
+        return "Your mastery badge is " + shown + "." + which + " The Hall lets you hide it, pin one tower, or follow your highest.";
     }
 
     /** {@code /tower badge <tower>} pins the badge to a tower you have a level in; {@code auto} follows your highest (P47). */

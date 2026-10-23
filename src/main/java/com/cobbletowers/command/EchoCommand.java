@@ -67,12 +67,12 @@ public final class EchoCommand {
         ServerPlayer player = context.getSource().getPlayerOrException();
         TowerEchoStore store = TowerEchoStore.get(context.getSource().getServer());
         if (store.isOptedOut(player.getUUID())) {
-            return say(context, "You have opted out: your teams are never recorded as Echoes. /tower echo on to allow it.");
+            return say(context, "You have opted out: your teams are never recorded as Echoes. Turn Echoes back on in the Hall to allow it.");
         }
         List<Echo> mine = store.ownedBy(player.getUUID());
         if (mine.isEmpty()) {
             return say(context, "No Echo of yours yet. A team in the top " + EchoPolicy.TOP_N
-                    + " of a regional tower is recorded automatically; /tower echo off opts out.");
+                    + " of a regional tower is recorded automatically; you can opt out in the Hall.");
         }
         for (Echo echo : mine) {
             say(context, echo.tower().getPath() + ": " + echo.team().stream().map(EchoPolicy::speciesOf)

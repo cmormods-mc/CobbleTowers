@@ -54,7 +54,7 @@ public final class SeasonService {
                 store.checkpoint(server);
                 SeasonDefinition definition = Seasons.definition(active.number());
                 server.getPlayerList().broadcastSystemMessage(Component.literal("Season " + active.number() + ": "
-                        + definition.name() + " has begun! Six weeks, new boards. /tower season for the details."), false);
+                        + definition.name() + " has begun! Six weeks, new boards. The Hall has the details."), false);
                 TowerLog.info("Season {} ({}) began", active.number(), definition.name());
             }
         });
@@ -134,8 +134,8 @@ public final class SeasonService {
             TowerLog.info("Season {} ({}) finalised: {} board(s) in the Hall", number, definition.name(), plan.boards().size());
             if (latest) {
                 server.getPlayerList().broadcastSystemMessage(Component.literal("Season " + number + ": " + definition.name()
-                        + " has ended. Its winners are in the Hall of Fame: /tower hall " + number
-                        + ". The next season starts after a week off."), false);
+                        + " has ended. Its winners are in the Hall of Fame."
+                        + " The next season starts after a week off."), false);
             }
         }
         return List.of("Season " + number + " finalised.");
@@ -156,11 +156,10 @@ public final class SeasonService {
             lines.add("Season " + active.number() + ": " + definition.name() + " - week " + active.week() + " of "
                     + SeasonSchedule.WEEKS + ", " + active.daysLeft() + " day(s) left (ends after " + active.lastDay() + ").");
             definition.spotlight().ifPresent(region -> lines.add("Spotlight region: " + regionName(region.toString())
-                    + ". Boards: /tower leaderboard <board> shows this season; add alltime for the lifetime board."));
+                    + ". Boards are in the Hall."));
         } else if (phase instanceof SeasonSchedule.OffSeason off) {
             SeasonDefinition ended = Seasons.definition(off.endedNumber());
-            lines.add("Off-season: season " + off.endedNumber() + " (" + ended.name() + ") has ended. Its winners: /tower hall "
-                    + off.endedNumber() + ".");
+            lines.add("Off-season: season " + off.endedNumber() + " (" + ended.name() + ") has ended. Its winners are in the Hall of Fame.");
             lines.add("Season " + off.nextNumber() + ": " + Seasons.definition(off.nextNumber()).name() + " begins on "
                     + off.nextStartDay() + " (" + off.daysLeft() + " day(s)). Results post to the all-time boards meanwhile.");
         }

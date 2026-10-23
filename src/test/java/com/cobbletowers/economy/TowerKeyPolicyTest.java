@@ -22,17 +22,17 @@ class TowerKeyPolicyTest {
     }
 
     @Test
-    @DisplayName("keys are off unless the config says required, so a missing or empty file locks nobody out")
-    void offByDefault() {
-        assertFalse(TowerKeyPolicy.parseRequired(null));
-        assertFalse(TowerKeyPolicy.parseRequired(""));
-        assertFalse(TowerKeyPolicy.parseRequired("{}"));
+    @DisplayName("keys are required unless the config says otherwise")
+    void onByDefault() {
+        assertTrue(TowerKeyPolicy.parseRequired(null));
+        assertTrue(TowerKeyPolicy.parseRequired(""));
+        assertTrue(TowerKeyPolicy.parseRequired("{}"));
         assertFalse(TowerKeyPolicy.parseRequired("{\"required\": false}"));
         assertTrue(TowerKeyPolicy.parseRequired("{\"required\": true}"));
     }
 
     @Test
-    @DisplayName("a malformed file throws, which the caller turns into not required")
+    @DisplayName("a malformed file throws, which the caller turns into keeping the current setting")
     void malformedThrows() {
         assertThrows(RuntimeException.class, () -> TowerKeyPolicy.parseRequired("[1, 2]"));
     }

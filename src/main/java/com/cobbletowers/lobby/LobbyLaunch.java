@@ -139,7 +139,7 @@ final class LobbyLaunch {
         UUID id = player.getUUID();
         Optional<RentalDraft> draft = RentalDraftService.draftOf(id).filter(RentalDraft::complete);
         if (draft.isEmpty()) {
-            plan.problems().add(LobbyService.name(player) + " has not finished their draft (/tower draft)");
+            plan.problems().add(LobbyService.name(player) + " has not finished their draft (open the draft on the play screen)");
             return;
         }
         if (!RentalPartyService.canMakeRoom(player)) {
@@ -265,7 +265,7 @@ final class LobbyLaunch {
         String code = RunCode.encode(lobby.tower(), lobby.playlist(), created.startAt(), created.seed());
         for (UUID id : plan.players()) LobbyService.rememberCode(id, code);
         LobbyService.broadcast(server, lobby,
-                "Run code: " + code + " (share it; /tower play code <code> starts the same run)");
+                "Run code: " + code + " (share it: the same code starts the same run from the play screen)");
         TowerLog.info("Run {} started with code {}", created.run().runId(), code);
     }
 

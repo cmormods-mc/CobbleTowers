@@ -150,7 +150,7 @@ public final class LobbyService {
         if (result != TowerLobby.Result.OK) return name(target) + " is already invited.";
 
         target.sendSystemMessage(Component.literal(name(host) + " invited you to " + towerName(lobby.tower())
-                + ". Use /tower accept " + name(host) + " (expires in 3 minutes)."));
+                + ". Accept " + name(host) + "'s invite on the play screen, or with /tower accept (expires in 3 minutes)."));
         broadcast(server, lobby, "");
         return "Invited " + name(target) + ".";
     }
@@ -241,7 +241,7 @@ public final class LobbyService {
         boolean scored = com.cobbletowers.trial.TrialService.wouldBeScored(server, new ArrayList<>(lobby.team()), trial.id());
         return trial.title() + " selected: " + trial.floors() + " floors on " + towerName(trial.entry().tower())
                 + (playlist == null ? "" : ", " + playlist.displayName())
-                + (scored ? ". This will be your scored attempt: it cannot be retried. Use /tower confirm, then /tower start."
+                + (scored ? ". This will be your scored attempt: it cannot be retried. Confirm the mode, then start, on the play screen."
                         : ". Someone on the team has already used this trial's attempt, so this run is practice and will not post. Use /tower confirm, then /tower start.");
     }
 
@@ -315,8 +315,8 @@ public final class LobbyService {
         lobby.setPlaylist(java.util.Optional.of(id));
         broadcast(server, lobby, "");
         return "Mode: " + playlist.get().displayName() + ". " + playlist.get().description()
-                + (playlist.get().rental() ? " Confirm the mode (/tower confirm) when you are happy with it, and everyone's packs open."
-                        : " Confirm the mode (/tower confirm) when you are happy with it.");
+                + (playlist.get().rental() ? " Confirm the mode on the play screen when you are happy with it, and everyone's packs open."
+                        : " Confirm the mode on the play screen when you are happy with it.");
     }
 
     static String playlistName(java.util.Optional<ResourceLocation> playlist) {
@@ -357,7 +357,7 @@ public final class LobbyService {
         if (lobby == null) return inRun(host.getUUID()) ? inRunMessage() : "Pick a tower first.";
         if (lobby.counting()) return "The run is already starting.";
         if (!lobby.modeConfirmed()) {
-            return "Confirm the mode first (/tower confirm)" + (RentalDraftService.isRentalLobby(lobby)
+            return "Confirm the mode first (on the play screen)" + (RentalDraftService.isRentalLobby(lobby)
                     ? ", then everyone drafts and readies up." : ".");
         }
         if (RentalDraftService.isRentalLobby(lobby)) {

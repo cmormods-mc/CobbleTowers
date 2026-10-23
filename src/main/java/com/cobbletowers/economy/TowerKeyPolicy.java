@@ -9,6 +9,9 @@ import com.google.gson.JsonParser;
  */
 public final class TowerKeyPolicy {
 
+    /** What the config says when it says nothing: keys are on. */
+    public static final boolean DEFAULT_REQUIRED = true;
+
     private TowerKeyPolicy() {}
 
     /** Which key a run started under these conditions costs each player, given the operator's setting. */
@@ -28,12 +31,13 @@ public final class TowerKeyPolicy {
     }
 
     /**
-     * Reads {@code {"required": true}} from {@code config/cobbletowers-keys.json}. Absent or empty means not
-     * required; unreadable text throws and the caller treats it as not required, so a typo cannot lock players out.
+     * Reads {@code {"required": true|false}} from {@code config/cobbletowers-keys.json}. Absent, empty or without the
+     * field means the default (required); unreadable text throws and the caller keeps its current value, so a typo
+     * mid-edit cannot change the setting.
      */
     public static boolean parseRequired(String json) {
-        if (json == null || json.isBlank()) return false;
+        if (json == null || json.isBlank()) return DEFAULT_REQUIRED;
         JsonObject root = JsonParser.parseString(json).getAsJsonObject();
-        return root.has("required") && root.get("required").getAsBoolean();
+        return root.has("required") ? root.get("required").getAsBoolean() : DEFAULT_REQUIRED;
     }
 }

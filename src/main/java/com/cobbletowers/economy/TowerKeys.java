@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -25,8 +26,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * The entry keys: the tower key ({@code cobbletowers:tower_key}, decided 2026-10-05) for an ordinary run and the rental
- * key ({@code cobbletowers:rental_key}) for a rental-draft run, one per player. Off until {@code
- * config/cobbletowers-keys.json} sets {@code {"required": true}}. {@link TowerKeyPolicy} says which runs cost which
+ * key ({@code cobbletowers:rental_key}) for a rental-draft run, one per player. Required by default;
+ * {@code config/cobbletowers-keys.json} (written on first start, re-read when it changes) can set {@code {"required": false}}. {@link TowerKeyPolicy} says which runs cost which
  * key; the lobby takes one only once the run has started.
  */
 public final class TowerKeys {
@@ -59,7 +60,10 @@ public final class TowerKeys {
 
     public static final ResourceLocation ID = CobbleTowers.id("tower_key");
 
-    private static volatile boolean required;
+    private static volatile boolean required = TowerKeyPolicy.DEFAULT_REQUIRED;
+    private static final int POLL_TICKS = 200;
+    private static int pollTicks;
+    private static long seenModified;
 
     private TowerKeys() {}
 
@@ -98,6 +102,7 @@ public final class TowerKeys {
                         new KeyItem(new Item.Properties().rarity(kind.rarity), kind.id()));
             }
             ServerLifecycleEvents.SERVER_STARTING.register(server -> required = load());
+            ServerTickEvents.END_SERVER_TICK.register(server -> pollConfig());
             ServerPlayerEvents.AFTER_RESPAWN.register((old, player, alive) -> giveBack(player));
             ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> giveBack(handler.getPlayer()));
         }
@@ -107,16 +112,56 @@ public final class TowerKeys {
         return required;
     }
 
+    private static Path configFile() {
+        return FabricLoader.getInstance().getConfigDir().resolve("cobbletowers-keys.json");
+    }
+
+    /** Writes the default file when there is none, so an operator has something to edit. */
+    private static void writeDefault(Path file) {
+        try {
+            Files.writeString(file, "{\n  \"required\": " + TowerKeyPolicy.DEFAULT_REQUIRED + "\n}\n");
+        } catch (IOException ex) {
+            TowerLog.warn("Could not write the default {}: {}", file, ex.toString());
+        }
+    }
+
+    /** Reads the setting; a file that cannot be read keeps the current value, so a typo mid-edit cannot flip it. */
     private static boolean load() {
-        Path file = FabricLoader.getInstance().getConfigDir().resolve("cobbletowers-keys.json");
-        if (!Files.exists(file)) return false;
+        Path file = configFile();
+        if (!Files.exists(file)) {
+            writeDefault(file);
+            stamp(file);
+            return TowerKeyPolicy.DEFAULT_REQUIRED;
+        }
+        stamp(file);
         try {
             boolean on = TowerKeyPolicy.parseRequired(Files.readString(file));
-            TowerLog.info("Tower keys are {} ({})", on ? "required for ordinary runs" : "not required", file);
+            TowerLog.info("Tower keys are {} ({})", on ? "required for runs" : "not required", file);
             return on;
         } catch (IOException | RuntimeException ex) {
-            TowerLog.error("{} is not usable ({}); tower keys are not required", file, ex.toString());
-            return false;
+            TowerLog.error("{} is not usable ({}); keeping tower keys {}", file, ex.toString(), required ? "required" : "not required");
+            return required;
+        }
+    }
+
+    private static void stamp(Path file) {
+        try {
+            seenModified = Files.exists(file) ? Files.getLastModifiedTime(file).toMillis() : 0;
+        } catch (IOException ex) {
+            seenModified = 0;
+        }
+    }
+
+    /** Every ten seconds, picks up a rewritten config file (one stat call, not a read). */
+    private static void pollConfig() {
+        if (++pollTicks < POLL_TICKS) return;
+        pollTicks = 0;
+        Path file = configFile();
+        try {
+            long modified = Files.exists(file) ? Files.getLastModifiedTime(file).toMillis() : 0;
+            if (modified != seenModified) required = load();
+        } catch (IOException ex) {
+            // Next poll tries again.
         }
     }
 

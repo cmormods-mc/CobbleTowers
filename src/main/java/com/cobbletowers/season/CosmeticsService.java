@@ -47,7 +47,7 @@ public final class CosmeticsService {
         for (String id : added) {
             TowerLog.info("{} earned the cosmetic {}", player, id);
             if (online != null) online.sendSystemMessage(Component.literal("New cosmetic: " + nameOf(id)
-                    + (id.equals(nowWearing) ? " (you are wearing it; /tower title to change)" : "")));
+                    + (id.equals(nowWearing) ? " (you are wearing it; change it in the Hall)" : "")));
             runEarnCommands(server, player, id, online);
         }
         ChatTags.refresh(server, player);
@@ -90,7 +90,7 @@ public final class CosmeticsService {
         TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
         Set<String> owned = store.cosmeticsOf(player);
         if (owned.isEmpty()) {
-            return List.of("You have no cosmetics yet. The season track (/tower season track) and a top-three club finish award them.");
+            return List.of("You have no cosmetics yet. The season track (in the Hall) and a top-three club finish award them.");
         }
         Optional<String> worn = Cosmetics.validSelection(store.selectedTitle(player), owned);
         List<String> lines = new ArrayList<>();
@@ -104,7 +104,7 @@ public final class CosmeticsService {
             }
             if (!names.isEmpty()) lines.add("  " + label(kind) + ": " + String.join("; ", names));
         }
-        lines.add("Only titles can be worn: /tower title.");
+        lines.add("Only titles can be worn.");
         return lines;
     }
 
@@ -128,7 +128,7 @@ public final class CosmeticsService {
         for (int i = 0; i < titles.size(); i++) {
             lines.add("  " + (i + 1) + ". " + nameOf(titles.get(i)) + (worn.isPresent() && worn.get().equals(titles.get(i)) ? " (worn)" : ""));
         }
-        lines.add("/tower title <number> wears one; /tower title off takes it off.");
+        lines.add("Wear or remove a title in the Hall.");
         return lines;
     }
 
@@ -136,7 +136,7 @@ public final class CosmeticsService {
         TowerSeasonProgressStore store = TowerSeasonProgressStore.get(server);
         List<String> titles = Cosmetics.titlesOf(store.cosmeticsOf(player.getUUID()));
         if (number < 1 || number > titles.size()) {
-            return titles.isEmpty() ? "You have no titles yet." : "Pick a number from 1 to " + titles.size() + " (see /tower title).";
+            return titles.isEmpty() ? "You have no titles yet." : "Pick a number from 1 to " + titles.size() + ".";
         }
         store.selectTitle(player.getUUID(), titles.get(number - 1));
         store.checkpoint(server);

@@ -342,7 +342,7 @@ public final class MasteryService {
             ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
             if (player == null) continue;
             for (String line : report.lines()) player.sendSystemMessage(Component.literal(line).withStyle(ChatFormatting.GRAY));
-            player.sendSystemMessage(Component.literal("  /tower report share posts this run to chat.").withStyle(ChatFormatting.DARK_GRAY));
+            player.sendSystemMessage(Component.literal("  The run report page can post this run to chat.").withStyle(ChatFormatting.DARK_GRAY));
         }
         RunSummaries.discard(run.runId());
     }

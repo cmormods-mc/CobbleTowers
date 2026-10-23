@@ -148,7 +148,7 @@ public final class IntermissionService {
         if (found.isEmpty()) return null;
         PersistedRun run = found.get();
         String vote = run.modifiers().hasOpenDraft()
-                ? "Modifier vote still open: /tower vote <1-3>. " : "";
+                ? "Modifier vote still open: open the menu to vote. " : "";
         return "Floor " + run.floorIndex() + " cleared. " + vote + describe(run)
                 + ". Reopen the menu any time with /tower (or the Tower Menu key).";
     }
@@ -158,8 +158,6 @@ public final class IntermissionService {
         MutableComponent line = Component.literal("Tower: ").withStyle(ChatFormatting.GOLD);
         line.append(button("[Open menu]", "/tower menu"));
         int cards = run.modifiers().draft().filter(d -> !d.resolved()).map(d -> d.cards().size()).orElse(0);
-        for (int i = 1; i <= cards; i++) line.append(" ").append(button("[Vote " + i + "]", "/tower vote " + i));
-        line.append(" ").append(button("[Ready]", "/tower ready"));
         return line;
     }
 

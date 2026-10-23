@@ -58,7 +58,7 @@ public final class EchoService {
                         run.runId(), team, System.currentTimeMillis(), 0, 0, season, routeLine(run)));
                 player.sendSystemMessage(Component.literal("Your team made the top " + EchoPolicy.TOP_N + " of "
                         + run.towerId().getPath() + ": it is now an Echo other challengers may meet. "
-                        + "Opt out any time with /tower echo off."));
+                        + "Opt out any time in the Hall."));
                 TowerLog.info("Recorded an Echo of {} ({} Pokemon) for run {}", player.getGameProfile().getName(),
                         team.size(), run.runId());
             }

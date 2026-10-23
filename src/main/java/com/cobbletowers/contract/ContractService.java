@@ -172,6 +172,6 @@ public final class ContractService {
         List<Active> active = activeFor(server, player);
         if (active.isEmpty()) return Optional.empty();
         long open = active.stream().filter(a -> !a.done()).count();
-        return Optional.of(open == 0 ? "All contracts complete." : open + " contract(s) open: /tower contracts");
+        return Optional.of(open == 0 ? "All contracts complete." : open + " contract(s) open: see the Hall");
     }
 }

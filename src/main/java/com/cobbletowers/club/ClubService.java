@@ -67,8 +67,8 @@ public final class ClubService {
             boolean goalMet = book.recordClear(player, score, weekKey(), com.cobbletowers.season.Seasons.activeNumber().orElse(0));
             if (goalMet) {
                 book.clubOf(player).ifPresent(club -> {
-                    tell(server, club, "Your club " + club.name() + " met its weekly goal! Every member can /tower club claim "
-                            + ClubBook.WEEKLY_REWARD + " CobbleDollars.");
+                    tell(server, club, "Your club " + club.name() + " met its weekly goal! Every member can claim "
+                            + ClubBook.WEEKLY_REWARD + " CobbleDollars on the Club page of the Hall.");
                     TowerLog.info("Club {} met its weekly goal ({})", club.name(), weekKey());
                 });
             }
@@ -83,7 +83,7 @@ public final class ClubService {
         ClubBook book = TowerClubStore.get(server).book();
         Optional<Club> found = book.clubOf(player.getUUID());
         if (found.isEmpty()) {
-            return List.of("You are not in a club. /tower club create <name> <tag> starts one; a member can /tower club invite you.",
+            return List.of("You are not in a club. Start one on the Club page of the Hall, or ask a member to invite you.",
                     "Your best regional clear: " + book.bestOf(player.getUUID()) + ". Clubs count regional towers only.");
         }
         Club club = found.get();
@@ -98,7 +98,7 @@ public final class ClubService {
                 + " regional cycle clears (" + weekKey() + "); "
                 + (book.weekClears(club, weekKey()) >= ClubBook.WEEKLY_GOAL
                         ? (club.claimed().contains(player.getUUID()) ? "you have claimed this week's reward"
-                                : "met! /tower club claim pays " + ClubBook.WEEKLY_REWARD + " CobbleDollars")
+                                : "met! Claim it on the Club page: pays " + ClubBook.WEEKLY_REWARD + " CobbleDollars")
                         : "pays " + ClubBook.WEEKLY_REWARD + " CobbleDollars to every member when met"));
         StringBuilder members = new StringBuilder("Members: ");
         for (Map.Entry<UUID, String> member : club.members().entrySet()) {
@@ -119,7 +119,7 @@ public final class ClubService {
         java.util.Optional<Integer> season = allTime ? java.util.Optional.empty() : com.cobbletowers.season.Seasons.viewNumber();
         List<String> lines = new ArrayList<>();
         lines.add(season.isPresent()
-                ? "Club board, season " + season.get() + " (the sum of each member's best regional clear this season; /tower club top alltime for the lifetime board):"
+                ? "Club board, season " + season.get() + " (the sum of each member's best regional clear this season; the Club page has the lifetime board):"
                 : "Club board, all-time (the sum of each member's best regional clear):");
         int rank = 1;
         List<Club> ranked = season.isPresent() ? book.topForSeason(season.get(), 10) : book.top(10);
@@ -178,7 +178,7 @@ public final class ClubService {
             store.changed();
             store.checkpoint(server);
             com.cobbletowers.season.ChatTags.refresh(server, player.getUUID());
-            return "Club " + name + " [" + useTag.toUpperCase(Locale.ROOT) + "] created. Invite people with /tower club invite <player>.";
+            return "Club " + name + " [" + useTag.toUpperCase(Locale.ROOT) + "] created. Invite people from the Club page.";
         }
         return describe(result);
     }
@@ -192,7 +192,7 @@ public final class ClubService {
         if (book.clubOf(target.getUUID()).isPresent()) return target.getGameProfile().getName() + " is already in a club.";
         INVITES.put(target.getUUID(), new Invite(club.get().name(), System.currentTimeMillis() + INVITE_TTL_MILLIS));
         target.sendSystemMessage(Component.literal(host.getGameProfile().getName() + " invited you to the club "
-                + club.get().name() + ". /tower club accept " + club.get().name() + " to join (open 5 minutes)."));
+                + club.get().name() + ". Accept on the Club page to join (open 5 minutes)."));
         return "Invited " + target.getGameProfile().getName() + " to " + club.get().name() + ".";
     }
 
@@ -293,7 +293,7 @@ public final class ClubService {
             case BAD_NAME -> "A club name is " + ClubBook.MIN_NAME + "-" + ClubBook.MAX_NAME + " letters, digits or underscores.";
             case BAD_TAG -> "A club tag is " + ClubBook.MIN_TAG + "-" + ClubBook.MAX_TAG + " letters or digits.";
             case NAME_TAKEN -> "That club name is taken.";
-            case ALREADY_IN_CLUB -> "You are already in a club. /tower club leave first.";
+            case ALREADY_IN_CLUB -> "You are already in a club. Leave it first, on the Club page.";
             case NOT_IN_CLUB -> "You are not in a club.";
             case NOT_OWNER -> "Only the club's owner can do that.";
             case FULL -> "That club is full (" + ClubBook.MAX_MEMBERS + " members).";

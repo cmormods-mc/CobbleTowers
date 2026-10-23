@@ -23,6 +23,10 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class PlayCommand {
 
+    /** The typed commands a player keeps: open the screens, read the guide, leave, answer an invite, send feedback. */
+    private static final java.util.Set<String> PLAYER_COMMANDS =
+            java.util.Set.of("menu", "run", "lobby", "help", "leave", "accept", "decline", "report");
+
     private PlayCommand() {}
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -36,8 +40,7 @@ public final class PlayCommand {
         CosmeticsCommand.playerCommands().forEach(playRoot::then);
         ReportCommand.playerCommands().forEach(playRoot::then);
         HelpCommand.playerCommands().forEach(playRoot::then);
-        var play = dispatcher.register(Commands.literal("cobbletowers")
-                .then(playRoot
+        var playNode = playRoot
                         .executes(PlayCommand::open)
                         .then(Commands.literal("menu").executes(PlayCommand::hall))
                         .then(Commands.literal("run").executes(context -> {
@@ -127,7 +130,11 @@ public final class PlayCommand {
                         .then(Commands.literal("status").executes(PlayCommand::status))
                         .then(Commands.literal("lobbies")
                                 .requires(source -> source.hasPermission(2))
-                                .executes(PlayCommand::lobbies))));
+                                .executes(PlayCommand::lobbies))
+                .build();
+        // The screens do the rest; typed subcommands other than these entry points are for operators.
+        var play = dispatcher.register(Commands.literal("cobbletowers")
+                .then(CommandGate.opOnlyExcept(playNode, PLAYER_COMMANDS, source -> source.hasPermission(2))));
         // The short form players actually type: /tower, /tower vote 2, /tower ready ...
         dispatcher.register(Commands.literal("tower")
                 .executes(PlayCommand::hall)

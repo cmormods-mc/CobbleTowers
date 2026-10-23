@@ -29,8 +29,7 @@ own inventory. A rental-draft run costs one **Rental Key** (`cobbletowers:rental
 The lobby refuses to start ("X needs a Tower Key") if anyone lacks one when the countdown ends. Keys are taken only after the
 run has really started, so a launch that fails costs nothing.
 
-**Off by default.** `config/cobbletowers-keys.json` with `{"required": true}` turns it on; a missing, empty or malformed file
-means not required. Turn it on once the key has a source.
+**On by default.** `config/cobbletowers-keys.json` is written on first start with `{"required": true}`; set `false` to switch keys off. The file is re-read when it changes (checked every 10 seconds, no restart). A missing field means required; a malformed file keeps the current setting.
 
 ## Scouting (Scouters)
 
@@ -60,3 +59,5 @@ refuse it. Not covered: a restart while a player is dead loses the held key, and
 slots needs its own blacklist for `cobbletowers:tower_key`. Mixins are compile-checked only; a live test on the rig is open.
 
 Free run rule: available when the stored day is anything other than today (a clock moved back still frees a run).
+
+Typed commands (2026-10-23): the screens do everything the commands did, so `/tower` subcommands other than `menu`, `run`, `lobby`, `help`, `leave`, `accept`, `decline` and `report` need operator level 2 (`CommandGate`, applied in `PlayCommand`). The admin trees were already op-only. Chat hints now point at the Hall.
