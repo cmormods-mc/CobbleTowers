@@ -39,6 +39,8 @@ export function itemPicture(id) {
   if ((m = /^(.+)_berry$/.exec(tail))) return 'berry_' + (BERRY[m[1]] || 'red');
   if ((m = /^(red|green|blue|yellow|black|white|pink)_apricorn$/.exec(tail))) return 'nut_' + m[1];
   if ((m = /^(.+)_stone$/.exec(tail))) return 'gem_' + (STONE[m[1]] || 'white');
+  const LIB = { resonance_dust: 'gem_yellow', facet: 'gem_cyan', tower_mark: 'gem_white', scouter: 'gem_green', ascension_core: 'gem_red' };
+  if (id.startsWith('ascensionlib:') && LIB[tail]) return LIB[tail];
   if (tail === 'diamond' || /^deep_sea_/.test(tail)) return 'gem_cyan';
   if (tail === 'emerald') return 'gem_green';
   if (tail === 'netherite_scrap') return 'gem_brown';

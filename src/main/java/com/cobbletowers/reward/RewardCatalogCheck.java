@@ -57,6 +57,7 @@ public final class RewardCatalogCheck {
     private static void consider(List<Problem> problems, RewardTableDefinition table, String where, ResourceLocation item,
                                  Predicate<ResourceLocation> itemExists, Predicate<String> namespaceLoaded) {
         if (item.equals(CobbleDollars.ITEM_ID) || item.equals(RaidPointsCurrency.ITEM_ID)) return;
+        if (com.cobbletowers.economy.AscensionMaterials.of(item).isPresent()) return;
         if (itemExists.test(item)) return;
         problems.add(new Problem(namespaceLoaded.test(item.getNamespace()) ? Severity.ERROR : Severity.NOTE,
                 table.id(), where, item));

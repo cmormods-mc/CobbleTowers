@@ -57,6 +57,12 @@ public final class RewardDelivery {
                 int points = com.cobbletowers.armor.ArmorBonusEffects.raidPoints(player, reward.amount(), reward.runId());
                 CobbleRaidsPoints.award(server, player.getUUID(), points);
                 delivered.add(shown(reward, points, "Raid Points"));
+            } else if (com.cobbletowers.economy.AscensionMaterials.of(reward.item()).isPresent()) {
+                // An AscensionLib material (dust, facet, mark, scouter, core): its own stack, named as the library names it.
+                var material = com.cobbletowers.economy.AscensionMaterials.of(reward.item()).get();
+                PendingTowerReward built = new PendingTowerReward(reward.runId(), reward.floorIndex(), reward.item(), reward.amount(),
+                        reward.grantedAt(), material.stack(), material.label());
+                if (giveWithComponents(player, built)) delivered.add(built);
             } else if (!reward.components().isEmpty()) {
                 // A card (P33b): an item that is its data. Not handed over, and not lost, if the mod that owns it is
                 // gone.
@@ -130,9 +136,13 @@ public final class RewardDelivery {
                     reward.label().isEmpty() ? reward.item() : reward.label(), reward.item());
             return false;
         }
-        ItemStack stack = built.get();
-        stack.setCount(reward.amount());
-        player.getInventory().placeItemBackInInventory(stack);
+        int remaining = reward.amount();
+        while (remaining > 0) {
+            ItemStack stack = built.get().copy();
+            stack.setCount(Math.min(remaining, stack.getMaxStackSize()));
+            remaining -= stack.getCount();
+            player.getInventory().placeItemBackInInventory(stack);
+        }
         return true;
     }
 

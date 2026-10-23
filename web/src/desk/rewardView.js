@@ -23,6 +23,7 @@ export function grantTier(grant) {
     const set = tail.replace(/_(helmet|chestplate|leggings|boots)$/, '');
     return ARMOR_TIER[set] || 'fine';
   }
+  if (id.startsWith('ascensionlib:')) return tail === 'ascension_core' ? 'epic' : tail === 'tower_mark' ? 'rare' : tail === 'resonance_dust' ? 'common' : 'fine';
   const pic = itemPicture(id);
   if (pic === 'ball_master') return 'epic';
   if (pic === 'candy_rare' || pic === 'candy_xl' || pic === 'pack' || pic === 'ticket' || pic === 'scroll') return 'rare';
