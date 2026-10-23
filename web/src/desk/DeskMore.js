@@ -1,6 +1,6 @@
 // The Frontier Desk look for the rest of the Hall's pages (P51 slice 6): Mastery and boards, the party chooser, the guide and settings.
 // Same requests as the native pages (requestMastery, requestBadge, TOGGLE_POKEMON, ...); the pure helpers decide what is shown.
-import { useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 import { html } from '../html.js';
 import { act } from '../bridge.js';
 import { update } from '../store.js';
@@ -12,6 +12,10 @@ import { apply, load, save, THEMES } from '../settings.js';
 import { setLook } from '../reducer.js';
 import { DeskSprite, TopBar } from './DeskHall.js';
 import { chooserHint, monCards } from './partyView.js';
+import { Emblem, RankMedal } from './emblem.js';
+import { Pix } from './pix.js';
+import { achievementGlyph } from './progressView.js';
+import { useStepScroll } from './stepScroll.js';
 
 const back = () => update(goBack);
 const play = (action, argument = '') => act('PlayAction', { action, argument });
@@ -20,19 +24,21 @@ const play = (action, argument = '') => act('PlayAction', { action, argument });
 export function DeskMastery({ state }) {
   const badge = badgeView(state.towers, state.selected);
   const m = state.mastery;
+  const cur = state.towers.find((t) => t.id === state.selected);
   const rank = (t) => (t.level > 0 ? t.rank + ' · Level ' + t.level : 'Level ' + t.level);
   return html`<div class="fd"><${TopBar} back=${back} active="progress" />
     <div class="dbody" style="grid-template-columns:24fr 76fr;flex:1">
       <div class="dcard dcol"><div class="ch"><h3>Towers</h3></div>
         <div class="rows">${state.towers.map((t) => html`<button key=${t.id} class=${'dentry' + (t.id === state.selected ? ' sel' : '')} aria-pressed=${t.id === state.selected}
-          onClick=${() => t.id !== state.selected && requestMastery(t.id, state.tab)}><b>${t.displayName.replace(/ Tower$/, '')}</b><small>${rank(t)}</small></button>`)}</div>
+          onClick=${() => t.id !== state.selected && requestMastery(t.id, state.tab)}><span class="dentryrow"><${Emblem} tower=${t.id} w=${3.2} /><span class="dentrytxt"><b>${t.displayName.replace(/ Tower$/, '')}</b><small>${rank(t)}</small></span>${t.level > 0 ? html`<${RankMedal} rank=${t.rank} w=${2.6} />` : null}</span></button>`)}</div>
         <div class="dbadge"><span class="lbl">Name badge</span><div>${badge.line}${badge.mode ? ' · ' + badge.mode : ''}</div>
           <button class="dbtn gh dsm" disabled=${badge.button.disabled} onClick=${() => badge.button.action !== 'none' && requestBadge(state.selected, badge.button.action)}>${badge.button.label}</button></div></div>
       <div class="dcard dcol"><div class="ch"><div class="seg">${TABS.map(([id, name]) => html`<button key=${id} class=${id === state.tab ? 'on' : ''} aria-pressed=${id === state.tab}
           onClick=${() => requestMastery(state.selected, id)}>${name}</button>`)}</div></div>
-        ${state.tab === 'mastery' ? html`<div class="dsub" style="padding:0 calc(var(--u) * 1.4)">${m.progress}</div><div class="dsub" style="padding:0 calc(var(--u) * 1.4) calc(var(--u) * .8)">Perks: ${m.perks || 'none yet'}</div>
-          <div class="dtiles wide">${m.achievements.length === 0 ? html`<div class="empty">No achievements for this tower.</div>` : m.achievements.map((a, i) => html`<div key=${i} class=${'dach' + (a.held ? ' held' : '')}>
-            <b>${a.name}</b><span>${a.description}</span><em>${a.held ? 'Earned' : 'Not yet earned'}</em></div>`)}</div>`
+        ${state.tab === 'mastery' ? html`<div class="dmhero">${cur && cur.level > 0 ? html`<${RankMedal} rank=${cur.rank} w=${6} />` : html`<${Emblem} tower=${state.selected} w=${6} />`}
+            <div><div class="dbig">${cur ? rank(cur) : ''}</div><div class="dsub">${m.progress}</div><div class="dsub">Perks: ${m.perks || 'none yet'}</div></div></div>
+          <div class="dtiles wide">${m.achievements.length === 0 ? html`<div class="empty">No achievements for this tower.</div>` : m.achievements.map((a, i) => html`<div key=${i} class=${'dach hasic' + (a.held ? ' held' : '')}>
+            <span class="dachpic"><${Pix} name=${achievementGlyph(a.name)} w=${3.4} /></span><div class="dachtxt"><b>${a.name}</b><span>${a.description}</span><em>${a.held ? 'Earned' : 'Not yet earned'}</em></div></div>`)}</div>`
           : html`<div class="dlines" style="flex:1">${boardLines(state.board).map((l, i) => html`<div key=${i} class=${'dboard ' + l.tone}>${l.text || ' '}</div>`)}</div>`}
       </div></div></div>`;
 }
@@ -40,12 +46,14 @@ export function DeskMastery({ state }) {
 /** The party chooser: every Pokemon the player owns, tick up to the limit. */
 export function DeskParty({ reg }) {
   const cards = monCards(reg);
+  const gridRef = useRef(null);
+  useStepScroll(gridRef);
   const done = () => { update(goBack); play('REFRESH'); };
   return html`<div class="fd"><${TopBar} back=${done} />
     <div class="dbody" style="grid-template-columns:1fr;flex:1"><div class="dcard dcol">
       <div class="ch"><div><h3>Choose your party</h3><div class="dsub">${chooserHint(reg)}</div></div>
         <div style="display:flex;gap:calc(var(--u) * .8)"><button class="dbtn gh dsm" onClick=${() => play('CLEAR_CHOICE')}>Clear</button><button class="dbtn dsm" onClick=${done}>Done</button></div></div>
-      <div class="dtiles wide">${cards.length === 0 ? html`<div class="empty">You have no Pokémon yet.</div>` : cards.map((c) => html`<button key=${c.id} class=${'dmon' + (c.order ? ' on' : '') + (c.fainted ? ' out' : '')}
+      <div class="dtiles wide" ref=${gridRef}>${cards.length === 0 ? html`<div class="empty">You have no Pokémon yet.</div>` : cards.map((c) => html`<button key=${c.id} class=${'dmon' + (c.order ? ' on' : '') + (c.fainted ? ' out' : '')}
         aria-pressed=${!!c.order} onClick=${() => play('TOGGLE_POKEMON', c.id)}>
         ${c.order ? html`<span class="dord">${c.order}</span>` : null}<${DeskSprite} name=${c.species} w=${7} />
         <b>${c.name}</b><small>Lv ${c.level}${c.fainted ? ' · fainted' : ''}</small><small>${c.where}</small></button>`)}</div>

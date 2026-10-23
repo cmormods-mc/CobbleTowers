@@ -21,9 +21,10 @@ export function laneRows(tracks, want, extras) {
   const rows = tracks.towers.map((t) => {
     const st = standingOf(extras, t.id);
     return { kind: 'tower', id: t.id, name: shortName(t.name), sub: st && st.level > 0 ? st.rank + ' · Level ' + st.level : 'Level ' + t.level, tone: rankTone(st || { level: t.level, rank: '' }),
+      rank: st && st.level > 0 ? st.rank : '',
       selected: kind === 'mastery' && t.id === tracks.selectedTower };
   });
-  if (tracks.season.present) rows.push({ kind: 'season', id: 'season', name: tracks.season.title, sub: tracks.season.subtitle, tone: 'n', selected: kind === 'season' });
+  if (tracks.season.present) rows.push({ kind: 'season', id: 'season', name: tracks.season.title, sub: tracks.season.subtitle, tone: 'n', rank: '', selected: kind === 'season' });
   return rows;
 }
 
@@ -41,3 +42,11 @@ export const tileLabel = (node) => {
   const text = node.reward || node.note || '';
   return text.length > 22 ? text.slice(0, 21).trimEnd() + '…' : text;
 };
+
+/** The rank a "New rank: Silver" tile promises, or empty for any other tile. */
+export const rankOfNote = (node) => { const m = /rank:\s*([A-Za-z]+)/i.exec(node.note || ''); return m ? m[1] : ''; };
+
+// the picture for an achievement, by its name: the achievements are data, so a new one falls back to a gem
+const ACHIEVEMENT_GLYPHS = [[/first step|floors? down/i, 'stairs'], [/flawless/i, 'heart'], [/speed|swift|fast/i, 'dash'], [/team|party/i, 'party'], [/ascen/i, 'chevup'],
+  [/iron will|will/i, 'plate'], [/collect/i, 'coffer'], [/boss|slay|giant/i, 'skull'], [/scout|eye/i, 'eye']];
+export const achievementGlyph = (name) => (ACHIEVEMENT_GLYPHS.find(([re]) => re.test(String(name))) || [0, 'gem'])[1];

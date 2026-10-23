@@ -29,6 +29,23 @@ export const SHOTS = {
   room_forge: { payloads: [fixture('IntermissionState', (d) => { d.draft.cards = [
     { id: 'cobbletowers:event/forge_pay', displayName: 'Forge: every player pays 175 CobbleDollars for a battle relic', votes: 0, risk: -1, theme: 'event', lines: ['Forge: every player pays 175 CobbleDollars for a battle relic'] },
     { id: 'cobbletowers:event/forge_leave', displayName: 'Forge: walk away', votes: 0, risk: -1, theme: 'event', lines: ['Forge: walk away'] }]; d.floor = 3; })] },
+  // every modifier picture, three cards a shot (the route is off so the cards show)
+  ...Object.fromEntries([
+    [['weather:raindance', 'Downpour', 1], ['weather:sunnyday', 'Scorcher', 1], ['weather:sandstorm', 'Dust Bowl', 1]],
+    [['weather:snowscape', 'Whiteout', 1], ['terrain:electricterrain', 'Static Field', 1], ['terrain:psychicterrain', 'Mind Field', 1]],
+    [['terrain:mistyterrain', 'Fairy Mist', 1], ['terrain:grassyterrain', 'Overgrowth', 0], ['enemy:tough', 'Ironclad', 2]],
+    [['enemy:fragile', 'Brittle Boss', 0], ['enemy:champion', 'Champion Rises', 2], ['enemy:veteran', 'Seasoned Ranks', 1]],
+    [['enemy:novice', 'Fresh Recruits', 0], ['encounter:crowd', 'The Mob', 2], ['constraint:no_switch', 'Locked Roster', 2]],
+    [['constraint:no_heal', 'No Recovery', 2], ['constraint:no_setup', 'No Setup', 1], ['constraint:no_items', 'Empty Pockets', 1]],
+    [['scouting', 'Far Sight', 0], ['reward_up:hoard', 'Hazard Pay', 2], ['reward_down', 'Tight Purse', 0]],
+    [['custom:glass_cannon', 'Glass Cannon', 2], ['custom:fortunes_wheel', "Fortune's Wheel", 1], ['custom:field_hospital', 'Field Hospital', 1]],
+    [['custom:black_market', 'Black Market', 1], ['custom:swift_start', 'Swift Start', 0], ['custom:iron_hide', 'Iron Hide', 1]],
+    [['custom:war_banner', 'War Banner', 2], ['unknown', 'Mystery', 1], ['custom:', 'Ember Brand', 0, 'relic']],
+  ].map((trio, i) => ['modart_' + (i + 1), { look: 'desk', payloads: [fixture('IntermissionState', (d) => {
+    d.extras.route = { lane: -1, now: [], ahead: [] };
+    d.draft.cards = trio.map(([theme, name, risk, kind], j) => ({ id: 'cobbletowers:art' + i + j, displayName: name, votes: 0, risk, theme,
+      lines: kind === 'relic' ? ['[+] Your Fire moves deal 25% more damage.', 'Tags: offense', 'Held for this run; not permanent equipment.'] : ['[+] Minor risk  *  +3% to your final payout', '[+] An example effect line.', 'The risk you carry is paid out when the tower ends.'] }));
+  })] }])),
   vendor: { payloads: [fixture('IntermissionState'), fixture('VendorCatalog')] },
   draft_done: { payloads: [fixture('RentalDraft')] },
   draft_sealed: { payloads: [fixture('RentalDraft', openDraft)] },

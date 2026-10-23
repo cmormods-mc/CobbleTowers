@@ -10,6 +10,7 @@ import { canBuy, grantIcon, stockLine } from '../rewards.js';
 import { screen, useScreen } from '../components/native.js';
 import { Done, PackStage } from '../screens/Draft.js';
 import { DeskIcon, DeskItem } from './icons.js';
+import { TIER_LABEL, bestTier, grantTier } from './rewardView.js';
 
 const step = (i, by, n) => (n ? (((i + by) % n) + n) % n : 0);
 
@@ -32,15 +33,21 @@ export function DeskDraft({ draft }) {
       ${draft.complete ? html`<${Done} draft=${draft} desk=${true} />` : html`<${PackStage} draft=${draft} desk=${true} />`}</div></div></div></div>`;
 }
 
-/** The reward reveal over whatever is on screen: one grant a page. */
+/** The reward reveal over whatever is on screen: one grant a page, in a gold-and-lapis frame that grows with how rare the best find is. */
 export function DeskReward({ reward, onClose }) {
   const [page, setPage] = useState(0);
   const grants = reward.grants, at0 = Math.min(page, Math.max(0, grants.length - 1));
   const grant = grants[at0];
   const label = grant ? grant.label || pretty(idTail(grant.item)) : '';
-  return html`<div class="fd dover" role="dialog" aria-label="Rewards secured"><div class="dmodal">
+  const tier = grant ? grantTier(grant) : 'common';
+  const mood = bestTier(grants);
+  return html`<div class="fd dover" role="dialog" aria-label="Rewards secured"><div class=${'dmodal dreward t-' + mood}>
     <span class="lbl">Rewards secured</span><h3 style="font-size:calc(var(--u) * 2.4)">Through floor ${reward.floorIndex}</h3>
-    ${grant ? html`<div class="dgrant" key=${at0}><${GrantPicture} grant=${grant} w=${9} /><b>${label}</b><span>× ${grant.amount}</span></div>` : html`<div class="empty">No rewards in this grant.</div>`}
+    ${grant ? html`<div class=${'dgrant dt-' + tier} key=${at0}>
+      <div class="dplinth"><i class="drays"></i><span class="dring"><${GrantPicture} grant=${grant} w=${9} /></span><i class="dsp s1"></i><i class="dsp s2"></i><i class="dsp s3"></i><i class="dsp s4"></i></div>
+      <b>${label}</b><span>× ${grant.amount}</span>${TIER_LABEL[tier] ? html`<em class="dtier">${TIER_LABEL[tier]}</em>` : null}</div>` : html`<div class="empty">No rewards in this grant.</div>`}
+    ${grants.length > 1 ? html`<div class="dchips" role="group" aria-label="All rewards">${grants.map((g, i) => html`<button key=${i} class=${'dchip' + (i === at0 ? ' on' : '') + ' dt-' + grantTier(g)} aria-label=${'Reward ' + (i + 1) + ' of ' + grants.length} aria-pressed=${i === at0}
+      onClick=${() => setPage(i)}><${GrantPicture} grant=${g} w=${3.2} /></button>`)}</div>` : null}
     ${grants.length > 1 ? html`<div class="dpager"><button class="dbtn gh dsm" aria-label="Previous reward" onClick=${() => setPage(step(at0, -1, grants.length))}>‹</button><span>${at0 + 1} / ${grants.length}</span>
       <button class="dbtn gh dsm" aria-label="Next reward" onClick=${() => setPage(step(at0, 1, grants.length))}>›</button></div>` : null}
     <button class="dbtn" onClick=${onClose}>Continue</button></div></div>`;

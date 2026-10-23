@@ -6,28 +6,28 @@
         "id": "cobbletowers:neutral",
         "displayName": "Neutral Tower",
         "level": 7,
-        "rank": "Veteran",
+        "rank": "Silver",
         "badge": 0
       },
       {
         "id": "cobbletowers:tideforge",
         "displayName": "Tideforge",
         "level": 3,
-        "rank": "Challenger",
+        "rank": "Bronze",
         "badge": 2
       },
       {
         "id": "cobbletowers:rootvale",
         "displayName": "Rootvale",
         "level": 0,
-        "rank": "Novice",
+        "rank": "",
         "badge": 0
       },
       {
         "id": "cobbletowers:duskvale",
         "displayName": "Duskvale",
         "level": 12,
-        "rank": "Expert",
+        "rank": "Gold",
         "badge": 0
       }
     ],
@@ -35,7 +35,7 @@
     "tab": "mastery",
     "open": true,
     "mastery": {
-      "progress": "Level 7 Veteran; 14 cycle(s) cleared, deepest Ascension 2",
+      "progress": "Level 7 Silver; 14 cycle(s) cleared, deepest Ascension 2",
       "perks": "+4% payout, 1 extra reroll",
       "achievements": [
         {

@@ -460,6 +460,73 @@ for (const [w, h] of [[800, 500], [1280, 720], [1920, 1080], [2560, 1080]]) {
   check(`Hall fits a ${w}x${h} window`, !over.x && !over.y, JSON.stringify(over));
   await p.close();
 }
+// N. readability: every piece of text on the main screens reaches 4.5:1 against what it sits on (disabled controls and dimmed rows are exempt)
+const scanContrast = () => {
+  const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const parse = (s) => { const m = s.match(/[\d.]+/g).map(Number); return { rgb: m.slice(0, 3), a: m.length > 3 ? m[3] : 1 }; };
+  const bgOf = (el) => { const chain = []; for (let e = el; e; e = e.parentElement) { const p = parse(getComputedStyle(e).backgroundColor); if (p.a > 0) chain.push(p); } let cur = [11, 16, 32]; for (const p of chain.reverse()) cur = cur.map((v, i) => v * (1 - p.a) + p.rgb[i] * p.a); return cur; };
+  const out = [], seen = new Set();
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const t = walker.currentNode, text = t.textContent.trim();
+    if (!text) continue;
+    const el = t.parentElement;
+    if (el.closest('button:disabled, .out, .dsub.dim, .fd-hud')) continue;
+    const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+    if (cs.visibility === 'hidden' || r.width < 2 || r.height < 2) continue;
+    const fg = parse(cs.color), bg = bgOf(el), fgc = fg.rgb.map((v, i) => v * fg.a + bg[i] * (1 - fg.a));
+    const l1 = lum(fgc), l2 = lum(bg), cr = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    const key = text.slice(0, 24) + cs.fontSize;
+    if (cr < 4.5 && !seen.has(key)) { seen.add(key); out.push(`${cr.toFixed(1)}:1 "${text.slice(0, 28)}"`); }
+  }
+  return out;
+};
+{
+  const screens = [
+    ['Hall', async (p) => { await p.send('TowerHallState', fixture('TowerHallState')); await p.waitForSelector('.fd .trow'); }],
+    ['between floors', async (p) => { const d = fixture('IntermissionState'); d.extras.route = { lane: -1, now: [], ahead: [] }; await p.send('IntermissionState', d); await p.waitForSelector('.fd .dmc'); }],
+    ['route map', async (p) => { await p.send('IntermissionState', fixture('IntermissionState')); await p.waitForSelector('.fd .dstop.now'); }],
+    ['Trials', async (p) => { await p.send('TowerHallState', fixture('TowerHallState')); await p.waitForSelector('.fd .trow'); await p.locator('.fd .pills a', { hasText: 'Trials' }).click(); }],
+    ['Progress', async (p) => { await p.send('TowerHallState', fixture('TowerHallState')); await p.waitForSelector('.fd .trow'); await p.locator('.fd .pills a', { hasText: 'Progress' }).click(); await p.send('TrackState', fixture('TrackState')); await p.waitForSelector('.fd .dtile'); }],
+    ['reward reveal', async (p) => { await p.send('TowerHallState', fixture('TowerHallState')); await p.send('RewardReveal', fixture('RewardReveal')); await p.waitForSelector('.fd .dreward'); }],
+    ['vendor', async (p) => { await p.send('IntermissionState', fixture('IntermissionState')); await p.send('VendorCatalog', fixture('VendorCatalog')); await p.waitForSelector('.fd .dgood'); }],
+    ['scouting', async (p) => { await p.send('ScoutingReveal', fixture('ScoutingReveal')); await p.waitForSelector('.fd .dach'); }],
+  ];
+  for (const [name, setup] of screens) {
+    const p = await open('desk');
+    await setup(p);
+    await p.waitForTimeout(1200);
+    const bad = await p.evaluate(scanContrast);
+    check(`readable text on ${name}`, bad.length === 0, bad.slice(0, 5).join(', '));
+    await p.close();
+  }
+}
+
+// O. the reward track: no tile is its own layer (no opacity), and the wheel moves it one row a notch in one repaint
+{
+  const p = await open('desk');
+  const tracks = fixture('TrackState');
+  const base = tracks.mastery.nodes;
+  tracks.mastery.nodes = Array.from({ length: 80 }, (_, i) => ({ ...base[i % base.length], number: i + 1 }));
+  await p.send('TowerHallState', fixture('TowerHallState'));
+  await p.waitForSelector('.fd .trow');
+  await p.locator('.fd .pills a', { hasText: 'Progress' }).click();
+  await p.send('TrackState', tracks);
+  await p.waitForSelector('.fd .dtile');
+  await p.waitForTimeout(800);
+  const dim = await p.evaluate(() => [...document.querySelectorAll('.dtiles .dtile, .dtiles .dtile *')].filter((e) => getComputedStyle(e).opacity !== '1').map((e) => (e.className.baseVal ?? e.className) + '=' + getComputedStyle(e).opacity));
+  check('no reward tile uses opacity', dim.length === 0, dim.slice(0, 4).join(', '));
+  check('tiles outside the view are not drawn (content-visibility)', await p.evaluate(() => getComputedStyle(document.querySelector('.dtiles .dtile')).contentVisibility === 'auto'));
+  await p.mouse.move(700, 400);
+  const before = await p.evaluate(() => document.querySelector('.dtiles').scrollTop);
+  await p.mouse.wheel(0, 100);
+  await p.waitForTimeout(200);
+  const moved = (await p.evaluate(() => document.querySelector('.dtiles').scrollTop)) - before;
+  const pitch = await p.evaluate(() => { const g = document.querySelector('.dtiles'); return g.firstElementChild.getBoundingClientRect().height + parseFloat(getComputedStyle(g).rowGap); });
+  check('one wheel notch scrolls the reward track one row', Math.abs(moved - pitch) < 3, `moved ${moved}, row ${pitch}`);
+  await p.close();
+}
+
 await browser.close();
 console.log(failed ? failed + ' check(s) failed' : 'all checks passed');
 process.exit(failed ? 1 : 0);

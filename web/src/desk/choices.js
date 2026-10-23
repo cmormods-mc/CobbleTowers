@@ -11,7 +11,7 @@ export const riskTone = (risk) => (risk === 0 ? 'ok' : risk === 1 ? 'warn' : ris
 
 /**
  * One draft card as the page draws it.
- * @returns {{index:number,id:string,kind:string,title:string,sub:string,tone:string,payout:string|null,facts:object[],lines:object[],votes:number}}
+ * @returns {{index:number,id:string,kind:string,title:string,sub:string,tone:string,payout:string|null,facts:object[],lines:object[],votes:number,theme:string,risk:number}}
  */
 export function choiceOf(card, index) {
   const v = cardView(card);
@@ -19,7 +19,7 @@ export function choiceOf(card, index) {
   const payoutLine = card.lines.map((l) => PAYOUT.exec(l)).find(Boolean);
   const facts = parsed.filter((l) => !PAYOUT.test(l.text) && !BOILERPLATE.test(l.text) && !/^Risk: /.test(l.text));
   return { index, id: card.id, kind: v.kind, title: v.title, sub: v.sub, tone: riskTone(card.risk), payout: payoutLine ? payoutLine[1] : null,
-    facts, lines: parsed, votes: card.votes };
+    facts, lines: parsed, votes: card.votes, theme: card.theme || '', risk: card.risk };
 }
 
 export const choicesOf = (draft) => (draft?.cards ?? []).map(choiceOf);

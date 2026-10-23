@@ -6,25 +6,25 @@
         "id": "cobbletowers:neutral",
         "displayName": "Neutral Tower",
         "level": 7,
-        "rank": "Veteran"
+        "rank": "Silver"
       },
       {
         "id": "cobbletowers:tideforge",
         "displayName": "Tideforge",
         "level": 3,
-        "rank": "Challenger"
+        "rank": "Bronze"
       },
       {
         "id": "cobbletowers:rootvale",
         "displayName": "Rootvale",
         "level": 0,
-        "rank": "Novice"
+        "rank": ""
       },
       {
         "id": "cobbletowers:duskvale",
         "displayName": "Duskvale",
         "level": 12,
-        "rank": "Expert"
+        "rank": "Gold"
       }
     ],
     "selected": "cobbletowers:neutral",

@@ -10,6 +10,7 @@ import { sendFeature } from '../screens/Features.js';
 import { DeskSprite } from './DeskHall.js';
 import { choicesOf, clearedText, hpTone, pathNodes } from './choices.js';
 import { RouteMap } from './DeskRoute.js';
+import { ModArt, RiskGems, artOf } from './modArt.js';
 import { hasRoute } from './routeMap.js';
 
 const send = (action, argument = 0) => act('IntermissionAction', { action, argument });
@@ -40,11 +41,14 @@ function Team({ party }) {
 function Choice({ c, selected, chosen, enabled, onPick, onHover }) {
   return html`<button class=${'dmc' + (selected ? ' sel' : '') + (chosen ? ' chosen' : '')} disabled=${!enabled} aria-pressed=${selected}
     onClick=${onPick} onMouseEnter=${() => onHover(true)} onMouseLeave=${() => onHover(false)} onFocus=${() => onHover(true)} onBlur=${() => onHover(false)}>
-    <h4 class=${c.kind === 'event' && c.sub.length > 28 ? 'long' : ''}>${c.kind === 'event' ? c.sub || c.title : c.title}</h4>
-    <span class=${'ty rk-' + c.tone}>${c.kind === 'event' ? c.title : c.sub}</span>
-    ${c.kind === 'event' ? null
-      : c.facts.slice(0, 3).map((l, i) => html`<div key=${i} class=${'dpl ' + (l.tone === 'benefit' ? 'p' : l.tone === 'cost' ? 'c' : 'n')}><i>${l.sign || '·'}</i>${l.text}</div>`)}
-    <div class="dpay"><span>${chosen ? 'Chosen' : selected ? 'Selected' : ''}${c.votes ? (chosen || selected ? ' · ' : '') + c.votes + (c.votes === 1 ? ' vote' : ' votes') : ''}</span>${c.payout ? html`<b>${c.payout}</b>` : null}</div>
+    <${ModArt} art=${artOf(c.theme, c.kind, c.title)} />
+    <div class="dmbody">
+      <h4 class=${c.kind === 'event' && c.sub.length > 28 ? 'long' : ''}>${c.kind === 'event' ? c.sub || c.title : c.title}</h4>
+      <div class="dtags"><${RiskGems} risk=${c.risk} /><span class=${'ty rk-' + c.tone}>${c.kind === 'event' ? c.title : c.sub}</span></div>
+      ${c.kind === 'event' ? null
+        : c.facts.slice(0, 3).map((l, i) => html`<div key=${i} class=${'dpl ' + (l.tone === 'benefit' ? 'p' : l.tone === 'cost' ? 'c' : 'n')}><i>${l.sign || '·'}</i>${l.text}</div>`)}
+      <div class="dpay"><span>${chosen ? 'Chosen' : selected ? 'Selected' : ''}${c.votes ? (chosen || selected ? ' · ' : '') + c.votes + (c.votes === 1 ? ' vote' : ' votes') : ''}</span>${c.payout ? html`<b>${c.payout}<small> payout</small></b>` : null}</div>
+    </div>
   </button>`;
 }
 
@@ -89,7 +93,7 @@ export function DeskIntermission({ inter, at: arrived }) {
             chosen=${draft.state === 2 && c.index === draft.chosen} enabled=${open && idle && !pending}
             onPick=${() => setView({ offer, selected: c.index })} onHover=${(on) => setHover(on ? c.index : -1)} />`)}</div>`}
       </div>
-      <div class="dcard dcol dside"><div class="ch"><h3>${shown ? shown.title : 'Details'}</h3>${shown ? html`<span class=${'ty rk-' + shown.tone}>${shown.kind === 'event' ? 'Room' : shown.sub}</span>` : null}</div>
+      <div class="dcard dcol dside">${shown ? html`<${ModArt} art=${artOf(shown.theme, shown.kind, shown.title)} wide />` : null}<div class="ch"><h3>${shown ? shown.title : 'Details'}</h3>${shown ? html`<span class=${'ty rk-' + shown.tone}>${shown.kind === 'event' ? 'Room' : shown.sub}</span>` : null}</div>
         <div class="dlines">${shown ? shown.lines.map((l, i) => html`<div key=${i} class=${'dpl ' + (l.tone === 'benefit' ? 'p' : l.tone === 'cost' ? 'c' : 'n')}><i>${l.sign || '·'}</i>${l.text}</div>`) : html`<div class="empty">Nothing to show.</div>`}</div>
         <div class="dmembers"><span class="lbl">Party</span>${inter.members.map((m) => html`<div key=${m.name} class="dmem"><span class=${'dot ' + (m.ready ? 'on' : '')}></span>${m.name}<small>${m.cashOut ? 'cashing out' : m.ready ? 'ready' : 'waiting'}</small></div>`)}</div></div>
     </div>

@@ -4,13 +4,16 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { html } from '../html.js';
 import { update, useStore } from '../store.js';
 import { goTo, selectNode, setLane } from '../reducer.js';
-import { anyClaimable, CLAIMABLE, CLAIMED, currentIndex, detail, laneOf, LOCKED, subtitle } from '../tracks.js';
+import { anyClaimable, CLAIMABLE, CLAIMED, currentIndex, detail, laneOf, LOCKED, subtitle, tileIcon } from '../tracks.js';
 import { sendTrack } from '../screens/Tracks.js';
 import { sendFeature } from '../screens/Features.js';
 import { requestMastery } from '../screens/Mastery.js';
 import { TopBar } from './DeskHall.js';
 import { TileIcon } from './icons.js';
-import { claimable, claimLine, laneRows, progressPercent, stateWord, tileLabel, timerText } from './progressView.js';
+import { claimable, claimLine, laneRows, progressPercent, rankOfNote, stateWord, tileLabel, timerText } from './progressView.js';
+import { Emblem, RankMedal } from './emblem.js';
+import { Pix } from './pix.js';
+import { useStepScroll } from './stepScroll.js';
 
 const MORE = [['Season & rewards', () => sendFeature('season')], ['Cosmetics & titles', () => sendFeature('cosmetics')], ['Contracts', () => sendFeature('contracts')],
   ['Hall of Fame', () => sendFeature('hall')], ['Last run report', () => sendFeature('report')],
@@ -18,10 +21,12 @@ const MORE = [['Season & rewards', () => sendFeature('season')], ['Cosmetics & t
 
 function Tile({ node, unit, selected, current, onPick }) {
   const frame = node.state === CLAIMABLE ? 'open' : node.state === CLAIMED ? 'done' : node.state === LOCKED ? 'lock' : 'info';
+  const rank = rankOfNote(node);
   return html`<button class=${'dtile ' + frame + (selected ? ' sel' : '') + (current ? ' cur' : '')} onClick=${onPick} data-n=${node.number} aria-pressed=${selected}
     aria-label=${unit + ' ' + node.number + ' ' + stateWord(node) + ' ' + (node.reward || '')}>
-    <span class="dn">${node.number}</span><span class="dpic"><${TileIcon} node=${node} /></span>
-    <span class="dlab">${tileLabel(node)}</span>
+    <span class="dn">${node.number}</span>
+    <span class="dpic">${rank ? html`<${RankMedal} rank=${rank} w=${4.4} />` : tileIcon(node) ? html`<${TileIcon} node=${node} w=${3.8} />` : html`<i class="dgap"></i>`}</span>
+    <span class="dlab">${tileLabel(node) || (rank ? '' : 'No reward')}</span>
     ${node.state === CLAIMABLE ? html`<span class="dbang">Ready</span>` : node.state === CLAIMED ? html`<span class="dtick" aria-hidden="true">✓</span>` : null}</button>`;
 }
 
@@ -33,6 +38,7 @@ export function DeskProgress({ hall }) {
   const sel = useStore((s) => s.tSel);
   const [now, setNow] = useState(Date.now());
   const gridRef = useRef(null);
+  useStepScroll(gridRef);
   const { kind, data: lane } = tracks ? laneOf(tracks, want) : { kind: 'mastery', data: null };
   // the season timer counts down while the page is open
   useEffect(() => { if (kind !== 'season') return undefined; const id = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(id); }, [kind]);
@@ -60,15 +66,16 @@ export function DeskProgress({ hall }) {
       <div style="display:flex;flex-direction:column;gap:calc(var(--u) * .9);min-height:0">
         <div class=${'cont' + (ready.total ? ' gold' : '')}><div style="flex:1"><small>Ready to claim</small><b>${claimLine(ready.total)}</b></div>
           ${ready.mastery && kind !== 'mastery' ? html`<button class="dbtn dsm gh" onClick=${() => update((s) => setLane(s, 'mastery'))}>Mastery</button>` : ready.season && kind !== 'season' ? html`<button class="dbtn dsm gh" onClick=${() => update((s) => setLane(s, 'season'))}>Season</button>` : null}</div>
-        <div class="rows">${rows.map((r) => html`<button key=${r.id} class=${'trow dl' + (r.selected ? ' sel' : '')} aria-pressed=${r.selected} onClick=${() => pick(r)}
-          style="grid-template-columns:1fr"><div><b>${r.name}</b><small style="margin:0">${r.sub}</small></div></button>`)}
+        <div class="rows">${rows.map((r) => html`<button key=${r.id} class=${'trow dl dlrow' + (r.selected ? ' sel' : '')} aria-pressed=${r.selected} onClick=${() => pick(r)}
+          style="grid-template-columns:1fr">${r.kind === 'season' ? html`<${Pix} name="crown" w=${3.4} />` : html`<${Emblem} tower=${r.id} w=${3.6} />`}
+          <div style="flex:1;min-width:0"><b>${r.name}</b><small style="margin:0">${r.sub}</small></div>${r.rank ? html`<${RankMedal} rank=${r.rank} w=${2.8} />` : null}</button>`)}
           <div class="dmore"><span class="lbl">More</span>${MORE.map(([name, run]) => html`<button key=${name} class="dbtn gh dsm" onClick=${run}>${name}</button>`)}</div></div>
       </div>
       <div class="dcard dcol" style="min-height:0">
-        <div class="ch"><div><h3 style="font-size:calc(var(--u) * 2.2)">${lane.title}</h3><div class="dsub">${subtitle(tracks, lane, kind)}</div></div>
+        <div class="ch"><div class="dhdr">${kind === 'season' ? html`<${Pix} name="crown" w=${5} />` : html`<${Emblem} tower=${tracks.selectedTower} w=${5.2} />`}<div><h3 style="font-size:calc(var(--u) * 2.2)">${lane.title}</h3><div class="dsub">${subtitle(tracks, lane, kind)}</div></div></div>
           <div style="display:flex;gap:calc(var(--u) * .6);align-items:center">${timer ? html`<span class="stp stp-y">${timer}</span>` : null}
             <button class="dbtn dsm gh" disabled=${!anyClaimable(lane)} onClick=${() => sendTrack('claim_all', kind, tracks.selectedTower, 0)}>Claim all</button></div></div>
-        ${lane.need > 0 ? html`<div class="dprog" role="img" aria-label=${pct + ' percent to the next step'}><i style=${`width:${pct}%`}></i><span>${lane.into} / ${lane.need}</span></div>` : null}
+        ${lane.need > 0 ? html`<div class="dprogrow"><div class="dprog" role="img" aria-label=${pct + ' percent to the next step'}><i style=${`width:${pct}%`}></i></div><span>${lane.into} / ${lane.need}</span></div>` : null}
         <div class="dtiles" ref=${gridRef}>${lane.nodes.map((n, i) => html`<${Tile} key=${n.number} node=${n} unit=${kind === 'season' ? 'Step' : 'Level'} selected=${selected === i} current=${i === currentIndex(lane)} onPick=${() => update((s) => selectNode(s, kind, i))} />`)}</div>
         <div class="ddetail"><div style="flex:1;min-width:0">${d.hint ? html`<div class="dsub">${d.body}</div>` : html`<b>${d.title}</b><div>${d.body}</div>${d.note ? html`<div class="dsub">${d.note}</div>` : null}`}</div>
           <button class="dbtn" disabled=${!d.claimable} onClick=${() => sendTrack('claim', kind, tracks.selectedTower, node.number)}>Claim</button></div>
