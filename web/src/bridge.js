@@ -18,6 +18,15 @@ function post(message) {
   else sent.push(message);
 }
 
+/**
+ * Tells AscensionLib a full-screen page is up, so its overlay does not open over it (WebGUI's openHud destroys an open GUI page).
+ * Nothing listens when AscensionLib is absent.
+ */
+function beatLib() {
+  if (isHud || typeof W.postToGame !== 'function' || !insideGame()) return;
+  W.postToGame({ channel: 'ascension_gui_beat' });
+}
+
 /** page -> server */
 export function act(kind, fields) {
   post({ kind, ...fields });
@@ -61,7 +70,8 @@ export function connect(onPayload) {
   // no "closed" event, so silence means closed.
   post({ kind: 'hello', hud: isHud });
   // A page closed with Esc may stay alive but hidden: it stops pinging (and says goodbye) while hidden, so the server can tell.
-  setInterval(() => { if (document.visibilityState !== 'hidden') post({ kind: 'ping', hud: isHud }); }, 1500);
+  setInterval(() => { if (document.visibilityState !== 'hidden') { post({ kind: 'ping', hud: isHud }); beatLib(); } }, 1500);
+  beatLib();
   window.addEventListener('pagehide', () => post({ kind: 'bye', hud: isHud }));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') post({ kind: 'bye', hud: isHud }); });
 
