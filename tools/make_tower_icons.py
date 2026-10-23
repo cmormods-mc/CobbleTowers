@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Draws the placeholder tower icons of the mastery badge (P47c): one 8x8 picture per tower in one bitmap-font strip.
+"""Draws the placeholder tower icons of the mastery badge (P47c): one 8x8 gold-ringed medallion per tower in one bitmap-font strip.
 
     python tools/make_tower_icons.py
 
@@ -16,67 +16,50 @@ OUT = Path(__file__).resolve().parent.parent / "src/main/resources/assets/cobble
 PALETTE = {
     "K": (36, 26, 32, 255),      # outline
     "S": (206, 208, 218, 255),   # stone light
-    "s": (150, 152, 172, 255),   # stone mid
-    "d": (92, 94, 120, 255),     # shade and windows
-    "b": (64, 140, 235, 255),    # water
+    "d": (92, 94, 120, 255),     # stone shade (neutral field)
+    "n": (30, 84, 172, 255),     # water field
     "w": (176, 218, 255, 255),   # water highlight
-    "n": (30, 84, 172, 255),     # water shade
-    "g": (96, 200, 100, 255),    # leaf
-    "G": (44, 126, 62, 255),     # leaf vein and shade
-    "p": (156, 100, 226, 255),   # dusk
-    "q": (240, 220, 255, 255),   # star
+    "W": (255, 255, 255, 255),   # glint
+    "G": (44, 126, 62, 255),     # leaf field
+    "h": (170, 236, 150, 255),   # leaf highlight
+    "P": (82, 44, 130, 255),     # dusk field
+    "q": (240, 220, 255, 255),   # moon
+    "r": (150, 36, 50, 255),     # ruby field
     "y": (248, 204, 66, 255),    # gold
     "Y": (200, 140, 30, 255),    # gold shade
+    "Z": (255, 238, 160, 255),   # gold highlight
     ".": (0, 0, 0, 0),
 }
 
-ICONS = [
-    # neutral: a stone tower
-    ["KK.KK.KK",
-     "KSKSSKSK",
-     "KSSSSSsK",
-     "KSSdSSsK",
-     "KSSSSSsK",
-     "KSSddSsK",
-     "KSSddSsK",
-     "KKKKKKKK"],
-    # tideforge: a drop of water
-    ["...KK...",
-     "..KbbK..",
-     ".KbwbbK.",
-     ".KbwbbK.",
-     "KbbbbbbK",
-     "KbbbbbnK",
-     ".KbbbnK.",
-     "..KKKK.."],
-    # rootvale: a leaf
-    [".....KKK",
-     "...KKggK",
-     "..KgggGK",
-     ".KggGggK",
-     ".KgGgggK",
-     "KgGggGK.",
-     "KGgGGK..",
-     "KKKK...."],
-    # duskvale: a crescent moon and a star
-    ["..KKKK.q",
-     ".KppppK.",
-     "KpppKK..",
-     "KppK....",
-     "KppK....",
-     "KpppKK..",
-     ".KppppK.",
-     "..KKKK.."],
-    # any other tower: a gold star
-    ["...KK...",
-     "..KyyK..",
-     "KKKyyKKK",
-     "KyyyyyyK",
-     ".KyyyyK.",
-     ".KyYYyK.",
-     "KyyKKyyK",
-     "KKK..KKK"],
+# the Byzantine medallion: a gold ring round a jewel-toned field; "B" is the field colour, the 4x4 emblem sits in the middle
+RING = ["..KKKK..",
+        ".KyZZyK.",
+        "KyBBBByK",
+        "KZBBBBYK",
+        "KZBBBBYK",
+        "KyBBBBYK",
+        ".KyYYYK.",
+        "..KKKK.."]
+
+# (field, emblem): "." in an emblem shows the field
+MEDALLIONS = [
+    ("d", ["S..S", ".SS.", ".SS.", "SSSS"]),   # neutral: a stone tower
+    ("n", ["..w.", ".ww.", "wWww", ".ww."]),   # tideforge: a drop of water
+    ("G", ["..hh", ".hh.", "hh..", "h..."]),   # rootvale: a leaf
+    ("P", [".qq.", "q...", "q...", ".qq."]),   # duskvale: a crescent moon
+    ("r", ["..W.", "WWWW", ".WW.", ".W.W"]),   # any other tower: a white star
 ]
+
+
+def medallion(field, emblem):
+    rows = [list(row.replace("B", field)) for row in RING]
+    for dy, line in enumerate(emblem):
+        for dx, mark in enumerate(line):
+            rows[2 + dy][2 + dx] = field if mark == "." else mark
+    return ["".join(row) for row in rows]
+
+
+ICONS = [medallion(field, emblem) for field, emblem in MEDALLIONS]
 
 
 def main() -> None:
