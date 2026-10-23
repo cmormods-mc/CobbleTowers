@@ -9,6 +9,7 @@ import { lobbyView, partyLine, regionOf } from '../lobby.js';
 import { DeskPano, DeskSprite } from './DeskHall.js';
 import { modeName, rosterOf, seatLine, seatsOf, startHint } from './seats.js';
 import { shortName } from './standings.js';
+import { Logo } from './Logo.js';
 
 const play = (action, argument = '') => act('PlayAction', { action, argument });
 
@@ -46,7 +47,7 @@ export function DeskLobby({ state }) {
   // the server's own messages arrive as toasts; this line is only for a state the page can see by itself
   const message = v.waitingForHost ? 'Waiting for the host to confirm the mode.' : '';
   return html`<div class="fd">
-    <div class="dtop"><span class="logo">COBBLE <b>TOWERS</b></span><span class="dcrumb"><b>Lobby</b>${lobby.hostName ? ' · Host ' + lobby.hostName : ''}</span>
+    <div class="dtop"><${Logo} /><span class="dcrumb"><b>Lobby</b>${lobby.hostName ? ' · Host ' + lobby.hostName : ''}</span>
       <span class="sp2"></span><button class="tl" onClick=${() => update(goBack)}>Back</button><button class="x" aria-label="Close" onClick=${closeGui}>×</button></div>
     <div class="dbody" style="grid-template-columns:27fr 43fr 30fr;flex:1">
       <div class="dcard dcol"><div class="ch"><h3>Tower</h3><span class="lbl">${v.canChoose ? 'Choose one' : 'Set by the host'}</span></div>

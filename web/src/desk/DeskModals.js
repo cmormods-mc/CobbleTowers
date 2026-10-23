@@ -17,6 +17,7 @@ import { scoutView } from './scoutView.js';
 import { vendorGlyph } from './vendorView.js';
 import { ATLAS } from '../gen/atlas.js';
 import { TIER_LABEL, bestTier, grantTier } from './rewardView.js';
+import { Logo } from './Logo.js';
 
 const step = (i, by, n) => (n ? (((i + by) % n) + n) % n : 0);
 
@@ -32,7 +33,7 @@ export function GrantPicture({ grant, w = 8 }) {
 export function DeskDraft({ draft }) {
   useScreen();
   const restart = () => act('RentalDraftAction', { action: 'RESTART', a: 0, b: 0 });
-  return html`<div class="fd"><div class="dtop"><span class="logo">COBBLE <b>TOWERS</b></span><span class="dcrumb"><b>Rental draft</b> · Keep two cards from each of three packs</span>
+  return html`<div class="fd"><div class="dtop"><${Logo} /><span class="dcrumb"><b>Rental draft</b> · Keep two cards from each of three packs</span>
       <div class="dots" role="img" aria-label=${'Pack ' + (draft.complete ? 3 : draft.current + 1) + ' of 3'}>${[0, 1, 2].map((i) => html`<i key=${i} class=${(i < draft.current || draft.complete ? 'on' : '') + (i === draft.current && !draft.complete ? ' cur' : '')}></i>`)}</div>
       <span class="sp2"></span><button class="tl" onClick=${restart}>Start over</button><button class="x" aria-label="Close" onClick=${closeGui}>×</button></div>
     <div class="dbody" style="grid-template-columns:1fr;flex:1"><div class="ns dtable" style=${`--g:${screen.g}px`}><div class="dstage2">
@@ -94,7 +95,7 @@ export function DeskScouting({ scout }) {
   const cats = scout.categories;
   const chosen = cats[Math.min(sel, cats.length - 1)];
   const close = () => { update(closeScout); closeGui(); };
-  return html`<div class="fd"><div class="dtop"><span class="logo">COBBLE <b>TOWERS</b></span><span class="dcrumb"><b>Scouting</b> · Floor ${scout.floorIndex}</span><span class="sp2"></span>
+  return html`<div class="fd"><div class="dtop"><${Logo} /><span class="dcrumb"><b>Scouting</b> · Floor ${scout.floorIndex}</span><span class="sp2"></span>
       <button class="x" aria-label="Close" onClick=${close}>×</button></div>
     <div class="dbody" style="grid-template-columns:64fr 36fr;flex:1">
       <div class="dcard dcol"><div class="ch"><h3>What the scouts saw</h3><span class="lbl">${cats.length} ${cats.length === 1 ? 'detail' : 'details'}</span></div>

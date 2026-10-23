@@ -12,6 +12,7 @@ import { choicesOf, clearedText, hpTone, pathNodes } from './choices.js';
 import { RouteMap } from './DeskRoute.js';
 import { ModArt, RiskGems, artOf } from './modArt.js';
 import { hasRoute } from './routeMap.js';
+import { Logo } from './Logo.js';
 
 const send = (action, argument = 0) => act('IntermissionAction', { action, argument });
 
@@ -78,7 +79,7 @@ export function DeskIntermission({ inter, at: arrived }) {
   const canConfirm = open && idle && !pending && selected >= 0 && selected !== draft.myVote;
 
   return html`<div class="fd">
-    <div class="dtop"><span class="logo">COBBLE <b>TOWERS</b></span><span class="dcrumb"><b>${clearedText(inter.floor, extras)}</b>${extras.tower ? ' · ' + extras.tower : ''}</span>
+    <div class="dtop"><${Logo} /><span class="dcrumb"><b>${clearedText(inter.floor, extras)}</b>${extras.tower ? ' · ' + extras.tower : ''}</span>
       <span class="sp2"></span><button class="tl" onClick=${() => sendFeature('run')}>Current run</button><button class="x" aria-label="Close" onClick=${closeGui}>×</button></div>
     <${Path} extras=${extras} />
     <div class="dbody" style="grid-template-columns:21fr 52fr 27fr;flex:1">

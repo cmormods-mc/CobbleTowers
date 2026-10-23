@@ -13,6 +13,8 @@ import { request } from '../screens/Hall.js';
 import { sendTrack } from '../screens/Tracks.js';
 import { sendFeature } from '../screens/Features.js';
 import { defaultPick, modeLine, prettyStatus, rankTone, residentsOf, shortName, standingOf, standingText, teamSummary } from './standings.js';
+import { Logo } from './Logo.js';
+import { Emblem } from './emblem.js';
 
 /** A partner sprite from the shared sheet at a width in --u units; a ball when the sheet has no picture of it. */
 export function DeskSprite({ name, w = 5 }) {
@@ -45,7 +47,7 @@ function openPill(id) {
 }
 
 export function TopBar({ active = 'towers', back }) {
-  return html`<div class="dtop">${back ? html`<button class="tl dback" onClick=${back}>← Back</button>` : null}<span class="logo">COBBLE <b>TOWERS</b></span>
+  return html`<div class="dtop">${back ? html`<button class="tl dback" onClick=${back}>← Back</button>` : null}<${Logo} />
     <div class="pills" role="tablist">${PILLS.map(([id, name]) => html`<a key=${id} role="tab" tabindex="0" aria-selected=${id === active} class=${id === active ? 'on' : ''}
       onClick=${() => openPill(id)} onKeyDown=${(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPill(id); } }}>${name}</a>`)}</div>
     <span class="sp2"></span>
@@ -71,7 +73,7 @@ function TowerRow({ t, extras, selected, onPick }) {
   const run = extras?.runTower === t.id;
   return html`<button class=${'trow' + (selected ? ' sel' : '')} onClick=${onPick} aria-pressed=${selected} title=${t.name}>
     <div class="pbox"><${DeskPano} region=${regionOf(t.id)} /></div>
-    <div><b>${shortName(t.name)}</b><small>${t.floors} floors · ${t.milestones} milestones${t.ascends ? ' · Ascends' : ''}</small>
+    <div><b class="dtname"><${Emblem} tower=${t.id} w=${2.6} />${shortName(t.name)}</b><small>${t.floors} floors · ${t.milestones} milestones${t.ascends ? ' · Ascends' : ''}</small>
       <span class=${'medal m-' + rankTone(st)}>${standingText(st)}</span>
       ${st && st.ascension > 0 ? html` <span class="medal m-m">Ascension ${st.ascension}</span>` : null}
       ${run ? html` <span class="medal m-p">Run in progress</span>` : null}</div>
@@ -93,9 +95,9 @@ export function DeskHall({ hall, busy }) {
     <div class="dbody" style="grid-template-columns:34fr 66fr;flex:1">
       <${Team} party=${extras?.party ?? []} mode=${modeLine(extras)} />
       <div style="display:flex;flex-direction:column;gap:calc(var(--u) * .9);min-height:0">
-        ${inRun ? html`<div class="cont"><div style="flex:1"><small>Run in progress</small><b>${runTower ? shortName(runTower.name) + ' Tower' : 'Your tower'} · ${prettyStatus(hall.runStatus)}</b></div>
+        ${inRun ? html`<div class="cont run"><${Emblem} tower=${extras?.runTower || ''} w=${4.6} /><div style="flex:1"><small>Run in progress</small><b>${runTower ? shortName(runTower.name) + ' Tower' : 'Your tower'} · ${prettyStatus(hall.runStatus)}</b></div>
           <button class="dbtn dsm" disabled=${busy || !hall.canResume} onClick=${() => request('resume')}>${hall.canResume ? 'Return to run' : 'Back at the next intermission'}</button></div>`
-          : lobbyRole !== 0 ? html`<div class="cont"><div style="flex:1"><small>Expedition lobby</small><b>Your party is gathering</b></div><button class="dbtn dsm" disabled=${busy} onClick=${() => request('lobby')}>Open lobby</button></div>` : null}
+          : lobbyRole !== 0 ? html`<div class="cont run"><${Emblem} tower="other" w=${4.6} /><div style="flex:1"><small>Expedition lobby</small><b>Your party is gathering</b></div><button class="dbtn dsm" disabled=${busy} onClick=${() => request('lobby')}>Open lobby</button></div>` : null}
         <div class="rows">${hall.towers.length === 0 ? html`<div class="empty">No towers are available.</div>` : hall.towers.map((t) => html`<${TowerRow} key=${t.id} t=${t} extras=${extras} selected=${t.id === chosen?.id} onPick=${() => setPick(t.id)} />`)}</div>
         <div style="display:flex;gap:calc(var(--u) * 1);align-items:center;flex-wrap:wrap">
           <button class="dbtn gh dsm" disabled=${!trial('daily')} onClick=${() => update((s) => goTo(s, 'trial', 'daily'))}>${trial('daily') ? trial('daily').title.replace(/^Daily Trial: /, 'Daily · ') : 'Daily'}</button>
