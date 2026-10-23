@@ -148,15 +148,17 @@ class SeasonPointsTest {
         }
         assertEquals(1050, dollars);
         assertEquals(200, raidPoints);
-        assertEquals(5, packs);
+        assertEquals(4, packs, "the halfway step pays an Ascension Core in place of the fifth pack");
         assertEquals(7, candy);
         long banners = track.steps().stream().flatMap(step -> step.cosmetics().stream()).filter(name -> name.startsWith("banner_")).count();
         assertEquals(3, banners);
         SeasonTrackDefinition.Step finale = track.steps().get(29);
         assertTrue(finale.cosmetics().containsAll(java.util.List.of("title_champion", "badge")));
-        assertEquals(1, finale.grants().size());
+        assertEquals(2, finale.grants().size());
         assertEquals("cobbletowers:season_trim_template_{season}", finale.grants().get(0).item());
         assertEquals(4, finale.grants().get(0).amount(), "one template for each armor piece");
+        assertEquals("minecraft:heart_of_the_sea", finale.grants().get(1).item(), "the finale also pays an Ascension Core");
+        assertEquals("minecraft:heart_of_the_sea", track.steps().get(14).grants().get(0).item(), "halfway pays an Ascension Core");
         assertTrue(track.steps().get(23).cosmetics().contains("title_challenger"));
     }
 
