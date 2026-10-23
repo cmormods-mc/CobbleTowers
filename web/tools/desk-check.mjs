@@ -31,16 +31,16 @@ async function open(look, size = { width: 1280, height: 720 }) {
   return page;
 }
 
-// 1. the native look is still the default and is not touched
+// 1. the Frontier Desk look is the default
 {
   const p = await open(null);
   await p.send('TowerHallState', fixture('TowerHallState'));
   await p.waitForTimeout(300);
-  check('default look is native on the Hall', (await p.locator('.ns').count()) > 0 && (await p.locator('.fd').count()) === 0);
+  check('default look is desk on the Hall', (await p.locator('.fd').count()) > 0 && (await p.locator('.ns').count()) === 0);
   await p.send('IntermissionState', fixture('IntermissionState'));
   await p.waitForTimeout(200);
-  check('default look is native between floors', (await p.locator('.ns').count()) > 0 && (await p.locator('.fd').count()) === 0);
-  check('no console errors (native)', p.errors.length === 0, p.errors.join(' | '));
+  check('default look is desk between floors', (await p.locator('.fd').count()) > 0 && (await p.locator('.ns').count()) === 0);
+  check('no console errors (default)', p.errors.length === 0, p.errors.join(' | '));
   await p.close();
 }
 

@@ -75,7 +75,7 @@
         },
         {
           "name": "Collector",
-          "description": "Earn every armor piece of one set.",
+          "description": "Earn every armor piece of one set (WIP).",
           "held": false
         }
       ]

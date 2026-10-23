@@ -334,54 +334,6 @@
         "weight": 14
       },
       {
-        "item": "cobbletowers:rootvale_helmet",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 2
-      },
-      {
-        "item": "cobbletowers:rootvale_chestplate",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 2
-      },
-      {
-        "item": "cobbletowers:rootvale_leggings",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 2
-      },
-      {
-        "item": "cobbletowers:rootvale_boots",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 2
-      },
-      {
-        "item": "cobbletowers:sprout_helmet",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 3
-      },
-      {
-        "item": "cobbletowers:sprout_chestplate",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 3
-      },
-      {
-        "item": "cobbletowers:sprout_leggings",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 3
-      },
-      {
-        "item": "cobbletowers:sprout_boots",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 3
-      },
-      {
         "item": "cobblemon:exp_candy_l",
         "min_amount": 1,
         "max_amount": 1,
@@ -530,54 +482,6 @@
         "min_amount": 1,
         "max_amount": 1,
         "weight": 8
-      },
-      {
-        "item": "cobbletowers:rootvale_helmet",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 5
-      },
-      {
-        "item": "cobbletowers:rootvale_chestplate",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 5
-      },
-      {
-        "item": "cobbletowers:rootvale_leggings",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 5
-      },
-      {
-        "item": "cobbletowers:rootvale_boots",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 5
-      },
-      {
-        "item": "cobbletowers:sprout_helmet",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 6
-      },
-      {
-        "item": "cobbletowers:sprout_chestplate",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 6
-      },
-      {
-        "item": "cobbletowers:sprout_leggings",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 6
-      },
-      {
-        "item": "cobbletowers:sprout_boots",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 6
       },
       {
         "item": "cobbletowers:cobble_dollar",
@@ -809,30 +713,6 @@
           "min_amount": 1,
           "max_amount": 2,
           "weight": 8
-        },
-        {
-          "item": "cobbletowers:heartwood_helmet",
-          "min_amount": 1,
-          "max_amount": 1,
-          "weight": 12
-        },
-        {
-          "item": "cobbletowers:heartwood_chestplate",
-          "min_amount": 1,
-          "max_amount": 1,
-          "weight": 12
-        },
-        {
-          "item": "cobbletowers:heartwood_leggings",
-          "min_amount": 1,
-          "max_amount": 1,
-          "weight": 12
-        },
-        {
-          "item": "cobbletowers:heartwood_boots",
-          "min_amount": 1,
-          "max_amount": 1,
-          "weight": 12
         }
       ]
     }
