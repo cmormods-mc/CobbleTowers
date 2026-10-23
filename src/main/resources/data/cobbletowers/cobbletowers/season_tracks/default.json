@@ -127,10 +127,9 @@
     {
       "grants": [
         {
-          "item": "minecraft:heart_of_the_sea",
+          "item": "ascensionlib:ascension_core",
           "amount": 1,
-          "label": "Ascension Core",
-          "components": "{id:\"minecraft:heart_of_the_sea\",count:1,components:{\"minecraft:custom_data\":{ascensionlib:{material:\"ascension_core\"}},\"minecraft:custom_model_data\":8103,\"minecraft:custom_name\":'{\"text\":\"Ascension Core\",\"color\":\"#c9694f\",\"italic\":false}',\"minecraft:lore\":['[\"\",{\"text\":\"EPIC\",\"color\":\"#af69ff\",\"bold\":true,\"italic\":false},{\"text\":\" · Currency\",\"color\":\"dark_gray\",\"bold\":false,\"italic\":false}]','{\"text\":\"The heart of a promotion.\",\"color\":\"gray\",\"italic\":false}','{\"text\":\"Earned in the Tower.\",\"color\":\"gray\",\"italic\":false}']}}"
+          "label": "Ascension Core"
         }
       ]
     },
@@ -256,10 +255,9 @@
           "label": "{season_name} Trim Template"
         },
         {
-          "item": "minecraft:heart_of_the_sea",
+          "item": "ascensionlib:ascension_core",
           "amount": 1,
-          "label": "Ascension Core",
-          "components": "{id:\"minecraft:heart_of_the_sea\",count:1,components:{\"minecraft:custom_data\":{ascensionlib:{material:\"ascension_core\"}},\"minecraft:custom_model_data\":8103,\"minecraft:custom_name\":'{\"text\":\"Ascension Core\",\"color\":\"#c9694f\",\"italic\":false}',\"minecraft:lore\":['[\"\",{\"text\":\"EPIC\",\"color\":\"#af69ff\",\"bold\":true,\"italic\":false},{\"text\":\" · Currency\",\"color\":\"dark_gray\",\"bold\":false,\"italic\":false}]','{\"text\":\"The heart of a promotion.\",\"color\":\"gray\",\"italic\":false}','{\"text\":\"Earned in the Tower.\",\"color\":\"gray\",\"italic\":false}']}}"
+          "label": "Ascension Core"
         }
       ],
       "cosmetics": [

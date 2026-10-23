@@ -303,7 +303,8 @@ public final class SeasonProgressService {
 
     /** A currency the delivery credits, or an item this server has. */
     public static boolean grantable(ResourceLocation id) {
-        return id.equals(CobbleDollars.ITEM_ID) || id.equals(RaidPointsCurrency.ITEM_ID) || BuiltInRegistries.ITEM.containsKey(id);
+        return id.equals(CobbleDollars.ITEM_ID) || id.equals(RaidPointsCurrency.ITEM_ID) || BuiltInRegistries.ITEM.containsKey(id)
+                || com.cobbletowers.economy.AscensionMaterials.of(id).isPresent();
     }
 
     // ---- words ------------------------------------------------------------------------------------

@@ -157,8 +157,8 @@ class SeasonPointsTest {
         assertEquals(2, finale.grants().size());
         assertEquals("cobbletowers:season_trim_template_{season}", finale.grants().get(0).item());
         assertEquals(4, finale.grants().get(0).amount(), "one template for each armor piece");
-        assertEquals("minecraft:heart_of_the_sea", finale.grants().get(1).item(), "the finale also pays an Ascension Core");
-        assertEquals("minecraft:heart_of_the_sea", track.steps().get(14).grants().get(0).item(), "halfway pays an Ascension Core");
+        assertEquals("ascensionlib:ascension_core", finale.grants().get(1).item(), "the finale also pays an Ascension Core");
+        assertEquals("ascensionlib:ascension_core", track.steps().get(14).grants().get(0).item(), "halfway pays an Ascension Core");
         assertTrue(track.steps().get(23).cosmetics().contains("title_challenger"));
     }
 

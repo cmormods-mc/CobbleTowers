@@ -81,6 +81,7 @@ export const SHOTS = {
   desk_draft_choose: { payloads: [fixture('RentalDraft', openDraft)], look: 'desk', steps: async (page) => { await page.click('.pack', { force: true }); await page.waitForSelector('.card.pick', { timeout: 8000 }); await page.click('.card.pick >> nth=1'); } },
   desk_draft_done: { payloads: [fixture('RentalDraft')], look: 'desk' },
   desk_reward: { payloads: [fixture('TowerHallState'), fixture('RewardReveal')], look: 'desk' },
+  desk_reward_lib: { payloads: [fixture('TowerHallState'), fixture('RewardReveal', (d) => { d.grants = ['resonance_dust', 'facet', 'tower_mark', 'scouter', 'ascension_core'].map((m, i) => ({ item: 'ascensionlib:' + m, amount: i ? 2 : 120, label: m.replace(/_/g, ' ') })); })], look: 'desk' },
   desk_vendor: { payloads: [fixture('IntermissionState'), fixture('VendorCatalog')], look: 'desk' },
   desk_scouting: { payloads: [fixture('ScoutingReveal')], look: 'desk', steps: async (page) => { await page.click('.fd .dach >> nth=1'); } },
   desk_spectator: { payloads: [fixture('SpectatorPanel')], hud: true, look: 'desk' },

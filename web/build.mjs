@@ -36,7 +36,13 @@ fs.writeFileSync(path.join(here, 'src/gen/atlas.js'), 'export const ATLAS = ' + 
 
 // ---- the mod's own item pictures (armor, key, trim template): third-party items (Cobblemon, vanilla) are not redistributed and show a gift
 const itemFiles = fs.readdirSync(path.join(res, 'textures/item')).filter((n) => n.endsWith('.png'));
-const items = packAtlas(itemFiles.map((f) => ({ name: 'cobbletowers:' + f.replace(/\.png$/, ''), file: path.join(res, 'textures/item', f) })), 256);
+// AscensionLib's materials (its resource pack's textures, kept in web/art) are drawn by the same name the server sends: ascensionlib:<material>
+const libDir = path.join(here, 'art/ascensionlib');
+const libFiles = fs.readdirSync(libDir).filter((n) => n.endsWith('.png'));
+const items = packAtlas([
+  ...itemFiles.map((f) => ({ name: 'cobbletowers:' + f.replace(/\.png$/, ''), file: path.join(res, 'textures/item', f) })),
+  ...libFiles.map((f) => ({ name: 'ascensionlib:' + f.replace(/\.png$/, ''), file: path.join(libDir, f) })),
+], 256);
 fs.writeFileSync(path.join(out, 'assets/items.png'), items.png);
 fs.writeFileSync(path.join(here, 'src/gen/items.js'), 'export const ITEMS = ' + JSON.stringify({ width: items.width, height: items.height, map: items.map }) + ';\n');
 
