@@ -146,3 +146,49 @@ test('a choice carries the theme and risk the card art needs', async () => {
   assert.equal(c.risk, 1);
   assert.equal(choiceOf({ id: 'y', displayName: 'Rest: heal', votes: 0, risk: -1, lines: ['x'] }, 0).theme, '');
 });
+
+test('the rules of a trial become tiles, modifier names and a leftover list', async () => {
+  const { trialStats, periodText, SOCIAL } = await import('../src/desk/briefing.js');
+  const s = trialStats(['5 floors / 2026-10-09', 'Mode: Level Cap 50', 'Enemy level: 50', 'Starting modifiers: Double Trouble, Downpour', 'First launch is scored.']);
+  assert.deepEqual(s.tiles.map((t) => [t.glyph, t.value, t.label, t.sub]), [['stairs', '5', 'floors', '2026-10-09'], ['plate', 'Level Cap 50', 'mode', ''], ['swords', 'Lv 50', 'enemies', '']]);
+  assert.deepEqual(s.modifiers, ['Double Trouble', 'Downpour']);
+  assert.deepEqual(s.rest, ['First launch is scored.']);
+  assert.deepEqual(trialStats(['Starting modifiers: None']).modifiers, []);
+  assert.equal(trialStats(['1 floor']).tiles[0].label, 'floor');
+  assert.deepEqual(trialStats([]), { tiles: [], modifiers: [], rest: [] });
+  assert.equal(periodText('2026-w41'), 'Week 41');
+  assert.equal(periodText('2026-10-09'), '2026-10-09');
+  const { GLYPHS } = await import('../src/desk/pix.js');
+  for (const c of SOCIAL) { assert.ok(GLYPHS[c.glyph], c.title); assert.ok(['neutral', 'tideforge', 'rootvale', 'duskvale'].includes(c.region)); }
+});
+
+test('a scouting line is broken into the pictures worth drawing', async () => {
+  const { scoutView, speciesKey, itemIdOf } = await import('../src/desk/scoutView.js');
+  const { GLYPHS } = await import('../src/desk/pix.js');
+  const types = scoutView({ name: 'Opponent types', value: 'Water, Ice' });
+  assert.deepEqual(types.chips.map((c) => c.type), ['water', 'ice']);
+  assert.equal(scoutView({ name: 'Opponent types', value: 'Shadow' }).chips[0].type, '');
+  assert.equal(scoutView({ name: 'Lead Pokemon', value: 'Lapras, level 48' }).species, 'lapras');
+  assert.equal(speciesKey('Mr. Mime, level 5'), 'mrmime');
+  assert.equal(itemIdOf('Sitrus Berry'), 'cobblemon:sitrus_berry');
+  const items = scoutView({ name: 'Held items', value: 'Leftovers, Sitrus Berry' });
+  assert.deepEqual(items.chips.map((c) => c.text), ['Leftovers', 'Sitrus Berry']);
+  assert.equal(items.chips[1].item, 'berry_yellow');
+  assert.equal(items.chips[0].item, '');
+  assert.deepEqual(scoutView({ name: 'Moves seen', value: 'Surf, Ice Beam' }).chips.map((c) => c.text), ['Surf', 'Ice Beam']);
+  assert.equal(scoutView({ name: 'Boss floor', value: 'Floor 5 is a boss floor' }).kind, 'boss');
+  assert.equal(scoutView({ name: 'Weather', value: 'Rain' }).weather, 'weather:raindance');
+  assert.equal(scoutView({ name: 'Weather', value: 'Harsh sunlight' }).weather, 'weather:sunnyday');
+  assert.equal(scoutView({ name: 'Weather', value: 'Clear' }).weather, '');
+  assert.equal(scoutView({ name: 'Something else', value: 'x' }).kind, 'other');
+  for (const c of [types, items, scoutView({ name: 'Weather', value: 'Rain' }), scoutView({ name: 'Boss floor', value: '' }), scoutView({ name: '?', value: '' })]) assert.ok(GLYPHS[c.glyph], c.kind);
+});
+
+test('the vendor picks a picture for what it sells', async () => {
+  const { vendorGlyph } = await import('../src/desk/vendorView.js');
+  const { GLYPHS } = await import('../src/desk/pix.js');
+  assert.equal(vendorGlyph('cobbletowers:full_heal'), 'heart');
+  assert.equal(vendorGlyph('cobbletowers:cure_status'), 'flask');
+  assert.equal(vendorGlyph('cobbletowers:something'), 'bag');
+  for (const id of ['cobbletowers:full_heal', 'cobbletowers:cure_status', 'cobbletowers:revive', 'cobbletowers:tower_key', 'x']) assert.ok(GLYPHS[vendorGlyph(id)], id);
+});

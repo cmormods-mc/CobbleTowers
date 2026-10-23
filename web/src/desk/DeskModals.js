@@ -10,6 +10,12 @@ import { canBuy, grantIcon, stockLine } from '../rewards.js';
 import { screen, useScreen } from '../components/native.js';
 import { Done, PackStage } from '../screens/Draft.js';
 import { DeskIcon, DeskItem } from './icons.js';
+import { DeskSprite } from './DeskHall.js';
+import { ModArt, artOf } from './modArt.js';
+import { Pix } from './pix.js';
+import { scoutView } from './scoutView.js';
+import { vendorGlyph } from './vendorView.js';
+import { ATLAS } from '../gen/atlas.js';
 import { TIER_LABEL, bestTier, grantTier } from './rewardView.js';
 
 const step = (i, by, n) => (n ? (((i + by) % n) + n) % n : 0);
@@ -61,14 +67,25 @@ export function DeskVendor({ vendor, onClose }) {
   const who = team[Math.min(target, team.length - 1)];
   const chosen = services[Math.min(sel, services.length - 1)];
   return html`<div class="fd dover" role="dialog" aria-label="Tower supplies"><div class="dmodal wide">
-    <div class="dmhead"><div><span class="lbl">Tower supplies</span><h3 style="font-size:calc(var(--u) * 2.4)">Balance: ${vendor.cobbleDollars}</h3></div>
+    <div class="dmhead"><div><span class="lbl">Tower supplies</span><h3 class="dbalance" style="font-size:calc(var(--u) * 2.4)"><${DeskIcon} name="coin" w=${2.6} /><span>Balance: ${vendor.cobbleDollars}</span></h3></div>
       ${who ? html`<button class="dbtn gh dsm" onClick=${() => setTarget(step(target, 1, team.length))}>For: ${who.name}${who.online ? '' : ' (offline)'}</button>` : null}</div>
     <div class="dgoods">${services.length === 0 ? html`<div class="empty">Nothing is for sale.</div>` : services.map((e, i) => html`<button key=${e.id} class=${'dgood' + (i === sel ? ' sel' : '')} aria-pressed=${i === sel} onClick=${() => setSel(i)}>
-      <b>${e.displayName}</b><span>${e.priceCobbleDollars} CobbleDollars</span><small>${e.remainingPurchases < 0 ? 'Unlimited' : e.remainingPurchases + ' left'}</small></button>`)}</div>
+      <span class="dgoodpic"><${Pix} name=${vendorGlyph(e.id)} w=${3.4} /></span><span class="dgoodtxt"><b>${e.displayName}</b><span class="dprice"><${DeskIcon} name="coin" w=${1.7} />${e.priceCobbleDollars}</span><small>${e.remainingPurchases < 0 ? 'Unlimited' : e.remainingPurchases + ' left'}</small></span></button>`)}</div>
     <div class="dmfoot"><div style="flex:1;min-width:0">${chosen ? html`<b>${chosen.displayName}</b><div class="dsub">${chosen.priceCobbleDollars} CobbleDollars · ${stockLine(chosen)}</div>` : null}
       ${vendor.message ? html`<div class="dsub" role="status">${vendor.message}</div>` : null}</div>
       ${chosen ? html`<button class="dbtn" disabled=${!canBuy(vendor, chosen, who)} onClick=${() => act('VendorPurchase', { serviceId: chosen.id, targetPlayerId: who.id })}>Purchase</button>` : null}
       <button class="dbtn gh" onClick=${onClose}>Close</button></div></div></div>`;
+}
+
+/** What a scouting line shows in full: the lead's sprite, the types as chips, the weather as a scene, and so on. */
+function ScoutDetail({ cat }) {
+  const v = scoutView(cat);
+  return html`<div class="dscoutbig">
+    ${v.kind === 'weather' && v.weather ? html`<${ModArt} art=${{ ...artOf(v.weather), sprite: null }} wide />` : null}
+    ${v.kind === 'lead' && ATLAS.map[v.species] ? html`<div class="dleadpic"><${DeskSprite} name=${v.species} w=${17} /></div>` : null}
+    ${v.kind === 'boss' ? html`<div class="dleadpic"><${Pix} name="skull" w=${8} /></div>` : null}
+    ${v.chips.length ? html`<div class="dscoutchips">${v.chips.map((c, i) => html`<span key=${i} class=${c.type ? 'ty t-' + c.type : 'dscoutchip'}>${c.item ? html`<${DeskIcon} name=${c.item} w=${1.8} />` : null}${c.text}</span>`)}</div>` : null}
+    <div class="dscouttext">${cat.value}</div></div>`;
 }
 
 /** What the scouts learned about the floor: the categories as cards, the chosen one read in full. */
@@ -81,9 +98,9 @@ export function DeskScouting({ scout }) {
       <button class="x" aria-label="Close" onClick=${close}>×</button></div>
     <div class="dbody" style="grid-template-columns:64fr 36fr;flex:1">
       <div class="dcard dcol"><div class="ch"><h3>What the scouts saw</h3><span class="lbl">${cats.length} ${cats.length === 1 ? 'detail' : 'details'}</span></div>
-        <div class="dtiles wide">${cats.length === 0 ? html`<div class="empty">Nothing revealed.</div>` : cats.map((c, i) => html`<button key=${i} class=${'dach' + (i === sel ? ' pick' : '')} aria-pressed=${i === sel} onClick=${() => setSel(i)}>
-          <b>${c.name}</b><span>${c.value}</span></button>`)}</div></div>
-      <div class="dcard dcol"><div class="ch"><h3>${chosen ? chosen.name : 'Details'}</h3></div><div class="dlines" style="flex:1;font-size:calc(var(--u) * 1.5);line-height:1.45">${chosen ? chosen.value : 'Nothing revealed.'}</div>
+        <div class="dtiles wide">${cats.length === 0 ? html`<div class="empty">Nothing revealed.</div>` : cats.map((c, i) => html`<button key=${i} class=${'dach hasic lit' + (i === sel ? ' pick' : '')} aria-pressed=${i === sel} onClick=${() => setSel(i)}>
+          <span class="dachpic"><${Pix} name=${scoutView(c).glyph} w=${3.4} /></span><span class="dachtxt"><b>${c.name}</b><span>${c.value}</span></span></button>`)}</div></div>
+      <div class="dcard dcol"><div class="ch"><h3>${chosen ? chosen.name : 'Details'}</h3></div>${chosen ? html`<${ScoutDetail} cat=${chosen} />` : html`<div class="dlines" style="flex:1">Nothing revealed.</div>`}
         <div class="dactions"><button class="dbtn" onClick=${close}>Close</button></div></div></div></div>`;
 }
 

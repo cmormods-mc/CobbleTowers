@@ -8,9 +8,18 @@ import { request } from '../screens/Hall.js';
 import { sendFeature } from '../screens/Features.js';
 import { DeskPano, DeskSprite, TopBar } from './DeskHall.js';
 import { rankTone, standingText } from './standings.js';
-import { SOCIAL, towerBrief, trialLines, whyNot } from './briefing.js';
+import { SOCIAL, towerBrief, trialLines, trialStats, whyNot } from './briefing.js';
+import { Pix } from './pix.js';
 
 const back = () => update(goBack);
+
+/** A trial's rules: floors, mode and enemy level as tiles, the starting modifiers as a list, then anything else the server said. */
+function Stats({ facts }) {
+  const s = trialStats(facts);
+  return html`<div class="dstats">${s.tiles.map((t) => html`<div key=${t.label} class="dstat"><${Pix} name=${t.glyph} w=${3.6} /><div><b>${t.value}</b><span>${t.label}${t.sub ? ' · ' + t.sub : ''}</span></div></div>`)}</div>
+    ${s.modifiers.length ? html`<div class="dmods"><span class="lbl">Starting modifiers</span><div class="dmodchips">${s.modifiers.map((m) => html`<span key=${m} class="dmodchip"><${Pix} name="gem" w=${1.7} />${m}</span>`)}</div></div>` : null}
+    ${s.rest.map((l, i) => html`<div key=${i} class="dpl n"><i>·</i>${l}</div>`)}`;
+}
 
 /** A tower's briefing: its landscape, what is in it, and the way into its lobby. */
 export function DeskTowerBrief({ hall, id, busy }) {
@@ -40,7 +49,7 @@ export function DeskTrialBrief({ hall, kind, busy }) {
     <div class="dbody" style="grid-template-columns:62fr 38fr;flex:1">
       ${t ? html`<div class="dcard dcol"><div class="dbanner"><${DeskPano} region=${regionOf(t.tower)} /></div>
         <div class="ch" style="padding-top:calc(var(--u) * 1.4)"><h3 style="font-size:calc(var(--u) * 2.6)">${t.title}</h3><span class="lbl">${kind}</span></div>
-        <div class="dlines" style="flex:1">${lines.facts.map((l, i) => html`<div key=${i} class="dpl n"><i>·</i>${l}</div>`)}</div></div>`
+        <div class="dlines" style="flex:1"><${Stats} facts=${lines.facts} /></div></div>`
         : html`<div class="dcard empty" style="display:grid;place-items:center">No ${kind} trial is currently available.</div>`}
       <div class="dcard dcol" style="padding:calc(var(--u) * 1.6);gap:calc(var(--u) * 1.2)"><h3>Take the trial</h3>
         <div class="dsub">${lines.note || 'Preparing opens a lobby; nothing launches yet.'}</div>
@@ -54,18 +63,19 @@ export function DeskTrials({ hall }) {
     const t = hall.trials.find((x) => x.kind === kind);
     const lines = trialLines(t);
     return html`<div class="dcard dcol">
-      <div class="dbanner short">${t ? html`<${DeskPano} region=${regionOf(t.tower)} />` : null}</div>
-      <div class="ch" style="padding-top:calc(var(--u) * 1.2)"><h3>${title}</h3><span class="lbl">${t ? t.title.replace(/^(Daily|Weekly) Trial: /, '') : 'None right now'}</span></div>
-      <div class="dlines" style="flex:1">${lines.facts.slice(0, 5).map((l, i) => html`<div key=${i} class="dpl n"><i>·</i>${l}</div>`)}</div>
+      <div class="dbanner short hero">${t ? html`<${DeskPano} region=${regionOf(t.tower)} />` : null}
+        <div class="dbannertxt"><h3>${title}</h3><span class="lbl">${t ? t.title.replace(/^(Daily|Weekly) Trial: /, '') : 'None right now'}</span></div></div>
+      <div class="dlines" style="flex:1"><${Stats} facts=${lines.facts.slice(0, 6)} />${lines.note ? html`<div class="dnote"><${Pix} name="scroll" w=${2.4} /><span>${lines.note}</span></div>` : null}</div>
       <div style="padding:calc(var(--u) * 1.2) calc(var(--u) * 1.4) calc(var(--u) * 1.4)"><button class="dbtn" disabled=${!t} onClick=${() => update((s) => goTo(s, 'trial', kind))}>Open briefing</button></div></div>`;
   };
   return html`<div class="fd"><${TopBar} active="trials" /><div class="dbody" style="grid-template-columns:1fr 1fr;flex:1">${card('daily', 'Daily Tower')}${card('weekly', 'Weekly Tower')}</div></div>`;
 }
 
-/** The Social page: the lobby, the club, spectating and run codes. */
+/** The Social page: the lobby, the club, spectating and run codes, each over the landscape of a tower. */
 export function DeskSocial() {
   const open = (what) => (what === 'lobby' ? request('lobby') : sendFeature(what));
   return html`<div class="fd"><${TopBar} active="social" />
-    <div class="dbody" style="grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;flex:1">${SOCIAL.map((c) => html`<button key=${c.title} class="dcard dtilebtn" onClick=${() => open(c.open)}>
-      <b>${c.title}</b><span>${c.sub}</span></button>`)}</div></div>`;
+    <div class="dbody" style="grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;flex:1">${SOCIAL.map((c) => html`<button key=${c.title} class="dcard dtilebtn dsoc" onClick=${() => open(c.open)}>
+      <span class="dsocart"><${DeskPano} region=${c.region} /><span class="dsocring"><${Pix} name=${c.glyph} w=${6.6} /></span></span>
+      <span class="dsoctxt"><b>${c.title}</b><span>${c.sub}</span></span></button>`)}</div></div>`;
 }

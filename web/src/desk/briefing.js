@@ -36,10 +36,31 @@ export function trialLines(trial) {
   return { facts: rules, note };
 }
 
-/** Cards of the Social page: title, what it is for, and which request opens it. */
+/** Cards of the Social page: title, what it is for, which request opens it, and the picture and landscape it wears. */
 export const SOCIAL = [
-  { title: 'Party & invites', sub: 'Gather your team', open: 'lobby' },
-  { title: 'Club lodge', sub: 'Your community', open: 'club' },
-  { title: 'Spectate', sub: 'Watch challengers', open: 'watch' },
-  { title: 'Run codes', sub: 'Scout an expedition', open: 'codes' },
+  { title: 'Party & invites', sub: 'Gather your team', open: 'lobby', glyph: 'party', region: 'neutral' },
+  { title: 'Club lodge', sub: 'Your community', open: 'club', glyph: 'lodge', region: 'tideforge' },
+  { title: 'Spectate', sub: 'Watch challengers', open: 'watch', glyph: 'eye', region: 'duskvale' },
+  { title: 'Run codes', sub: 'Scout an expedition', open: 'codes', glyph: 'scroll', region: 'rootvale' },
 ];
+
+/** "2026-w41" -> "Week 41"; a date stays as it is. */
+export const periodText = (p) => { const m = /^\d{4}-w(\d+)$/i.exec(String(p || '')); return m ? 'Week ' + Number(m[1]) : String(p || ''); };
+
+/**
+ * The rules of a trial as tiles (floors, mode, enemy level), the starting modifiers as a list, and whatever else the server said.
+ * @param {string[]} facts the trial's rule lines, ids already made readable
+ * @returns {{tiles: {glyph:string, value:string, label:string, sub:string}[], modifiers: string[], rest: string[]}}
+ */
+export function trialStats(facts) {
+  const tiles = [], modifiers = [], rest = [];
+  for (const line of facts) {
+    let m;
+    if ((m = /^(\d+) floors?\s*(?:\/\s*(.+))?$/i.exec(line))) tiles.push({ glyph: 'stairs', value: m[1], label: Number(m[1]) === 1 ? 'floor' : 'floors', sub: periodText(m[2]) });
+    else if ((m = /^Mode:\s*(.+)$/i.exec(line))) tiles.push({ glyph: 'plate', value: m[1], label: 'mode', sub: '' });
+    else if ((m = /^Enemy level:\s*(\d+)/i.exec(line))) tiles.push({ glyph: 'swords', value: 'Lv ' + m[1], label: 'enemies', sub: '' });
+    else if ((m = /^Starting modifiers:\s*(.+)$/i.exec(line))) { if (!/^none$/i.test(m[1].trim())) modifiers.push(...m[1].split(',').map((x) => x.trim()).filter(Boolean)); }
+    else rest.push(line);
+  }
+  return { tiles, modifiers, rest };
+}

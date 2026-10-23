@@ -91,9 +91,45 @@
 .fd .dentryrow { display: flex; align-items: center; gap: calc(var(--u) * .8); } .fd .dentrytxt { display: flex; flex-direction: column; gap: calc(var(--u) * .2); flex: 1; min-width: 0; }
 .fd .dach.hasic { flex-direction: row; align-items: flex-start; gap: calc(var(--u) * 1); }
 .fd .dachpic { flex: none; width: calc(var(--u) * 5.4); height: calc(var(--u) * 5.4); border-radius: 50%; display: grid; place-items: center; background: var(--bg2); border: calc(var(--u) * .25) solid var(--line); }
-.fd .dach.held .dachpic { border-color: var(--gold2); background: radial-gradient(circle at 50% 35%, var(--lapis1), var(--lapis3)); box-shadow: 0 0 0 calc(var(--u) * .2) var(--gold4); }
-.fd .dach:not(.held) .dachpic .dpix { filter: grayscale(1) brightness(.75); }
+.fd .dach.held .dachpic, .fd .dach.lit .dachpic { border-color: var(--gold2); background: radial-gradient(circle at 50% 35%, var(--lapis1), var(--lapis3)); box-shadow: 0 0 0 calc(var(--u) * .2) var(--gold4); }
+.fd .dach:not(.held):not(.lit) .dachpic .dpix { filter: grayscale(1) brightness(.75); }
 .fd .dachtxt { display: flex; flex-direction: column; gap: calc(var(--u) * .4); min-width: 0; flex: 1; }
 /* a tick pops with scale only: an opacity animation would make every tile that scrolls into view a layer while it plays */
 @keyframes dtickpop { 0% { scale: .3; } 60% { scale: 1.14; } 100% { scale: 1; } }
 .fd .dtile .dtick { animation: dtickpop .4s cubic-bezier(.2, .9, .3, 1.2) both; color: #3fd07f; }
+
+/* ---- Social: each tile over the landscape of a tower, with a medallion for its picture ---- */
+.fd .dsoc { padding: 0; overflow: hidden; gap: 0; align-items: stretch; justify-content: flex-start; }
+.fd .dsocart { position: relative; flex: 1; min-height: 0; display: block; background: var(--surf2); }
+.fd .dsocart .dpano { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.fd .dsocring { position: absolute; left: calc(var(--u) * 2.4); bottom: calc(var(--u) * -3.6); width: calc(var(--u) * 11); height: calc(var(--u) * 11); border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 32%, var(--lapis1), var(--lapis3) 75%); border: calc(var(--u) * .45) solid var(--gold2); box-shadow: 0 0 0 calc(var(--u) * .22) var(--gold4), 0 calc(var(--u) * .6) calc(var(--u) * 1.4) #0008; }
+.fd .dsoctxt { display: flex; flex-direction: column; gap: calc(var(--u) * .4); padding: calc(var(--u) * 1.4) calc(var(--u) * 2.4) calc(var(--u) * 1.6) calc(var(--u) * 15.4); }
+.fd .dsoc:hover { border-color: var(--gold2); }
+.fd .dsoc .dsoctxt { color: var(--ink); } .fd .dsoc .dsoctxt > span { color: var(--mut); }
+.fd .dnote { display: flex; align-items: flex-start; gap: calc(var(--u) * .9); padding: calc(var(--u) * 1) calc(var(--u) * 1.2); border-radius: calc(var(--u) * 1.1); background: var(--abg); color: var(--afg); font: 600 calc(var(--u) * 1.2)/1.35 Outfit; }
+
+/* ---- Trials: a banner with the title on it, and the rules as stat tiles ---- */
+.fd .dbanner.hero { position: relative; height: calc(var(--u) * 16); }
+.fd .dbannertxt { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: baseline; justify-content: space-between; gap: calc(var(--u) * 1); padding: calc(var(--u) * .8) calc(var(--u) * 1.4); background: rgba(8, 12, 28, .8); }
+.fd .dbannertxt h3 { font-size: calc(var(--u) * 2.4); }
+.fd .dstats { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(var(--u) * 13), 1fr)); gap: calc(var(--u) * .9); }
+.fd .dstat { display: flex; align-items: center; gap: calc(var(--u) * 1); padding: calc(var(--u) * 1) calc(var(--u) * 1.2); background: var(--surf2); border: calc(var(--u) * .2) solid var(--line); border-radius: calc(var(--u) * 1.1); min-width: 0; }
+.fd .dstat b { display: block; font: 800 calc(var(--u) * 2) / 1.05 Outfit; overflow-wrap: anywhere; } .fd .dstat span { color: var(--mut); font: 600 calc(var(--u) * 1.15) Outfit; }
+.fd .dmods { display: flex; flex-direction: column; gap: calc(var(--u) * .6); } .fd .dmodchips { display: flex; flex-wrap: wrap; gap: calc(var(--u) * .6); }
+.fd .dmodchip { display: inline-flex; align-items: center; gap: calc(var(--u) * .5); padding: calc(var(--u) * .4) calc(var(--u) * .9); border-radius: calc(var(--u) * 2); background: var(--bbg); color: var(--bfg); font: 700 calc(var(--u) * 1.2) Outfit; }
+
+/* ---- scouting: the report read in pictures ---- */
+.fd .dscoutbig { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: calc(var(--u) * 1.2); padding: calc(var(--u) * .6) calc(var(--u) * 1.4) calc(var(--u) * 1); scrollbar-width: thin; }
+.fd .dleadpic { display: grid; place-items: center; padding: calc(var(--u) * 1.4); background: radial-gradient(circle at 50% 40%, var(--lapis1), var(--lapis3)); border-radius: calc(var(--u) * 1.2); border: calc(var(--u) * .3) solid var(--gold3); }
+.fd .dscoutchips { display: flex; flex-wrap: wrap; gap: calc(var(--u) * .7); }
+.fd .dscoutchips .ty { display: inline-flex; align-items: center; gap: calc(var(--u) * .5); font-size: calc(var(--u) * 1.3); padding: calc(var(--u) * .45) calc(var(--u) * 1); }
+.fd .dscoutchip { display: inline-flex; align-items: center; gap: calc(var(--u) * .5); padding: calc(var(--u) * .5) calc(var(--u) * 1.1); border-radius: calc(var(--u) * 1); background: var(--surf2); border: calc(var(--u) * .15) solid var(--line); font: 700 calc(var(--u) * 1.3) Outfit; }
+.fd .dscouttext { font-size: calc(var(--u) * 1.5); line-height: 1.45; color: var(--soft); }
+
+/* ---- vendor: a picture for each good, a coin by every price ---- */
+.fd .dgood { flex-direction: row; align-items: center; gap: calc(var(--u) * 1); }
+.fd .dgoodpic { flex: none; width: calc(var(--u) * 5.4); height: calc(var(--u) * 5.4); border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, var(--lapis1), var(--lapis3)); border: calc(var(--u) * .25) solid var(--gold3); }
+.fd .dgood .dgoodtxt { display: flex; flex-direction: column; gap: calc(var(--u) * .3); color: var(--ink); min-width: 0; }
+.fd .dgood .dprice { display: flex; align-items: center; gap: calc(var(--u) * .4); color: var(--afg); font-weight: 800; }
+.fd .dbalance { display: flex; align-items: center; gap: calc(var(--u) * .7); }
