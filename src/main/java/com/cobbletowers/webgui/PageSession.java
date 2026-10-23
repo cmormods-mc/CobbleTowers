@@ -58,7 +58,19 @@ final class PageSession {
 
     /** Records a payload (so a late page can be caught up) and says what to do with it. */
     Action offer(String kind, String json, boolean hud, Policy policy, boolean flagged, long now, int heartbeatSeconds, long loadMillis) {
+        return offer(kind, json, hud, policy, flagged, false, now, heartbeatSeconds, loadMillis);
+    }
+
+    /**
+     * As above. {@code fromPage}: the payload answers a click on the page itself, so that page is on screen and the
+     * answer updates it whatever the payload's open flag or policy say (reopening would reload the page on every click).
+     */
+    Action offer(String kind, String json, boolean hud, Policy policy, boolean flagged, boolean fromPage, long now, int heartbeatSeconds, long loadMillis) {
         latest.put(kind, new Stamped(now, json));
+        if (fromPage && alive(hud, now, heartbeatSeconds)) {
+            openAskedAt = NEVER;
+            return Action.EMIT;
+        }
         // A screen the player just asked for must show: a page closed with Esc may keep pinging, so the heartbeat cannot be trusted.
         boolean asked = !hud && policy != Policy.UPDATE_ONLY && openAskedAt != NEVER && now - openAskedAt < ASK_MILLIS;
         if (asked) openAskedAt = NEVER;

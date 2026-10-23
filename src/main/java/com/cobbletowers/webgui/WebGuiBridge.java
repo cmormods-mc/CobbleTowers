@@ -60,6 +60,8 @@ public final class WebGuiBridge {
     private static volatile WebGuiConfig config = WebGuiConfig.OFF;
     private static volatile boolean linked;
     private static final Map<UUID, PageSession> SESSIONS = new ConcurrentHashMap<>();
+    /** The player whose page message is being handled right now (server thread only); null otherwise. */
+    private static UUID actingPlayer;
 
     private WebGuiBridge() {}
 
@@ -164,7 +166,9 @@ public final class WebGuiBridge {
             if (flagged(payload)) TowerLog.info("WebGUI {} for {}: held back, a completion reveal is showing", PayloadJson.kindOf(payload.getClass()), player.getGameProfile().getName());
             return true;
         }
-        PageSession.Action action = session.offer(PayloadJson.kindOf(payload.getClass()), json, hud, policyOf(payload), flagged(payload), now,
+        // An answer to a click on the page goes to the open page as an update: reopening it on every click reloads it.
+        boolean fromPage = player.getUUID().equals(actingPlayer);
+        PageSession.Action action = session.offer(PayloadJson.kindOf(payload.getClass()), json, hud, policyOf(payload), flagged(payload), fromPage, now,
                 config.heartbeatSeconds(), LOAD_MILLIS);
         if (flagged(payload) && !hud) TowerLog.info("WebGUI {} for {}: {}", PayloadJson.kindOf(payload.getClass()), player.getGameProfile().getName(), action);
         switch (action) {
@@ -219,9 +223,16 @@ public final class WebGuiBridge {
                 PageSession session = SESSIONS.get(player.getUUID());
                 if (session != null) session.bye(hud);
             }
-            default -> PageActions.decode(message).ifPresentOrElse(
-                    action -> TowerNetworking.handleAction(player.server, player, action),
-                    () -> TowerLog.warn("Ignored an unreadable page message from {}: kind '{}'", player.getGameProfile().getName(), kind));
+            default -> {
+                actingPlayer = player.getUUID();
+                try {
+                    PageActions.decode(message).ifPresentOrElse(
+                            action -> TowerNetworking.handleAction(player.server, player, action),
+                            () -> TowerLog.warn("Ignored an unreadable page message from {}: kind '{}'", player.getGameProfile().getName(), kind));
+                } finally {
+                    actingPlayer = null;
+                }
+            }
         }
     }
 }

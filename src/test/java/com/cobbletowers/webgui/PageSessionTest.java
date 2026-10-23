@@ -152,4 +152,22 @@ class PageSessionTest {
         assertEquals(OPEN, offer("IntermissionState", "{after}", false, UPDATE_OR_OPEN_IF_FLAGGED, true, 20_000));
         assertEquals(List.of("{after}"), session.hello(false, 20_100), "the newest state, not the stale held one");
     }
+
+    @Test
+    @DisplayName("an answer to a click on the page updates it, even if the payload asks to open or replace")
+    void clickAnswersUpdate() {
+        offer("IntermissionState", "{i}", false, UPDATE_OR_OPEN_IF_FLAGGED, true, 0);
+        session.hello(false, 500);
+        session.ping(false, 2_000);
+        session.askOpen(2_100);
+        assertEquals(EMIT, session.offer("IntermissionState", "{click}", false, UPDATE_OR_OPEN_IF_FLAGGED, true, true, 2_200, HEARTBEAT, LOAD));
+        assertEquals(EMIT, session.offer("RewardReveal", "{r}", false, REPLACE, true, true, 2_300, HEARTBEAT, LOAD));
+        assertEquals(EMIT, offer("IntermissionState", "{later}", false, UPDATE_OR_OPEN_IF_FLAGGED, true, 2_400), "the stale ask was cleared");
+    }
+
+    @Test
+    @DisplayName("a click answer with no live page falls back to the normal rules")
+    void clickAnswerWithoutPage() {
+        assertEquals(OPEN, session.offer("IntermissionState", "{i}", false, UPDATE_OR_OPEN_IF_FLAGGED, true, true, 0, HEARTBEAT, LOAD));
+    }
 }
