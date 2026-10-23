@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 5,
+  "revision": 6,
   "display_name": "Rootvale Tower Rewards",
   "growth_percent_per_floor": 8,
   "tiers": {
@@ -351,6 +351,13 @@
       }
     ],
     "boss_defeated": [
+      {
+        "item": "cobbletowers:rental_key",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 12,
+        "min_floor": 2
+      },
       {
         "item": "cobbleraids:raid_points",
         "min_amount": 5,

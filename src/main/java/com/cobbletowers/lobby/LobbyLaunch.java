@@ -14,6 +14,8 @@ import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.economy.TowerKeyPolicy;
 import com.cobbletowers.economy.TowerKeys;
 import com.cobbletowers.persistence.PersistedRun;
+import com.cobbletowers.persistence.TowerFreeRunStore;
+import com.cobbletowers.trial.TrialClock;
 import com.cobbletowers.persistence.RunOptions;
 import com.cobbletowers.persistence.TowerAscensionStore;
 import com.cobbletowers.rental.RentalDraft;
@@ -69,10 +71,10 @@ final class LobbyLaunch {
 
         Plan plan = inspect(server, lobby, ruleset);
         checkAscension(server, lobby, plan);
-        // The entry item (decided 2026-10-05): one tower key per player, checked here and taken only once the run
+        // The entry item (decided 2026-10-05): one key per player, checked here and taken only once the run
         // has really started, so a launch that fails costs nothing.
-        boolean keyRun = TowerKeyPolicy.costsKey(TowerKeys.required(), lobby.trial().isPresent(), plan.rentalRun());
-        if (keyRun) checkKeys(server, plan);
+        Optional<TowerKeys.Kind> keyKind = TowerKeyPolicy.keyFor(TowerKeys.required(), lobby.trial().isPresent(), plan.rentalRun());
+        if (keyKind.isPresent()) checkKeys(server, plan, keyKind.get());
         if (!plan.problems().isEmpty()) {
             TowerLog.info("The lobby of {} could not start {}: {}", lobby.host(), lobby.tower(),
                     String.join("; ", plan.problems()));
@@ -93,7 +95,7 @@ final class LobbyLaunch {
         if (!setUp(server, lobby, plan, runId, now)) return;
 
         // The attempt is spent only now that the run has really started: a launch that failed above costs nothing.
-        if (keyRun) takeKeys(server, plan, runId);
+        keyKind.ifPresent(kind -> takeKeys(server, plan, runId, kind));
         TowerRuns.get(runId).ifPresent(started -> {
             TrialService.recordLaunch(server, started);
             if (started.options().isTrial()) {
@@ -200,24 +202,36 @@ final class LobbyLaunch {
         }
     }
 
-    private static void checkKeys(MinecraftServer server, Plan plan) {
+    /** Whether the player's first ordinary run of the trial day is still free. */
+    private static boolean hasFreeRun(MinecraftServer server, UUID id, TowerKeys.Kind kind) {
+        return kind == TowerKeys.Kind.TOWER && TowerKeyPolicy.freeRunAvailable(TowerFreeRunStore.get(server).lastFreeDay(id),
+                TrialClock.dayKey(TrialService.today()));
+    }
+
+    private static void checkKeys(MinecraftServer server, Plan plan, TowerKeys.Kind kind) {
         for (UUID id : plan.players()) {
             ServerPlayer keyholder = server.getPlayerList().getPlayer(id);
-            if (keyholder == null || TowerKeys.count(keyholder) < 1) {
+            if (keyholder != null && hasFreeRun(server, id, kind)) continue;
+            if (keyholder == null || TowerKeys.count(keyholder, kind) < 1) {
                 plan.problems().add((keyholder == null ? "A teammate" : LobbyService.name(keyholder))
-                        + " needs a Tower Key to start (ask a moderator if you have none)");
+                        + " needs a " + kind.label() + " to start (ask a moderator if you have none)");
             }
         }
     }
 
-    private static void takeKeys(MinecraftServer server, Plan plan, UUID runId) {
+    private static void takeKeys(MinecraftServer server, Plan plan, UUID runId, TowerKeys.Kind kind) {
         for (UUID id : plan.players()) {
             ServerPlayer keyholder = server.getPlayerList().getPlayer(id);
+            if (keyholder != null && hasFreeRun(server, id, kind)) {
+                TowerFreeRunStore.get(server).markUsed(id, TrialClock.dayKey(TrialService.today()));
+                keyholder.sendSystemMessage(Component.literal("Today's first run is free. Runs after it use a Tower Key."));
+                continue;
+            }
             // The run is open and cannot be undone here, so a key that vanished in the gap is logged, not enforced.
-            if (keyholder != null && TowerKeys.take(keyholder)) {
-                keyholder.sendSystemMessage(Component.literal("Used 1 Tower Key."));
+            if (keyholder != null && TowerKeys.take(keyholder, kind)) {
+                keyholder.sendSystemMessage(Component.literal("Used 1 " + kind.label() + "."));
             } else {
-                TowerLog.warn("Run {} started but player {} had no Tower Key left to take", runId, id);
+                TowerLog.warn("Run {} started but player {} had no {} left to take", runId, id, kind.label());
             }
         }
     }

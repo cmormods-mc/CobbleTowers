@@ -20,11 +20,11 @@ therefore writes each settlement to disk (`TowerLibSettlementStore`) before aski
 not confirmed, and retries at server start and every 30 seconds, for up to a week, when the library is disabled, the wallet
 refuses, or the call throws. The library is reached by reflection, so it stays optional.
 
-## Tower key
+## Tower key and rental key
 
 `cobbletowers:tower_key` is an ordinary item (stackable, any source can hand it out by id: the daily vote crate, a Raids shop
 entry, `/give`). An ordinary run (a new run, a run code, an Ascension start) costs **one key per player**, each from their
-own inventory. Trials and rental-draft runs cost none, and resuming a parked run is not a start.
+own inventory. A rental-draft run costs one **Rental Key** (`cobbletowers:rental_key`) per player instead; it drops from `boss_defeated` rolls at weight 12 from floor 2 in every tower table (about 0.7 per full clear). Trials cost none, and resuming a parked run is not a start.
 
 The lobby refuses to start ("X needs a Tower Key") if anyone lacks one when the countdown ends. Keys are taken only after the
 run has really started, so a launch that fails costs nothing.
@@ -51,3 +51,12 @@ Every opponent and boss is declared to AscensionLib and the next battle armed wi
 (`AscensionLibScouting.armed`; the boss through the `beforeStart` hook of `TowerBossAdapter.start`, because its encounter id only
 exists inside `start`), so the enemy that was scouted is the one whose rarity and modifiers act in that battle. An Echo duel is
 armed as explicitly native. Without AscensionLib nothing changes. The effects themselves run in AscensionLib's Showdown module.
+
+The first ordinary run of each trial day is free per player (`TowerFreeRunStore`, day from `TrialService.today()`); rental runs have no free run.
+
+Trading (decided 2026-10-23): the rental key is an ordinary tradeable, sellable item. The tower key stays with its holder:
+`PlayerDropKeyMixin` returns a deliberately tossed key to the inventory (a death drop is cancelled and the key is returned on respawn or rejoin, held in memory only) and `SlotKeyMixin` lets it into only a player's own inventory or ender chest, so chests, shulkers and trade containers
+refuse it. Not covered: a restart while a player is dead loses the held key, and a trade or shop plugin that moves items without
+slots needs its own blacklist for `cobbletowers:tower_key`. Mixins are compile-checked only; a live test on the rig is open.
+
+Free run rule: available when the stored day is anything other than today (a clock moved back still frees a run).

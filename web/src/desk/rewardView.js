@@ -19,7 +19,7 @@ export function grantTier(grant) {
   if (grantIcon(grant) !== 'item') return (grant.amount || 0) >= 1000 ? 'fine' : 'common';
   const id = String(grant.item || ''), tail = idTail(id);
   if (id.startsWith('cobbletowers:')) {
-    if (/tower_key|season_trim_template/.test(tail)) return 'rare';
+    if (/tower_key|rental_key|season_trim_template/.test(tail)) return 'rare';
     const set = tail.replace(/_(helmet|chestplate|leggings|boots)$/, '');
     return ARMOR_TIER[set] || 'fine';
   }

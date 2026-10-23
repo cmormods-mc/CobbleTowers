@@ -5,6 +5,8 @@
   "mixins": [
     "CommandsMixin",
     "PlayerDisplayNameMixin",
+    "PlayerDropKeyMixin",
+    "SlotKeyMixin",
     "ServerPlayerTabNameMixin"
   ],
   "injectors": {

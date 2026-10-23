@@ -10,6 +10,7 @@ class ServerLangTest {
     @Test
     void namesAnItemFromTheBundledLang() {
         assertEquals("Tower Key", ServerLang.itemName(ResourceLocation.parse("cobbletowers:tower_key")).getString());
+        assertEquals("Rental Key", ServerLang.itemName(ResourceLocation.parse("cobbletowers:rental_key")).getString());
     }
 
     @Test
