@@ -165,17 +165,18 @@ public final class TowerKeys {
         }
     }
 
-    /** Tower keys set aside from a death drop until the player is back. Memory only: a restart in between loses them. */
-    private static final java.util.Map<java.util.UUID, Integer> SET_ASIDE = new java.util.concurrent.ConcurrentHashMap<>();
-
-    /** A dying player does not drop a tower key: it is held here and returned on respawn. */
-    public static void setAside(java.util.UUID player, int count) {
-        SET_ASIDE.merge(player, count, Integer::sum);
+    /** A dying player does not drop a tower key: it is held on disk and returned on respawn (or at the next login). */
+    public static void setAside(net.minecraft.server.MinecraftServer server, java.util.UUID player, int count) {
+        var holds = com.cobbletowers.persistence.TowerKeyHoldStore.get(server);
+        holds.add(player, count);
+        holds.checkpoint(server);
     }
 
     private static void giveBack(ServerPlayer player) {
-        Integer count = SET_ASIDE.remove(player.getUUID());
-        if (count == null || Kind.TOWER.item == null) return;
+        if (Kind.TOWER.item == null) return;
+        var holds = com.cobbletowers.persistence.TowerKeyHoldStore.get(player.server);
+        int count = holds.take(player.getUUID());
+        if (count <= 0) return;
         ItemStack keys = new ItemStack(Kind.TOWER.item, count);
         if (!player.getInventory().add(keys)) player.drop(keys, false);
     }

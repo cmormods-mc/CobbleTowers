@@ -25,7 +25,7 @@ public abstract class PlayerDropKeyMixin {
         if (!byPlayer) {
             // Death drop: the key is kept for the respawn instead of lying in the world.
             if (player.isDeadOrDying()) {
-                TowerKeys.setAside(player.getUUID(), stack.getCount());
+                TowerKeys.setAside(player.server, player.getUUID(), stack.getCount());
                 cir.setReturnValue(null);
             }
             return;

@@ -93,6 +93,7 @@ public final class TowerEncounters {
     /** Wires this to the adapter. Called once at startup. */
     public static void install() {
         CobblemonBattleAdapter.install(TowerEncounters::onResolved);
+        NextOpponentRetries.install();
         TowerBossAdapter.install(new TowerBossAdapter.Listener() {
             @Override
             public void onBossEnded(MinecraftServer server, TowerBossAdapter.Binding binding,
@@ -247,7 +248,12 @@ public final class TowerEncounters {
         boolean stillFighting = false;
         if (playerWon && wave != null && wave.remaining() > 0) {
             stillFighting = sendNextOpponent(server, round, binding.playerId(), wave);
-            if (stillFighting) waves.put(binding.playerId(), wave.taken());
+            if (!stillFighting) {
+                // Cobblemon may still count them as in the battle that just ended: keep them fighting and try again shortly.
+                NextOpponentRetries.add(binding.runId(), binding.playerId(), wave, 1);
+                stillFighting = true;
+            }
+            waves.put(binding.playerId(), wave.taken());
         }
 
         Map<UUID, Status> byPlayer = new LinkedHashMap<>(round.byPlayer());
@@ -265,6 +271,27 @@ public final class TowerEncounters {
 
         if (!playerWon) knockOut(server, binding.runId(), binding.playerId(), now);
 
+        settle(server, updated, now);
+    }
+
+    /** A retry of an opponent that could not be started at once; gives the player up as cleared once the tries run out. */
+    static void retryNextOpponent(MinecraftServer server, NextOpponentRetries.Pending pending) {
+        Round round = ROUNDS.get(pending.runId());
+        if (round == null || round.byPlayer().get(pending.playerId()) != Status.FIGHTING) return;
+        if (sendNextOpponent(server, round, pending.playerId(), pending.wave())) return;
+        if (!NextOpponentRetries.exhausted(pending.attempt())) {
+            NextOpponentRetries.add(pending.runId(), pending.playerId(), pending.wave(), pending.attempt() + 1);
+            return;
+        }
+        TowerLog.warn("Gave up starting the next opponent of floor {} of run {} for {}",
+                round.floorIndex(), pending.runId(), pending.playerId());
+        long now = System.currentTimeMillis();
+        Map<UUID, Status> byPlayer = new LinkedHashMap<>(round.byPlayer());
+        byPlayer.put(pending.playerId(), Status.CLEARED);
+        Round updated = new Round(round.runId(), round.floorIndex(), round.phase(), byPlayer, round.waves(), round.startedAt());
+        ROUNDS.put(pending.runId(), updated);
+        TowerRuns.get(pending.runId())
+                .ifPresent(run -> SpectatorPresentation.refreshFollowersOf(server, run, pending.playerId()));
         settle(server, updated, now);
     }
 
