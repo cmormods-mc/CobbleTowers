@@ -98,6 +98,7 @@ public final class TowerPresence {
         if (player == null) return;
         UUID playerId = player.getUUID();
         Long since = DISCONNECTED_AT.remove(playerId);
+        closeParkedRuns(server, player);
         Optional<PersistedRun> found = ParticipantService.runOf(playerId);
         if (found.isEmpty() || !found.get().state().isLive()) return;
         PersistedRun run = found.get();
@@ -128,6 +129,22 @@ public final class TowerPresence {
                 TowerEncounters.sendToSpectatorAnchor(server, current, player));
         TowerLog.info("Player {} rejoined run {}{} as a spectator until the next intermission",
                 player.getGameProfile().getName(), run.runId(), late ? " after their window closed" : "");
+    }
+
+    /** A run parked by a restart cannot be resumed (its floor is gone), so it ends for whoever comes back; banked rewards stay. */
+    private static void closeParkedRuns(MinecraftServer server, ServerPlayer player) {
+        long now = System.currentTimeMillis();
+        for (PersistedRun run : java.util.List.copyOf(TowerRuns.all())) {
+            if (run.state() != com.cobbletowers.api.tower.RunState.RECOVERY_REQUIRED) continue;
+            if (run.participants().stream().noneMatch(p -> p.playerId().equals(player.getUUID()))) continue;
+            RunTransitionService.Outcome outcome =
+                    RunTransitionService.apply(server, run.runId(), com.cobbletowers.api.tower.RunEvent.RECOVERY_ABANDONED, now);
+            if (outcome instanceof RunTransitionService.Move) {
+                TowerLog.info("Ended run {} that a restart interrupted, for {}", run.runId(), player.getGameProfile().getName());
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                        "Your last run was interrupted by a server restart and has ended. What it had banked is kept."));
+            }
+        }
     }
 
     /** The player chose to leave. Terminal for them, and the end of the run if they were the last. */

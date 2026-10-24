@@ -167,8 +167,10 @@ public final class RunExitService {
             for (PersistedParticipant participant : run.participants()) {
                 if (!participant.playerId().equals(playerId)) continue;
                 boolean left = participant.state().membership() == MembershipState.VOLUNTARILY_LEFT;
-                if (!run.isRetired() && !left) return Standing.active();
-                if (run.isRetired() && (lastEnded == null || run.updatedAt() > lastEnded.updatedAt())) {
+                // A run parked by a restart has no floor to return to: it is over for them, not still going.
+                boolean over = run.isRetired() || run.state() == com.cobbletowers.api.tower.RunState.RECOVERY_REQUIRED;
+                if (!over && !left) return Standing.active();
+                if (over && (lastEnded == null || run.updatedAt() > lastEnded.updatedAt())) {
                     lastEnded = run;
                     endedAndLeft = left;
                 }
