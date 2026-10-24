@@ -54,7 +54,10 @@ final class FloorBoss {
                 .filter(Objects::nonNull);
         Optional<BossDraw.Boss> boss = BossDraw.draw(pool, handpickedBoss(setup.content(), setup.tower(), setup.floor()),
                 run.seed(), run.floorIndex(), TowerEncounters.levelsOf(run, standing), setup.ruleset(),
-                DraftService.effects(run).bossLevelOffset());
+                DraftService.effects(run).bossLevelOffset(),
+                RunDraws.seen(server, run.runId(), run.floorIndex(), BossDraw.LOG_ORDINAL));
+        boss.ifPresent(b -> RunDraws.record(server, run.runId(), run.floorIndex(), BossDraw.LOG_ORDINAL,
+                b.definition().getPath()));
         if (boss.isEmpty()) {
             TowerLog.error("Floor {} names neither a boss pool nor a milestone boss", setup.floor().id());
             return false;

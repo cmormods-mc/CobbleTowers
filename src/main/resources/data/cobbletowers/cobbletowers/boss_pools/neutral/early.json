@@ -1,10 +1,46 @@
 {
   "schema_version": 1,
-  "revision": 1,
+  "revision": 2,
   "entries": [
-    { "definition": "cobbleraids:decidueye", "weight": 100 },
-    { "definition": "cobbleraids:blastoise", "weight": 100 },
-    { "definition": "cobbleraids:charizard", "weight": 80 },
-    { "definition": "cobbleraids:chesnaught", "weight": 80 }
+    {
+      "definition": "cobbleraids:decidueye",
+      "weight": 100
+    },
+    {
+      "definition": "cobbleraids:blastoise",
+      "weight": 100
+    },
+    {
+      "definition": "cobbleraids:charizard",
+      "weight": 80
+    },
+    {
+      "definition": "cobbleraids:chesnaught",
+      "weight": 80
+    },
+    {
+      "definition": "cobbleraids:typhlosion",
+      "weight": 90
+    },
+    {
+      "definition": "cobbleraids:infernape",
+      "weight": 90
+    },
+    {
+      "definition": "cobbleraids:emboar",
+      "weight": 90
+    },
+    {
+      "definition": "cobbleraids:incineroar",
+      "weight": 90
+    },
+    {
+      "definition": "cobbleraids:meowscarada",
+      "weight": 90
+    },
+    {
+      "definition": "cobbleraids:quaquaval",
+      "weight": 90
+    }
   ]
 }

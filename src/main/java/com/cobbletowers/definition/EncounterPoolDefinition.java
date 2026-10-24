@@ -47,6 +47,14 @@ public record EncounterPoolDefinition(
         if (entries.isEmpty()) throw new IllegalArgumentException("an encounter pool needs at least one entry");
     }
 
+    /** This pool without the entries whose species name is in {@code names}; the whole pool when that would leave nothing. */
+    public EncounterPoolDefinition without(java.util.Set<String> names) {
+        if (names.isEmpty()) return this;
+        List<Entry> kept = entries.stream().filter(e -> !names.contains(e.species().getPath())).toList();
+        if (kept.isEmpty() || kept.size() == entries.size()) return this;
+        return new EncounterPoolDefinition(id, schemaVersion, revision, kept, regionalPool);
+    }
+
     /** Sum of every entry's weight; the denominator a draw divides by. */
     public int totalWeight() {
         int total = 0;

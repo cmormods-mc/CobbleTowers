@@ -43,6 +43,14 @@ public record BossPoolDefinition(
         if (entries.isEmpty()) throw new IllegalArgumentException("a boss pool needs at least one entry");
     }
 
+    /** This pool without the bosses whose name is in {@code names}; the whole pool when that would leave nothing. */
+    public BossPoolDefinition without(java.util.Set<String> names) {
+        if (names.isEmpty()) return this;
+        List<Entry> kept = entries.stream().filter(e -> !names.contains(e.definition().getPath())).toList();
+        if (kept.isEmpty() || kept.size() == entries.size()) return this;
+        return new BossPoolDefinition(id, schemaVersion, revision, kept);
+    }
+
     /** Sum of every entry's weight; the denominator a draw divides by. */
     public int totalWeight() {
         int total = 0;

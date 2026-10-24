@@ -179,8 +179,10 @@ public final class TowerEncounters {
             ServerPlayer player = fighters.get(ordinal);
             long started = System.nanoTime();
             Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(setup.pool(), run.seed(), run.floorIndex(),
-                    ordinal, partyLevels, setup.ruleset(), effects.levelOffset(), setup.theme());
+                    ordinal, partyLevels, setup.ruleset(), effects.levelOffset(), setup.theme(),
+                    RunDraws.seen(server, run.runId(), run.floorIndex(), ordinal));
             if (snapshot.isEmpty()) continue;
+            RunDraws.record(server, run.runId(), run.floorIndex(), ordinal, snapshot.get().species().getPath());
             waves.put(player.getUUID(),
                     new Wave(ordinal + fighters.size(), fighters.size(), effects.extraOpponents()));
 
@@ -327,8 +329,9 @@ public final class TowerEncounters {
         // Levels come from this player's own party; fainted Pokemon still count (TDS #45).
         Optional<EncounterSnapshot> snapshot = EncounterDraw.draw(setup.pool(), run.seed(), run.floorIndex(),
                 wave.nextOrdinal(), levelsOf(run, List.of(player)), setup.ruleset(), effects.levelOffset(),
-                setup.theme());
+                setup.theme(), RunDraws.seen(server, run.runId(), run.floorIndex(), wave.nextOrdinal()));
         if (snapshot.isEmpty()) return false;
+        RunDraws.record(server, run.runId(), run.floorIndex(), wave.nextOrdinal(), snapshot.get().species().getPath());
 
         BlockPos where = setup.presentation(wave.nextOrdinal());
         String scoutId = FloorScouting.declareOpponent(round.runId(), playerId, run.floorIndex(), snapshot.get());

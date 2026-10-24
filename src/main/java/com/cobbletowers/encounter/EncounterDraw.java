@@ -42,8 +42,18 @@ public final class EncounterDraw {
                                                    int ordinal, Collection<Integer> partyLevels,
                                                    RulesetDefinition ruleset, int modifierLevelOffset,
                                                    Optional<RegionalThemeDefinition> theme) {
+        return draw(pool, runSeed, floorIndex, ordinal, partyLevels, ruleset, modifierLevelOffset, theme,
+                java.util.Set.of());
+    }
+
+    /** The same draw, skipping the species the run has already met (by name; ignored if that would empty the pool). */
+    public static Optional<EncounterSnapshot> draw(EncounterPoolDefinition pool, long runSeed, int floorIndex,
+                                                   int ordinal, Collection<Integer> partyLevels,
+                                                   RulesetDefinition ruleset, int modifierLevelOffset,
+                                                   Optional<RegionalThemeDefinition> theme,
+                                                   java.util.Set<String> seen) {
         long seed = EncounterSeed.of(runSeed, floorIndex, ordinal);
-        EncounterPoolDefinition.Entry entry = pick(pool, theme, floorIndex, seed);
+        EncounterPoolDefinition.Entry entry = pick(pool.without(seen), theme, floorIndex, seed);
         int offset = entry.levelOffset() + modifierLevelOffset;
         OptionalInt jerseyNumber = theme.isPresent() && theme.get().isJerseySpecies(entry.species())
                 ? OptionalInt.of(JerseyNumbers.forEncounter(seed))

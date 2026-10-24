@@ -1,12 +1,266 @@
 {
   "schema_version": 1,
-  "revision": 1,
+  "revision": 2,
   "entries": [
-    { "species": "cobblemon:machoke", "weight": 100 },
-    { "species": "cobblemon:haunter", "weight": 100 },
-    { "species": "cobblemon:lairon", "weight": 80 },
-    { "species": "cobblemon:roselia", "weight": 80 },
-    { "species": "cobblemon:staraptor", "weight": 60, "level_offset": 2 },
-    { "species": "cobblemon:lucario", "weight": 40, "level_offset": 3 }
+    {
+      "species": "cobblemon:machoke",
+      "weight": 100
+    },
+    {
+      "species": "cobblemon:haunter",
+      "weight": 100
+    },
+    {
+      "species": "cobblemon:lairon",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:roselia",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:staraptor",
+      "weight": 60,
+      "level_offset": 2
+    },
+    {
+      "species": "cobblemon:lucario",
+      "weight": 40,
+      "level_offset": 3
+    },
+    {
+      "species": "cobblemon:arcanine",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:gengar",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:alakazam",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:machamp",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:golem",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:rhydon",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:scizor",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:heracross",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:snorlax",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:gyarados",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:ampharos",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:espeon",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:flygon",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:absol",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:milotic",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:aggron",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:gardevoir",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:gallade",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:togekiss",
+      "weight": 70,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:electivire",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:magmortar",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:rhyperior",
+      "weight": 70,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:mamoswine",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:gliscor",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:froslass",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:porygonz",
+      "weight": 60,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:excadrill",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:conkeldurr",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:scrafty",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:volcarona",
+      "weight": 60,
+      "level_offset": 2
+    },
+    {
+      "species": "cobblemon:bisharp",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:braviary",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:krookodile",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:cofagrigus",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:reuniclus",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:mienshao",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:seismitoad",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:talonflame",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:pangoro",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:aegislash",
+      "weight": 60,
+      "level_offset": 2
+    },
+    {
+      "species": "cobblemon:noivern",
+      "weight": 70,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:diggersby",
+      "weight": 100
+    },
+    {
+      "species": "cobblemon:vikavolt",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:lycanroc",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:bewear",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:salazzle",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:ninetales",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:sandslash",
+      "weight": 100
+    },
+    {
+      "species": "cobblemon:vileplume",
+      "weight": 100
+    },
+    {
+      "species": "cobblemon:victreebel",
+      "weight": 100
+    },
+    {
+      "species": "cobblemon:slowbro",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:starmie",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:jolteon",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:flareon",
+      "weight": 80
+    }
   ]
 }

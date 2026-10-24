@@ -16,6 +16,9 @@ public final class BossDraw {
     /** Far outside any ordinal a floor's opponents use (at most four). */
     private static final int BOSS_ORDINAL = 1_000_003;
 
+    /** The slot the draw log files a floor's boss under: after every ordinary opponent of that floor. */
+    public static final int LOG_ORDINAL = BOSS_ORDINAL;
+
     private BossDraw() {}
 
     /** What this floor's boss is, and the level it fights at. */
@@ -32,6 +35,13 @@ public final class BossDraw {
     public static Optional<Boss> draw(Optional<BossPoolDefinition> pool, Optional<ResourceLocation> handpicked,
                                       long runSeed, int floorIndex, Collection<Integer> partyLevels,
                                       RulesetDefinition ruleset, int modifierLevelOffset) {
+        return draw(pool, handpicked, runSeed, floorIndex, partyLevels, ruleset, modifierLevelOffset, java.util.Set.of());
+    }
+
+    /** The same draw, skipping the bosses the run has already met (by name; ignored if that would empty the pool). */
+    public static Optional<Boss> draw(Optional<BossPoolDefinition> pool, Optional<ResourceLocation> handpicked,
+                                      long runSeed, int floorIndex, Collection<Integer> partyLevels,
+                                      RulesetDefinition ruleset, int modifierLevelOffset, java.util.Set<String> seen) {
         if (handpicked.isPresent()) {
             // Floors 5 and 10: special through content, not through a second code path.
             return TowerLevelPolicy.levelFor(partyLevels, floorIndex, modifierLevelOffset, ruleset).stream()
@@ -40,7 +50,7 @@ public final class BossDraw {
         }
         if (pool.isEmpty()) return Optional.empty();
 
-        BossPoolDefinition.Entry entry = pick(pool.get(), EncounterSeed.of(runSeed, floorIndex, BOSS_ORDINAL));
+        BossPoolDefinition.Entry entry = pick(pool.get().without(seen), EncounterSeed.of(runSeed, floorIndex, BOSS_ORDINAL));
         OptionalInt level = TowerLevelPolicy.levelFor(partyLevels, floorIndex,
                 entry.levelOffset() + modifierLevelOffset, ruleset);
         return level.stream().mapToObj(value -> new Boss(entry.definition(), value)).findFirst();

@@ -124,6 +124,26 @@ class EncounterDrawTest {
     }
 
     @Test
+    @DisplayName("a run never meets a species twice while the pool has others, and falls back to the whole pool when it runs out")
+    void noRepeats() {
+        EncounterPoolDefinition pool = shippedShape();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        for (int floor = 1; floor <= 4; floor++) {
+            String name = EncounterDraw.draw(pool, 99L, floor, 0, PARTY, ruleset(), 0, java.util.Optional.empty(), seen)
+                    .orElseThrow().species().getPath();
+            assertTrue(seen.add(name), name + " came up twice");
+        }
+        assertEquals(4, seen.size());
+        // Everything seen: the draw still returns something rather than nothing.
+        assertTrue(EncounterDraw.draw(pool, 99L, 5, 0, PARTY, ruleset(), 0, java.util.Optional.empty(), seen).isPresent());
+        // The same slot with the same history draws the same opponent (a resumed floor cannot reroll).
+        java.util.Set<String> before = java.util.Set.of("machoke");
+        assertEquals(
+                EncounterDraw.draw(pool, 7L, 2, 0, PARTY, ruleset(), 0, java.util.Optional.empty(), before).orElseThrow().species(),
+                EncounterDraw.draw(pool, 7L, 2, 0, PARTY, ruleset(), 0, java.util.Optional.empty(), before).orElseThrow().species());
+    }
+
+    @Test
     @DisplayName("a floor with nobody registered draws nothing rather than guessing a level")
     void noParty() {
         assertEquals(Optional.empty(),

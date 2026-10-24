@@ -1,10 +1,71 @@
 {
   "schema_version": 1,
-  "revision": 1,
+  "revision": 2,
   "entries": [
-    { "definition": "cobbleraids:baxcalibur", "weight": 100, "level_offset": 2 },
-    { "definition": "cobbleraids:blaziken", "weight": 100, "level_offset": 2 },
-    { "definition": "cobbleraids:delphox", "weight": 80, "level_offset": 3 },
-    { "definition": "cobbleraids:cinderace", "weight": 80, "level_offset": 3 }
+    {
+      "definition": "cobbleraids:baxcalibur",
+      "weight": 100,
+      "level_offset": 2
+    },
+    {
+      "definition": "cobbleraids:blaziken",
+      "weight": 100,
+      "level_offset": 2
+    },
+    {
+      "definition": "cobbleraids:delphox",
+      "weight": 80,
+      "level_offset": 3
+    },
+    {
+      "definition": "cobbleraids:cinderace",
+      "weight": 80,
+      "level_offset": 3
+    },
+    {
+      "definition": "cobbleraids:skeledirge",
+      "weight": 90,
+      "level_offset": 2
+    },
+    {
+      "definition": "cobbleraids:dragonite",
+      "weight": 80,
+      "level_offset": 3
+    },
+    {
+      "definition": "cobbleraids:garchomp",
+      "weight": 80,
+      "level_offset": 3
+    },
+    {
+      "definition": "cobbleraids:salamence",
+      "weight": 80,
+      "level_offset": 3
+    },
+    {
+      "definition": "cobbleraids:metagross",
+      "weight": 80,
+      "level_offset": 3
+    },
+    {
+      "definition": "cobbleraids:dragapult",
+      "weight": 70,
+      "level_offset": 3
+    },
+    {
+      "definition": "cobbleraids:goodra",
+      "weight": 80,
+      "level_offset": 2
+    },
+    {
+      "definition": "cobbleraids:kommoo",
+      "weight": 70,
+      "level_offset": 3
+    },
+    {
+      "definition": "cobbleraids:tyranitar",
+      "weight": 80,
+      "level_offset": 3
+    }
   ]
 }
