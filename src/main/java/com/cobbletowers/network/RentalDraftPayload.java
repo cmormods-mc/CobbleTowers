@@ -56,16 +56,26 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
      * One card: the set's id, its species (for the model and the name) and its rarity, the tier rolled for this card
      * ({@code common} ... {@code mythic}). {@code ascension} is the AscensionLib tier the Pokemon will be profiled at (that library's own id, so
      * {@code mythical} for the top tier), empty when AscensionLib is not installed.
+     * {@code ivs} and {@code evs} are what this card rolled (hp, atk, def, spa, spd, spe).
      */
-    public record Card(ResourceLocation set, String species, String name, String rarity, Details details, String ascension) {
-        static final StreamCodec<RegistryFriendlyByteBuf, Card> STREAM_CODEC = StreamCodec.composite(
-                ResourceLocation.STREAM_CODEC, Card::set,
-                ByteBufCodecs.STRING_UTF8, Card::species,
-                ByteBufCodecs.STRING_UTF8, Card::name,
-                ByteBufCodecs.STRING_UTF8, Card::rarity,
-                Details.STREAM_CODEC, Card::details,
-                ByteBufCodecs.STRING_UTF8, Card::ascension,
-                Card::new);
+    public record Card(ResourceLocation set, String species, String name, String rarity, Details details, String ascension,
+                       List<Integer> ivs, List<Integer> evs) {
+        private static final StreamCodec<io.netty.buffer.ByteBuf, List<Integer>> NUMBERS = ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list());
+
+        // composite() stops at six fields; the IVs and EVs the card rolled make eight
+        static final StreamCodec<RegistryFriendlyByteBuf, Card> STREAM_CODEC = StreamCodec.of(
+                (buf, card) -> {
+                    ResourceLocation.STREAM_CODEC.encode(buf, card.set());
+                    buf.writeUtf(card.species());
+                    buf.writeUtf(card.name());
+                    buf.writeUtf(card.rarity());
+                    Details.STREAM_CODEC.encode(buf, card.details());
+                    buf.writeUtf(card.ascension());
+                    NUMBERS.encode(buf, card.ivs());
+                    NUMBERS.encode(buf, card.evs());
+                },
+                buf -> new Card(ResourceLocation.STREAM_CODEC.decode(buf), buf.readUtf(), buf.readUtf(), buf.readUtf(),
+                        Details.STREAM_CODEC.decode(buf), buf.readUtf(), NUMBERS.decode(buf), NUMBERS.decode(buf)));
     }
 
     /**
@@ -102,7 +112,7 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
                 cards.add(new Card(set.id(), set.species(), set.displayName(), tier.lower(),
                         new Details(set.level(), set.ability(), set.nature(), set.item().map(item -> item.getPath()).orElse(""),
                                 set.role(), set.moves().stream().map(moves::resolve).toList()),
-                        AscensionLibGrants.tierFor(tier)));
+                        AscensionLibGrants.tierFor(tier), pack.spreads().get(c).ivs(), pack.spreads().get(c).evs()));
             }
             packs.add(new Pack(pack.god(), cards, i < picks.size() ? picks.get(i) : List.of()));
         }

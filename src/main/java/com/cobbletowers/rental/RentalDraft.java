@@ -94,14 +94,26 @@ public final class RentalDraft {
      * Names a finished team's Pokemon with the ids they will have, so registration can be written before they exist.
      * @param god per Pokemon, whether it came from a God Pack
      * @param tiers per Pokemon, the tier its card showed, which its AscensionLib profile is made at
+     * @param spreads per Pokemon, the IVs and EVs its card showed
      */
-    public record Team(List<RentalSetDefinition> sets, List<UUID> ids, List<Boolean> god, List<Rarity> tiers) {
+    public record Team(List<RentalSetDefinition> sets, List<UUID> ids, List<Boolean> god, List<Rarity> tiers,
+                       List<RentalSpread> spreads) {
         public Team {
             sets = List.copyOf(sets);
             ids = List.copyOf(ids);
             god = List.copyOf(god);
             tiers = List.copyOf(tiers);
+            spreads = List.copyOf(spreads);
         }
+    }
+
+    /** The IVs and EVs of each Pokemon kept so far, in pick order (what its card showed). */
+    public List<RentalSpread> teamSpreads() {
+        List<RentalSpread> spreads = new ArrayList<>();
+        for (int pack = 0; pack < picks.size(); pack++) {
+            for (int index : picks.get(pack)) spreads.add(offer.packs().get(pack).spreads().get(index));
+        }
+        return List.copyOf(spreads);
     }
 
     /** For each kept Pokemon, in pick order, whether its pack was the God Pack. */
@@ -119,6 +131,6 @@ public final class RentalDraft {
         List<RentalSetDefinition> sets = team();
         List<UUID> ids = new ArrayList<>();
         for (int i = 0; i < sets.size(); i++) ids.add(newId.get());
-        return new Team(sets, ids, godFlags(), teamTiers());
+        return new Team(sets, ids, godFlags(), teamTiers(), teamSpreads());
     }
 }

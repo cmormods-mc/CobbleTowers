@@ -10,6 +10,7 @@ import com.cobblemon.mod.common.api.storage.pc.PCBox;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.definition.RentalSetDefinition;
+import com.cobbletowers.rental.RentalSpread;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -42,6 +43,11 @@ public final class RentalStorage {
 
     /** Builds the Pokemon a set describes, with the id it will be known by. Not yet in anyone's storage. */
     public static Pokemon create(RentalSetDefinition set, UUID id) {
+        return create(set, id, RentalSpread.of(set));
+    }
+
+    /** As above, with the IVs and EVs its card rolled. */
+    public static Pokemon create(RentalSetDefinition set, UUID id, RentalSpread spread) {
         PokemonProperties properties = new PokemonProperties();
         properties.setSpecies(set.species());
         properties.setLevel(set.level());
@@ -55,8 +61,8 @@ public final class RentalStorage {
 
         Stats[] order = {Stats.HP, Stats.ATTACK, Stats.DEFENCE, Stats.SPECIAL_ATTACK, Stats.SPECIAL_DEFENCE, Stats.SPEED};
         for (int i = 0; i < order.length; i++) {
-            pokemon.getIvs().set(order[i], set.ivs().get(i));
-            pokemon.getEvs().set(order[i], set.evs().get(i));
+            pokemon.getIvs().set(order[i], spread.ivs().get(i));
+            pokemon.getEvs().set(order[i], spread.evs().get(i));
         }
         pokemon.setOriginalTrainer("Battle Tower");
         pokemon.getPersistentData().putBoolean(TAG, true);

@@ -170,3 +170,7 @@ The Byzantine card face was replaced by the Prism Pull card (`web/src/components
 - **Byzantine style archived (2026-10-24):** the sealed pack, the card back and the kept-card mark are now drawn in code in the same look,
   so nothing uses the Byzantine textures. They moved to `archive/byzantine/` (README there says how to restore); the web build no longer
   copies the folder, so the bundle is smaller.
+
+### Rolled IVs and EVs (2026-10-24)
+
+Each card rolls its spread when the draft is drawn (`RentalSpread`, seeded like the tiers): the set main EV stat plus one random other at 252, IVs 15-31, Speed IV 31 when the set invests in Speed. It rides on `RentalDraftPayload.Card` (`ivs`, `evs`), the web tooltip prefers it over the sets file, and `RentalStorage.create` applies it to the lent Pokemon.

@@ -21,6 +21,8 @@ import java.util.Set;
  * uncommon and one rare-or-better per pack, an epic-or-better tier somewhere, epic-or-better throughout a God Pack),
  * then dealt onto the cards at random. The tier is what the card shows, what the team cap counts, and what the lent
  * Pokemon's AscensionLib profile is made at.
+ *
+ * <p>Each card also rolls its IVs and EVs ({@link RentalSpread}), from the same seed.
  */
 public final class RentalDraw {
 
@@ -35,11 +37,18 @@ public final class RentalDraw {
     private RentalDraw() {}
 
     /** One pack: five cards, the tier dealt to each (same order), and whether it is the God Pack. */
-    public record Pack(List<RentalSetDefinition> cards, List<Rarity> tiers, boolean god) {
+    public record Pack(List<RentalSetDefinition> cards, List<Rarity> tiers, List<RentalSpread> spreads, boolean god) {
         public Pack {
             cards = List.copyOf(cards);
             tiers = List.copyOf(tiers);
+            spreads = List.copyOf(spreads);
             if (tiers.size() != cards.size()) throw new IllegalArgumentException("a pack needs one tier per card");
+            if (spreads.size() != cards.size()) throw new IllegalArgumentException("a pack needs one spread per card");
+        }
+
+        /** A pack whose cards carry their sets own IVs and EVs. */
+        public Pack(List<RentalSetDefinition> cards, List<Rarity> tiers, boolean god) {
+            this(cards, tiers, cards.stream().map(RentalSpread::of).toList(), god);
         }
     }
 
@@ -107,7 +116,13 @@ public final class RentalDraw {
             draw.shuffle(cards, "s" + pack);
             List<Rarity> packTiers = new ArrayList<>(tiers.get(pack));
             draw.shuffle(packTiers, "ts" + pack);
-            out.add(new Pack(cards, packTiers, pack == god));
+            // IVs and EVs are rolled per card, before the pack is opened, so the card shows what it will give
+            List<RentalSpread> spreads = new ArrayList<>();
+            for (int i = 0; i < cards.size(); i++) {
+                String at = "S" + pack + "." + i + ".";
+                spreads.add(RentalSpread.roll(cards.get(i), (context, bound) -> draw.roll(at + context, bound)));
+            }
+            out.add(new Pack(cards, packTiers, spreads, pack == god));
         }
         return new Offer(out);
     }

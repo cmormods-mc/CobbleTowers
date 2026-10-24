@@ -24,8 +24,9 @@ export function adaptCard(c) {
     ability: ABILITIES[det.ability] || pretty(det.ability || ''),
     item: det.item ? pretty(det.item) : known ? known.item : 'No item',
     nature: det.nature ? pretty(det.nature) : known && known.nature ? pretty(known.nature) : '',
-    ivs: (known && known.ivs) || null,
-    evs: (known && known.evs) || null,
+    // what the card rolled; the sets file only for a server that predates the roll
+    ivs: (c.ivs && c.ivs.length === 6 && c.ivs) || (known && known.ivs) || null,
+    evs: (c.evs && c.evs.length === 6 && c.evs) || (known && known.evs) || null,
     // AscensionLib's tier for this card; empty when the library is not installed on the server
     ascension: c.ascension || '',
     moves,

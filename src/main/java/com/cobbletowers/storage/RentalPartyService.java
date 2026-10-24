@@ -128,7 +128,7 @@ public final class RentalPartyService {
                 }
             }
             List<Pokemon> rentals = new ArrayList<>();
-            for (int i = 0; i < team.sets().size(); i++) rentals.add(RentalStorage.create(team.sets().get(i), team.ids().get(i)));
+            for (int i = 0; i < team.sets().size(); i++) rentals.add(RentalStorage.create(team.sets().get(i), team.ids().get(i), team.spreads().get(i)));
             int placed = RentalStorage.fillParty(player, rentals);
             if (placed != rentals.size()) {
                 PartyJournalService.restoreNow(server, player);
