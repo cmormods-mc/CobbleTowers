@@ -1,9 +1,18 @@
-# Release notes (draft, updated 2026-10-14)
+# Release notes (draft, updated 2026-10-23)
 
 Version `1.0.0+fabric-1.21.1` (was `0.29.1-cobblemon-182`). Covers the work after commit `9688678`. Items marked **(unverified)** are written but have not been seen in a real client or a full
 human run; do not publish them as done until the checklist in `docs/RELEASE-CHECKLIST.md` is ticked.
 
 ## For players
+
+**Difficulty, opponents and recovery (2026-10-23)**
+- **Bosses start easier and climb.** On floor 1 a boss is below your party's level and at half health; each floor adds levels and health until floor 6, where it is full strength.
+- **The neutral tower has 60 opponents and wider boss pools, and a run never meets the same Pokemon twice** until the pool runs out. A resumed floor draws the same opponent.
+- **Progress tracks are filled (30 levels each).** Mastery and season tracks rotate Raid Points (25), CobbleDollars (750) and Ultra Balls (15), with a Tower Key at levels 10 and 20 and rare candies, healing items and Max Revives between. Each track pays up to 15,000 CobbleDollars **(unverified in game)**.
+- **A run parked by a server restart now ends when you rejoin** (what it banked is kept), instead of leaving you stuck in the tower dimension.
+- **Tower keys you would drop on death are held and returned**, even if the server restarts before you respawn.
+- **A next opponent Cobblemon refuses to start is retried for a few seconds** instead of being skipped, which used to cost that wave's rewards **(unverified)**.
+- Tower menus no longer close on their own while the Ascension overlay is open **(unverified)**.
 
 **Menus are web pages (P43-P44)**
 - With the WebGUI mod on the server, every CobbleTowers screen is a page the server opens: Tower Hall (towers, Daily and Weekly trial briefings, lobby, party chooser),
@@ -93,7 +102,7 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 - **Season track steps now need a claim.** Before, a reached step was granted at once. Set `"auto_claim": true` in `config/cobbletowers-tracks.json` to keep the old behaviour.
   Steps already granted under the old rules count as claimed, so nobody receives them twice.
 - **Unclaimed season steps stay claimable through the off-season** (the 7 days after a season ends) and are lost when the next season starts. The Progress tab and the login message remind players.
-- **Mastery levels have claimable rewards.** The shipped track gives CobbleDollars at the rank levels (50, 100, 150, 200, 300, 400, 750 at levels 1, 5, 10, 15, 20, 25, 30). These are
+- **Mastery levels have claimable rewards.** The shipped tracks have 30 levels of Raid Points, CobbleDollars, Ultra Balls, Tower Keys (levels 10 and 20) and healing and candy items. These are
   untuned; edit `mastery_tracks/default.json` in a datapack or override them in the config.
 - The final payout of a run is now larger when the party held modifiers (see the risk bonus above). If you tuned reward amounts against the old payouts, expect them to rise.
 
@@ -111,7 +120,11 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 
 **Requirements**
 - Requires Cobblemon 1.8.2 or later (built and rig-tested against 1.8.2). AscensionLib's own `fabric.mod.json` pins Cobblemon to exactly 1.8.1; rebuild it with `">=1.8.1"` before moving a server to 1.8.2.
-- Deploy the CobbleTowers jar together with the AscensionLib jar (rentals are locked out of upgrades only when both are present).
+- Deploy the CobbleTowers jar together with the AscensionLib jar (rentals are locked out of upgrades only when both are present). The movable Ascension HUD panel and the menu-close guard need the new AscensionLib build.
+- Stellar Titles pins an exact CobbleRaids version label: deploy the pinned CobbleRaids build, do not relabel it.
+- Regenerate and re-host the resource pack after deploying (new item icons for the track rewards).
+- New world data: `cobbletowers_key_holds` and the per-run draw log; both are created on first use and safe to delete.
+- Vote crates can hand out tower keys with `give <player> cobbletowers:tower_key`.
 - Rewards that name CobblemonCards items need that mod on the server; a missing item is skipped with one log line, so players get less and nothing breaks.
 - The build version is now `0.29.1-cobblemon-182`, so a server log shows which jar is running. Bump it for every deployed build.
 
