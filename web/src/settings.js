@@ -19,9 +19,15 @@ export function save(settings, storage = globalThis.localStorage) {
   try { storage.setItem(KEY, JSON.stringify(settings)); } catch (e) { /* private mode or no storage: the setting lasts until the page closes */ }
 }
 
+/** AscensionLib's per-player "calm effects" choice, when that mod is installed (its answer arrives over the page bridge); it also turns the animations off here. */
+let libCalm = false;
+export function setLibCalm(on) { libCalm = !!on; }
+/** Whether animation, flashes and flare are off on this page, for any reason. */
+export const isCalm = (root = document.documentElement) => root.classList.contains('calm');
+
 /** Turns the settings into classes on the root element. */
 export function apply(settings, root = document.documentElement) {
-  root.classList.toggle('calm', !settings.motion);
+  root.classList.toggle('calm', !settings.motion || libCalm);
   root.classList.toggle('plainfont', !settings.pixelFont);
   for (const id of Object.keys(THEMES)) if (id !== DEFAULTS.theme) root.classList.toggle('th-' + id, settings.theme === id);
 }

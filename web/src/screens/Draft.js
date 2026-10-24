@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { html } from '../html.js';
 import { RentalCard, adaptCard } from '../components/RentalCard.js';
-import { act } from '../bridge.js';
+import { act, closeGui, tellLibCalm } from '../bridge.js';
+import { apply, isCalm, load, save, setLibCalm } from '../settings.js';
 import { RARITIES } from '../util.js';
 import { revealMs } from '../cardTheme.js';
 import { at, Label, NB, Panel, screen, useScreen } from '../components/native.js';
@@ -28,8 +29,43 @@ function Btn({ desk, kind, w, disabled, onClick, children }) {
   return html`<${NB} flow w=${w} kind=${kind} disabled=${disabled} onClick=${onClick}>${children}<//>`;
 }
 
-/** sealed -> tearing -> revealing -> choosing, per pack. The server holds the packs and checks every pick; this only presents. */
+/** Set once the player has read the warning on this page load, so it is not shown again for every pack or restart. */
+let warned = false;
+
+/**
+ * Shown before the first pack is opened, whichever way the draft screen came up (the button, joining a rental lobby, or the lobby switching to a rental
+ * mode). The reveal has bursts of light, sparks, glints and screen shake, which can trigger photosensitive epilepsy, migraine or motion sickness, so the
+ * player decides first. Nothing here animates.
+ */
+export function DraftWarning({ desk, onDone }) {
+  const calm = isCalm();
+  const go = () => { warned = true; onDone(); };
+  const goCalm = () => {
+    const next = { ...load(), motion: false };
+    save(next); setLibCalm(true); apply(next); tellLibCalm(true);
+    go();
+  };
+  return html`<div role="alert" style="max-width:560px;margin:auto;text-align:left;display:flex;flex-direction:column;gap:12px;padding:6px 10px">
+    <div class="fl c-bronze" style="font-size:1.2em">Warning: flashing lights and animation</div>
+    <div class="fl c-text">Opening the rental packs uses bursts of light, sparks, glints and screen shake. If you are sensitive to flashing or motion, for example photosensitive epilepsy, migraine or motion sickness, ${calm ? 'calm effects are already ON, so these are turned off for you.' : 'turn on calm effects before you continue. It removes these effects here and on the Ascension pages, and you can change it at any time in Settings.'}</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+      ${calm
+        ? html`<${Btn} desk=${desk} w=${90} onClick=${go}>Continue<//>`
+        : html`<${Btn} desk=${desk} w=${190} onClick=${goCalm}>Turn on calm effects and continue<//>
+               <${Btn} desk=${desk} w=${150} kind="dark" onClick=${go}>Continue with effects<//>`}
+      <${Btn} desk=${desk} w=${90} kind="dark" onClick=${closeGui}>Leave<//>
+    </div></div>`;
+}
+
+/** The pack screen, behind the one-time warning. */
 export function PackStage({ draft, desk }) {
+  const [ok, setOk] = useState(warned);
+  if (!ok) return html`<${DraftWarning} desk=${desk} onDone=${() => setOk(true)} />`;
+  return html`<${PackStageInner} draft=${draft} desk=${desk} />`;
+}
+
+/** sealed -> tearing -> revealing -> choosing, per pack. The server holds the packs and checks every pick; this only presents. */
+function PackStageInner({ draft, desk }) {
   const cs = cardScale();
   const cards = useMemo(() => draft.packs[draft.current].cards.map(adaptCard), [draft.current, draft.packs[draft.current]]);
   const [phase, setPhase] = useState('sealed');

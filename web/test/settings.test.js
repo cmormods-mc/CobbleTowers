@@ -45,3 +45,17 @@ test('apply puts one theme class on the root (none for midnight) and takes the o
   apply({ ...DEFAULTS, theme: 'midnight' }, root);
   assert.equal(set.size, 0);
 });
+
+test("AscensionLib's calm choice turns the animations off even when the page's own motion setting is on", async () => {
+  const { setLibCalm, isCalm } = await import('../src/settings.js');
+  const set = new Set();
+  const root = { classList: { toggle: (c, on) => (on ? set.add(c) : set.delete(c)), contains: (c) => set.has(c) } };
+  setLibCalm(true);
+  apply({ motion: true, pixelFont: true }, root);
+  assert.equal(isCalm(root), true);
+  setLibCalm(false);
+  apply({ motion: true, pixelFont: true }, root);
+  assert.equal(isCalm(root), false);
+  apply({ motion: false, pixelFont: true }, root);
+  assert.equal(isCalm(root), true);
+});

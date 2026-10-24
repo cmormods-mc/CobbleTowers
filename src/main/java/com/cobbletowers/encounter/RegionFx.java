@@ -35,7 +35,14 @@ public final class RegionFx {
         Optional<FloorDefinition> floor = content.floorAt(run.towerId(), run.floorIndex());
         RulesetDefinition rules = RulesetResolver.forRun(content, run, floor.flatMap(FloorDefinition::rulesetOverride));
         if (rules == null) return new JsonArray();
+        // A rental's held items are part of the draft, and suppressing them stalled live battles; rentals keep them.
+        if (!rules.playerHeldItems() && isRental(run)) rules = rules.withHeldItems(true);
         return build(rules, tower.contentFloor(run.floorIndex()), tower.floorCount(), run.seed(), run.floorIndex(), enemySide);
+    }
+
+    private static boolean isRental(PersistedRun run) {
+        return run.options().playlist().flatMap(com.cobbletowers.definition.PlaylistRegistry::get)
+                .map(com.cobbletowers.definition.PlaylistDefinition::rental).orElse(false);
     }
 
     /** Pure: the operations a ruleset asks for on this floor. */

@@ -85,7 +85,11 @@ html.native #stage { left: 0; top: 0; width: 100%; height: 100%; transform: none
 .n-lines.lit { color: #f0dfbf; }
 
 /* Settings: reduced motion and the system font */
-html.calm *, html.calm *::before, html.calm *::after { animation: none !important; transition: none !important; }
+html.calm *, html.calm *::before, html.calm *::after { animation: none !important; transition: none !important; text-shadow: none !important; scroll-behavior: auto !important; }
+/* calm also drops the rental card's light show: sparks, beams, rings, ghosting, holo and prism flares, and the soft glows (a kept card gets an outline instead) */
+html.calm .rc-fx, html.calm .rc-beams, html.calm .rc-rings, html.calm .rc-gh, html.calm .rc-holo, html.calm .rc-prism { display: none !important; }
+html.calm .rc-a3 .rc-sbox .rc-spr, html.calm .rc-a3 .rc-insp .rc-med svg { filter: none !important; }
+html.calm .rcard.rc-kept { filter: none !important; outline: 3px solid var(--gold); outline-offset: 2px; }
 html.plainfont { --font: "Lucida Console", "Courier New", monospace; }
 
 /* Intermission cards and parchment lines */

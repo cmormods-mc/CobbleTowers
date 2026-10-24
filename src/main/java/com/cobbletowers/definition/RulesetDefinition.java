@@ -82,6 +82,13 @@ public record RulesetDefinition(
                 enemyDrainEnd, floorStatuses);
     }
 
+    /** The same rules with the player's held items switched on or off. */
+    public RulesetDefinition withHeldItems(boolean on) {
+        return new RulesetDefinition(id, schemaVersion, revision, minEnemyLevel, maxEnemyLevel, registeredPartySize,
+                requiresBattleReadyParty, carriesHealthBetweenFloors, carriesPpBetweenFloors, on, enemyDrainStart,
+                enemyDrainEnd, floorStatuses);
+    }
+
     /**
      * The share of damage an enemy heals on floor {@code floor} of a tower of {@code floorCount}: {@code start} on the
      * first, {@code end} on the last, between them in a line; 0 when the ruleset has no drain.

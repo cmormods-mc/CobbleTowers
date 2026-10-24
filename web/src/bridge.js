@@ -27,6 +27,20 @@ function beatLib() {
   W.postToGame({ channel: 'ascension_gui_beat' });
 }
 
+/**
+ * AscensionLib keeps a per-player "calm effects" choice (no animation, flash or flare) for people who are sensitive to them. The page asks for it and
+ * is told whenever it changes; nothing answers when AscensionLib is absent.
+ */
+export function watchLibCalm(onChange) {
+  if (typeof W.on === 'function') W.on('uiScale', (s) => { if (s && typeof s.calm === 'boolean') onChange(s.calm); });
+  if (typeof W.postToGame === 'function' && insideGame()) W.postToGame({ channel: 'ascension_ui_get' });
+}
+
+/** Saves the choice with AscensionLib so it follows the player to its own pages too. */
+export function tellLibCalm(on) {
+  if (typeof W.postToGame === 'function' && insideGame()) W.postToGame({ channel: 'ascension_ui_set', calm: !!on });
+}
+
 /** page -> server */
 export function act(kind, fields) {
   post({ kind, ...fields });

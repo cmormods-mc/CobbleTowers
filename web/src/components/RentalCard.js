@@ -8,7 +8,7 @@ import { hideTip, moveTip, showTip, tipOpen } from './InspectTip.js';
 
 export { adaptCard };
 
-const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduced = () => (typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches) || (typeof document !== 'undefined' && document.documentElement.classList.contains('calm'));
 /** A whole-number size that fits the sprite's drawn pixels into the art box (a crisp pixel grid). */
 const spriteScale = (species) => {
   const e = ATLAS.map[species];
