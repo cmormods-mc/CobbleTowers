@@ -9,7 +9,7 @@ import net.fabricmc.loader.api.FabricLoader;
 
 /**
  * Gives a lent rental Pokemon an AscensionLib profile, since a new rental never went through capture or hatching.
- * Reached by reflection ({@code com.ascensionlib.AscensionGrants.grantWithRarity}); the set's rarity sets the
+ * Reached by reflection ({@code com.ascensionlib.AscensionGrants.grantWithRarity}); the card's tier sets the
  * profile's, and then every upgrade credit its level has earned is spent on random slots (a rental is never crafted
  * on, so nobody else would). Fire and forget: a failure is logged and the rental fights without effects.
  */
@@ -65,12 +65,12 @@ public final class AscensionLibGrants {
     }
 
     /**
-     * Profiles the rentals just placed in a party, each at its set's rarity. {@code rentals} and {@code sets} are in
-     * the same order.
+     * Profiles the rentals just placed in a party, each at the tier its card showed. {@code rentals} and {@code tiers}
+     * are in the same order.
      */
-    public static void profileRentals(List<Pokemon> rentals, List<RentalSetDefinition> sets) {
+    public static void profileRentals(List<Pokemon> rentals, List<RentalSetDefinition.Rarity> tiers) {
         if (!resolve() || grant == null) return;
-        profile(rentals, sets);
+        profile(rentals, tiers);
         upgradeRentals(rentals);
     }
 
@@ -89,10 +89,10 @@ public final class AscensionLibGrants {
         }
     }
 
-    private static void profile(List<Pokemon> rentals, List<RentalSetDefinition> sets) {
-        for (int i = 0; i < rentals.size() && i < sets.size(); i++) {
+    private static void profile(List<Pokemon> rentals, List<RentalSetDefinition.Rarity> tiers) {
+        for (int i = 0; i < rentals.size() && i < tiers.size(); i++) {
             Pokemon rental = rentals.get(i);
-            String rarity = rarityId(sets.get(i).rarity());
+            String rarity = rarityId(tiers.get(i));
             try {
                 String result = String.valueOf(grant.invoke(null, rental, rarity));
                 // DISABLED is the library saying no world is running; nothing to say about it for every rental.

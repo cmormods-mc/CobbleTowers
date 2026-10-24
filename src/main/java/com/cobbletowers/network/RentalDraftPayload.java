@@ -53,8 +53,8 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
     }
 
     /**
-     * One card: the set's id, its species (for the model and the name) and its rarity ({@code common} ... {@code
-     * mythic}). {@code ascension} is the AscensionLib tier the Pokemon will be profiled at (that library's own id, so
+     * One card: the set's id, its species (for the model and the name) and its rarity, the tier rolled for this card
+     * ({@code common} ... {@code mythic}). {@code ascension} is the AscensionLib tier the Pokemon will be profiled at (that library's own id, so
      * {@code mythical} for the top tier), empty when AscensionLib is not installed.
      */
     public record Card(ResourceLocation set, String species, String name, String rarity, Details details, String ascension) {
@@ -95,11 +95,14 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
         for (int i = 0; i < draft.offer().packs().size(); i++) {
             RentalDraw.Pack pack = draft.offer().packs().get(i);
             List<Card> cards = new ArrayList<>();
-            for (RentalSetDefinition set : pack.cards()) {
-                cards.add(new Card(set.id(), set.species(), set.displayName(), set.rarity().lower(),
+            for (int c = 0; c < pack.cards().size(); c++) {
+                RentalSetDefinition set = pack.cards().get(c);
+                // the card shows its tier (P53), rolled apart from the species' own rarity
+                RentalSetDefinition.Rarity tier = pack.tiers().get(c);
+                cards.add(new Card(set.id(), set.species(), set.displayName(), tier.lower(),
                         new Details(set.level(), set.ability(), set.nature(), set.item().map(item -> item.getPath()).orElse(""),
                                 set.role(), set.moves().stream().map(moves::resolve).toList()),
-                        AscensionLibGrants.tierFor(set.rarity())));
+                        AscensionLibGrants.tierFor(tier)));
             }
             packs.add(new Pack(pack.god(), cards, i < picks.size() ? picks.get(i) : List.of()));
         }

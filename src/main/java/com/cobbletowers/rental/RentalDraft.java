@@ -1,6 +1,7 @@
 package com.cobbletowers.rental;
 
 import com.cobbletowers.definition.RentalSetDefinition;
+import com.cobbletowers.definition.RentalSetDefinition.Rarity;
 import com.cobbletowers.rental.RentalDraw.Offer;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -17,7 +18,7 @@ public final class RentalDraft {
 
     /** How many cards are kept from each pack. */
     public static final int KEEP = 2;
-    /** A team may keep at most this many legendary or mythic Pokemon (so a God Pack cannot field six). */
+    /** A team may keep at most this many legendary or mythic tier cards (so a God Pack cannot field six). */
     public static final int MAX_TOP_RARITY = 2;
 
     public enum Result {
@@ -55,12 +56,12 @@ public final class RentalDraft {
         if (indices.size() != KEEP) return Result.WRONG_COUNT;
         Set<Integer> distinct = new HashSet<>(indices);
         if (distinct.size() != indices.size()) return Result.DUPLICATE;
-        List<RentalSetDefinition> cards = offer.packs().get(pack).cards();
+        List<Rarity> tiers = offer.packs().get(pack).tiers();
         for (int index : indices) {
-            if (index < 0 || index >= cards.size()) return Result.OUT_OF_RANGE;
+            if (index < 0 || index >= tiers.size()) return Result.OUT_OF_RANGE;
         }
-        long tops = team().stream().filter(set -> set.rarity().isTop()).count()
-                + indices.stream().filter(index -> cards.get(index).rarity().isTop()).count();
+        long tops = teamTiers().stream().filter(Rarity::isTop).count()
+                + indices.stream().filter(index -> tiers.get(index).isTop()).count();
         if (tops > MAX_TOP_RARITY) return Result.TOO_MANY_LEGENDARY;
         picks.add(List.copyOf(indices));
         return Result.OK;
@@ -80,15 +81,26 @@ public final class RentalDraft {
         return List.copyOf(team);
     }
 
+    /** The tier of each Pokemon kept so far, in pick order (what its card showed). */
+    public List<Rarity> teamTiers() {
+        List<Rarity> tiers = new ArrayList<>();
+        for (int pack = 0; pack < picks.size(); pack++) {
+            for (int index : picks.get(pack)) tiers.add(offer.packs().get(pack).tiers().get(index));
+        }
+        return List.copyOf(tiers);
+    }
+
     /**
      * Names a finished team's Pokemon with the ids they will have, so registration can be written before they exist.
      * @param god per Pokemon, whether it came from a God Pack
+     * @param tiers per Pokemon, the tier its card showed, which its AscensionLib profile is made at
      */
-    public record Team(List<RentalSetDefinition> sets, List<UUID> ids, List<Boolean> god) {
+    public record Team(List<RentalSetDefinition> sets, List<UUID> ids, List<Boolean> god, List<Rarity> tiers) {
         public Team {
             sets = List.copyOf(sets);
             ids = List.copyOf(ids);
             god = List.copyOf(god);
+            tiers = List.copyOf(tiers);
         }
     }
 
@@ -107,6 +119,6 @@ public final class RentalDraft {
         List<RentalSetDefinition> sets = team();
         List<UUID> ids = new ArrayList<>();
         for (int i = 0; i < sets.size(); i++) ids.add(newId.get());
-        return new Team(sets, ids, godFlags());
+        return new Team(sets, ids, godFlags(), teamTiers());
     }
 }

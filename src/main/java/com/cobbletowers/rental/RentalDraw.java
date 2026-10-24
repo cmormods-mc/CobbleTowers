@@ -13,8 +13,14 @@ import java.util.Set;
 
 /**
  * The three packs of a rental draft (P33), a pure function of pool and seed so a Daily Trial gives everyone the same
- * draft. Each pack is three common, one uncommon and one rare-or-better card. At least one epic-or-better appears
- * overall, a small chance makes a God Pack of five epic-or-better (never in a trial), and no species repeats.
+ * draft. Each pack is three common, one uncommon and one rare-or-better species (by the set's own rarity, its class,
+ * which is what the sets were tuned by). At least one epic-or-better appears overall, a small chance makes a God Pack
+ * of five epic-or-better (never in a trial), and no species repeats.
+ *
+ * <p>Every card also has a tier (P53): a rarity rolled apart from its species, with the same shape (three common, one
+ * uncommon and one rare-or-better per pack, an epic-or-better tier somewhere, epic-or-better throughout a God Pack),
+ * then dealt onto the cards at random. The tier is what the card shows, what the team cap counts, and what the lent
+ * Pokemon's AscensionLib profile is made at.
  */
 public final class RentalDraw {
 
@@ -28,10 +34,12 @@ public final class RentalDraw {
 
     private RentalDraw() {}
 
-    /** One pack: five cards, and whether it is the God Pack. */
-    public record Pack(List<RentalSetDefinition> cards, boolean god) {
+    /** One pack: five cards, the tier dealt to each (same order), and whether it is the God Pack. */
+    public record Pack(List<RentalSetDefinition> cards, List<Rarity> tiers, boolean god) {
         public Pack {
             cards = List.copyOf(cards);
+            tiers = List.copyOf(tiers);
+            if (tiers.size() != cards.size()) throw new IllegalArgumentException("a pack needs one tier per card");
         }
     }
 
@@ -41,8 +49,14 @@ public final class RentalDraw {
             packs = List.copyOf(packs);
         }
 
+        /** Whether a species of epic class or better was offered. */
         public boolean hasEpicOrBetter() {
             return packs.stream().flatMap(pack -> pack.cards().stream()).anyMatch(card -> card.rarity().atLeast(Rarity.EPIC));
+        }
+
+        /** Whether a card of epic tier or better was offered. */
+        public boolean hasEpicTierOrBetter() {
+            return packs.stream().flatMap(pack -> pack.tiers().stream()).anyMatch(tier -> tier.atLeast(Rarity.EPIC));
         }
 
         public boolean hasGodPack() {
@@ -85,13 +99,39 @@ public final class RentalDraw {
             if (upgrade != null) packs.get(pack).set(CARDS - 1, upgrade);
         }
 
+        List<List<Rarity>> tiers = dealTiers(draw, god);
+
         List<Pack> out = new ArrayList<>();
         for (int pack = 0; pack < PACKS; pack++) {
             List<RentalSetDefinition> cards = new ArrayList<>(packs.get(pack));
             draw.shuffle(cards, "s" + pack);
-            out.add(new Pack(cards, pack == god));
+            List<Rarity> packTiers = new ArrayList<>(tiers.get(pack));
+            draw.shuffle(packTiers, "ts" + pack);
+            out.add(new Pack(cards, packTiers, pack == god));
         }
         return new Offer(out);
+    }
+
+    /**
+     * The tiers of every pack, in slot order, rolled with their own contexts so they do not follow the species. The same
+     * shape the species have: a normal pack is three common, one uncommon and one top slot; a God Pack is epic or better.
+     */
+    private static List<List<Rarity>> dealTiers(Draw draw, int god) {
+        List<List<Rarity>> tiers = new ArrayList<>();
+        for (int pack = 0; pack < PACKS; pack++) {
+            List<Rarity> slots = new ArrayList<>();
+            if (pack == god) {
+                for (int i = 0; i < CARDS; i++) slots.add(godChain(draw, "Tg" + pack + "." + i, i).get(0));
+            } else {
+                for (int i = 0; i < 3; i++) slots.add(Rarity.COMMON);
+                slots.add(Rarity.UNCOMMON);
+                slots.add(topChain(draw, "Tt" + pack).get(0));
+            }
+            tiers.add(slots);
+        }
+        boolean any = tiers.stream().flatMap(List::stream).anyMatch(tier -> tier.atLeast(Rarity.EPIC));
+        if (!any) tiers.get(draw.roll("Tupgrade", PACKS)).set(CARDS - 1, epicChain(draw, "Tupgrade").get(0));
+        return tiers;
     }
 
     /** The preference order for the top slot of a normal pack: usually rare, sometimes epic, rarely legendary. */
@@ -149,10 +189,10 @@ public final class RentalDraw {
             throw new IllegalArgumentException("the rental pool is empty; there is nothing to draft from");
         }
 
-        void shuffle(List<RentalSetDefinition> cards, String context) {
+        <T> void shuffle(List<T> cards, String context) {
             for (int i = cards.size() - 1; i > 0; i--) {
                 int j = roll(context + "." + i, i + 1);
-                RentalSetDefinition swap = cards.get(i);
+                T swap = cards.get(i);
                 cards.set(i, cards.get(j));
                 cards.set(j, swap);
             }

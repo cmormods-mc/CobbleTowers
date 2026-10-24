@@ -178,7 +178,8 @@ public final class RentalDraftService {
         if (draft.complete()) {
             lines.add("Your team is drafted:");
             int number = 1;
-            for (RentalSetDefinition set : draft.team()) lines.add("  " + number++ + ". " + line(set));
+            List<RentalSetDefinition> team = draft.team();
+            for (int i = 0; i < team.size(); i++) lines.add("  " + number++ + ". " + line(team.get(i), draft.teamTiers().get(i)));
             lines.add("Use Ready on the play screen; the host can start once everyone is ready. Restart the draft there to draft again.");
             return lines;
         }
@@ -186,15 +187,15 @@ public final class RentalDraftService {
         RentalDraw.Pack current = draft.offer().packs().get(pack);
         lines.add("Pack " + (pack + 1) + " of " + RentalDraw.PACKS + (current.god() ? "  *** GOD PACK ***" : "")
                 + ": keep two on the draft screen.");
-        for (int i = 0; i < current.cards().size(); i++) lines.add("  " + (i + 1) + ". " + line(current.cards().get(i)));
+        for (int i = 0; i < current.cards().size(); i++) lines.add("  " + (i + 1) + ". " + line(current.cards().get(i), current.tiers().get(i)));
         if (!draft.team().isEmpty()) {
             lines.add("Kept so far: " + String.join(", ", draft.team().stream().map(RentalSetDefinition::displayName).toList()));
         }
         return lines;
     }
 
-    private static String line(RentalSetDefinition set) {
-        return "[" + set.rarity().lower() + "] " + set.displayName() + " (" + set.ability() + ", "
+    private static String line(RentalSetDefinition set, RentalSetDefinition.Rarity tier) {
+        return "[" + tier.lower() + "] " + set.displayName() + " (" + set.ability() + ", "
                 + set.item().map(item -> item.getPath()).orElse("no item") + "): " + String.join(", ", set.moves())
                 + (set.role().isEmpty() ? "" : " - " + set.role());
     }

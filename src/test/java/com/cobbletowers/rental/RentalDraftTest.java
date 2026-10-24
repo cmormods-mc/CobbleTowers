@@ -217,7 +217,7 @@ class RentalDraftTest {
     }
 
     @Test
-    @DisplayName("a team may keep at most two legendary or mythic Pokemon, however the packs fall")
+    @DisplayName("a team may keep at most two legendary or mythic tier cards, however the packs fall")
     void legendaryCap() throws IOException {
         List<RentalSetDefinition> pool = pool();
         int refused = 0;
@@ -225,10 +225,10 @@ class RentalDraftTest {
             RentalDraft draft = new RentalDraft(RentalDraw.draw(pool, seed, true));
             // greedily try to keep the rarest two of every pack
             for (int pack = 0; pack < 3; pack++) {
-                List<RentalSetDefinition> cards = draft.offer().packs().get(pack).cards();
+                List<Rarity> cards = draft.offer().packs().get(pack).tiers();
                 List<Integer> order = new ArrayList<>();
                 for (int i = 0; i < cards.size(); i++) order.add(i);
-                order.sort((a, b) -> cards.get(b).rarity().compareTo(cards.get(a).rarity()));
+                order.sort((a, b) -> cards.get(b).compareTo(cards.get(a)));
                 Result result = draft.pick(pack, List.of(order.get(0), order.get(1)));
                 if (result == Result.TOO_MANY_LEGENDARY) {
                     refused++;
@@ -236,8 +236,90 @@ class RentalDraftTest {
                     assertEquals(Result.OK, draft.pick(pack, List.of(order.get(3), order.get(4))));
                 }
             }
-            assertTrue(draft.team().stream().filter(set -> set.rarity().isTop()).count() <= RentalDraft.MAX_TOP_RARITY, "seed " + seed);
+            assertTrue(draft.teamTiers().stream().filter(Rarity::isTop).count() <= RentalDraft.MAX_TOP_RARITY, "seed " + seed);
         }
+    }
+
+    // ---- the tiers (P53)
+    // -------------------------------------------------------------------------------------------------
+
+    private static RentalSetDefinition ofClass(List<RentalSetDefinition> pool, Rarity rarity, int skip) {
+        return pool.stream().filter(set -> set.rarity() == rarity).skip(skip).findFirst().orElseThrow();
+    }
+
+    @Test
+    @DisplayName("a normal pack deals three common, one uncommon and one rare-or-better tier, whatever the species are")
+    void tierShape() throws IOException {
+        List<RentalSetDefinition> pool = pool();
+        for (long seed = 0; seed < 500; seed++) {
+            for (Pack pack : RentalDraw.draw(pool, seed, false).packs()) {
+                assertEquals(pack.cards().size(), pack.tiers().size());
+                assertEquals(3, pack.tiers().stream().filter(tier -> tier == Rarity.COMMON).count(), "seed " + seed);
+                assertEquals(1, pack.tiers().stream().filter(tier -> tier == Rarity.UNCOMMON).count(), "seed " + seed);
+                assertEquals(1, pack.tiers().stream().filter(tier -> tier.atLeast(Rarity.RARE)).count(), "seed " + seed);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("at least one epic-or-better tier is dealt in every draft, and a God Pack is epic-or-better tiers with at most two top")
+    void tierGuarantees() throws IOException {
+        List<RentalSetDefinition> pool = pool();
+        for (long seed = 0; seed < 5000; seed++) {
+            Offer offer = RentalDraw.draw(pool, seed, true);
+            assertTrue(offer.hasEpicTierOrBetter(), "seed " + seed);
+            for (Pack pack : offer.packs()) {
+                if (!pack.god()) continue;
+                assertTrue(pack.tiers().stream().allMatch(tier -> tier.atLeast(Rarity.EPIC)), "seed " + seed);
+                assertTrue(pack.tiers().stream().filter(Rarity::isTop).count() <= 2, "seed " + seed);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("a card's tier is not its species' rarity: a legendary species can be common, and a common species epic or better")
+    void tiersAreIndependent() throws IOException {
+        List<RentalSetDefinition> pool = pool();
+        boolean legendaryCommon = false, commonEpic = false;
+        for (long seed = 0; seed < 3000; seed++) {
+            for (Pack pack : RentalDraw.draw(pool, seed, true).packs()) {
+                for (int i = 0; i < pack.cards().size(); i++) {
+                    Rarity species = pack.cards().get(i).rarity(), tier = pack.tiers().get(i);
+                    legendaryCommon |= species.isTop() && tier == Rarity.COMMON;
+                    commonEpic |= species == Rarity.COMMON && tier.atLeast(Rarity.EPIC);
+                }
+            }
+        }
+        assertTrue(legendaryCommon, "a top-class species never came up at common tier");
+        assertTrue(commonEpic, "a common-class species never came up at epic tier or better");
+    }
+
+    @Test
+    @DisplayName("the cap counts the tier on the card: a legendary species at common tier does not count, a common species at mythic does")
+    void capCountsTiers() throws IOException {
+        List<RentalSetDefinition> pool = pool();
+        RentalSetDefinition a = ofClass(pool, Rarity.COMMON, 0), b = ofClass(pool, Rarity.COMMON, 1), c = ofClass(pool, Rarity.COMMON, 2);
+        RentalSetDefinition d = ofClass(pool, Rarity.COMMON, 3), e = ofClass(pool, Rarity.COMMON, 4);
+        RentalSetDefinition legendary = ofClass(pool, Rarity.LEGENDARY, 0);
+        List<RentalSetDefinition> species = List.of(a, b, c, d, e);
+        List<Pack> packs = List.of(
+                new Pack(species, List.of(Rarity.MYTHIC, Rarity.LEGENDARY, Rarity.COMMON, Rarity.COMMON, Rarity.COMMON), false),
+                new Pack(species, List.of(Rarity.LEGENDARY, Rarity.COMMON, Rarity.COMMON, Rarity.COMMON, Rarity.COMMON), false),
+                new Pack(List.of(legendary, b, c, d, e), List.of(Rarity.COMMON, Rarity.COMMON, Rarity.COMMON, Rarity.COMMON, Rarity.COMMON), false));
+        RentalDraft draft = new RentalDraft(new Offer(packs));
+        assertEquals(Result.OK, draft.pick(0, List.of(0, 1)), "two top tiers are allowed");
+        assertEquals(Result.TOO_MANY_LEGENDARY, draft.pick(1, List.of(0, 1)), "a third top tier is refused, though the species is common");
+        assertEquals(Result.OK, draft.pick(1, List.of(1, 2)));
+        assertEquals(Result.OK, draft.pick(2, List.of(0, 1)), "a legendary species at common tier is free to keep");
+        assertEquals(List.of(Rarity.MYTHIC, Rarity.LEGENDARY, Rarity.COMMON, Rarity.COMMON, Rarity.COMMON, Rarity.COMMON), draft.teamTiers());
+        assertEquals(draft.teamTiers(), draft.finish(UUID::randomUUID).tiers());
+    }
+
+    @Test
+    @DisplayName("a pack refuses a tier list that does not match its cards")
+    void tiersMatchCards() throws IOException {
+        List<RentalSetDefinition> pool = pool();
+        assertThrows(IllegalArgumentException.class, () -> new Pack(pool.subList(0, 5), List.of(Rarity.COMMON), false));
     }
 
     @Test

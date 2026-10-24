@@ -87,7 +87,7 @@ class RentalDraftPayloadTest {
             RentalDraftPayload.Card card = payload.packs().get(0).cards().get(i);
             assertEquals(set.species(), card.species());
             assertEquals(set.displayName(), card.name());
-            assertEquals(set.rarity().lower(), card.rarity());
+            assertEquals(pack.tiers().get(i).lower(), card.rarity(), "the card shows its rolled tier, not its species' rarity");
             assertEquals(set.moves(), card.details().moves().stream().map(RentalDraftPayload.Move::id).toList());
             assertEquals(set.level(), card.details().level());
             assertEquals(set.ability(), card.details().ability());
