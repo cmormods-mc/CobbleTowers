@@ -112,7 +112,7 @@ export function RentalCard({ card, cs = 2, flip, delay = 0, pick, kept, onClick 
       <div class="rc-aura"></div>
       <div ref=${scene} class=${'rc-scene rc-a3' + (stage === 'live' ? ' rc-live' : '') + (kick ? ' ' + kick : '')} data-r=${card.rarity} onPointerMove=${move} onPointerLeave=${leave}>
         <div ref=${tilt} class="rc-tilt"><div class=${'rc-inner' + (flipped ? ' rc-flipped' : '')}>
-          <div class="rc-face rc-back"></div>
+          <div class="rc-face rc-back"><div class="rc-ball"></div></div>
           <div class="rc-face rc-front" style=${`--acc:${typeHex(t1)}`}>
             <div class="rc-burst"><div class="rc-bg"></div></div>
             <div class="rc-vig"></div>
@@ -139,7 +139,7 @@ export function RentalCard({ card, cs = 2, flip, delay = 0, pick, kept, onClick 
             <div class="rc-rbanner">${T.n.toUpperCase()}</div>
             <div class="rc-prism"></div><div class="rc-holo"></div>
             <div class="rc-flash"></div>
-            ${kept ? html`<img class="rc-kmark" src="assets/gui/byzantine/seal.png" alt="" />` : null}
+            ${kept ? html`<div class="rc-kmark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" d="M4 13l5 5L20 6"/></svg></div>` : null}
           </div>
         </div></div>
       </div>

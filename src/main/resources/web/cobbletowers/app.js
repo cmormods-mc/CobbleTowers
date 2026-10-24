@@ -85,7 +85,7 @@
       <div class="rc-aura"></div>
       <div ref=${$} class=${"rc-scene rc-a3"+(d==="live"?" rc-live":"")+(p?" "+p:"")} data-r=${e.rarity} onPointerMove=${b} onPointerLeave=${x}>
         <div ref=${y} class="rc-tilt"><div class=${"rc-inner"+(O?" rc-flipped":"")}>
-          <div class="rc-face rc-back"></div>
+          <div class="rc-face rc-back"><div class="rc-ball"></div></div>
           <div class="rc-face rc-front" style=${`--acc:${Be(g)}`}>
             <div class="rc-burst"><div class="rc-bg"></div></div>
             <div class="rc-vig"></div>
@@ -112,7 +112,7 @@
             <div class="rc-rbanner">${l.n.toUpperCase()}</div>
             <div class="rc-prism"></div><div class="rc-holo"></div>
             <div class="rc-flash"></div>
-            ${r?i`<img class="rc-kmark" src="assets/gui/byzantine/seal.png" alt="" />`:null}
+            ${r?i`<div class="rc-kmark"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" d="M4 13l5 5L20 6"/></svg></div>`:null}
           </div>
         </div></div>
       </div>

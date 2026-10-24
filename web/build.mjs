@@ -48,7 +48,7 @@ fs.writeFileSync(path.join(here, 'src/gen/items.js'), 'export const ITEMS = ' + 
 
 // ---- the texture kit
 const copy = (from, to) => { fs.mkdirSync(path.dirname(path.join(out, to)), { recursive: true }); fs.copyFileSync(from, path.join(out, to)); };
-for (const dir of ['pixel', 'byzantine']) {
+for (const dir of ['pixel']) {
   for (const f of fs.readdirSync(path.join(res, 'textures/gui', dir)).filter((n) => n.endsWith('.png'))) copy(path.join(res, 'textures/gui', dir, f), `assets/gui/${dir}/${f}`);
 }
 copy(path.join(res, 'textures/gui/raid_points.png'), 'assets/gui/raid_points.png');

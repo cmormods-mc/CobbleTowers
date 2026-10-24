@@ -167,3 +167,6 @@ The Byzantine card face was replaced by the Prism Pull card (`web/src/components
   the tooltip then has no row. It is the same tier `profileRentals` passes to `grantWithRarity`, so the two cannot disagree.
 - **Left open:** the type glyphs on the medallions are placeholders for real art; a Pokemon already in a party should show its live
   AscensionLib profile tier (it can change with a Sigil or promotion), which needs a read of the profile, not the set.
+- **Byzantine style archived (2026-10-24):** the sealed pack, the card back and the kept-card mark are now drawn in code in the same look,
+  so nothing uses the Byzantine textures. They moved to `archive/byzantine/` (README there says how to restore); the web build no longer
+  copies the folder, so the bundle is smaller.
