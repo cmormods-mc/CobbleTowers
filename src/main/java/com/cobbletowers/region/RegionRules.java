@@ -68,12 +68,17 @@ public final class RegionRules {
      * Which side leads on a stat: {@code -1} the left, {@code 1} the right, {@code 0} level. A {@code LOW} stat of 0
      * means nobody has set one yet, so it loses to any real value.
      *
-     * <p>TODO(human): decide how the regions are compared. Regions differ in size, so raw totals favour the one with
-     * the most players. See the reply for the trade-offs. Until then this compares the raw numbers.
+     * <p>Regions differ in size, so a total is judged per member: {@code left / leftPlayers} against {@code right /
+     * rightPlayers}, cross-multiplied to stay in whole numbers. With no members on either side there is nothing to divide
+     * by, so the raw totals decide. A record ({@code HIGH}, {@code LOW}) is one player's feat and is compared as it is.
      */
     public static int leader(Stat stat, long left, long right, int leftPlayers, int rightPlayers) {
         return switch (stat.kind()) {
-            case TOTAL, HIGH -> Long.compare(left, right) == 0 ? 0 : left > right ? -1 : 1;
+            case TOTAL -> {
+                boolean perMember = leftPlayers > 0 && rightPlayers > 0;
+                yield Long.signum(perMember ? right * leftPlayers - left * rightPlayers : right - left);
+            }
+            case HIGH -> Long.signum(right - left);
             case LOW -> {
                 if (left == right) yield 0;
                 if (left == 0) yield 1;

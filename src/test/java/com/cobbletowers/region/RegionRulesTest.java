@@ -39,6 +39,24 @@ class RegionRulesTest {
     }
 
     @Test
+    @DisplayName("totals are judged per member, so the bigger region does not win by size alone")
+    void totalsPerMember() {
+        // 1311 clears over 41 members (32.0 each) against 1204 over 29 (41.5 each)
+        assertEquals(1, RegionRules.leader(Stat.CLEARS, 1311, 1204, 41, 29));
+        assertEquals(-1, RegionRules.leader(Stat.CLEARS, 1204, 1311, 29, 41));
+        assertEquals(0, RegionRules.leader(Stat.AWAY, 100, 50, 20, 10), "100 over 20 and 50 over 10 are both 5 each");
+        assertEquals(-1, RegionRules.leader(Stat.TRIALS, 9, 4, 0, 5), "with no members on a side the raw totals decide");
+    }
+
+    @Test
+    @DisplayName("a depth record is one player's feat, so size does not matter")
+    void depthRecord() {
+        assertEquals(-1, RegionRules.leader(Stat.ASCENSION, 5, 3, 1, 100));
+        assertEquals(1, RegionRules.leader(Stat.ASCENSION, 3, 5, 100, 1));
+        assertEquals(0, RegionRules.leader(Stat.ASCENSION, 4, 4, 10, 20));
+    }
+
+    @Test
     @DisplayName("a time record with none set loses to any real time")
     void fastest() {
         assertEquals(-1, RegionRules.leader(Stat.FASTEST, 600_000, 700_000, 10, 10));

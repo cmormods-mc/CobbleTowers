@@ -38,5 +38,5 @@ export function DeskRanks({ ranks }) {
         <span class="rvscore">${v.left} : ${v.right}</span></div>
       <div class="dcard rvheroes"><${Champions} ranks=${ranks} id=${ranks.left} list=${ranks.leftChampions} /><${Champions} ranks=${ranks} id=${ranks.right} list=${ranks.rightChampions} /></div>
     </div>
-    <div class="dft"><span class="st">${ranks.message || ranks.scope + ' · clears in a rival region\'s tower count as away conquests.'}</span></div></div>`;
+    <div class="dft"><span class="st">${ranks.message || ranks.scope + ' · totals are judged per player. A clear in a rival region\'s tower is an away conquest.'}</span></div></div>`;
 }
