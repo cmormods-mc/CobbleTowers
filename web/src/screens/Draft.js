@@ -45,10 +45,10 @@ export function DraftWarning({ desk, onDone }) {
     save(next); setLibCalm(true); apply(next); tellLibCalm(true);
     go();
   };
-  return html`<div role="alert" style="max-width:560px;margin:auto;text-align:left;display:flex;flex-direction:column;gap:12px;padding:6px 10px">
+  return html`<div role="alert" style="max-width:560px;margin:auto;text-align:center;align-items:center;display:flex;flex-direction:column;gap:12px;padding:6px 10px">
     <div class="fl c-bronze" style="font-size:1.2em">Warning: flashing lights and animation</div>
     <div class="fl c-text">Opening the rental packs uses bursts of light, sparks, glints and screen shake. If you are sensitive to flashing or motion, for example photosensitive epilepsy, migraine or motion sickness, ${calm ? 'calm effects are already ON, so these are turned off for you.' : 'turn on calm effects before you continue. It removes these effects here and on the Ascension pages, and you can change it at any time in Settings.'}</div>
-    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:center">
       ${calm
         ? html`<${Btn} desk=${desk} w=${90} onClick=${go}>Continue<//>`
         : html`<${Btn} desk=${desk} w=${190} onClick=${goCalm}>Turn on calm effects and continue<//>
