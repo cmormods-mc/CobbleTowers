@@ -43,6 +43,9 @@ public final class PlayCommand {
         var playNode = playRoot
                         .executes(PlayCommand::open)
                         .then(Commands.literal("menu").executes(PlayCommand::hall))
+                        // The Tower Keeper NPC runs this one (operator level, so the dialog's server source passes).
+                        .then(Commands.literal("keeper")
+                                .then(Commands.argument("player", EntityArgument.player()).executes(PlayCommand::hallFor)))
                         .then(Commands.literal("run").executes(context -> {
                             var player = context.getSource().getPlayerOrException();
                             com.cobbletowers.menu.TowerFeatureService.handle(context.getSource().getServer(), player,
@@ -148,24 +151,45 @@ public final class PlayCommand {
                 + " or ask an admin. /tower help lists the typed commands."));
     }
 
+    /** False (and tells the player) when a typed /tower has no NPC behind it. */
+    private static boolean mayType(CommandContext<CommandSourceStack> context, ServerPlayer player) {
+        boolean allowed = HallAccess.mayTypeIt(context.getSource().hasPermission(2),
+                LobbyService.lobbyOf(player.getUUID()).isPresent(),
+                com.cobbletowers.runtime.TowerRuns.forPlayer(player.getUUID()).isPresent());
+        if (!allowed) player.sendSystemMessage(Component.literal(HallAccess.REFUSAL));
+        return allowed;
+    }
+
+    /** {@code /cobbletowers play keeper <player>}: what the NPC's dialog runs, as the server, for the player it names. */
+    private static int hallFor(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        showHall(context.getSource().getServer(), EntityArgument.getPlayer(context, "player"));
+        return 1;
+    }
+
     private static int hall(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        if (!mayType(context, player)) return 0;
+        showHall(context.getSource().getServer(), player);
+        return 1;
+    }
+
+    private static void showHall(net.minecraft.server.MinecraftServer server, ServerPlayer player) {
         tellNoScreen(player);
         com.cobbletowers.webgui.WebGuiBridge.userAsked(player);
         // A team that is forming (or at an intermission) wants to see that, not the tower picker; /tower menu is the
         // picker.
         if (IntermissionService.isAtIntermission(player)) {
-            IntermissionService.openScreen(context.getSource().getServer(), player, "");
+            IntermissionService.openScreen(server, player, "");
         } else if (LobbyService.lobbyOf(player.getUUID()).isPresent()) {
-            LobbyService.openScreen(context.getSource().getServer(), player);
+            LobbyService.openScreen(server, player);
         } else {
-            com.cobbletowers.menu.TowerHallService.open(context.getSource().getServer(), player, "");
+            com.cobbletowers.menu.TowerHallService.open(server, player, "");
         }
-        return 1;
     }
 
     private static int open(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        if (!mayType(context, player)) return 0;
         tellNoScreen(player);
         com.cobbletowers.webgui.WebGuiBridge.userAsked(player);
         // A team at an intermission wants that menu, not the tower picker.

@@ -45,7 +45,7 @@
     {
       "heading": "Useful commands",
       "lines": [
-        "/tower opens the Hall. /tower help shows this guide in chat. /tower report <text> tells us about a problem or an idea."
+        "Talk to the Tower Keeper to open the Hall. /tower help shows this guide in chat. /tower report <text> tells us about a problem or an idea."
       ]
     }
   ]
