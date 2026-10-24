@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Optional;
 import java.util.UUID;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
@@ -57,6 +58,20 @@ public final class TowerPresence {
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 guarded("handle a join", () -> onJoin(server, handler.getPlayer())));
+        // Dying in the tower leaves the run: the player respawns outside it, so a live run would keep their rental
+        // team (and their own Pokemon in the boxes). Leaving lets the journal sweep put everything back.
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+            if (!(entity instanceof ServerPlayer player)) return;
+            if (!player.level().dimension().equals(com.cobbletowers.instance.TowerDimension.LEVEL)) return;
+            MinecraftServer server = player.getServer();
+            if (server == null) return;
+            guarded("handle a death", () -> {
+                if (leave(server, player, System.currentTimeMillis())) {
+                    player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                            "You died, so you left the run. Your party will be put back."));
+                }
+            });
+        });
         // Per tick, this compares two longs and returns. The work itself happens on the interval
         // above; TDS section 11 forbids per-tick scans, not per-tick clock reads.
         ServerTickEvents.END_SERVER_TICK.register(server -> {
