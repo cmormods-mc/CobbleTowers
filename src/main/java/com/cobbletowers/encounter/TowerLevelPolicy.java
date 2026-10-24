@@ -10,8 +10,23 @@ import java.util.OptionalInt;
  */
 public final class TowerLevelPolicy {
 
-    /** How much each floor adds on top of the party's own level. */
-    public static final int PER_FLOOR_STEP = 1;
+    /** Floor 1 fights this far below the party's level, and each floor closes 2 of the gap. */
+    private static final int START_BELOW = 10;
+    private static final int RAMP_STEP = 2;
+    /** The floor that fights at the party's own level; above it each floor adds one. */
+    private static final int LEVEL_FLOOR = 6;
+    /** The boss's health on floor 1, as a percentage; it climbs 10 points a floor to full. */
+    private static final int START_HEALTH = 50;
+
+    /** What the floor adds to the party's level: negative at the bottom, zero at floor 6, then +1 a floor. */
+    public static int floorOffset(int floorIndex) {
+        return floorIndex <= LEVEL_FLOOR ? -START_BELOW + RAMP_STEP * (floorIndex - 1) : floorIndex - LEVEL_FLOOR;
+    }
+
+    /** The boss's shared health on this floor, as a percentage of its full pool (100 from floor 6). */
+    public static int bossHealthPercent(int floorIndex) {
+        return Math.max(1, Math.min(100, START_HEALTH + 10 * (floorIndex - 1)));
+    }
 
     private TowerLevelPolicy() {}
 
@@ -27,7 +42,7 @@ public final class TowerLevelPolicy {
         OptionalInt mean = TowerLevelSnapshot.of(partyLevels);
         if (mean.isEmpty()) return OptionalInt.empty();
 
-        int scaled = mean.getAsInt() + floorIndex * PER_FLOOR_STEP + entryOffset;
+        int scaled = mean.getAsInt() + floorOffset(floorIndex) + entryOffset;
         return OptionalInt.of(clamp(scaled, ruleset));
     }
 

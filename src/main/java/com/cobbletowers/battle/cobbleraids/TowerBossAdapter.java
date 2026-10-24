@@ -1,5 +1,6 @@
 package com.cobbletowers.battle.cobbleraids;
 
+import com.cobbletowers.encounter.TowerLevelPolicy;
 import com.cobbletowers.CobbleTowers;
 import com.cobbleraids.api.encounter.CobbleRaidsEncounters;
 import com.cobbleraids.api.encounter.EncounterListener;
@@ -98,7 +99,7 @@ public final class TowerBossAdapter {
         } catch (RuntimeException ex) {
             TowerLog.error("Declaring the boss of floor {} of run {} threw; it fights without scouting", floorIndex, runId, ex);
         }
-        EncounterRules rules = rulesFor(effects);
+        EncounterRules rules = rulesFor(effects, floorIndex);
         // Said from this side as well as CobbleRaids', so a rule that goes missing can be pinned to
         // the boundary it went missing at rather than argued about from one end (TDS #60).
         TowerLog.info("Floor {} of run {} starts its boss {}", floorIndex, runId,
@@ -141,16 +142,17 @@ public final class TowerBossAdapter {
         return Optional.of(started);
     }
 
-    /** A run's drafted effects as CobbleRaids rules; a translation only. */
-    private static EncounterRules rulesFor(ModifierEffects effects) {
-        if (!effects.changesBattleRules()) return EncounterRules.none();
+    /** A run's drafted effects as CobbleRaids rules, with the floor's own softening of the boss's health folded in. */
+    private static EncounterRules rulesFor(ModifierEffects effects, int floorIndex) {
+        int health = Math.max(1, effects.bossHealthPercent() * TowerLevelPolicy.bossHealthPercent(floorIndex) / 100);
+        if (!effects.changesBattleRules() && health == 100) return EncounterRules.none();
         return EncounterRules.none()
                 .withBannedMoves(effects.bannedMoves())
                 .withSwitching(effects.switchingAllowed())
                 .withItems(effects.itemsAllowed())
                 .withWeather(effects.weather())
                 .withTerrain(effects.terrain())
-                .withHealthPercent(effects.bossHealthPercent());
+                .withHealthPercent(health);
     }
 
     /** Ends a run's boss without it being fought out: abandoning, parking, shutting down. */

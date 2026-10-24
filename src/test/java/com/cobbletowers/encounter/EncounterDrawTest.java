@@ -98,14 +98,29 @@ class EncounterDrawTest {
     void levels() {
         RulesetDefinition ruleset = ruleset();
 
-        // Party mean 50, floor 3 adds 3, staraptor's own offset adds 2.
-        assertEquals(53, TowerLevelPolicy.levelFor(PARTY, 3, 0, ruleset).orElseThrow());
-        assertEquals(55, TowerLevelPolicy.levelFor(PARTY, 3, 2, ruleset).orElseThrow());
+        // Party mean 50, floor 3 sits 6 below it, staraptor's own offset adds 2.
+        assertEquals(44, TowerLevelPolicy.levelFor(PARTY, 3, 0, ruleset).orElseThrow());
+        assertEquals(46, TowerLevelPolicy.levelFor(PARTY, 3, 2, ruleset).orElseThrow());
 
         // The ruleset's ceiling holds even when the party is far above it.
         assertEquals(90, TowerLevelPolicy.levelFor(List.of(100, 100, 100), 10, 5, ruleset).orElseThrow());
         assertEquals(5, TowerLevelPolicy.levelFor(List.of(1, 1), 1, -50, ruleset).orElseThrow(),
                 "and its floor holds when an offset would push below it");
+    }
+
+    @Test
+    @DisplayName("the tower starts below the party and a soft boss, and reaches the party's level and full health by floor 6")
+    void ramp() {
+        assertEquals(-10, TowerLevelPolicy.floorOffset(1));
+        assertEquals(0, TowerLevelPolicy.floorOffset(6));
+        assertEquals(4, TowerLevelPolicy.floorOffset(10));
+        assertEquals(50, TowerLevelPolicy.bossHealthPercent(1));
+        assertEquals(90, TowerLevelPolicy.bossHealthPercent(5));
+        assertEquals(100, TowerLevelPolicy.bossHealthPercent(6));
+        assertEquals(100, TowerLevelPolicy.bossHealthPercent(10));
+        for (int floor = 1; floor < 12; floor++) {
+            assertTrue(TowerLevelPolicy.floorOffset(floor + 1) > TowerLevelPolicy.floorOffset(floor), "levels only climb");
+        }
     }
 
     @Test
