@@ -8,7 +8,7 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 **Difficulty, opponents and recovery (2026-10-23)**
 - **Bosses start easier and climb.** On floor 1 a boss is below your party's level and at half health; each floor adds levels and health until floor 6, where it is full strength.
 - **The neutral tower has 60 opponents and wider boss pools, and a run never meets the same Pokemon twice** until the pool runs out. A resumed floor draws the same opponent.
-- **Progress tracks are filled (30 levels each).** Mastery and season tracks rotate Raid Points (25), CobbleDollars (750) and Ultra Balls (15), with a Tower Key at levels 10 and 20 and rare candies, healing items and Max Revives between. Each track pays up to 15,000 CobbleDollars **(unverified in game)**.
+- **Progress tracks are filled (30 levels each).** Mastery and season tracks rotate Raid Points (25), CobbleDollars (750) and Ultra Balls (15), with a Tower Key at levels 10 and 20 and rare candies, healing items and Max Revives between. Each track pays 2,250 CobbleDollars in total **(unverified in game)**.
 - **A run parked by a server restart now ends when you rejoin** (what it banked is kept), instead of leaving you stuck in the tower dimension.
 - **Tower keys you would drop on death are held and returned**, even if the server restarts before you respawn.
 - **A next opponent Cobblemon refuses to start is retried for a few seconds** instead of being skipped, which used to cost that wave's rewards **(unverified)**.
