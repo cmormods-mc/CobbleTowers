@@ -91,7 +91,7 @@ human run; do not publish them as done until the checklist in `docs/RELEASE-CHEC
 **New requirements (P43)**
 - **Polymer is now required on the server** (the bundled `polymer-bundled-0.9.19+1.21.1` jar). The tower key, the 48 armor pieces, the armor materials and the season trim
   templates are Polymer items, so players need no CobbleTowers jar to join. Armor tooltips and names come from the server.
-- **WebGUI is optional** (`suggests`). Turn the web pages on with `config/cobbletowers-webgui.json` (`enabled`, `url`, `mode` of `fallback` or `prefer`,
+- **WebGUI is optional** (`suggests`). The web pages are on by default: the jar writes `config/cobbletowers-webgui.json` on first start when WebGUI is present. Edit it to change (`enabled`, `url`, `mode` of `fallback` or `prefer`,
   `heartbeat_seconds`). In `prefer` mode every player with WebGUI gets the pages; without WebGUI they keep the native screens (if they have the jar) or chat. The jar installs
   its pages into `config/webgui/web/cobbletowers/` at start.
 - **Server-only build:** `./gradlew build -Pserveronly` makes `CobbleTowers-<version>-server.jar` with no client classes. Setup, including hosting the resource pack with

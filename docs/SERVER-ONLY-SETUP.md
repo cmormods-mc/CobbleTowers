@@ -9,7 +9,7 @@ Players join with **Cobblemon, WebGUI and Rinku** only. CobbleTowers stays on th
 ## Server `mods/`
 Cobblemon, CobbleRaids (>= `0.8.162-admin-helper`), AscensionLib (deploy the rebuilt jar with it), Polymer (the bundled jar, `polymer-bundled-0.9.19+1.21.1`), WebGUI (server side), and the `-server` CobbleTowers jar. Remove any older CobbleTowers jar.
 
-`config/cobbletowers-webgui.json`: `{"enabled": true, "url": "webgui:/cobbletowers/index.html", "mode": "prefer", "heartbeat_seconds": 8}`. The jar installs its pages into `config/webgui/web/cobbletowers/` at start.
+`config/cobbletowers-webgui.json` is written on first start (web pages on) when WebGUI is installed; without that file the web pages stay off. Its contents: `{"enabled": true, "url": "webgui:/cobbletowers/index.html", "mode": "prefer", "heartbeat_seconds": 8}`. The jar installs its pages into `config/webgui/web/cobbletowers/` at start.
 
 ## Resource pack (armor worn layers, item models, tooltips' icons)
 Polymer builds `polymer/resource_pack.zip` at start. Players need it for the worn armor and custom item models; without it they see dyed leather and plain items (everything still works).

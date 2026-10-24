@@ -21,6 +21,12 @@ class WebGuiConfigTest {
     }
 
     @Test
+    @DisplayName("the file written on first start reads back as the default-on config")
+    void writtenFile() {
+        assertEquals(WebGuiConfig.DEFAULT_ON, WebGuiConfig.parse(WebGuiConfig.DEFAULT_FILE));
+    }
+
+    @Test
     @DisplayName("every setting is read")
     void reads() {
         WebGuiConfig config = WebGuiConfig.parse(

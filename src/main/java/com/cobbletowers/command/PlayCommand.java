@@ -141,8 +141,16 @@ public final class PlayCommand {
                 .redirect(play.getChild("play")));
     }
 
+    /** A player with no screen route would otherwise get nothing at all from a command that opens one. */
+    private static void tellNoScreen(ServerPlayer player) {
+        if (com.cobbletowers.network.ClientUi.canShow(player, com.cobbletowers.network.TowerHallStatePayload.TYPE)) return;
+        player.sendSystemMessage(Component.literal("The Tower Hall opens as a web page. Install the WebGUI mod to see it,"
+                + " or ask an admin. /tower help lists the typed commands."));
+    }
+
     private static int hall(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        tellNoScreen(player);
         com.cobbletowers.webgui.WebGuiBridge.userAsked(player);
         // A team that is forming (or at an intermission) wants to see that, not the tower picker; /tower menu is the
         // picker.
@@ -158,6 +166,7 @@ public final class PlayCommand {
 
     private static int open(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
+        tellNoScreen(player);
         com.cobbletowers.webgui.WebGuiBridge.userAsked(player);
         // A team at an intermission wants that menu, not the tower picker.
         if (IntermissionService.isAtIntermission(player)) {

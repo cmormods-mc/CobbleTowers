@@ -10,7 +10,7 @@ import net.fabricmc.loader.api.FabricLoader;
 
 /**
  * {@code config/cobbletowers-webgui.json}: whether tower screens may be shown through the WebGUI mod, and where its page
- * lives. Off unless the file says otherwise, so installing this build changes nothing for a server that has not opted in.
+ * lives. Written on first start (on) when the WebGUI mod is present; off when it is not.
  *
  * <pre>{"enabled": true, "url": "webgui:/cobbletowers/index.html", "mode": "fallback", "heartbeat_seconds": 8}</pre>
  *
@@ -24,9 +24,23 @@ public record WebGuiConfig(boolean enabled, String url, Mode mode, int heartbeat
     public static final String DEFAULT_URL = "webgui:/cobbletowers/index.html";
     public static final WebGuiConfig OFF = new WebGuiConfig(false, DEFAULT_URL, Mode.FALLBACK, 8);
 
+    public static final WebGuiConfig DEFAULT_ON = new WebGuiConfig(true, DEFAULT_URL, Mode.PREFER, 8);
+    static final String DEFAULT_FILE = "{\n  \"enabled\": true,\n  \"url\": \"" + DEFAULT_URL
+            + "\",\n  \"mode\": \"prefer\",\n  \"heartbeat_seconds\": 8\n}\n";
+
     public static WebGuiConfig load() {
         Path file = FabricLoader.getInstance().getConfigDir().resolve("cobbletowers-webgui.json");
-        if (!Files.exists(file)) return OFF;
+        if (!Files.exists(file)) {
+            // No native client any more, so a server with WebGUI gets the pages on first start; edit the file to change it.
+            if (!FabricLoader.getInstance().isModLoaded("webgui")) return OFF;
+            try {
+                Files.writeString(file, DEFAULT_FILE);
+                TowerLog.info("Wrote {} (web pages on); edit it to change", file);
+            } catch (IOException ex) {
+                TowerLog.warn("Could not write {} ({}); using the defaults for this run", file, ex.toString());
+            }
+            return DEFAULT_ON;
+        }
         try {
             return parse(Files.readString(file));
         } catch (IOException | RuntimeException ex) {
