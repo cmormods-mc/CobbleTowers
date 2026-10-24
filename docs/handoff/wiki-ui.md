@@ -2,7 +2,47 @@
 
 Task: build a read-only, searchable wiki that tells players what is in CobbleTowers (towers, bosses, modifiers, relics, rewards, achievements, playlists, seasons, vendor services, armor, rental Pokemon) and how the systems work. Nothing here changes gameplay.
 
-Written 2026-10-23. Verify the counts below against the data before relying on them; they drift.
+Written 2026-10-23, updated 2026-10-24 (rental cards and the Ranks tab changed; see "Changes since first written"). Verify the counts below against the data before relying on them; they drift.
+
+## Changes since first written (2026-10-24)
+
+Read this before the content map. Two systems moved and the wiki must describe the new behaviour.
+
+### Rental Pokemon (Prism Pull card, P53, rolled IVs and EVs)
+
+Commits `6ab9537`, `5d2123f`, `6dae3a9`, `5d1a22e`. Design: `docs/design/P53-rental-rarity-roll.md`, `docs/design/P33-rental-draft.md`.
+
+- **Species class and tier are now two different things.** A set's `rarity` in `rental_sets/*.json` is its *class*; it decides which species a pack can offer (three common, one uncommon, one rare-or-better, an epic-or-better somewhere, an occasional God Pack, no species twice). Each card then rolls its own *tier* (common ... mythic), dealt onto the species at random with the same pack shape. Any species can wear any tier.
+- **The tier is what the player sees and what counts.** It drives the card look and reveal, the "at most 2 legendary or mythic on a team" cap, and the AscensionLib profile the Pokemon is lent with. The class still decides which species appear and the CobblemonCards rewards.
+- **Do not publish the 150 sets' `rarity` as "the card's rarity".** On the wiki call it the species' *class* or *pool* and explain that the tier is rolled per draw. A legendary-class species can show up at common tier and the reverse.
+- **IVs and EVs are rolled per card when the draft is drawn** (`RentalSpread`): IVs 15 to 31 each, except Speed stays 31 when the set invests EVs in Speed; EVs are the set's main stat plus one other random stat, both at 252. The card shows them and the lent Pokemon gets exactly those. The values in `rental_sets` (`nature`, `evs`, `ivs`) are only the *set's* spread; the nature is fixed by the set, the IVs and EVs are not. `gen-data.mjs` already emits all three per set (defaults hardy / 0 EVs / 31 IVs), so show them as "set spread; each card rolls its own".
+- **Same seed, same pack.** Species and tiers come from separate seeded contexts, so the Daily Trial draft stays a pure function of the seed. The wiki can say daily trial packs are the same for everyone that day.
+- **Card art.** The "Prism Pull" card, pack, card back and kept mark are drawn in CSS (`web/src/components/RentalCard.js`, `styles/rcard.css`, `cardTheme.js` `TIERS`). The Byzantine look is archived in `archive/byzantine/` and not shipped. Do not reuse the card as a wiki entry card; the reveal uses a sparks canvas and animations. For the wiki use plain Desk cards with a tier chip.
+- **Not verified live.** The Prism Pull card and the rolls were checked in the dev browser build, unit tests and `ci_local` only. Treat the odds as unproven and do not publish numbers for tier odds; say "rarer tiers are rarer" until `/tower report` has real data.
+- **Still unknown to the wiki:** the type glyphs on the card are placeholders; the tooltip does not read a party Pokemon's live AscensionLib tier.
+
+### Leaderboard: the Ranks tab and the region duel
+
+Commits `1a3e822`, `785b934`. Code: `region/RegionRules.java`, `region/RegionService.java`, `persistence/TowerRegionStatsStore.java`, `web/src/desk/DeskRanks.js`, `ranksView.js`.
+
+- **Ranks is a Hall tab** (pills: Play, Trials, Progress, Social, Ranks, Codex). It shows a head-to-head duel between two of the three regions: Tideforge, Rootvale, Duskvale. The viewer's own region and its closest rival are the default pair; picking the other side's region swaps them. A verdict bar says who leads "N to M" or "Level at N each".
+- **A player's region is their CobbleTeams team.** CobbleTeams puts players on a vanilla scoreboard team named after the region; the mod reads the team name (case-insensitive) and matches `tideforge`, `rootvale` or `duskvale`. There is no region picker in the tower menu and no compile dependency on CobbleTeams. A player with no matching team is simply not counted. Region membership is remembered (last seen), so an offline clear still counts for the right side.
+- **A tower's region** is its regional theme, or its own id. Neutral towers belong to no region.
+- **The five rows** (`RegionRules.Stat`):
+
+  | Row | Kind | How it is judged |
+  |---|---|---|
+  | Total clears | total | tower cycles cleared by that region's players |
+  | Away conquests | total | a player clearing a *rival* region's tower (home clears do not count; neutral or no-region is never away) |
+  | Trial clears | total | scored daily/weekly trial finishes |
+  | Deepest Ascension | record (high) | one player's best; compared raw |
+  | Fastest cycle | record (low) | one player's best time; 0 means none set yet, which loses to any real time |
+
+- **Totals are judged per member.** A bigger region does not win by size: the lead compares `total / players` (done as a cross-multiplication in whole numbers). If either side has no players, raw totals decide. Records are one player's feat and are compared as they are. Say this on the wiki; it is the rule players will ask about.
+- **Scope.** The tab shows the running season, else all-time. Results are written to both all-time and the current season (`s3`-style ids). A champions list per region is capped at 3000 player rows.
+- **Server decides everything.** The page gets a `RanksState` payload (`RanksRequest` action) with the rows and who leads; the wiki must not recompute anything. The wiki only *explains* the rules, as static text.
+- **Live data stays out.** The duel numbers are per server and change constantly. Do not put counts in the wiki; link to the Hall Ranks tab instead.
+- **Unverified:** the live CobbleTeams team ids on the real server are unconfirmed (config defaults are ember / tide / grove; the live config differs, and the region match needs the names `tideforge`, `rootvale`, `duskvale`). If a wiki page says "join a region via CobbleTeams", confirm that first with the owner.
 
 ## Decisions to make first (owner, not yet taken)
 
@@ -47,7 +87,8 @@ All data lives in `src/main/resources/data/cobbletowers/cobbletowers/` (call it 
 | **Daily / weekly trials** | `$D/trial_pools/*.json`, `$D/trial_recipes/*.json` | pools the rotating trial draws from | 2 + 2 |
 | **Contracts** | `$D/contract_templates/*.json` | `display_name`, `description`, `period`, `condition`, `reward` | 14 |
 | **Vendor** | `$D/vendor_services/*.json` | `display_name`, `price_cobble_dollars`, `max_purchases_per_run`, `effect` | 2 (cure status, full heal) |
-| **Rental Pokemon** | `$D/rental_sets/*.json` | already in `DATA.rental`: `species`, `name`, `level`, `types`, `rarity`, `item` | 150 |
+| **Rental Pokemon** | `$D/rental_sets/*.json` | already in `DATA.rental`: `species`, `name`, `level`, `types`, `rarity` (the species' *class*, not the card tier), `item`, `nature`, `evs`, `ivs` (the set's spread; each card rolls its own IVs and EVs). Plus a "how packs and tiers work" text from the section above | 150 |
+| **Ranks (region duel)** | rules only; numbers are live server state | the five rows, per-member judging, away conquest, how a region is chosen (CobbleTeams). No counts | 3 regions |
 | **How it works** | `data/cobbletowers/guide.json` | already in `DATA.guide` | 1 |
 | **Currencies & materials** | `docs/design/tower-key-and-lib-payouts.md`, memory note "Armor archived + AscensionLib pays" | Cobble Dollars, Raid Points, and AscensionLib materials (resonance dust, facets, tower marks, scouters), paid only by AscensionLib | n/a |
 
@@ -56,6 +97,8 @@ All data lives in `src/main/resources/data/cobbletowers/cobbletowers/` (call it 
 - **Armor sets** (`$D/armor_sets`, 12 sets): archived on 2026-10-23, out of drops, WIP names. Leave out, or add a "coming later" stub only if the owner asks.
 - **Test Tower, test floors** (`towers/test.json`, `floors/test`): dev build only.
 - Held items, mints and Tera Shards are not rewards. Do not list them as such.
+- **Rental tier odds and live Ranks numbers.** Odds are untuned and unverified; the duel is live state. Explain the rules, not the figures.
+- **The Byzantine card look.** Archived; the Prism Pull card is the only one.
 - Ascension is paid by AscensionLib, not by tower reward tables (the tower tables no longer carry dust, facet, mark or scouter entries).
 
 ## Suggested design
@@ -93,10 +136,12 @@ All data lives in `src/main/resources/data/cobbletowers/cobbletowers/` (call it 
 - Show raw drop weights and boss pools, or hide odds?
 - Should it read live server data (needs a new payload kind and paging because of the 32,768-char limit), or is shipped-defaults enough?
 - Is a search result page enough, or should entries be linkable from chat (`/tower wiki <name>`)?
+- Should the rental page list all 150 sets with their set spread, or only explain packs, tiers and the rolled spread? (Recommended: list species grouped by class, with the set spread as "typical", since each card rolls its own.)
+- Does the wiki say how to join a region (CobbleTeams)? Needs the live team names confirmed first.
 
 ## Done when
 
-- Every section above renders from generated data, with no hand-copied numbers.
+- Every section above renders from generated data, with no hand-copied numbers. The rental and Ranks rule text is the one exception: write it once as prose in the data module, and keep it in step with `RentalSpread` (IV floor 15, EVs 252 on two stats) and `RegionRules` (five rows, per-member totals) via a test that reads those constants or fails when they change.
 - Search finds any modifier, relic, achievement or tower by name.
 - Node tests cover id resolution and the effect-to-sentence function; `npm test`, `ci_local.sh` and the bundle check pass.
 - Screenshots at 1280x720 and 1920x1080 are checked for every page, and the owner has seen it live on a test server through a stock client.
