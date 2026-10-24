@@ -371,9 +371,18 @@ async function open(look, size = { width: 1280, height: 720 }) {
   await p.waitForSelector('.fd .pack');
   check('the draft opens on a sealed pack on the dark table, three pack dots', (await p.locator('.fd .dtable .pack').count()) === 1 && (await p.locator('.fd .dots i').count()) === 3);
   await p.locator('.fd .pack').click({ force: true });
-  await p.waitForSelector('.fd .card.pick', { timeout: 8000 });
-  await p.locator('.fd .card.pick').nth(0).click();
-  await p.locator('.fd .card.pick').nth(1).click();
+  await p.waitForSelector('.fd .rcard.rc-pick', { timeout: 20000 });
+  await p.mouse.move(5, 5); // the pack's spot is where a card appears, and a hovered card bobs
+  await p.waitForTimeout(1500);
+  // a loop that never ends costs a texture upload every frame, so only those count (the table's one-off sweep is finite)
+  const runningNow = await p.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && a.effect.getComputedTiming().iterations === Infinity).map((a) => a.animationName || a.constructor.name));
+  check('the cards run no never-ending animation once the reveal has finished', runningNow.length === 0, runningNow.join(','));
+  await p.locator('.fd .rcard.rc-pick .rc-insp').nth(0).hover();
+  check('hovering the inspect band opens the stat tooltip with the Ascension tier', await p.evaluate(() => { const t = document.getElementById('rc-tip'); return !!t && t.classList.contains('rc-on') && ['Ascension:', 'Ability:', 'IVs:', 'Moves:'].every((s) => t.textContent.includes(s)); }));
+  await p.mouse.move(5, 5);
+  check('the tooltip closes when the pointer leaves', await p.evaluate(() => !document.getElementById('rc-tip').classList.contains('rc-on')));
+  await p.locator('.fd .rcard.rc-pick').nth(0).click();
+  await p.locator('.fd .rcard.rc-pick').nth(1).click();
   await p.locator('.fd .dbtn', { hasText: 'Keep these two' }).click();
   const picks = await p.evaluate(() => window.TowerDev.sent.filter((m) => m.kind === 'RentalDraftAction').map((m) => m.action + ':' + m.a + ':' + m.b));
   check('choosing two cards and keeping them sends the pick', picks.includes('PICK:0:1'), picks.join(','));

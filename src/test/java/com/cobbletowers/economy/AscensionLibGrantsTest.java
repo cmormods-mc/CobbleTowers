@@ -19,4 +19,12 @@ class AscensionLibGrantsTest {
         assertEquals("legendary", AscensionLibGrants.rarityId(RentalSetDefinition.Rarity.LEGENDARY));
         assertEquals("mythical", AscensionLibGrants.rarityId(RentalSetDefinition.Rarity.MYTHIC));
     }
+
+    @Test
+    @DisplayName("with no mod loader (and so no AscensionLib) a card has no tier, for every rarity, and never throws")
+    void noLibraryNoTier() {
+        for (RentalSetDefinition.Rarity rarity : RentalSetDefinition.Rarity.values()) {
+            assertEquals("", AscensionLibGrants.tierFor(rarity));
+        }
+    }
 }

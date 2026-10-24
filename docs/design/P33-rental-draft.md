@@ -150,3 +150,20 @@ greedy player AI under-rates support sets, so the numbers rank sets relative to 
 The 2-legendary cap is built as proposed. The CobblemonCards crossover was decided afterwards and is built as **both** a visual
 face (real card art on the table) and real card rewards for a completed run: see `P33b-cobblemon-cards-crossover.md`. How the
 animation feels at a real frame rate, and the sound, need a person.
+
+### Card redraw: Prism Pull (2026-10-24, web UI)
+
+The Byzantine card face was replaced by the Prism Pull card (`web/src/components/RentalCard.js`, `styles/rcard.css`, theme in
+`cardTheme.js`). It is a 280x400 design scaled to the card size a screen asks for; every class and keyframe is `rc-` prefixed.
+- **Reveal by rarity:** the back charges (aura and shake) for `ct * 0.8` ms, flips, then lands with a flash, shockwave rings, sparks
+  (a canvas, only while they live), light pillars from legendary, a stamped rarity banner from epic and a colour split at mythic. The
+  tier table is `TIERS` in `cardTheme.js`; `Draft.js` ends the reveal when the slowest card has landed (`revealMs`).
+- **Inspect band:** hovering it opens the stat tooltip in the style of CobblemonExtras' Pokeshout (name, level, types, ability, item,
+  nature with its +/- stats, IV and EV totals with a badge per stat, moves in their type colours). Nature, IVs and EVs come from the
+  sets files at build time (`gen-data.mjs`), so the wire format only gained one field. Touch taps open and close it; a focused card
+  opens it too.
+- **AscensionLib tier:** each `RentalDraftPayload.Card` has `ascension`, the library's tier id (`mythical` for the top), read by
+  `AscensionLibGrants.tierFor` from `AscensionGrants.RARITY_IDS` by reflection once. Empty when AscensionLib is absent or older, and
+  the tooltip then has no row. It is the same tier `profileRentals` passes to `grantWithRarity`, so the two cannot disagree.
+- **Left open:** the type glyphs on the medallions are placeholders for real art; a Pokemon already in a party should show its live
+  AscensionLib profile tier (it can change with a Sigil or promotion), which needs a read of the profile, not the set.

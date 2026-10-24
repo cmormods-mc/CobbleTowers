@@ -23,6 +23,8 @@ public final class AscensionLibGrants {
     /** Absent in an AscensionLib older than the random upgrades; then rentals keep rank I affixes. */
     private static Method upgrade;
     private static boolean saidUnknown;
+    /** Read once from the library; null until then. */
+    private static volatile List<String> tierIds;
 
     private AscensionLibGrants() {}
 
@@ -32,6 +34,34 @@ public final class AscensionLibGrants {
      */
     public static String rarityId(RentalSetDefinition.Rarity rarity) {
         return rarity == RentalSetDefinition.Rarity.MYTHIC ? "mythical" : rarity.lower();
+    }
+
+    /**
+     * The AscensionLib tier a set's rarity is profiled at, for showing on its card: the library's own id, or empty when
+     * AscensionLib is not installed, is older than its tier list, or does not know that tier. Never throws, so a card
+     * is always safe to build.
+     */
+    public static String tierFor(RentalSetDefinition.Rarity rarity) {
+        String id = rarityId(rarity);
+        return tiers().contains(id) ? id : "";
+    }
+
+    /** The library's tier ids, weakest first ({@code AscensionGrants.RARITY_IDS}); empty when it is absent. */
+    private static List<String> tiers() {
+        List<String> known = tierIds;
+        if (known == null) {
+            known = List.of();
+            try {
+                if (FabricLoader.getInstance().isModLoaded(MOD_ID)
+                        && Class.forName(CLASS).getField("RARITY_IDS").get(null) instanceof List<?> ids) {
+                    known = ids.stream().map(String::valueOf).toList();
+                }
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError ex) {
+                // absent, older, or a plain JVM with no loader: the card simply carries no tier
+            }
+            tierIds = known;
+        }
+        return known;
     }
 
     /**

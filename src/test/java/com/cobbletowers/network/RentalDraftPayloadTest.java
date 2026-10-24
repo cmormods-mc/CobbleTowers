@@ -91,7 +91,10 @@ class RentalDraftPayloadTest {
             assertEquals(set.moves(), card.details().moves().stream().map(RentalDraftPayload.Move::id).toList());
             assertEquals(set.level(), card.details().level());
             assertEquals(set.ability(), card.details().ability());
+            // no AscensionLib in a plain JVM: the tier is empty, and the card still travels
+            assertEquals("", card.ascension());
         }
+        assertEquals(payload, roundTrip(RentalDraftPayload.STREAM_CODEC, payload));
     }
 
     @Test

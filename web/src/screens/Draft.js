@@ -3,6 +3,7 @@ import { html } from '../html.js';
 import { RentalCard, adaptCard } from '../components/RentalCard.js';
 import { act } from '../bridge.js';
 import { RARITIES } from '../util.js';
+import { revealMs } from '../cardTheme.js';
 import { at, Label, NB, Panel, screen, useScreen } from '../components/native.js';
 
 const MAX_BIG = 2;
@@ -45,7 +46,9 @@ export function PackStage({ draft, desk }) {
   const open = () => {
     if (phase !== 'sealed') return;
     setPhase('tearing');
-    later(() => { setPhase('revealing'); later(() => setPhase((p) => (p === 'revealing' ? 'choosing' : p)), cards.length * 300 + 900); }, 900);
+    // each card charges for as long as its rarity deserves, so the last one to land sets how long the reveal runs
+    const reveal = Math.max(...cards.map((c, i) => i * 300 + revealMs(c.rarity)));
+    later(() => { setPhase('revealing'); later(() => setPhase((p) => (p === 'revealing' ? 'choosing' : p)), reveal); }, 900);
   };
   const kept = useMemo(() => keptCards(draft), [draft.packs]);
   const toggle = (i) => {

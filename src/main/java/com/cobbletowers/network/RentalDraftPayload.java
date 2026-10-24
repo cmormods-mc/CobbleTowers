@@ -2,6 +2,7 @@ package com.cobbletowers.network;
 
 import com.cobbletowers.CobbleTowers;
 import com.cobbletowers.definition.RentalSetDefinition;
+import com.cobbletowers.economy.AscensionLibGrants;
 import com.cobbletowers.rental.RentalCards;
 import com.cobbletowers.rental.RentalDraft;
 import com.cobbletowers.rental.RentalDraw;
@@ -53,15 +54,17 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
 
     /**
      * One card: the set's id, its species (for the model and the name) and its rarity ({@code common} ... {@code
-     * mythic}).
+     * mythic}). {@code ascension} is the AscensionLib tier the Pokemon will be profiled at (that library's own id, so
+     * {@code mythical} for the top tier), empty when AscensionLib is not installed.
      */
-    public record Card(ResourceLocation set, String species, String name, String rarity, Details details) {
+    public record Card(ResourceLocation set, String species, String name, String rarity, Details details, String ascension) {
         static final StreamCodec<RegistryFriendlyByteBuf, Card> STREAM_CODEC = StreamCodec.composite(
                 ResourceLocation.STREAM_CODEC, Card::set,
                 ByteBufCodecs.STRING_UTF8, Card::species,
                 ByteBufCodecs.STRING_UTF8, Card::name,
                 ByteBufCodecs.STRING_UTF8, Card::rarity,
                 Details.STREAM_CODEC, Card::details,
+                ByteBufCodecs.STRING_UTF8, Card::ascension,
                 Card::new);
     }
 
@@ -95,7 +98,8 @@ public record RentalDraftPayload(List<Pack> packs, int current, boolean complete
             for (RentalSetDefinition set : pack.cards()) {
                 cards.add(new Card(set.id(), set.species(), set.displayName(), set.rarity().lower(),
                         new Details(set.level(), set.ability(), set.nature(), set.item().map(item -> item.getPath()).orElse(""),
-                                set.role(), set.moves().stream().map(moves::resolve).toList())));
+                                set.role(), set.moves().stream().map(moves::resolve).toList()),
+                        AscensionLibGrants.tierFor(set.rarity())));
             }
             packs.add(new Pack(pack.god(), cards, i < picks.size() ? picks.get(i) : List.of()));
         }

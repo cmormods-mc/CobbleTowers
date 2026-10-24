@@ -14,8 +14,11 @@ export function genData(root) {
     const r = readJson(path.join(data, 'rental_sets', f));
     species.add(r.species);
     return {
+      id: 'cobbletowers:' + f.replace(/\.json$/, ''),
       species: r.species, name: pretty(r.species), level: r.level, types: r.types, rarity: r.rarity,
       item: r.item ? pretty(r.item.split(':')[1]) : 'No item',
+      // the loader's defaults for what a set leaves out: hardy, no EVs, perfect IVs
+      nature: r.nature ?? 'hardy', evs: r.evs ?? [0, 0, 0, 0, 0, 0], ivs: r.ivs ?? [31, 31, 31, 31, 31, 31],
     };
   });
 

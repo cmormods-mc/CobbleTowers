@@ -38,7 +38,8 @@
                   "category": "special"
                 }
               ]
-            }
+            },
+            "ascension": "legendary"
           },
           {
             "set": "cobbletowers:arcanine",
@@ -73,7 +74,8 @@
                   "category": "physical"
                 }
               ]
-            }
+            },
+            "ascension": "common"
           },
           {
             "set": "cobbletowers:gliscor",
@@ -108,7 +110,8 @@
                   "category": "status"
                 }
               ]
-            }
+            },
+            "ascension": "uncommon"
           },
           {
             "set": "cobbletowers:umbreon",
@@ -143,7 +146,8 @@
                   "category": "status"
                 }
               ]
-            }
+            },
+            "ascension": "common"
           },
           {
             "set": "cobbletowers:ludicolo",
@@ -178,7 +182,8 @@
                   "category": "special"
                 }
               ]
-            }
+            },
+            "ascension": "common"
           }
         ],
         "kept": [
@@ -222,7 +227,8 @@
                   "category": "special"
                 }
               ]
-            }
+            },
+            "ascension": "common"
           },
           {
             "set": "cobbletowers:starmie",
@@ -257,7 +263,8 @@
                   "category": "special"
                 }
               ]
-            }
+            },
+            "ascension": "uncommon"
           },
           {
             "set": "cobbletowers:roserade",
@@ -292,7 +299,8 @@
                   "category": "special"
                 }
               ]
-            }
+            },
+            "ascension": "common"
           },
           {
             "set": "cobbletowers:scizor",
@@ -327,7 +335,8 @@
                   "category": "physical"
                 }
               ]
-            }
+            },
+            "ascension": "rare"
           },
           {
             "set": "cobbletowers:floatzel",
@@ -362,7 +371,8 @@
                   "category": "physical"
                 }
               ]
-            }
+            },
+            "ascension": "common"
           }
         ],
         "kept": [
@@ -406,7 +416,8 @@
                   "category": "special"
                 }
               ]
-            }
+            },
+            "ascension": "uncommon"
           },
           {
             "set": "cobbletowers:jolteon",
@@ -441,7 +452,8 @@
                   "category": "special"
                 }
               ]
-            }
+            },
+            "ascension": "common"
           },
           {
             "set": "cobbletowers:infernape",
@@ -476,7 +488,8 @@
                   "category": "physical"
                 }
               ]
-            }
+            },
+            "ascension": "rare"
           },
           {
             "set": "cobbletowers:quagsire",
@@ -511,7 +524,8 @@
                   "category": "special"
                 }
               ]
-            }
+            },
+            "ascension": "common"
           },
           {
             "set": "cobbletowers:staraptor",
@@ -546,7 +560,8 @@
                   "category": "physical"
                 }
               ]
-            }
+            },
+            "ascension": "common"
           }
         ],
         "kept": [
