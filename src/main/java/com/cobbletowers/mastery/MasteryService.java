@@ -208,6 +208,7 @@ public final class MasteryService {
             int speedRank = Boards.offerBoth(boards, new Key(Board.SPEED, run.towerId(), mode, playlistOf(run)), entryOf(team, clear.activeMillis(), clear), season);
             announceRecord(server, run, Board.SPEED, speedRank, team, clear.activeMillis());
         }
+        com.cobbletowers.region.RegionService.onCycleCleared(server, clear);
         boards.checkpoint(server);
         com.cobbletowers.echo.EchoService.refresh(server, run);
         com.cobbletowers.club.ClubService.onCycleCleared(server, run.towerId(), clear.players(), clear.score());

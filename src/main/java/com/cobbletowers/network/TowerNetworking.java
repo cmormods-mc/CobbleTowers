@@ -53,6 +53,8 @@ public final class TowerNetworking {
         PayloadTypeRegistry.playS2C().register(ArmorSetsPayload.TYPE, ArmorSetsPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(MasteryScreenPayload.TYPE, MasteryScreenPayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(MasteryRequestPayload.TYPE, MasteryRequestPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(RanksStatePayload.TYPE, RanksStatePayload.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(RanksRequestPayload.TYPE, RanksRequestPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(RentalDraftPayload.TYPE, RentalDraftPayload.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(RentalDraftActionPayload.TYPE, RentalDraftActionPayload.STREAM_CODEC);
     }
@@ -76,6 +78,10 @@ public final class TowerNetworking {
         ServerPlayNetworking.registerGlobalReceiver(MasteryRequestPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
             context.server().execute(() -> MasteryScreens.handleRequest(context.server(), player, payload));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(RanksRequestPayload.TYPE, (payload, context) -> {
+            ServerPlayer player = context.player();
+            context.server().execute(() -> RanksScreens.handleRequest(context.server(), player, payload));
         });
         ServerPlayNetworking.registerGlobalReceiver(RentalDraftActionPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
@@ -104,6 +110,7 @@ public final class TowerNetworking {
         else if (action instanceof TrackActionPayload a) com.cobbletowers.track.TrackService.handle(server, player, a);
         else if (action instanceof VendorPurchasePayload a) handlePurchase(server, player, a);
         else if (action instanceof MasteryRequestPayload a) MasteryScreens.handleRequest(server, player, a);
+        else if (action instanceof RanksRequestPayload a) RanksScreens.handleRequest(server, player, a);
         else TowerLog.warn("handleAction was given {}, which is not a screen action", action.getClass().getSimpleName());
     }
 

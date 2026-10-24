@@ -15,9 +15,10 @@ export const initial = Object.freeze({
   scout: null,       // ScoutingReveal (screen 'scout')
   spec: null, specAt: 0, // SpectatorPanel, for the HUD page, and when it last arrived
   mast: null,        // MasteryScreen (view 'mastery')
+  ranks: null,       // RanksState (the Ranks tab's region duel)
   reg: null,         // RegistrationState (the party chooser, view 'party')
   view: 'hall',      // inside the hall screen: 'hall' | 'tower' | 'trial' | 'lobby' | 'party' | 'mastery' | 'settings' | 'guide'
-  tab: 'towers',     // hall tab: 'towers' | 'trials' | 'social' | 'progress'
+  tab: 'towers',     // hall tab: 'towers' | 'trials' | 'social' | 'progress' | 'ranks'
   page: 0,           // tower tile page in the hall
   pick: '',          // the tower id or trial kind a briefing shows
   stack: [],         // views to go back to
@@ -75,6 +76,8 @@ export function reduce(state, kind, data, now) {
       const base = { ...state, mast: data };
       return data.open ? showView(base, 'mastery') : base;
     }
+    case 'RanksState':
+      return withNotice({ ...state, ranks: data }, data.message);
     case 'TrackState': {
       const towerMoved = state.tracks && state.tracks.selectedTower !== data.selectedTower;
       return withNotice({ ...state, tracks: data, tracksAt: now, tSel: towerMoved ? { ...state.tSel, mastery: null } : state.tSel }, data.message);

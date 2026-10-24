@@ -214,6 +214,27 @@ class PayloadJsonTest {
         assertEquals("run", data.getAsJsonArray("actions").get(0).getAsJsonObject().get("argument").getAsString());
     }
 
+    @Test
+    @DisplayName("the Ranks duel reaches the page with a lead per stat and a champions list per side")
+    void ranksState() throws IOException {
+        var payload = new com.cobbletowers.network.RanksStatePayload("Season 3", "tideforge", "tideforge", "rootvale",
+                List.of(new com.cobbletowers.network.RanksStatePayload.Region("tideforge", "Tideforge", 41),
+                        new com.cobbletowers.network.RanksStatePayload.Region("rootvale", "Rootvale", 38),
+                        new com.cobbletowers.network.RanksStatePayload.Region("duskvale", "Duskvale", 29)),
+                List.of(new com.cobbletowers.network.RanksStatePayload.Row("clears", "Total clears", "1311", "1204", 100, 92, -1),
+                        new com.cobbletowers.network.RanksStatePayload.Row("away", "Away conquests", "167", "192", 87, 100, 1),
+                        new com.cobbletowers.network.RanksStatePayload.Row("fastest", "Fastest cycle", "10:58", "11:42", 100, 94, -1)),
+                List.of(new com.cobbletowers.network.RanksStatePayload.Champion("BrineKnight", 3120)),
+                List.of(new com.cobbletowers.network.RanksStatePayload.Champion("Mosswalker", 3340)), "");
+        fixture("RanksState", payload);
+        JsonObject env = PayloadJson.envelope(payload);
+        assertEquals("RanksState", env.get("kind").getAsString());
+        JsonObject data = env.getAsJsonObject("data");
+        assertEquals("rootvale", data.get("right").getAsString());
+        assertEquals(1, data.getAsJsonArray("rows").get(1).getAsJsonObject().get("lead").getAsInt());
+        assertEquals("BrineKnight", data.getAsJsonArray("leftChampions").get(0).getAsJsonObject().get("name").getAsString());
+    }
+
     private static List<RentalSetDefinition> pool() throws IOException {
         List<RentalSetDefinition> all = new ArrayList<>();
         Path dir = Paths.get("src/main/resources/data/cobbletowers/cobbletowers/rental_sets");

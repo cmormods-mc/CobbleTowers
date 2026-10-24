@@ -536,6 +536,25 @@ const scanContrast = () => {
   await p.close();
 }
 
+{
+  const p = await open('desk');
+  await p.send('TowerHallState', fixture('TowerHallState'));
+  await p.waitForSelector('.fd .trow');
+  await p.locator('.fd .pills a', { hasText: 'Ranks' }).click();
+  check('the Ranks pill asks the server for the duel', (await p.evaluate(() => window.TowerDev.sent.some((m) => m.kind === 'RanksRequest' && m.left === '' && m.right === ''))));
+  await p.send('RanksState', fixture('RanksState'));
+  await p.waitForSelector('.fd .rvrow');
+  check('the duel shows a row per stat and the verdict', (await p.locator('.fd .rvrow').count()) === 3 && /Tideforge leads 2 to 1/.test(await p.locator('.fd').innerText()));
+  check('the leading side of a row is marked', (await p.locator('.fd .rvv.lead').count()) === 3);
+  await p.locator('.fd .rvside').first().locator('.rvpick', { hasText: 'Duskvale' }).click();
+  check('picking a region asks for the new pair', (await p.evaluate(() => window.TowerDev.sent.some((m) => m.kind === 'RanksRequest' && m.left === 'duskvale' && m.right === 'rootvale'))));
+  await p.screenshot({ path: path.resolve(here, '../test/shots/ranks.png') });
+  const wide = await p.evaluate(() => { const b = document.querySelector('.fd .rvbody'); return b.scrollWidth > b.clientWidth + 1; });
+  check('the Ranks page does not scroll sideways', !wide);
+  check('no console errors (ranks)', p.errors.length === 0, p.errors.join(' | '));
+  await p.close();
+}
+
 await browser.close();
 console.log(failed ? failed + ' check(s) failed' : 'all checks passed');
 process.exit(failed ? 1 : 0);

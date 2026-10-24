@@ -4,6 +4,7 @@ import com.cobbletowers.TowerLog;
 import com.cobbletowers.network.IntermissionStatePayload;
 import com.cobbletowers.network.MasteryScreenPayload;
 import com.cobbletowers.network.PlayStatePayload;
+import com.cobbletowers.network.RanksStatePayload;
 import com.cobbletowers.network.RegistrationStatePayload;
 import com.cobbletowers.network.SpectatorPanelPayload;
 import com.cobbletowers.network.RentalDraftPayload;
@@ -54,7 +55,7 @@ public final class WebGuiBridge {
     private static final Set<CustomPacketPayload.Type<?>> SUPPORTED = Set.of(
             IntermissionStatePayload.TYPE, RentalDraftPayload.TYPE, RewardRevealPayload.TYPE, VendorCatalogPayload.TYPE,
             TowerHallStatePayload.TYPE, PlayStatePayload.TYPE, TowerFeatureState.TYPE, TrackStatePayload.TYPE,
-            RegistrationStatePayload.TYPE, MasteryScreenPayload.TYPE,
+            RegistrationStatePayload.TYPE, MasteryScreenPayload.TYPE, RanksStatePayload.TYPE,
             ScoutingRevealPayload.TYPE, SpectatorPanelPayload.TYPE);
 
     private static volatile WebGuiConfig config = WebGuiConfig.OFF;
@@ -109,7 +110,7 @@ public final class WebGuiBridge {
         if (payload instanceof RewardRevealPayload || payload instanceof ScoutingRevealPayload) return PageSession.Policy.REPLACE;
         if (payload instanceof IntermissionStatePayload || payload instanceof PlayStatePayload
                 || payload instanceof RegistrationStatePayload || payload instanceof MasteryScreenPayload) return PageSession.Policy.UPDATE_OR_OPEN_IF_FLAGGED;
-        if (payload instanceof TrackStatePayload) return PageSession.Policy.UPDATE_ONLY;
+        if (payload instanceof TrackStatePayload || payload instanceof RanksStatePayload) return PageSession.Policy.UPDATE_ONLY;
         return PageSession.Policy.UPDATE_OR_OPEN;
     }
 

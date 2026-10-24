@@ -213,6 +213,7 @@ public final class TrialService {
         boards.checkpoint(server);
 
         for (UUID player : scored) store.recordResult(player, instanceId, run.runId(), score, cleared);
+        if (to == RunState.COMPLETED) com.cobbletowers.region.RegionService.onTrialCleared(server, scored);
         // A scored attempt that got somewhere earns season points (P36b); one that cleared next to nothing does not.
         if (cleared >= MIN_FLOORS_FOR_POINTS) {
             com.cobbletowers.season.SeasonPoints.Source pointsSource = kind == Kind.DAILY

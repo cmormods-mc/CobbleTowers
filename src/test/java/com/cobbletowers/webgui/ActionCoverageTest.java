@@ -22,6 +22,7 @@ class ActionCoverageTest {
             "{\"kind\":\"TowerFeatureRequest\",\"requestId\":1,\"section\":\"club\",\"action\":\"open\"}",
             "{\"kind\":\"TrackAction\",\"action\":\"refresh\"}",
             "{\"kind\":\"MasteryRequest\",\"tower\":\"\"}",
+            "{\"kind\":\"RanksRequest\",\"left\":\"tideforge\",\"right\":\"\"}",
             "{\"kind\":\"VendorPurchase\",\"serviceId\":\"cobbletowers:full_heal\",\"targetPlayerId\":\"00000000-0000-0000-0000-000000000001\"}");
 
     private static String read(String path) throws Exception {

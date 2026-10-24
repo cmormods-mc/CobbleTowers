@@ -311,3 +311,31 @@
 html.paused .fd *, html.paused .fd *::before, html.paused .fd *::after { animation-play-state: paused !important; }
 
 @media (prefers-reduced-motion: reduce) { .fd *, .fd *::before, .fd *::after { animation: none !important; transition: none !important; } }
+
+/* Ranks tab: the region duel. Prefix rv- is used by nothing else. */
+.fd .rv-tideforge { --r: #3fc7c0; --rd: #0f3b40; } .fd .rv-rootvale { --r: #6fcf6a; --rd: #16351b; } .fd .rv-duskvale { --r: #b794ff; --rd: #2e2150; }
+.fd .rvbody { grid-template-columns: 1fr; grid-auto-rows: max-content; overflow-y: auto; align-content: start; user-select: text; }
+.fd .rvpicker { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: calc(var(--u) * 1.6); padding: calc(var(--u) * 1.4); }
+.fd .rvvs { font: 800 calc(var(--u) * 2) Outfit; color: var(--afg); }
+.fd .rvside { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(var(--u) * .6); }
+.fd .rvpick { display: flex; flex-direction: column; align-items: flex-start; gap: calc(var(--u) * .3); min-width: 0; text-align: left; color: var(--r); background: var(--rd); border: calc(var(--u) * .15) solid var(--r); border-radius: calc(var(--u) * .8); padding: calc(var(--u) * .8) calc(var(--u) * 1.2); opacity: .5; font: 800 calc(var(--u) * 1.5) Outfit; cursor: pointer; }
+.fd .rvpick small { font: 600 calc(var(--u) * 1.05) Outfit; color: var(--mut); }
+.fd .rvpick[aria-pressed="true"] { opacity: 1; box-shadow: inset calc(var(--u) * .5) 0 0 var(--r); cursor: default; }
+.fd .rvpick:focus-visible { outline: 3px solid var(--pri); outline-offset: 2px; }
+.fd .rvduel { padding: calc(var(--u) * .6) calc(var(--u) * 1.6); }
+.fd .rvrow { display: grid; grid-template-columns: 1fr calc(var(--u) * 14) 1fr; align-items: center; gap: calc(var(--u) * 1.4); padding: calc(var(--u) * .6) 0; border-bottom: calc(var(--u) * .12) solid var(--line); }
+.fd .rvrow:last-child { border-bottom: 0; }
+.fd .rvnm { text-align: center; color: var(--mut); font: 700 calc(var(--u) * 1.05) Outfit; letter-spacing: .1em; text-transform: uppercase; }
+.fd .rvv { display: grid; gap: calc(var(--u) * .4); min-width: 0; }
+.fd .rvv.l { justify-items: end; text-align: right; }
+.fd .rvv b { font: 800 calc(var(--u) * 1.9) Outfit; font-variant-numeric: tabular-nums; }
+.fd .rvv.lead b { color: var(--afg); }
+.fd .rvv i { display: block; height: calc(var(--u) * .7); background: var(--r); border-radius: calc(var(--u) * .35); min-width: 0; }
+.fd .rvverdict { display: flex; justify-content: space-between; align-items: center; gap: calc(var(--u) * 1.6); padding: calc(var(--u) * .8) calc(var(--u) * 1.6); background: var(--surf2); }
+.fd .rvverdict strong { display: block; font: 800 calc(var(--u) * 2) Outfit; margin-top: calc(var(--u) * .4); }
+.fd .rvscore { font: 800 calc(var(--u) * 2.4) Outfit; color: var(--afg); font-variant-numeric: tabular-nums; }
+.fd .rvheroes { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--u) * 2); padding: calc(var(--u) * 1.4) calc(var(--u) * 1.6); }
+.fd .rvchamps .lbl { color: var(--r); }
+.fd .rvchamps ol { list-style: none; margin: calc(var(--u) * .6) 0 0; padding: 0; display: grid; gap: calc(var(--u) * .3); }
+.fd .rvchamps li { display: flex; justify-content: space-between; gap: calc(var(--u) * 1); padding: calc(var(--u) * .5) 0; border-bottom: calc(var(--u) * .1) dashed var(--line); font-size: calc(var(--u) * 1.3); overflow-wrap: anywhere; }
+.fd .rvchamps li b { font-variant-numeric: tabular-nums; }

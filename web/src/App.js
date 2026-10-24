@@ -13,6 +13,7 @@ import { DeskIntermission } from './desk/DeskIntermission.js';
 import { DeskLobby } from './desk/DeskLobby.js';
 import { DeskToast } from './desk/DeskToast.js';
 import { DeskProgress } from './desk/DeskProgress.js';
+import { DeskRanks } from './desk/DeskRanks.js';
 import { DeskSocial, DeskTowerBrief, DeskTrialBrief, DeskTrials } from './desk/DeskBriefs.js';
 import { DeskFeatures } from './desk/DeskFeatures.js';
 import { DeskGuide, DeskMastery, DeskParty, DeskSettings } from './desk/DeskMore.js';
@@ -60,6 +61,7 @@ export function App() {
   const play = useStore((s) => s.play);
   const reg = useStore((s) => s.reg);
   const mast = useStore((s) => s.mast);
+  const ranks = useStore((s) => s.ranks);
   const scout = useStore((s) => s.scout);
   const view = useStore((s) => s.view);
   const tab = useStore((s) => s.tab);
@@ -97,6 +99,7 @@ export function App() {
         : screen === 'hall' && look === 'desk' && view === 'hall' && tab === 'progress' && hall ? html`<${DeskProgress} hall=${hall} />`
         : screen === 'hall' && look === 'desk' && view === 'hall' && tab === 'trials' && hall ? html`<${DeskTrials} hall=${hall} />`
         : screen === 'hall' && look === 'desk' && view === 'hall' && tab === 'social' && hall ? html`<${DeskSocial} />`
+        : screen === 'hall' && look === 'desk' && view === 'hall' && tab === 'ranks' && hall ? html`<${DeskRanks} ranks=${ranks} />`
         : screen === 'hall' && look === 'desk' && view === 'tower' && hall ? html`<${DeskTowerBrief} hall=${hall} id=${pick} busy=${!!busyAt} />`
         : screen === 'hall' && look === 'desk' && view === 'trial' && hall ? html`<${DeskTrialBrief} hall=${hall} kind=${pick} busy=${!!busyAt} />`
         : screen === 'hall' && look === 'desk' && view === 'feature' ? html`<${DeskFeatures} />`

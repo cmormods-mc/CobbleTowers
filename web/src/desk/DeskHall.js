@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { html } from '../html.js';
 import { ATLAS } from '../gen/atlas.js';
-import { closeGui } from '../bridge.js';
+import { act, closeGui } from '../bridge.js';
 import { update } from '../store.js';
 import { goTo, setTab } from '../reducer.js';
 import { firstVisit } from '../screens/Guide.js';
@@ -36,13 +36,14 @@ export function DeskPano({ region }) {
   return html`<canvas ref=${ref} class="dpano" width="240" height="60"></canvas>`;
 }
 
-const PILLS = [['towers', 'Play'], ['trials', 'Trials'], ['progress', 'Progress'], ['social', 'Social'], ['codex', 'Codex']];
+const PILLS = [['towers', 'Play'], ['trials', 'Trials'], ['progress', 'Progress'], ['social', 'Social'], ['ranks', 'Ranks'], ['codex', 'Codex']];
 
 /** Moves to another page: the ones the Desk look does not draw yet open in the native look. */
 function openPill(id) {
   if (id === 'codex') return sendFeature('modifiers');
   update((s) => setTab(s, id));
   if (id === 'progress') sendTrack('refresh');
+  if (id === 'ranks') act('RanksRequest', { left: '', right: '' });
   return undefined;
 }
 

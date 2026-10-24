@@ -3,6 +3,7 @@ package com.cobbletowers.webgui;
 import com.cobbletowers.network.IntermissionActionPayload;
 import com.cobbletowers.network.MasteryRequestPayload;
 import com.cobbletowers.network.PlayActionPayload;
+import com.cobbletowers.network.RanksRequestPayload;
 import com.cobbletowers.network.RentalDraftActionPayload;
 import com.cobbletowers.network.TowerFeatureRequest;
 import com.cobbletowers.network.TowerHallActionPayload;
@@ -47,6 +48,7 @@ public final class PageActions {
                 case "TrackAction" -> new TrackActionPayload(
                         text(message, "action", null), text(message, "lane", ""), text(message, "tower", ""), index(message, "number"));
                 case "MasteryRequest" -> new MasteryRequestPayload(text(message, "tower", ""), text(message, "tab", "mastery"));
+                case "RanksRequest" -> new RanksRequestPayload(text(message, "left", ""), text(message, "right", ""));
                 case "VendorPurchase" -> new VendorPurchasePayload(
                         ResourceLocation.parse(text(message, "serviceId", null)), UUID.fromString(text(message, "targetPlayerId", null)));
                 default -> null;
