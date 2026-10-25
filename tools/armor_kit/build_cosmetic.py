@@ -13,13 +13,15 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
-import designs8, designs9  # noqa: E402
+import designs8, designs9, designs10  # noqa: E402
 import generate_armor_geo as gg_  # noqa: E402
 import sculpt  # noqa: E402
 import rig  # noqa: E402
 
 COSMETICS = {  # name -> (art set the palette comes from, parts function, sheet height)
     "rootvale_blossom": ("rootvale", designs9.root_blossom, 384),
+    "tideforge_shell": ("tideforge", designs10.tide_shell, 384),
+    "tideforge_wave": ("tideforge", designs10.tide_wave, 512),
     "rootvale_shield": ("rootvale", designs8.root_shield, 512),
     "duskvale_wings": ("duskvale", designs8.dusk_wings, 512),
 }
