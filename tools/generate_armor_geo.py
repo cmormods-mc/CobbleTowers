@@ -50,7 +50,8 @@ def bones(extra: dict | None = None) -> list[dict]:
 
     return [
         bone("armorHead", [0, 24, 0], [cube([-4, 24, -4], [8, 8, 8], [0, 0], 1.0)]),
-        bone("armorBody", [0, 24, 0], [cube([-4, 12, -2], [8, 12, 4], [16, 16], 1.0)]),
+        # the body is a hair bigger than the arms (both inflate 1.0 overlap, and their coplanar faces z-fight)
+        bone("armorBody", [0, 24, 0], [cube([-4, 12, -2], [8, 12, 4], [16, 16], 1.04)]),
         bone("armorRightArm", [-5, 22, 0], [cube([-8, 12, -2], [4, 12, 4], [40, 16], 1.0)]),
         bone("armorLeftArm", [5, 22, 0], [cube([4, 12, -2], [4, 12, 4], [40, 16], 1.0, True)]),
         bone("armorWaist", [0, 24, 0], [cube([-4, 12, -2], [8, 4, 4], [16, 24], 0.5)]),

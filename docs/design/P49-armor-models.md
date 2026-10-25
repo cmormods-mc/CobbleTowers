@@ -190,3 +190,24 @@ It draws Bedrock `.geo.json` armor through the vanilla pipeline, so limbs swing.
 * **Seen in a real client with the mod:** correct orientation (front is -z), ornaments, glow mask, and legs and arms swinging with the ornaments
   attached. Without the mod the same client draws the shader layer at 256x64 per layer (`polymer.json` scale 4).
 * The display-entity parts (section 10) are now the fallback idea only; they stay off. Next: author the other sets' ornament lists, then retire or keep them.
+
+## 12. Painted-plane redesign of Tideforge, Rootvale and Duskvale (2026-10-24)
+
+`tools/armor_kit/build.py` rebuilds the worn layers, geo and ornament textures of the three tier II sets (`--only` to pick):
+
+* **Look:** Tideforge = pearl plates, blue enamel, steel harness, white depth band; Rootvale = bark plates, layered leaf shingles,
+  leather; Duskvale = night-violet robes, crescent moon, pink glow, hems that fade to transparent. Each set has a back attachment
+  (twin banded dive tanks / a leaf kite shield / a crescent moon with five wisp tendrils) and a few helmet and shoulder accents.
+* **Method:** few large shapes, detail painted. Silhouettes (leaves, tendrils, the moon, the shield frame) are flat zero-thickness
+  planes whose texture is cut out by transparency; rotations pivot at real joints. `sculpt.py` is the kit, `art_*.py` paint the worn
+  pieces, `designs*.py` build the attachments and accents.
+* **Integer sizes only.** Blockbench derives box-UV faces from floored cube sizes, so a fractional size maps the wrong texels
+  (cropped edges, shifted faces). The kit rounds every size; flat planes have thickness 0. The other nine sets' committed geo still has
+  fractional ornament sizes (41-86 cubes each) and the old art: regenerate them with the kit when they are redone.
+* **Z-fighting fix (all twelve sets).** The body cube and the arm cubes were both inflate 1.0, so their coplanar faces shimmered
+  where they overlap and the arms covered the outer texels of the chest front. The body is now 1.04 (`bones()` and every geo file).
+  Keep key chest art in the middle 16 of the 32 front texels.
+* **Planes paint one face** (the outward one): armor is drawn without backface culling, so a second painted face peeks out at the
+  silhouette and shifts as the camera moves.
+* **Not built / not verified:** the particles (Tideforge bubbles, Rootvale falling leaves, Duskvale stars) are static stand-in planes
+  or absent; whether Armor Model API honours the glow masks and texture transparency in a real client is unchecked.
