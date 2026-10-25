@@ -315,18 +315,29 @@ def root(look):
     s_ang = math.degrees(math.atan2(3.0, TOP - 0.7 - SHOULDER))
     parts += [beam(7.5, 22.3, 6, 1, -s_ang), beam(-7.5, 22.3, 6, 1, s_ang, 0.1)]
 
-    # leaves that grow out of the seed: each starts under the seed disc and lifts off the face
-    def leaf_plane(a):
-        pass
-    def sprout(theta, length, width, k):
-        bxp = 2.7 * math.sin(math.radians(theta))
-        byp = CY + 2.7 * math.cos(math.radians(theta))
+    # leaves that grow out of the seed: each starts under the seed disc, lifts off the face, and is long enough to break past the rim
+    # (its length is measured from the real outline, so it pokes out the same amount in every direction) and pass in front of it.
+    def outline_dist(theta):
+        sn, cs = math.sin(math.radians(theta)), math.cos(math.radians(theta))
+        t = 0.0
+        while t < 22.0:
+            if abs(t * sn) > poly_hw(CY + t * cs) - 0.2:
+                return t
+            t += 0.05
+        return 22.0
+    BASE_R = 2.7
+    def sprout(theta, reach, lift, k, rp, cap=99):
+        sn, cs = math.sin(math.radians(theta)), math.cos(math.radians(theta))
+        bxp, byp = BASE_R * sn, CY + BASE_R * cs
         zb = ZF - abs(bxp) * math.sin(math.radians(ANG)) + 0.55
-        rp = ring_rps[k % 2][0]
-        return Part(B, [bxp - width / 2, byp, zb], [width, length, 0], rot=(-26.0, 0, theta), pivot=[bxp, byp, zb], group=f"sprout_{k}",
+        length = min(cap, max(3, round((outline_dist(theta) + reach - BASE_R) / math.cos(math.radians(lift)))))
+        width = 3 if length < 9 else 4
+        return Part(B, [bxp - width / 2, byp, zb], [width, length, 0], rot=(-lift, 0, theta), pivot=[bxp, byp, zb], group=f"sprout_{k}",
                     gpivot=[bxp, byp, zb], paint=lambda v, l, m: two(v, lambda a: leaf_art(a, rp, glow, False)))
-    for k, (theta, length, width) in enumerate(((0, 7, 4), (45, 7, 4), (-45, 7, 4), (90, 6, 4), (-90, 6, 4), (140, 4, 3), (-140, 4, 3))):
-        parts.append(sprout(theta, length, width, k))
+    k = 0
+    for theta in (0, 50, -50, 100, -100, 150, -150):                                                # each breaks the outline by ~2.2
+        parts.append(sprout(theta, 2.2, 28.0, k, ring_rps[k % 2][0], cap=11))
+        k += 1
 
     # the seed: a bark disc with a lime ring over the leaf bases, and a faceted gem
     def disc(a):
