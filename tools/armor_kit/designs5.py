@@ -54,14 +54,6 @@ def make(look):
                 m.bone = LIMB["L"][side]
             parts.append(m)
 
-    # ---- helm (cube +-5, top y 33): a gold brow with a diamond, a single swept crest fin, cheek plates -------------------------
-    box(H, -2.0, 28.4, -6.0, 4, 2, 2, "gold", mirror=False)
-    box(H, -6.0, 28.4, -6.0, 4, 2, 2, "gold", rot=(0, -40, 0), pivot=[-2.0, 29.4, -5.0])
-    box(H, -1.5, 30.2, -6.0, 3, 3, 2, "gem", rot=(0, 0, 45), mirror=False)
-    box(H, -1.0, 32.0, -4.0, 2, 8, 8, "plate", rot=(-10, 0, 0), mirror=False, pivot=[0.0, 32.0, 0.0])
-    box(H, -1.0, 32.0, -4.6, 2, 5, 2, "gold", rot=(-10, 0, 0), mirror=False, pivot=[0.0, 32.0, 0.0])
-    box(H, -6.0, 24.0, -4.0, 2, 6, 6, "plate")
-
     # ---- torso (front face z -2.04): one chest plate, a gem, a belt plate -----------------------------------------------------
     box(BD, -2.0, 16.0, -3.0, 4, 7, 2, "plate", mirror=False)
     box(BD, -5.0, 16.0, -3.0, 3, 7, 2, "plate", rot=(0, -28, 0), pivot=[-2.0, 19.5, -2.0])

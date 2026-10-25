@@ -15,6 +15,7 @@ from armor_paint import ramp
 
 K = gg.K
 TEX_W, TEX_H = gg.TEX_W, gg.TEX_H
+DROP_VANILLA = set()                          # bone names whose vanilla cube is left out (set per build)
 BAYER = np.array(((0, 8, 2, 10), (12, 4, 14, 6), (3, 11, 1, 9), (15, 7, 13, 5))) / 16.0
 
 
@@ -181,6 +182,9 @@ def write(parts, spec_name, layers: Path, out: Path):
         Image.fromarray(arr, "RGBA").save(out / f"textures/armor/{spec_name}_{number}.png")
         Image.fromarray(glow, "RGBA").save(out / f"textures/armor/{spec_name}_{number}_glowmask.png")
     g = gg.geo(spec_name, cubes)
+    for bone in g["minecraft:geometry"][0]["bones"]:          # a set may replace a vanilla box entirely with its own sculpted geometry
+        if bone["name"] in DROP_VANILLA and bone["cubes"]:
+            bone["cubes"] = bone["cubes"][1:]
     for name, grp in groups.items():            # animation bones: any name is allowed when nested under a conventional bone
         g["minecraft:geometry"][0]["bones"].append({"name": name, "parent": grp["parent"], "pivot": grp["pivot"], "cubes": grp["cubes"]})
     for bone in g["minecraft:geometry"][0]["bones"]:
