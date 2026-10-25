@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 6,
+  "revision": 7,
   "display_name": "Rootvale Tower Rewards",
   "growth_percent_per_floor": 8,
   "tiers": {
@@ -348,6 +348,62 @@
         "weight": 8,
         "min_floor": 7,
         "max_floor": 10
+      },
+      {
+        "item": "cobbletowers:sprout_helmet",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 3,
+        "min_floor": 3
+      },
+      {
+        "item": "cobbletowers:sprout_chestplate",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 3,
+        "min_floor": 3
+      },
+      {
+        "item": "cobbletowers:sprout_leggings",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 3,
+        "min_floor": 3
+      },
+      {
+        "item": "cobbletowers:sprout_boots",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 3,
+        "min_floor": 3
+      },
+      {
+        "item": "cobbletowers:rootvale_helmet",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 2,
+        "min_floor": 5
+      },
+      {
+        "item": "cobbletowers:rootvale_chestplate",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 2,
+        "min_floor": 5
+      },
+      {
+        "item": "cobbletowers:rootvale_leggings",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 2,
+        "min_floor": 5
+      },
+      {
+        "item": "cobbletowers:rootvale_boots",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 2,
+        "min_floor": 5
       }
     ],
     "boss_defeated": [
@@ -527,6 +583,62 @@
         "weight": 6,
         "min_floor": 7,
         "max_floor": 10
+      },
+      {
+        "item": "cobbletowers:sprout_helmet",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6,
+        "min_floor": 3
+      },
+      {
+        "item": "cobbletowers:sprout_chestplate",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6,
+        "min_floor": 3
+      },
+      {
+        "item": "cobbletowers:sprout_leggings",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6,
+        "min_floor": 3
+      },
+      {
+        "item": "cobbletowers:sprout_boots",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 6,
+        "min_floor": 3
+      },
+      {
+        "item": "cobbletowers:rootvale_helmet",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 5,
+        "min_floor": 5
+      },
+      {
+        "item": "cobbletowers:rootvale_chestplate",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 5,
+        "min_floor": 5
+      },
+      {
+        "item": "cobbletowers:rootvale_leggings",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 5,
+        "min_floor": 5
+      },
+      {
+        "item": "cobbletowers:rootvale_boots",
+        "min_amount": 1,
+        "max_amount": 1,
+        "weight": 5,
+        "min_floor": 5
       }
     ]
   },
@@ -720,6 +832,30 @@
           "min_amount": 1,
           "max_amount": 2,
           "weight": 8
+        },
+        {
+          "item": "cobbletowers:heartwood_helmet",
+          "min_amount": 1,
+          "max_amount": 1,
+          "weight": 2
+        },
+        {
+          "item": "cobbletowers:heartwood_chestplate",
+          "min_amount": 1,
+          "max_amount": 1,
+          "weight": 2
+        },
+        {
+          "item": "cobbletowers:heartwood_leggings",
+          "min_amount": 1,
+          "max_amount": 1,
+          "weight": 2
+        },
+        {
+          "item": "cobbletowers:heartwood_boots",
+          "min_amount": 1,
+          "max_amount": 1,
+          "weight": 2
         }
       ]
     }

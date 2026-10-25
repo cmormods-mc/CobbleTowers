@@ -5,3 +5,5 @@ Kept in the mod so pieces players already hold still work: the item registry, th
 `/armor` command. Their names carry "(WIP)" in `lang/en_us.json`.
 
 To bring them back: copy these tables over `src/main/resources/data/cobbletowers/cobbletowers/reward_tables/` and drop " (WIP)" from the lang names.
+
+**Restored 2026-10-25:** armor is back in the live reward tables (current entries re-added, not these old copies). Tier I/II in floor_cleared + boss_defeated pools, tier III only in the floor-10 champion bonus pool (weight 2 per piece, about 11% per champion clear for any piece). These files are history only.
