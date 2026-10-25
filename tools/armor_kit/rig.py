@@ -71,6 +71,10 @@ def motion(name):
         return {"rotation": _samples(_wave(5 * mirror, 0.0, 2))}
     if re.match(r"row_\d+(_side)?$", base):
         return {"rotation": _samples(_wave(2.5, -0.07 * n, 0))}
+    if base == "halo":
+        return {"scale": _samples(_pulse(0.9, 1.12, 0.1))}
+    if re.match(r"mane_\d+$", base):
+        return {"rotation": _samples(_wave(3.0, 0.15 * n, 2))}
     if base == "boss":
         return {"scale": _samples(_pulse(1.0, 1.14, 0.25))}
     if re.match(r"crest_\d+$", base):

@@ -140,6 +140,10 @@ def tide(look):
                        (3.9, 32.0, 6.9, 2), (2.6, 35.2, 6.3, 1)):
         parts.append(Part(B, [x - s / 2, y, z], [s, s, 0], group=f"bubble_{len(parts)}", gpivot=[x, y + s / 2, z],
                           paint=lambda v, l, m: two(v, bubble)))
+    # a mane of leaves rising behind the neck from the top edge
+    for k, (mx, ang, mh, ci) in enumerate(((-6, 30, 7, 2), (-3, 14, 8, 1), (0, 0, 9, 0), (3, -14, 8, 1), (6, -30, 7, 2))):
+        parts.append(Part(B, [mx - 2.5, TOP - 1.0, 5.6], [5, mh, 0], rot=(0, 0, ang), pivot=[mx, TOP - 1.0, 5.6], group=f"mane_{k}",
+                          gpivot=[mx, TOP - 1.0, 5.6], paint=lambda v, l, m, rp=rps[ci]: two(v, lambda a: leaf_art(a, rp, glow, False))))
     return parts
 
 
@@ -225,6 +229,20 @@ def root(look):
         parts.append(Part(B, [-w / 2, TOP - y - hh, 3.2], [w, hh, 1], paint=lambda v, l, m: sides(v, slab, bark)))
         y += hh
 
+    # the rim wall: bark blocks round the edge from the backing out to the frame, so the frame is part of the shield, not a hoop in front
+    def wall(a, n):
+        shade(a, full(a), bark, "v", lo=1.4, hi=4.4)
+        h_, w_ = a.shape[:2]
+        for yy in range(2, h_ - 1, 6):
+            a[yy, 1:w_ - 1] = (*bark[1], 255)                                       # plank seams
+    y = 0
+    for hh in (4, 4, 4, 4, 4, 2):
+        edge = kite_hw(min(0.98, (y + hh / 2) / H)) * W
+        if edge >= 2.0:
+            side_wall = Part(B, [edge - 0.75, TOP - y - hh, 3.05], [1, hh, 4], paint=lambda v, l, m: sides(v, wall, bark))
+            parts += [side_wall, side_wall.mirrored()]
+        y += hh
+
     def well(a):
         h, w = a.shape[:2]
         m = kite(w, h)
@@ -275,8 +293,15 @@ def root(look):
         for x, yy in ((c, hy), (c, 6), (6, hy), (w - 7, hy)):
             for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
                 a[yy + dy, x + dx] = (*leather[5 if dx + dy == 0 else 3], 255)
+        # ivy: small leaves growing over the bark from the leaves behind, so the frame and the foliage read as one thing
+        for (ix, iy, k, ci) in ((13, 26, 1, 1), (21, 33, 0, 2), (w - 14, 26, 3, 1), (w - 22, 33, 0, 2), (7, hy - 9, 2, 2), (w - 8, hy - 9, 2, 1),
+                                (9, hy + 14, 1, 3), (w - 10, hy + 14, 3, 3), (c - 9, h - 22, 1, 2), (c + 9, h - 26, 3, 2), (c, h - 12, 0, 3)):
+            tile = np.zeros((11, 8, 4), np.uint8)
+            leaf_art(tile, rps[ci], glow, False)
+            tile = np.rot90(tile, k)
+            paste(a, np.ascontiguousarray(tile), ix - tile.shape[1] // 2, iy - tile.shape[0] // 2)
     ring_top = TOP + 0.5
-    parts.append(Part(B, [-FW / 2, ring_top - FH, 6.95], [FW, FH, 0], paint=lambda v, l, m: two(v, frame)))
+    parts.append(Part(B, [-FW / 2, ring_top - FH, 7.1], [FW, FH, 0], paint=lambda v, l, m: two(v, frame)))
 
     def boss(a):
         h, w = a.shape[:2]
@@ -296,6 +321,16 @@ def root(look):
             pm = poly_mask(w, h, [(c, c), s1, tip, s2]) & (d <= w / 2 - 2.2 * f)
             put(a, pm, rps[k % 3][3 if k % 2 else 4])
         shade(a, d <= 2.7 * f, glow, "v", lo=2.4, hi=5.2)
+    def halo(a):
+        h, w = a.shape[:2]
+        yy, xx = np.mgrid[0:h, 0:w]
+        c = (w - 1) / 2
+        d = np.hypot(xx - c, yy - c) / (w / 2)
+        a[:] = 0
+        keep = (d <= 1.0) & (d >= 0.76) & (BAYER[yy % 4, xx % 4] < (1.0 - d) / 0.24)
+        put(a, keep & (d < 0.85), glow[4])
+        put(a, keep & (d >= 0.85), glow[3])
     cross_y = ring_top - 0.36 * FH
+    parts.append(Part(B, [-5, cross_y - 5, 7.3], [10, 10, 0], group="halo", gpivot=[0, cross_y, 7.3], paint=lambda v, l, m: two(v, halo)))
     parts.append(Part(B, [-4, cross_y - 4, 7.4], [8, 8, 0], group="boss", gpivot=[0, cross_y, 7.4], paint=lambda v, l, m: two(v, boss)))
     return parts
