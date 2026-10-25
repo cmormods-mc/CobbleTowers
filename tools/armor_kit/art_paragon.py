@@ -8,8 +8,10 @@ gold, goldd = ramp((252, 214, 100)), ramp((190, 142, 52))
 SEAM = under[0]
 
 
-def plate(v, mask, rp=ivory, groove=True, trim=True, lo=2.6, hi=5.0, mode="v"):
+def plate(v, mask, rp=None, groove=True, trim=True, lo=2.6, hi=5.0, mode="v"):
     """One armor plate: shaded body, dark seam, gold inner edge, an engraved groove just inside it."""
+    rp = ivory if rp is None else rp
+    SEAM = under[0]
     shade(v, mask, rp, mode, lo, hi, edge=True)
     put(v, mask & ~erode(mask), SEAM)
     e1 = erode(mask)
@@ -24,7 +26,8 @@ def plate(v, mask, rp=ivory, groove=True, trim=True, lo=2.6, hi=5.0, mode="v"):
         put(v, shift(e2 & ~g, 1, 0) & g, rp[5])                       # a lit lip under the groove
 
 
-def corner_rivets(v, mask, rp=gold):
+def corner_rivets(v, mask, rp=None):
+    rp = gold if rp is None else rp
     ys, xs = np.nonzero(mask)
     if not len(ys):
         return
@@ -68,6 +71,9 @@ def sun(f, cx, cy, r, glow):
     shade(f, d <= r, gold, "v", lo=3.0, hi=5.0, edge=True)
     shade(f, d <= r - 2.5, ivory, "v", lo=3.2, hi=5.0, edge=False)
     shade(f, d <= r - 4.5, glow, "v", lo=2.8, hi=5.2, edge=False)
+
+
+EMBLEM = sun
 
 
 def mailbase(st):
@@ -133,7 +139,7 @@ def chest(b, glow):
                 gem(f, x, 2, glow, 1)
             plate(f, poly(f, [(3, 6), (28, 6), (28, 21), (16, 31), (3, 21)]), mode="cyl")
             f[8:27, w // 2 - 1:w // 2 + 1] = (*gold[4], 255)                       # a keel down the centre
-            sun(f, 16, 13, 7, glow)
+            EMBLEM(f, 16, 13, 7, glow)
             for k in range(3):                                                    # three separate lames, each with a pointed lower edge
                 y = 29 + k * 5
                 plate(f, poly(f, [(3, y), (28, y), (28, y + 3), (16, y + 5), (3, y + 3)]), groove=False)
@@ -229,6 +235,18 @@ def waist(b, glow):
             plate(f, poly(f, [(x, 5), (x + 8, 5), (x + 8, 11), (x + 4, 15), (x, 11)]), groove=False)
     gem(b.face("front")[32:48], b.face("front").shape[1] // 2, 2, glow, 2)
     fill(b.top, ones(b.top), ivory, "none", lo=3.4, edge=False)
+
+
+def themed(look_paint, l1, l2, look, plate_c, silver_c, under_c, mail_c, gold_c, goldd_c, emblem):
+    """Paints the whole set with another palette and chest emblem, then restores Paragon's."""
+    g = globals()
+    keep = {k: g[k] for k in ("ivory", "silver", "under", "mail", "gold", "goldd", "SEAM", "EMBLEM")}
+    try:
+        g.update(ivory=ramp(plate_c), silver=ramp(silver_c), under=ramp(under_c), mail=ramp(mail_c), gold=ramp(gold_c), goldd=ramp(goldd_c), EMBLEM=emblem)
+        g["SEAM"] = g["under"][0]
+        look_paint(l1, l2, look)
+    finally:
+        g.update(keep)
 
 
 def paint(l1, l2, look):
