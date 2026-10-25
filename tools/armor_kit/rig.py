@@ -95,6 +95,8 @@ def motion(name):
         return {"rotation": _samples(_wave(5.0, 0.13 * n, 2))}
     if re.match(r"star_\d+$", base):
         return {"scale": _samples(_pulse(0.35, 1.15, (n * 0.23) % 1.0))}
+    if re.match(r"leafring_\d+$", base):
+        return {"rotation": _samples(_wave(2.0 * (1 if n % 2 else -1), 0.07 * n, 2))}          # the layers sway a little against each other
     if re.match(r"wisp_\d+$", base):
         return {"rotation": _samples(_wave(7.0 * mirror, 0.3 * n, 2))}
     return None
