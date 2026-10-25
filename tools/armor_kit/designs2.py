@@ -217,31 +217,26 @@ def poly_hw(y, top=24.8, shoulder_y=20.4, tip_y=2.8, top_hw=6.0, shoulder_hw=9.0
 
 
 def root(look):
-    """A chunky, real-3D kite shield across the back. Its top corners sit at the shoulders (the arm tops are at y 25).
+    """A sleek kite shield that grows from a seed at its centre. Its top corners sit at the shoulders (arm tops are y 25).
 
-    Real geometry, not painted depth: bark RIM beams (two long diagonals, a flat top, two angled shoulders) give the outline
-    thickness; the face is seven shingle rows, each split at the centre into two halves tilted back, so the face is a ridge; raised
-    bark cross beams follow the ridge; and the boss is a stack (an octagon from a box and the same box turned 45 degrees, a petal
-    dish, a faceted gem). Zero-thickness planes carry the painted leaves; every size is an integer."""
+    A slim bark RIM (one-unit beams, a lit lime inlay down each) holds a smooth, gently ridged FACE; the face is painted as rings of
+    petals radiating from the seed, each ring overlapping the one outside it, the petal tips glowing. Real leaves start under the seed
+    disc and lift off the face, fanning out and over the rim. Zero-thickness planes carry the painted art; every size is an integer."""
     bark, leather, glow = look.metal, look.trim, look.glow
-    deepg = ramp((34, 58, 28))
+    deepg = ramp((30, 52, 26))
     TOP, TIP, SHOULDER = 24.8, 2.8, 20.4
-    W = 18
-    ROWS, PITCH, LH = 7, 2.6, 6
-    ANG = 16.0                                   # each half of a row tilts back this far: the face is a ridge down the middle
-    LEAF_W, STEP = 16, 8                         # px: a leaf is 16 wide and one is set every 8 (units: every 2)
-    row_cols = [(178, 222, 102), (154, 206, 88), (128, 184, 74), (104, 158, 62), (84, 132, 52), (68, 112, 44), (54, 94, 38)]
-    rps = [ramp(c) for c in row_cols]            # sunlit at the top, deep green at the point
-    zs = [6.0 + 0.2 * (ROWS - 1 - i) for i in range(ROWS)]            # far enough forward that a tilted half never dips behind the backing
+    CY = 17.0                                    # the seed
+    ANG = 10.0                                   # each half of the face tilts back this far: a gentle ridge down the middle
+    ZF = 6.0                                     # the ridge's depth
+    rps = [ramp(c) for c in ((196, 238, 118), (166, 218, 100), (136, 194, 84), (108, 166, 70), (84, 138, 58), (64, 112, 48), (48, 90, 40))]
     parts = []
 
-    # the backing: a stepped slab (solid from the side) and a dark kite plane so no row ever shows daylight
+    # behind the face: a stepped slab (solid from the side) and a dark kite plane so nothing shows daylight
     def slab(a, n):
         shade(a, full(a), deepg if n == "back" else bark, "v", lo=1.2 if n == "back" else 1.6, hi=3.0 if n == "back" else 4.2)
     for y0, hh in ((1, 3), (4, 4), (8, 4), (12, 4), (16, 4), (20, 2)):
-        w = max(1, round(2 * min(poly_hw(TOP - y0, ), poly_hw(TOP - y0 - hh + 0.01)) * 0.85))
-        if w >= 1:
-            parts.append(Part(B, [-w / 2, TOP - y0 - hh, 3.2], [w, hh, 1], paint=lambda v, l, m: sides(v, slab, bark)))
+        w = max(1, round(2 * min(poly_hw(TOP - y0), poly_hw(TOP - y0 - hh + 0.01)) * 0.85))
+        parts.append(Part(B, [-w / 2, TOP - y0 - hh, 3.2], [w, hh, 1], paint=lambda v, l, m: sides(v, slab, bark)))
 
     def well(a):
         h, w = a.shape[:2]
@@ -250,95 +245,100 @@ def root(look):
             for px in range(w):
                 if abs((px + 0.5) / 4 - w / 8) <= poly_hw(TOP - (py + 0.5) / 4) - 0.1:
                     a[py, px] = (*deepg[1 if (px + py) % 5 else 0], 255)
-    parts.append(Part(B, [-W / 2, TOP - 22, 4.3], [W, 22, 0], paint=lambda v, l, m: two(v, well)))
+    parts.append(Part(B, [-9, TOP - 22, 4.3], [18, 22, 0], paint=lambda v, l, m: two(v, well)))
 
-    # the face: seven shingle rows, each two half-planes hinged at the centre and tilted back (a ridge), clipped to the outline
-    def half_paint(a, i, top, x_end):                  # x_end: the plane's +x edge; a south face's u runs toward -x
+    # the face: rings of petals radiating from the seed, outer rings painted first so each inner ring overlaps the one outside it
+    RINGS = [(3.0, 7.4, 8, 0.0), (6.0, 10.6, 12, 0.5), (9.0, 13.8, 16, 0.0), (11.8, 16.6, 22, 0.5)]    # r0, r1, petals, angular offset
+    ring_cols = [((158, 214, 96), (136, 196, 84)), ((124, 184, 78), (104, 164, 68)), ((96, 154, 64), (80, 134, 56)), ((72, 124, 52), (60, 106, 46))]
+    ring_rps = [[ramp(c) for c in pair] for pair in ring_cols]
+    def face_paint(a, x_end):
         h, w = a.shape[:2]
         a[:] = 0
-        span = 2 * (poly_hw(TOP - 0.5) + 1)
-        n = int(span / (STEP / 4)) + 3
-        for k in range(n):
-            xk = (k - (n - 1) / 2) * (STEP / 4)                                          # leaf centres in units from the centre line
-            rp = rps[min(ROWS - 1, max(0, i - (1 if (k + i) % 3 == 0 else 0)))]
-            tile = np.zeros((h, LEAF_W, 4), np.uint8)
-            leaf_art(tile, rp, glow, True)
-            if (k + i) % 2:
-                tile = np.ascontiguousarray(tile[:, ::-1])
-            paste(a, tile, int(round((x_end - xk) * 4)) - LEAF_W // 2, 0)
+        pid = np.full((h, w), -1, np.int32)
+        col = np.zeros((h, w, 4), np.uint8)
         for py in range(h):
-            yy = top - (py + 0.5) / 4
+            y = TOP - (py + 0.5) / 4
             for px in range(w):
-                if abs(x_end - (px + 0.5) / 4) > poly_hw(yy) - 0.1:
-                    a[py, px] = 0
+                x = x_end - (px + 0.5) / 4
+                if abs(x) > poly_hw(y) - 0.1:
+                    continue
+                col[py, px] = (*deepg[2 if (px + py) % 4 else 1], 255)                      # the bare face between petals
+                r = math.hypot(x, y - CY)
+                th = math.atan2(x, y - CY)
+                for ri in range(len(RINGS) - 1, -1, -1):                                    # outer ring first
+                    r0, r1, n, off = RINGS[ri]
+                    if r < r0 - 0.4 or r > r1 + 0.9:
+                        continue
+                    step = 2 * math.pi / n
+                    k = int(math.floor(th / step + 0.5 - off))
+                    phi = th - (k + off) * step
+                    u = (r - r0) / (r1 - r0)
+                    half = 0.5 * step * (r0 + r1) / 2 * 1.0 * max(0.0, math.sin(math.pi * min(1.0, max(0.0, u)) ** 0.75)) ** 0.8
+                    if abs(phi) * r <= half and 0.0 <= u <= 1.05:
+                        rp = ring_rps[ri][k % 2]
+                        c = rp[2 + (1 if phi < 0 else 0) + (1 if u > 0.55 else 0)]                # lit on one side, brighter toward the tip
+                        if abs(phi) * r < 0.5 and 0.1 < u < 0.97:
+                            c = rp[5]                                                          # the midrib
+                        if u > 0.9 and abs(phi) * r < 0.65:
+                            c = glow[4]                                                        # a glowing tip
+                        col[py, px] = (*c, 255)
+                        pid[py, px] = ri * 100 + (k % n)
+                        break
+        a[:] = col
+        for py in range(h):                                                                    # outline every petal where its neighbour differs
+            for px in range(w):
+                if pid[py, px] < 0:
+                    continue
+                for dy, dx in ((0, 1), (1, 0), (0, -1), (-1, 0)):
+                    qy, qx = py + dy, px + dx
+                    if 0 <= qy < h and 0 <= qx < w and pid[qy, qx] != pid[py, px] and col[py, px, 3] and not (a[py, px, :3] == np.array(glow[4])).all():
+                        a[py, px] = (*ring_rps[3][1][0], 255)
+                        break
+    for sgn, x0 in ((1, 0), (-1, -9)):
+        parts.append(Part(B, [x0, TOP - 22, ZF], [9, 22, 0], rot=(0, sgn * ANG, 0), pivot=[0, TOP - 11, ZF],
+                          paint=lambda v, l, m, xe=float(x0 + 9): two(v, lambda a: face_paint(a, xe))))
 
-    for i in range(ROWS):
-        top = TOP - 0.4 - PITCH * i
-        hw = max(poly_hw(top - LH * f) for f in (0, 0.25, 0.5, 0.75, 1.0))
-        wr = int(math.ceil(hw)) + 1
-        z = zs[i]
-        right = Part(B, [0, top - LH, z], [wr, LH, 0], rot=(0, ANG, 0), pivot=[0, top - LH / 2, z], group=f"row_{i}", gpivot=[0, top, z],
-                     paint=lambda v, l, m, i=i, top=top, wr=wr: two(v, lambda a: half_paint(a, i, top, float(wr))))
-        left = Part(B, [-wr, top - LH, z], [wr, LH, 0], rot=(0, -ANG, 0), pivot=[0, top - LH / 2, z], group=f"row_{i}_m", gpivot=[0, top, z],
-                    paint=lambda v, l, m, i=i, top=top, wr=wr: two(v, lambda a: half_paint(a, i, top, 0.0)))
-        parts += [right, left]
-
-    # the rim: bark beams. Each is a whole box (real thickness and depth), rotated about its centre to lie along the outline.
+    # the rim: slim bark beams, a thin lit inlay down each; whole boxes rotated about their centres to lie on the outline
     def beam_paint(a, n):
         h, w = a.shape[:2]
-        shade(a, full(a), bark, "h" if h > w else "v", lo=1.6, hi=4.8)
-        if h > w:
-            for yy in range(5, h - 3, 14):
-                a[yy, w // 2] = (*leather[5], 255); a[min(h - 1, yy + 1), w // 2] = (*leather[3], 255)       # rivets down the beam
-            for yy in range(2, h, 4):
-                a[yy, 1:w - 1] = np.where(a[yy, 1:w - 1, 3:4] > 0, np.array((*bark[1], 255), np.uint8), a[yy, 1:w - 1])
+        shade(a, full(a), bark, "h" if h > w else "v", lo=1.4, hi=4.2)
+        if n in ("front", "back") and h > w:
+            a[2:h - 2, w // 2] = (*glow[3], 255)                                              # the lit inlay
     def beam(cx, cy, length, thick, ang, dz=0.0):
-        return Part(B, [cx - thick / 2, cy - length / 2, 3.5 + dz], [thick, length, 4], rot=(0, 0, ang), pivot=[cx, cy, 5.5 + dz],
+        return Part(B, [cx - thick / 2, cy - length / 2, 4.8 + dz], [thick, length, 3], rot=(0, 0, ang), pivot=[cx, cy, 6.3 + dz],
                     paint=lambda v, l, m: sides(v, beam_paint, bark))
-    tx, ty, bx, by = 8.5, SHOULDER + 0.2, 0.6, TIP + 0.4                                    # from the shoulder to the point
+    tx, ty, bx, by = 8.5, SHOULDER + 0.2, 0.6, TIP + 0.4
     d_ang = math.degrees(math.atan2(tx - bx, ty - by))
     d_len = round(math.hypot(tx - bx, ty - by))
-    parts += [beam((tx + bx) / 2, (ty + by) / 2, d_len, 2, d_ang), beam(-(tx + bx) / 2, (ty + by) / 2, d_len, 2, -d_ang, 0.15)]   # the two long sides
-    parts += [beam(0, TOP - 1.0, 12, 2, 90.0)]                                              # the flat top (a beam turned on its side)
+    parts += [beam((tx + bx) / 2, (ty + by) / 2, d_len, 1, d_ang), beam(-(tx + bx) / 2, (ty + by) / 2, d_len, 1, -d_ang, 0.1)]
+    parts += [beam(0, TOP - 0.5, 12, 1, 90.0)]
     s_ang = math.degrees(math.atan2(3.0, TOP - 0.7 - SHOULDER))
-    parts += [beam(7.5, 22.3, 6, 2, -s_ang), beam(-7.5, 22.3, 6, 2, s_ang, 0.1)]            # the shoulders
+    parts += [beam(7.5, 22.3, 6, 1, -s_ang), beam(-7.5, 22.3, 6, 1, s_ang, 0.1)]
 
-    # the raised cross: a spine along the ridge and two arms that follow each half's tilt
-    cross_y = 17.0
-    parts.append(Part(B, [-0.5, 3.6, 6.95], [1, 19, 1], paint=lambda v, l, m: sides(v, beam_paint, bark)))
-    for sgn in (1, -1):
-        arm = Part(B, [0 if sgn > 0 else -7, cross_y - 0.5, 6.75], [7, 1, 1], rot=(0, sgn * ANG, 0), pivot=[0, cross_y, 7.25],
-                   paint=lambda v, l, m: sides(v, beam_paint, bark))
-        parts.append(arm)
+    # leaves that grow out of the seed: each starts under the seed disc and lifts off the face
+    def leaf_plane(a):
+        pass
+    def sprout(theta, length, width, k):
+        bxp = 2.7 * math.sin(math.radians(theta))
+        byp = CY + 2.7 * math.cos(math.radians(theta))
+        zb = ZF - abs(bxp) * math.sin(math.radians(ANG)) + 0.55
+        rp = ring_rps[k % 2][0]
+        return Part(B, [bxp - width / 2, byp, zb], [width, length, 0], rot=(-26.0, 0, theta), pivot=[bxp, byp, zb], group=f"sprout_{k}",
+                    gpivot=[bxp, byp, zb], paint=lambda v, l, m: two(v, lambda a: leaf_art(a, rp, glow, False)))
+    for k, (theta, length, width) in enumerate(((0, 7, 4), (45, 7, 4), (-45, 7, 4), (90, 6, 4), (-90, 6, 4), (140, 4, 3), (-140, 4, 3))):
+        parts.append(sprout(theta, length, width, k))
 
-    # the boss: an octagon (a box and the same box turned 45 degrees), a petal dish, a faceted gem
-    def disc(v, l, m):
-        for k in ("front", "left", "right", "top", "bottom"):
-            shade(v[k], full(v[k]), bark, "v", lo=1.4, hi=4.2)
-        a = v["back"]
-        shade(a, full(a), bark, "v", lo=1.8, hi=5.0)
-        h, w = a.shape[:2]
-        for i_ in range(2, h - 2, 3):
-            a[i_, 2:w - 2] = (*bark[2], 255)
-    parts.append(Part(B, [-3, cross_y - 3, 6.95], [6, 6, 1], paint=disc))
-    parts.append(Part(B, [-3, cross_y - 3, 7.0], [6, 6, 1], rot=(0, 0, 45.0), pivot=[0, cross_y, 7.5], paint=disc))
-
-    def dish(a):
+    # the seed: a bark disc with a lime ring over the leaf bases, and a faceted gem
+    def disc(a):
         h, w = a.shape[:2]
         yy, xx = np.mgrid[0:h, 0:w]
         c = (w - 1) / 2
         d = np.hypot(xx - c, yy - c)
         a[:] = 0
-        shade(a, d <= w / 2, bark, "v", lo=2.0, hi=5.0)
-        inner = d <= w / 2 - 2.0
-        shade(a, inner, rps[5], "v", lo=1.6, hi=3.4, edge=False)
-        for k in range(6):
-            ang = math.radians(k * 60 + 15)
-            tip = (c + 7.0 * math.cos(ang), c + 7.0 * math.sin(ang))
-            s1 = (c + 2.8 * math.cos(ang + 0.7), c + 2.8 * math.sin(ang + 0.7))
-            s2 = (c + 2.8 * math.cos(ang - 0.7), c + 2.8 * math.sin(ang - 0.7))
-            put(a, poly_mask(w, h, [(c, c), s1, tip, s2]) & inner, rps[k % 3][3 if k % 2 else 4])
-    parts.append(Part(B, [-2.5, cross_y - 2.5, 8.1], [5, 5, 0], paint=lambda v, l, m: two(v, dish)))
+        shade(a, d <= w / 2, bark, "v", lo=1.8, hi=5.0)
+        put(a, (d <= w / 2 - 1.5) & (d > w / 2 - 3.0), glow[3])
+        put(a, d <= w / 2 - 3.2, rps[6][3])
+    parts.append(Part(B, [-3, CY - 3, ZF + 0.9], [6, 6, 0], paint=lambda v, l, m: two(v, disc)))
 
     def gem(v, l, m):
         for k in ("front", "left", "right", "top", "bottom"):
@@ -352,5 +352,5 @@ def root(look):
         put(a, poly_mask(w, h, [(0, 0), (c, c), (0, h - 1)]), glow[4])
         put(a, poly_mask(w, h, [(w - 1, 0), (c, c), (w - 1, h - 1)]), glow[3])
         put(a, poly_mask(w, h, [(0, h - 1), (c, c), (w - 1, h - 1)]), glow[2])
-    parts.append(Part(B, [-1.5, cross_y - 1.5, 8.15], [3, 3, 1], group="gem", gpivot=[0, cross_y, 8.65], paint=gem))
+    parts.append(Part(B, [-1.5, CY - 1.5, ZF + 0.95], [3, 3, 1], group="gem", gpivot=[0, CY, ZF + 1.4], paint=gem))
     return parts
