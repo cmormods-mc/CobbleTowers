@@ -71,13 +71,13 @@ public final class FlarePlan {
     // Rootvale: leaves shake loose from the shield and fall, the boss seed sparkles.
     private static void rootvale(List<Emit> out, long pass, int phase, boolean sprinting) {
         if (every(pass, phase, 4)) {
-            double[] xs = {-0.30, 0.22, -0.12, 0.32, 0.0, -0.26};
-            double[] ys = {1.50, 1.30, 1.05, 0.90, 0.72, 1.20};
+            double[] xs = {-0.55, 0.42, -0.22, 0.55, 0.0, -0.46};      // across the tower shield, which spans shoulder to ankle
+            double[] ys = {1.45, 1.25, 1.00, 0.75, 0.45, 1.10};
             int slot = (int) Math.floorMod(pass / 4 + phase, 6);
             out.add(new Emit("block:azalea_leaves", xs[slot], ys[slot], 0.45, 0, 0, 0.02, 0, 1));
         }
         if (every(pass, phase, 9)) {
-            out.add(new Emit("happy_villager", 0, 1.08, 0.5, 0, 0, 0, 1, 0.12));
+            out.add(new Emit("happy_villager", 0, 1.06, 0.52, 0, 0, 0, 1, 0.16));
         }
         if (sprinting && every(pass, phase, 2)) {
             out.add(new Emit("block:azalea_leaves", 0.0, 1.1, 0.5, 0, 0, 0.12, 0, 1));

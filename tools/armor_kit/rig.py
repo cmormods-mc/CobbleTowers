@@ -70,7 +70,7 @@ def motion(name):
     if base == "fin":
         return {"rotation": _samples(_wave(5 * mirror, 0.0, 2))}
     if re.match(r"row_\d+(_side)?$", base):
-        return {"rotation": _samples(_wave(4.0, -0.07 * n, 0))}
+        return {"rotation": _samples(_wave(2.5, -0.07 * n, 0))}
     if base == "boss":
         return {"scale": _samples(_pulse(1.0, 1.14, 0.25))}
     if re.match(r"crest_\d+$", base):

@@ -5,7 +5,9 @@ A broken .geo.json or a missing texture renders nothing on a Fabric client that 
 notices: the server only sends the paths. So this checks, at build time:
 
 - ArmorSetItems.GEO_SETS, the geo files and the textures name the same sets
-- each geo parses, has one geometry `geometry.<set>` with a positive texture size, the nine armor bones and only those
+- each geo parses, has one geometry `geometry.<set>` with a positive texture size and the nine armor bones; any other bone is a
+  decorative (animation) bone, which Armor Model API allows only when it is nested, through `parent`, under an armor bone, and
+  which may not set a bone-level `mirror` or `inflate` (the API refuses them; set them per cube)
 - every cube has a numeric origin, a non-negative size, an whole uv, and its box-UV footprint fits the texture
 - every set has textures/armor/<set>_{1,2}.png and a _glowmask sibling, PNG, all one size that is a whole multiple of the
   declared texture size
@@ -30,6 +32,7 @@ BONES = {"armorHead", "armorBody", "armorRightArm", "armorLeftArm", "armorWaist"
 PNG_SIG = b"\x89PNG\r\n\x1a\n"
 
 errors: list[str] = []
+fractional: set[str] = set()
 
 
 def fail(msg: str) -> None:
@@ -69,10 +72,18 @@ def check_geo(name: str, path: Path) -> tuple[int, int] | None:
         fail(f"{name}: texture_width/texture_height must be positive integers")
         return None
     seen = set()
+    all_bones = {b.get("name"): b for b in geometry[0].get("bones", [])}
     for bone in geometry[0].get("bones", []):
         bn = bone.get("name")
         if bn not in BONES:
-            fail(f"{name}: unknown bone {bn!r}")
+            chain, cur = 0, bone
+            while cur is not None and cur.get("name") not in BONES and chain < 8:
+                cur = all_bones.get(cur.get("parent"))
+                chain += 1
+            if cur is None or cur.get("name") not in BONES:
+                fail(f"{name}: unknown bone {bn!r} (a decorative bone must sit under an armor bone through 'parent')")
+        if "mirror" in bone or "inflate" in bone:
+            fail(f"{name}/{bn}: bone-level mirror/inflate is refused by Armor Model API; set it per cube")
         seen.add(bn)
         if not vec(bone.get("pivot"), 3):
             fail(f"{name}/{bn}: bad pivot")
@@ -91,6 +102,8 @@ def check_geo(name: str, path: Path) -> tuple[int, int] | None:
             if "rotation" in c and not vec(c["rotation"], 3):
                 fail(f"{where}: bad rotation")
             sx, sy, sz = c["size"]
+            if any(not float(x).is_integer() for x in c["size"]):
+                fractional.add(name)
             u, v = c["uv"]
             if u < 0 or v < 0 or u + math.ceil(2 * sz + 2 * sx) > w or v + math.ceil(sz + sy) > h:
                 fail(f"{where}: uv footprint ({u},{v}) + box {c['size']} leaves the {w}x{h} texture")
@@ -134,6 +147,9 @@ def main() -> int:
         for e in errors:
             print(f"  {e}", file=sys.stderr)
         return 1
+    if fractional:
+        print(f"validate_armor_geo: note: {len(fractional)} sets still use fractional cube sizes ({', '.join(sorted(fractional))}); "
+              "Blockbench floors them for box UV, so regenerate with tools/armor_kit when they are redone")
     print(f"validate_armor_geo: {len(geos)} geo armor sets ok")
     return 0
 
