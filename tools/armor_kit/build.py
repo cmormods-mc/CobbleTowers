@@ -24,13 +24,13 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
 import art_dusk, art_paragon, art_root, art_tide  # noqa: E402
-import designs, designs2, designs3, designs4, designs5, designs6, rig  # noqa: E402
+import designs, designs2, designs3, designs4, designs7, rig  # noqa: E402
 import generate_armor_textures as gt  # noqa: E402
 from sculpt import write  # noqa: E402
 
 TIDEFORGE_PALETTE = dict(metal=(190, 208, 222), trim=(60, 140, 200), cloth=(30, 84, 140), glow=(170, 240, 255), helm="visor", top="ridge")
 SETS = {"tideforge": (TIDEFORGE_PALETTE, art_tide, designs2.tide), "rootvale": ({}, art_root, designs2.root),
-        "duskvale": ({}, art_dusk, designs.dusk), "paragon": ({}, art_paragon, lambda look: designs4.paragon(look) + designs5.paragon_armor(look) + designs6.paragon_helmet(look))}
+        "duskvale": ({}, art_dusk, designs.dusk), "paragon": ({}, art_paragon, lambda look: designs4.paragon(look) + designs7.paragon_touches(look))}
 designs3.ACCENTS["paragon"] = lambda look: []              # the crest fin and plates carry the silhouette; no laurel or shoulder feathers
 
 
@@ -40,7 +40,7 @@ ALIASES = {"leviathan": "tideforge", "heartwood": "rootvale", "nightfall": "dusk
 
 # sets that need a taller ornament sheet (in units; the default is 256) - the geo declares it, so nothing else changes
 SHEET_HEIGHT = {"paragon": 384}
-DROP_VANILLA = {"paragon": {"armorHead"}}          # bones whose plain vanilla box is replaced by the set's own sculpted geometry
+DROP_VANILLA = {}          # bones whose plain vanilla box is replaced by the set's own sculpted geometry
 
 
 def build(out: Path, name: str) -> None:
