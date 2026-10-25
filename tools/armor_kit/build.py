@@ -24,13 +24,13 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
 import art_dusk, art_paragon, art_root, art_tide  # noqa: E402
-import designs, designs2, designs3, designs4, rig  # noqa: E402
+import designs, designs2, designs3, designs4, designs5, rig  # noqa: E402
 import generate_armor_textures as gt  # noqa: E402
 from sculpt import write  # noqa: E402
 
 TIDEFORGE_PALETTE = dict(metal=(190, 208, 222), trim=(60, 140, 200), cloth=(30, 84, 140), glow=(170, 240, 255), helm="visor", top="ridge")
 SETS = {"tideforge": (TIDEFORGE_PALETTE, art_tide, designs2.tide), "rootvale": ({}, art_root, designs2.root),
-        "duskvale": ({}, art_dusk, designs.dusk), "paragon": ({}, art_paragon, designs4.paragon)}
+        "duskvale": ({}, art_dusk, designs.dusk), "paragon": ({}, art_paragon, lambda look: designs4.paragon(look) + designs5.paragon_armor(look))}
 designs3.ACCENTS["paragon"] = designs4.paragon_accents
 
 
@@ -38,7 +38,21 @@ designs3.ACCENTS["paragon"] = designs4.paragon_accents
 ALIASES = {"leviathan": "tideforge", "heartwood": "rootvale", "nightfall": "duskvale"}
 
 
+# sets that need a taller ornament sheet (in units; the default is 256) - the geo declares it, so nothing else changes
+SHEET_HEIGHT = {"paragon": 384}
+
+
 def build(out: Path, name: str) -> None:
+    import sculpt, generate_armor_geo as gg_
+    old = gg_.TEX_H
+    sculpt.TEX_H = gg_.TEX_H = SHEET_HEIGHT.get(name, 256)
+    try:
+        _build(out, name)
+    finally:
+        sculpt.TEX_H = gg_.TEX_H = old
+
+
+def _build(out: Path, name: str) -> None:
     base = ALIASES.get(name, name)
     palette, art, attachment = SETS[base]
     gt.SPECS[base].update(palette)

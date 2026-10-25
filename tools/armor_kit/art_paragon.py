@@ -2,12 +2,13 @@
 from armor_art import *
 
 ivory, silver = ramp((238, 234, 246)), ramp((190, 200, 226))
+under, mail = ramp((52, 60, 92)), ramp((112, 124, 164))      # the dark padded under-layer and its mail, so the plates stand out
 gold, goldd = ramp((252, 214, 100)), ramp((190, 142, 52))
 crim = ramp((164, 36, 48))
 
 
-def plate(st, tone=ivory):
-    fill(st, ones(st), tone, "v", lo=2.4, hi=4.8, edge=False)
+def plate(st, tone=under):
+    fill(st, ones(st), tone, "v", lo=2.0, hi=4.2, edge=False)
     for x in range(7, st.shape[1], 8):
         st[:, x] = (*tone[1], 255)
 
@@ -44,7 +45,7 @@ def sun(f, cx, cy, r, glow):
 def head(b, glow):
     st = b.strip
     plate(st)
-    shingle(st, rect(st, 0, 3, 128, 13), 3, 16, ivory, silver, 10, 13, 5, glow)         # a feathered brow
+    shingle(st, rect(st, 0, 3, 128, 13), 3, 16, mail, under, 10, 13, 5, glow)         # a feathered brow
     trim(st, 16, 3)
     rivets(st, range(4, 126, 9), 17, gold)
     f = b.face("front")
@@ -59,7 +60,7 @@ def head(b, glow):
         put_edge = rrect(g, 3, 19, 26, 12, 4) & ~erode(rrect(g, 3, 19, 26, 12, 4))
         g[put_edge] = (*gold[3], 255)
     g = b.face("back")
-    shingle(g, rect(g, 0, 19, 32, 13), 19, 32, ivory, silver, 10, 13, 5, glow)
+    shingle(g, rect(g, 0, 19, 32, 13), 19, 32, mail, under, 10, 13, 5, glow)
     t = b.top
     fill(t, ones(t), ivory, "none", lo=3.4, edge=False)                                    # a laurel ring round a glowing seed
     c = 15.5
@@ -77,7 +78,7 @@ def chest(b, glow):
     st = b.strip
     plate(st)
     f = b.face("front")
-    shingle(f, poly(f, [(4, 12), (28, 12), (28, 22), (16, 38), (4, 22)]), 12, 38, ivory, silver, 9, 12, 6, glow)   # a feathered bib
+    shingle(f, poly(f, [(4, 12), (28, 12), (28, 22), (16, 38), (4, 22)]), 12, 38, mail, under, 9, 12, 6, glow)   # a feathered bib
     for x in (3, 25):
         fill(f, rect(f, x, 0, 4, 40), gold, "h", lo=3.0, hi=5.0)                          # gold shoulder straps
         rivets(f, (x + 1,), 6, gold)
@@ -100,8 +101,8 @@ def chest(b, glow):
 
 def arm(b, glow):
     st = b.strip
-    plate(st, silver)
-    shingle(st, rect(st, 0, 0, 64, 18), 0, 18, ivory, silver, 14, 16, 7, glow)            # big feathers over the shoulder only
+    plate(st)
+    shingle(st, rect(st, 0, 0, 64, 18), 0, 18, mail, under, 14, 16, 7, glow)            # big feathers over the shoulder only
     trim(st, 33, 7)
     rivets(st, range(3, 62, 8), 35, gold)
     for x in range(0, 64, 8):
@@ -115,8 +116,8 @@ def boots(b, glow):
     fill(b.top, ones(b.top), ivory, "none", lo=2.8, edge=False)
     fill(b.bottom, ones(b.bottom), silver, "none", lo=2.0, edge=False)
     sub = st[32:48]
-    plate(sub, silver)
-    shingle(sub, rect(sub, 0, 0, 64, 8), 0, 8, ivory, silver, 8, 8, 3, None)              # a feathered cuff
+    plate(sub)
+    shingle(sub, rect(sub, 0, 0, 64, 8), 0, 8, mail, under, 8, 8, 3, None)              # a feathered cuff
     trim(sub, 8, 3)
     f = b.face("front")[32:48]
     fill(f, rect(f, 4, 12, 8, 3), gold, "v", lo=3.0, hi=5.0, edge=False)                              # a gold toe cap
@@ -127,7 +128,7 @@ def boots(b, glow):
 def legs(b, glow):
     st = b.strip
     plate(st)
-    shingle(st, rect(st, 0, 0, 64, 20), 0, 20, ivory, silver, 9, 11, 5, glow)             # feathers over the thighs only
+    shingle(st, rect(st, 0, 0, 64, 20), 0, 20, mail, under, 9, 11, 5, glow)             # feathers over the thighs only
     f = b.face("front")
     fill(f, rrect(f, 3, 20, 10, 11, 3), gold, "cyl", lo=2.8, hi=5.0)                     # a gold knee plate
     fill(f, rrect(f, 5, 22, 6, 7, 2), ivory, "v", lo=3.0, hi=5.0)
