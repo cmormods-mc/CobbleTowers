@@ -98,7 +98,7 @@ def crescent(n, R, r, dx, dy=0):
 
 
 class Part:
-    def __init__(self, bone, origin, size, rot=(0, 0, 0), pivot=None, paint=None, mirror=False, **kw):
+    def __init__(self, bone, origin, size, rot=(0, 0, 0), pivot=None, paint=None, mirror=False, group=None, gpivot=None, **kw):
         # Blockbench derives box-UV faces from FLOORED sizes, so a fractional size maps the wrong texels (cropped edges, shifted
         # faces). Round every size to an integer, keeping the centre; thin planes become true zero-thickness planes.
         new = [math.floor(v + 0.5) for v in size]
@@ -106,12 +106,15 @@ class Part:
         self.origin = [o + (v - n) / 2 for o, v, n in zip(origin, size, new)]
         self.rot, self.pivot, self.paint, self.kw = rot, pivot, paint, kw
         self.mirror = mirror
+        self.group, self.gpivot = group, gpivot       # an animation bone nested under `bone`, with its own pivot
 
     def mirrored(self):
         o, s = self.origin, self.size
         rx, ry, rz = self.rot
         pv = None if self.pivot is None else [-self.pivot[0], self.pivot[1], self.pivot[2]]
-        return Part(self.bone, [-(o[0] + s[0]), o[1], o[2]], s, (rx, -ry, -rz), pv, self.paint, True, **self.kw)
+        gp = None if self.gpivot is None else [-self.gpivot[0], self.gpivot[1], self.gpivot[2]]
+        return Part(self.bone, [-(o[0] + s[0]), o[1], o[2]], s, (rx, -ry, -rz), pv, self.paint, True,
+                    None if self.group is None else self.group + "_m", gp, **self.kw)
 
 
 def build(parts, base_art, look, out: Path, name: str, number: int):
@@ -119,7 +122,7 @@ def build(parts, base_art, look, out: Path, name: str, number: int):
     W, H = TEX_W * K, TEX_H * K
     canvas = np.zeros((H, W, 4), np.uint8)
     canvas[: base_art.height, : base_art.width] = np.array(base_art)
-    cubes, x, y, row = {}, 0, 33, 0
+    cubes, groups, x, y, row = {}, {}, 0, 33, 0
     for p in parts:
         sx, sy, sz = p.size
         cw, ch = math.ceil(2 * sz + 2 * sx), math.ceil(sz + sy)
@@ -140,9 +143,12 @@ def build(parts, base_art, look, out: Path, name: str, number: int):
         if any(p.rot):
             c["pivot"] = list(p.pivot) if p.pivot else [p.origin[0] + sx / 2, p.origin[1], p.origin[2] + sz / 2]
             c["rotation"] = list(p.rot)
-        cubes.setdefault(p.bone, []).append(c)
+        if p.group:
+            groups.setdefault(p.group, {"parent": p.bone, "pivot": list(p.gpivot or [0, 0, 0]), "cubes": []})["cubes"].append(c)
+        else:
+            cubes.setdefault(p.bone, []).append(c)
         x, row = x + cw + 1, max(row, ch + 1)
-    return Image.fromarray(canvas, "RGBA"), cubes
+    return Image.fromarray(canvas, "RGBA"), cubes, groups
 
 
 def write(parts, spec_name, layers: Path, out: Path):
@@ -156,7 +162,7 @@ def write(parts, spec_name, layers: Path, out: Path):
         half = sheet.width // 2
         art = sheet.crop((0, 0, half, sheet.height))
         mask = sheet.crop((half, 0, sheet.width, sheet.height)).split()[3]
-        full, cubes = build(parts, art, look, out, spec_name, number)
+        full, cubes, groups = build(parts, art, look, out, spec_name, number)
         arr = np.array(full)
         gm = np.zeros(arr.shape[:2], bool)
         gm[: mask.height, : mask.width] = np.array(mask) > 0
@@ -167,6 +173,8 @@ def write(parts, spec_name, layers: Path, out: Path):
         Image.fromarray(arr, "RGBA").save(out / f"textures/armor/{spec_name}_{number}.png")
         Image.fromarray(glow, "RGBA").save(out / f"textures/armor/{spec_name}_{number}_glowmask.png")
     g = gg.geo(spec_name, cubes)
+    for name, grp in groups.items():            # animation bones: any name is allowed when nested under a conventional bone
+        g["minecraft:geometry"][0]["bones"].append({"name": name, "parent": grp["parent"], "pivot": grp["pivot"], "cubes": grp["cubes"]})
     for bone in g["minecraft:geometry"][0]["bones"]:
         if bone["name"] == "armorBody":
             bone["cubes"][0]["inflate"] = 1.04      # a hair bigger than the arms (1.0): the faces overlap and would z-fight otherwise

@@ -24,7 +24,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
 import art_dusk, art_root, art_tide  # noqa: E402
-import designs, designs2, designs3  # noqa: E402
+import designs, designs2, designs3, rig  # noqa: E402
 import generate_armor_textures as gt  # noqa: E402
 from sculpt import write  # noqa: E402
 
@@ -46,7 +46,8 @@ def build(out: Path, name: str) -> None:
     gt.with_emission(Image.fromarray(l2, "RGBA"), look).save(layers / f"{name}_layer_2.png")
     parts = attachment(look) + designs3.ACCENTS[name](look)
     write(parts, name, layers, out)
-    print(f"wrote {name}: {len(parts)} ornament planes/boxes")
+    moving = rig.write(out / f"geo/{name}.geo.json", out / f"animations/{name}.animation.json", name)
+    print(f"wrote {name}: {len(parts)} ornament planes/boxes, {moving} animated bones")
 
 
 def main() -> None:

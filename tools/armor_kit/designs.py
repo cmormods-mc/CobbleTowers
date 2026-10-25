@@ -58,7 +58,8 @@ def dusk(look):
                 if not m[y + dy, x + dx]:
                     v[y + dy, x + dx] = (*(glow[5] if dx == dy == 0 else glow[3]), 255)
 
-    parts.append(Part(B, [-7.5, 21.5, 5.4], [15, 15, 0.3], rot=(0, 0, 22.5), pivot=[0, 29.0, 5.55], paint=lambda v, l, mi: two(v, lambda a: moon(a))))
+    parts.append(Part(B, [-7.5, 21.5, 5.4], [15, 15, 0.3], rot=(0, 0, 22.5), pivot=[0, 29.0, 5.55], group="moon", gpivot=[0, 29.0, 5.55],
+                        paint=lambda v, l, mi: two(v, lambda a: moon(a))))
 
     def yoke(v, *_):
         for n in ("front", "back", "left", "right"):
@@ -87,7 +88,7 @@ def dusk(look):
                 xs = np.where(m[y])[0]
                 if len(xs):
                     a[y, (xs[0] + xs[-1]) // 2] = (*glow[4], 255)
-        parts.append(Part(B, [px - w / 2, 22.4 - hh, 3.5 + 0.05 * k], [w, hh, 0.3], rot=(0, 0, -ang), pivot=[px, 22.4, 3.65 + 0.05 * k],
+        parts.append(Part(B, [px - w / 2, 22.4 - hh, 3.5 + 0.05 * k], [w, hh, 0.3], rot=(0, 0, -ang), pivot=[px, 22.4, 3.65 + 0.05 * k], group=f"tendril_{k}", gpivot=[px, 22.4, 3.65 + 0.05 * k],
                           paint=lambda v, l, mi, t=tendril: two(v, t)))
 
     def star(a):
@@ -100,5 +101,6 @@ def dusk(look):
         put(a, m & (dx + dy < 0.5), glow[5])
     for x, y, z, s in ((-9.2, 31.0, 6.6, 2.6), (8.4, 24.5, 6.2, 2.0), (-7.0, 18.5, 5.6, 1.6), (7.8, 13.0, 5.4, 2.2), (-3.4, 6.0, 5.6, 1.8),
                        (3.8, 4.0, 5.4, 1.5), (0.6, 36.8, 6.6, 2.0), (9.6, 34.0, 6.8, 1.5), (-5.4, 27.0, 6.4, 1.4)):
-        parts.append(Part(B, [x - s / 2, y, z], [s, s, 0.3], paint=lambda v, l, mi: two(v, star)))
+        parts.append(Part(B, [x - s / 2, y, z], [s, s, 0.3], group=f"star_{len(parts)}", gpivot=[x, y + s / 2, z],
+                          paint=lambda v, l, mi: two(v, star)))
     return parts

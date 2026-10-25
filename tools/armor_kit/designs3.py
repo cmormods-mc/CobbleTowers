@@ -62,7 +62,7 @@ def tide_accents(look):
             col = np.where(m[:, x])[0]
             if len(col):
                 a[(col[0] + col[-1]) // 2, x] = (*glow[4], 255)
-    f = Part(HEAD, [5.05, 25.5, -1.5], [0.3, 7.0, 7.5], rot=(0, 0, 10), pivot=[5.2, 25.5, 0.0],
+    f = Part(HEAD, [5.05, 25.5, -1.5], [0.3, 7.0, 7.5], rot=(0, 0, 10), pivot=[5.2, 25.5, 0.0], group="fin", gpivot=[5.2, 25.5, 0.0],
              paint=lambda v, l, m: side_one(v, fin, m))
     return [f, f.mirrored()]
 
@@ -74,11 +74,15 @@ def root_accents(look):
     parts = []
     for rz, w, hh, rp in ((-38, 3.2, 6.0, leafA), (0, 3.8, 7.6, leafB), (38, 3.2, 6.0, leafA)):
         parts.append(Part(HEAD, [-w / 2, 33.0, -1.0], [w, hh, 0.3], rot=(0, 0, rz), pivot=[0, 33.0, -0.85],
+                          group=f"crest_{len(parts)}", gpivot=[0, 33.0, -0.85],
                           paint=lambda v, l, m, rp=rp: two(v, leaf_down(rp, glow))))
     for rz, w, hh, rp, z in ((58, 3.0, 6.4, leafB, -0.8), (28, 3.4, 7.2, leafA, 0.4)):
+        k = len(parts) // 2
         p = Part("armorRightArm", [-6.5 - w / 2, 23.6, z], [w, hh, 0.3], rot=(0, 0, -rz), pivot=[-6.5, 23.6, z + 0.15],
+                 group=f"shoulder_{k}", gpivot=[-6.5, 23.6, z + 0.15],
                  paint=lambda v, l, m, rp=rp: two(v, leaf_down(rp, glow)))
         parts += [p, Part("armorLeftArm", [6.5 - w / 2, 23.6, z], [w, hh, 0.3], rot=(0, 0, rz), pivot=[6.5, 23.6, z + 0.15],
+                          group=f"shoulder_{k}_m", gpivot=[6.5, 23.6, z + 0.15],
                           paint=lambda v, l, m, rp=rp: two(v, leaf_down(rp, glow)))]
     return parts
 
@@ -111,7 +115,8 @@ def dusk_accents(look):
                 if BAYER[y % 4, x % 4] < (y / h - 0.45) * 1.9:
                     a[y, x] = 0
     for z in (-0.6, 1.0):
-        w = Part("armorRightArm", [-7.6, 12.0, z], [2.6, 11.0, 0.3], rot=(0, 0, -14), pivot=[-6.3, 23.0, z + 0.15], paint=lambda v, l, m: two(v, wisp))
+        w = Part("armorRightArm", [-7.6, 12.0, z], [2.6, 11.0, 0.3], rot=(0, 0, -14), pivot=[-6.3, 23.0, z + 0.15],
+                 group=f"wisp_{len(parts) // 2}", gpivot=[-6.3, 23.0, z + 0.15], paint=lambda v, l, m: two(v, wisp))
         parts += [w, w.mirrored()]
         parts[-1].bone = "armorLeftArm"
     return parts

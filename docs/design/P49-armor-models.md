@@ -211,3 +211,24 @@ It draws Bedrock `.geo.json` armor through the vanilla pipeline, so limbs swing.
   silhouette and shifts as the camera moves.
 * **Not built / not verified:** the particles (Tideforge bubbles, Rootvale falling leaves, Duskvale stars) are static stand-in planes
   or absent; whether Armor Model API honours the glow masks and texture transparency in a real client is unchecked.
+
+## 13. Flares and idle animations for the back attachments (2026-10-25)
+
+Armor Model API draws geo armor **static**: its docs list no bone, texture or animation support, only vanilla pose-following. So the
+life of a back attachment comes from two things:
+
+* **In the game: server-side particle flares** (`armor/flare`). `ArmorFlareService` runs a pass every 2 ticks for wearers of the
+  Tideforge, Rootvale or Duskvale *chestplate* (the piece that carries the back attachment). `FlarePlan` (pure, unit-tested) says what
+  each set emits and when: Tideforge vents bubbles under water and puffs on land, with gauge sparks; Rootvale shakes azalea-leaf
+  fragments loose and sparkles at the shield boss; Duskvale drifts `end_rod` stars off the moon, lilac-to-pink dust from the tendril
+  tips and the odd soul wisp. Sprinting adds a trail. Vanilla particles only (no pack, no client mod). The four traps: a pass every
+  2 ticks, a cap of `max_wearers` per pass with a rotating start, no per-player state (the phase comes from the UUID), server
+  thread only. Config: `"flares": {"enabled": true, "max_wearers": 24}` in `config/cobbletowers-armor.json`.
+  Plain `bubble` particles remove themselves outside water, hence the cloud puffs on land.
+* **In Blockbench: idle animations** (`assets/cobbletowers/animations/<set>.animation.json`, one 4 s loop each). The parts that move
+  are sub-bones nested under the conventional bones (allowed by the API; they render static there): tanks rock, valve wheels turn, the
+  gauge pulses, bubbles rise and shrink; the shield's leaf rows flutter in a cascade and the boss pulses; the moon bobs, tendrils sway
+  and stars twinkle. They are the intended motion for any client or display-entity rig that wants to play them, not something the game
+  plays today. `tools/armor_kit/rig.py` generates them from the group names set in `designs*.py`.
+* **Not done:** the falling-leaf particle uses a vanilla leaf-fragment texture, not the shield's own art (a `minecraft:item` particle
+  of a custom model could match it; unverified on 1.21.1); display-entity floaters that would really animate in the game.

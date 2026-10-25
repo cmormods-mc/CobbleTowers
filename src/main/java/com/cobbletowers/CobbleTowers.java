@@ -129,6 +129,7 @@ public final class CobbleTowers implements ModInitializer {
         com.cobbletowers.economy.TowerKeys.install();
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new com.cobbletowers.armor.ArmorSetRegistry());
         com.cobbletowers.armor.WornSets.install();
+        com.cobbletowers.armor.flare.ArmorFlareService.install();
         com.cobbletowers.armor.ArmorBonusEffects.install();
         com.cobbletowers.armor.ArmorSetSync.install();
         // Subscribed once, for the life of the JVM: Cobblemon's battle events are global, and the

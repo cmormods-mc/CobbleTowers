@@ -89,14 +89,16 @@ def tide(look):
             v[4, x] = (*steel[5], 255); v[4, x + 1] = (*steel[3], 255); v[5, x] = (*steel[2], 255)
     for sgn in (-1, 1):
         cx = 2.9 * sgn
-        parts.append(Part(B, [cx - 2.0, 11.8, 4.0], [4, 11, 4], paint=lambda v, l, m: sides(v, tank, enamel)))
-        parts.append(Part(B, [cx - 1.5, 22.8, 4.5], [3, 1, 3],
+        side_name = "l" if sgn < 0 else "r"
+        parts.append(Part(B, [cx - 2.0, 11.8, 4.0], [4, 11, 4], group=f"tank_{side_name}", gpivot=[cx, 17.3, 6.0],
+                          paint=lambda v, l, m: sides(v, tank, enamel)))
+        parts.append(Part(B, [cx - 1.5, 22.8, 4.5], [3, 1, 3], group=f"tank_{side_name}", gpivot=[cx, 17.3, 6.0],
                           paint=lambda v, l, m: sides(v, lambda a, n: cyl(a, steel, *LIT[n]), steel)))
-        parts.append(Part(B, [cx - 1.0, 23.8, 5.0], [2, 1, 2],
+        parts.append(Part(B, [cx - 1.0, 23.8, 5.0], [2, 1, 2], group=f"tank_{side_name}", gpivot=[cx, 17.3, 6.0],
                           paint=lambda v, l, m: sides(v, lambda a, n: cyl(a, dark, *LIT[n]), dark)))
-        parts.append(Part(B, [cx - 1.5, 24.8, 5.2], [3, 1, 1],
+        parts.append(Part(B, [cx - 1.5, 24.8, 5.2], [3, 1, 1], group=f"wheel_{side_name}", gpivot=[cx, 25.3, 5.7],
                           paint=lambda v, l, m: sides(v, lambda a, n: cyl(a, cyan, *LIT[n]), cyan)))
-        parts.append(Part(B, [cx - 2.5, 9.9, 3.5], [5, 2, 5],
+        parts.append(Part(B, [cx - 2.5, 9.9, 3.5], [5, 2, 5], group=f"tank_{side_name}", gpivot=[cx, 17.3, 6.0],
                           paint=lambda v, l, m: sides(v, lambda a, n: cyl(a, dark, *LIT[n]), dark)))
     parts.append(Part(B, [-4.5, 18.4, 8.0], [9, 1, 1],
                       paint=lambda v, l, m: sides(v, lambda a, n: cyl(a, steel, *LIT[n]), steel)))
@@ -119,7 +121,7 @@ def tide(look):
         for k in range(1, 4):                                       # the needle
             a[int(c) - k, int(c) + k // 2] = (*cyan[1], 255)
         a[int(c), int(c)] = (*dark[0], 255)
-    parts.append(Part(B, [-1.5, 17.6, 9.0], [3, 3, 1], paint=gauge))
+    parts.append(Part(B, [-1.5, 17.6, 9.0], [3, 3, 1], group="gauge", gpivot=[0, 19.1, 9.5], paint=gauge))
 
     def bubble(a):
         h, w = a.shape[:2]
@@ -136,7 +138,8 @@ def tide(look):
             a[hx, hx] = (*band[5], 255); a[hx, hx + 1] = (*band[5], 255); a[hx + 1, hx] = (*band[5], 255)
     for x, y, z, s in ((-3.2, 28.2, 6.4, 2), (-2.2, 31.4, 6.9, 2), (-3.8, 34.2, 6.3, 1), (3.0, 28.8, 6.4, 2),
                        (3.9, 32.0, 6.9, 2), (2.6, 35.2, 6.3, 1)):
-        parts.append(Part(B, [x - s / 2, y, z], [s, s, 0], paint=lambda v, l, m: two(v, bubble)))
+        parts.append(Part(B, [x - s / 2, y, z], [s, s, 0], group=f"bubble_{len(parts)}", gpivot=[x, y + s / 2, z],
+                          paint=lambda v, l, m: two(v, bubble)))
     return parts
 
 
@@ -223,10 +226,16 @@ def root(look):
     for ri, (yt, xs, w) in enumerate(rows):
         z = 4.8 + 0.2 * (5 - ri)
         for x in xs:
-            parts.append(Part(B, [x - w / 2, yt - 5.0, z], [w, 5, 0], rot=(14, 0, 0), pivot=[x, yt, z],
+            parts.append(Part(B, [x - w / 2, yt - 5.0, z], [w, 5, 0], rot=(14, 0, 0), pivot=[x, yt, z], group=f"row_{ri}", gpivot=[0, yt, z],
                               paint=lambda v, l, m, rp=rps[ri]: two(v, lambda a: leaf_art(a, rp, glow, True))))
 
     # the frame: a smooth kite ring of bark with a cross, hollow so the leaves show through
+    # side leaves: one tidy leaf per row on each flank, hanging tip-down at the kite's edge, so the profile is solid from the side
+    flank = [(22.4, 5.6, 0), (20.4, 4.7, 1), (18.4, 3.8, 2), (16.4, 2.9, 3), (14.4, 2.0, 4), (12.4, 1.5, 5)]
+    for yt, ex, ri in flank:
+        sl = Part(B, [ex, yt - 5.0, 3.6], [0, 5, 4], group=f"row_{ri}_side", gpivot=[0, yt, 5.0], paint=lambda v, l, m, rp=rps[ri]: side_one(v, lambda a: leaf_art(a, rp, glow, True), m))
+        parts += [sl, sl.mirrored()]
+
     def frame(a):
         h, w = a.shape[:2]
         m = kite(w, h)
@@ -273,5 +282,5 @@ def root(look):
             pm = poly_mask(w, h, [(c, c), s1, tip, s2]) & (d <= w / 2 - 2.2)
             put(a, pm, rps[k % 3][3 if k % 2 else 4])
         shade(a, d <= 2.7, glow, "v", lo=2.4, hi=5.2)
-    parts.append(Part(B, [-2.5, 15.0, 7.3], [5, 5, 0], paint=lambda v, l, m: two(v, boss)))
+    parts.append(Part(B, [-2.5, 15.0, 7.3], [5, 5, 0], group="boss", gpivot=[0, 17.5, 7.3], paint=lambda v, l, m: two(v, boss)))
     return parts
