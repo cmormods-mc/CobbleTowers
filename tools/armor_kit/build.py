@@ -35,8 +35,9 @@ for _s in ("paragon", "tideforge", "rootvale", "duskvale"):
     designs3.ACCENTS[_s] = lambda look: []              # the crest fin and plates carry the silhouette; no laurel or shoulder feathers
 
 
-# the rarest (tier III) sets wear the same models and art as their regional set; files are written under the alias
-ALIASES = {"leviathan": "tideforge", "heartwood": "rootvale", "nightfall": "duskvale"}
+# every tier of a line wears its line's model and art for now (stats and set bonus differ); files are written under the alias
+ALIASES = {"tidewalker": "tideforge", "leviathan": "tideforge", "sprout": "rootvale", "heartwood": "rootvale", "duskwanderer": "duskvale", "nightfall": "duskvale",
+           "recruit": "paragon", "challenger": "paragon"}
 
 
 # sets that need a taller ornament sheet (in units; the default is 256) - the geo declares it, so nothing else changes
@@ -47,8 +48,8 @@ DROP_VANILLA = {}          # bones whose plain vanilla box is replaced by the se
 def build(out: Path, name: str) -> None:
     import sculpt, generate_armor_geo as gg_
     old = gg_.TEX_H
-    sculpt.TEX_H = gg_.TEX_H = SHEET_HEIGHT.get(name, 256)
-    sculpt.DROP_VANILLA = DROP_VANILLA.get(name, set())
+    sculpt.TEX_H = gg_.TEX_H = SHEET_HEIGHT.get(ALIASES.get(name, name), 256)
+    sculpt.DROP_VANILLA = DROP_VANILLA.get(ALIASES.get(name, name), set())
     try:
         _build(out, name)
     finally:
