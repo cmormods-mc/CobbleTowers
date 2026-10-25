@@ -315,8 +315,8 @@ def root(look):
     s_ang = math.degrees(math.atan2(3.0, TOP - 0.7 - SHOULDER))
     parts += [beam(7.5, 22.3, 6, 1, -s_ang), beam(-7.5, 22.3, 6, 1, s_ang, 0.1)]
 
-    # leaves that grow out of the seed: each starts under the seed disc, lifts off the face, and is long enough to break past the rim
-    # (its length is measured from the real outline, so it pokes out the same amount in every direction) and pass in front of it.
+    # leaves that grow out of the seed: each starts under the seed disc and stands up off the flat front face as 3D relief. They stay
+    # inside the outline (never past the sides) and their tips stand well in front of the rim; the length is measured from the real outline.
     def outline_dist(theta):
         sn, cs = math.sin(math.radians(theta)), math.cos(math.radians(theta))
         t = 0.0
@@ -331,12 +331,12 @@ def root(look):
         bxp, byp = BASE_R * sn, CY + BASE_R * cs
         zb = ZF - abs(bxp) * math.sin(math.radians(ANG)) + 0.55
         length = min(cap, max(3, round((outline_dist(theta) + reach - BASE_R) / math.cos(math.radians(lift)))))
-        width = 3 if length < 9 else 4
+        width = 3 if length < 6 else 4
         return Part(B, [bxp - width / 2, byp, zb], [width, length, 0], rot=(-lift, 0, theta), pivot=[bxp, byp, zb], group=f"sprout_{k}",
                     gpivot=[bxp, byp, zb], paint=lambda v, l, m: two(v, lambda a: leaf_art(a, rp, glow, False)))
     k = 0
-    for theta in (0, 50, -50, 100, -100, 150, -150):                                                # each breaks the outline by ~2.2
-        parts.append(sprout(theta, 2.2, 28.0, k, ring_rps[k % 2][0], cap=11))
+    for theta in (0, 50, -50, 100, -100, 150, -150):                                                # each ends 0.6 inside the outline
+        parts.append(sprout(theta, -0.6, 48.0, k, ring_rps[k % 2][0], cap=11))
         k += 1
 
     # the seed: a bark disc with a lime ring over the leaf bases, and a faceted gem
