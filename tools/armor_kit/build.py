@@ -24,13 +24,13 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
 import art_dusk, art_paragon, art_root, art_tide  # noqa: E402
-import designs3, designs4, designs7, designs8, rig  # noqa: E402
+import designs3, designs4, designs7, rig  # noqa: E402
 import generate_armor_textures as gt  # noqa: E402
 from sculpt import write  # noqa: E402
 
 TIDEFORGE_PALETTE = dict(metal=(190, 208, 222), trim=(60, 140, 200), cloth=(30, 84, 140), glow=(170, 240, 255), helm="visor", top="ridge")
-SETS = {"tideforge": (TIDEFORGE_PALETTE, art_tide, designs7.region_touches), "rootvale": ({}, art_root, lambda look: designs8.root_shield(look) + designs7.region_touches(look)),
-        "duskvale": ({}, art_dusk, lambda look: designs8.dusk_wings(look) + designs7.region_touches(look)), "paragon": ({}, art_paragon, lambda look: designs4.paragon(look) + designs7.paragon_touches(look))}
+SETS = {"tideforge": (TIDEFORGE_PALETTE, art_tide, designs7.region_touches), "rootvale": ({}, art_root, designs7.region_touches),
+        "duskvale": ({}, art_dusk, designs7.region_touches), "paragon": ({}, art_paragon, lambda look: designs4.paragon(look) + designs7.paragon_touches(look))}
 for _s in ("paragon", "tideforge", "rootvale", "duskvale"):
     designs3.ACCENTS[_s] = lambda look: []              # the crest fin and plates carry the silhouette; no laurel or shoulder feathers
 
@@ -41,7 +41,7 @@ ALIASES = {"tidewalker": "tideforge", "leviathan": "tideforge", "sprout": "rootv
 
 
 # sets that need a taller ornament sheet (in units; the default is 256) - the geo declares it, so nothing else changes
-SHEET_HEIGHT = {"paragon": 384, "duskvale": 512, "rootvale": 512}
+SHEET_HEIGHT = {"paragon": 384}
 DROP_VANILLA = {}          # bones whose plain vanilla box is replaced by the set's own sculpted geometry
 
 
