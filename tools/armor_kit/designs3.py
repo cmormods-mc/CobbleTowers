@@ -72,9 +72,9 @@ def tide_accents(look):
 def root_accents(look):
     leafA, leafB, glow = look.cloth, ramp((126, 176, 72)), look.glow
     parts = []
-    for rz, w, hh, rp in ((-38, 3.2, 6.0, leafA), (0, 3.8, 7.6, leafB), (38, 3.2, 6.0, leafA)):
-        parts.append(Part(HEAD, [-w / 2, 33.0, -1.0], [w, hh, 0.3], rot=(0, 0, rz), pivot=[0, 33.0, -0.85],
-                          group=f"crest_{len(parts)}", gpivot=[0, 33.0, -0.85],
+    for rz, w, hh, rp, z in ((-38, 3.2, 6.0, leafA, -1.6), (38, 3.2, 6.0, leafA, -1.2), (0, 3.8, 7.6, leafB, -0.8)):   # each at its own depth: coplanar leaves fight
+        parts.append(Part(HEAD, [-w / 2, 33.0, z], [w, hh, 0.3], rot=(0, 0, rz), pivot=[0, 33.0, z + 0.15],
+                          group=f"crest_{len(parts)}", gpivot=[0, 33.0, z + 0.15],
                           paint=lambda v, l, m, rp=rp: two(v, leaf_down(rp, glow))))
     for rz, w, hh, rp, z in ((58, 3.0, 6.4, leafB, -0.8), (28, 3.4, 7.2, leafA, 0.4)):
         k = len(parts) // 2

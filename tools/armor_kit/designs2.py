@@ -88,19 +88,35 @@ def tide(look):
         rivets_row = (2, w - 4) if w > 8 else (1,)
         for x in rivets_row:                                                      # shoulder rivets
             v[4, x] = (*steel[5], 255); v[4, x + 1] = (*steel[3], 255); v[5, x] = (*steel[2], 255)
+    def cap(v, n):
+        """The hem look for a tank's collar and foot: a white frosted band with a checker edge over a navy band of cyan lights."""
+        h, w = v.shape[:2]
+        shade(v, full(v), band, "v", lo=1.6, hi=4.4)
+        for yy in range(0, min(2, h)):
+            for xx in range(w):
+                if (xx + yy) % 2:
+                    v[yy, xx] = (*steel[4], 255)
+        if h >= 4:
+            lo = max(2, h - max(3, h // 2))
+            shade(v[lo:], full(v[lo:]), navy, "v", lo=1.2, hi=3.4)
+            v[lo - 1, :] = (*navy[0], 255)
+            if h >= 6:
+                for xx in range(1, w, 4):
+                    v[min(h - 2, lo + 1), xx] = (*cyan[5], 255)
+
     for sgn in (-1, 1):
         cx = 2.9 * sgn
         side_name = "l" if sgn < 0 else "r"
         parts.append(Part(B, [cx - 2.0, 11.8, 4.0], [4, 11, 4], group=f"tank_{side_name}", gpivot=[cx, 17.3, 6.0],
                           paint=lambda v, l, m: sides(v, tank, enamel)))
         parts.append(Part(B, [cx - 1.5, 22.8, 4.5], [3, 1, 3], group=f"tank_{side_name}", gpivot=[cx, 17.3, 6.0],
-                          paint=lambda v, l, m: sides(v, lambda a, n: cyl(a, steel, *LIT[n]), steel)))
+                          paint=lambda v, l, m: sides(v, cap, band)))
         parts.append(Part(B, [cx - 1.0, 23.8, 5.0], [2, 1, 2], group=f"tank_{side_name}", gpivot=[cx, 17.3, 6.0],
                           paint=lambda v, l, m: sides(v, lambda a, n: cyl(a, dark, *LIT[n]), dark)))
         parts.append(Part(B, [cx - 1.5, 24.8, 5.2], [3, 1, 1], group=f"wheel_{side_name}", gpivot=[cx, 25.3, 5.7],
                           paint=lambda v, l, m: sides(v, lambda a, n: cyl(a, cyan, *LIT[n]), cyan)))
         parts.append(Part(B, [cx - 2.5, 9.9, 3.5], [5, 2, 5], group=f"tank_{side_name}", gpivot=[cx, 17.3, 6.0],
-                          paint=lambda v, l, m: sides(v, lambda a, n: cyl(a, dark, *LIT[n]), dark)))
+                          paint=lambda v, l, m: sides(v, cap, band)))
     parts.append(Part(B, [-4.5, 18.4, 8.0], [9, 1, 1],
                       paint=lambda v, l, m: sides(v, lambda a, n: cyl(a, steel, *LIT[n]), steel)))
 
@@ -141,10 +157,6 @@ def tide(look):
                        (3.9, 32.0, 6.9, 2), (2.6, 35.2, 6.3, 1)):
         parts.append(Part(B, [x - s / 2, y, z], [s, s, 0], group=f"bubble_{len(parts)}", gpivot=[x, y + s / 2, z],
                           paint=lambda v, l, m: two(v, bubble)))
-    # a mane of leaves rising behind the neck from the top edge
-    for k, (mx, ang, mh, ci) in enumerate(((-6, 30, 7, 2), (-3, 14, 8, 1), (0, 0, 9, 0), (3, -14, 8, 1), (6, -30, 7, 2))):
-        parts.append(Part(B, [mx - 2.5, TOP - 1.0, 5.6], [5, mh, 0], rot=(0, 0, ang), pivot=[mx, TOP - 1.0, 5.6], group=f"mane_{k}",
-                          gpivot=[mx, TOP - 1.0, 5.6], paint=lambda v, l, m, rp=rps[ci]: two(v, lambda a: leaf_art(a, rp, glow, False))))
     return parts
 
 
@@ -314,18 +326,24 @@ def root(look):
             t += 0.05
         return 22.0
     BASE_R = 2.7
-    def sprout(theta, reach, lift, k, rp, cap=99):
+    def sprout(theta, reach, lift, k, rp, cap=99, dz=0.0):
         sn, cs = math.sin(math.radians(theta)), math.cos(math.radians(theta))
         bxp, byp = BASE_R * sn, CY + BASE_R * cs
-        zb = ZF + 0.5
+        zb = ZF + 0.5 + dz
         length = min(cap, max(3, round((outline_dist(theta) + reach - BASE_R) / math.cos(math.radians(lift)))))
         width = 3 if length < 6 else 4
         return Part(B, [bxp - width / 2, byp, zb], [width, length, 0], rot=(-lift, 0, theta), pivot=[bxp, byp, zb], group=f"sprout_{k}",
                     gpivot=[bxp, byp, zb], paint=lambda v, l, m: two(v, lambda a: leaf_art(a, rp, glow, False)))
+    # overgrowth: layers of ~20 leaves, the outer layer lies low and long, each layer above it is shorter, a touch steeper and brighter; all lie close to the face, and
+    # staggered half a step so every leaf overlaps two below it. Each layer sits a touch further forward so planes never share a depth.
+    LAYERS = [(22, 7.0, -0.4, 14, 0.0, 3), (20, 10.0, -1.2, 12, 0.2, 2), (18, 13.0, -2.2, 10, 0.4, 1), (14, 16.0, -3.2, 8, 0.6, 0)]
     k = 0
-    for theta in (0, 50, -50, 100, -100, 150, -150):                                                # each ends 0.6 inside the outline
-        parts.append(sprout(theta, -0.6, 48.0, k, ring_rps[k % 2][0], cap=11))
-        k += 1
+    for li, (n, lift, reach, cap, dz, ci) in enumerate(LAYERS):
+        for i in range(n):
+            theta = 360.0 * (i + 0.5 * (li % 2)) / n - 180.0
+            wob = (3, 0, 2, -1, 1)[(i + li) % 5]                                                  # uneven lengths read as organic
+            parts.append(sprout(theta, reach - 0.4 * wob, lift + 1.0 * wob, k, ring_rps[ci][(i + li) % 2], cap=cap, dz=dz))
+            k += 1
 
     # the seed: a bark disc with a lime ring over the leaf bases, and a faceted gem
     def disc(a):
@@ -337,7 +355,7 @@ def root(look):
         shade(a, d <= w / 2, bark, "v", lo=1.8, hi=5.0)
         put(a, (d <= w / 2 - 1.5) & (d > w / 2 - 3.0), glow[3])
         put(a, d <= w / 2 - 3.2, rps[6][3])
-    parts.append(Part(B, [-3, CY - 3, ZF + 0.3], [6, 6, 0], paint=lambda v, l, m: two(v, disc)))
+    parts.append(Part(B, [-3, CY - 3, ZF + 1.0], [6, 6, 0], paint=lambda v, l, m: two(v, disc)))
 
     def gem(v, l, m):
         for k in ("front", "left", "right", "top", "bottom"):
@@ -351,5 +369,5 @@ def root(look):
         put(a, poly_mask(w, h, [(0, 0), (c, c), (0, h - 1)]), glow[4])
         put(a, poly_mask(w, h, [(w - 1, 0), (c, c), (w - 1, h - 1)]), glow[3])
         put(a, poly_mask(w, h, [(0, h - 1), (c, c), (w - 1, h - 1)]), glow[2])
-    parts.append(Part(B, [-1.5, CY - 1.5, ZF + 0.35], [3, 3, 1], group="gem", gpivot=[0, CY, ZF + 0.85], paint=gem))
+    parts.append(Part(B, [-1.5, CY - 1.5, ZF + 1.05], [3, 3, 1], group="gem", gpivot=[0, CY, ZF + 1.55], paint=gem))
     return parts

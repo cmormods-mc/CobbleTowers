@@ -76,13 +76,13 @@ def motion(name):
     if re.match(r"mane_\d+$", base):
         return {"rotation": _samples(_wave(3.0, 0.15 * n, 2))}
     if re.match(r"sprout_\d+$", base):
-        return {"rotation": _samples(_wave(4.0, 0.11 * n, 0))}
+        return {"rotation": _samples(lambda t, a=_wave(5.0, 0.04 * n, 0), b=_wave(2.0, 0.09 * n, 2): [x + y for x, y in zip(a(t), b(t))])}
     if base == "gem":
         return {"scale": _samples(_pulse(1.0, 1.18, 0.1))}
     if base == "boss":
         return {"scale": _samples(_pulse(1.0, 1.14, 0.25))}
     if re.match(r"crest_\d+$", base):
-        return {"rotation": _samples(_wave(3.5 * mirror, 0.12 * n, 2))}
+        return {"rotation": _samples(_wave(2.5, 0.0, 2))}                       # all in step, so the leaves never cross each other
     if re.match(r"shoulder_\d+$", base):
         return {"rotation": _samples(_wave(5 * mirror, 0.2 * n, 2))}
     if base == "moon":

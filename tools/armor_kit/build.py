@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rebuilds the worn layers, geo models and ornament textures for Tideforge, Rootvale and Duskvale.
 
-    python tools/armor_kit/build.py [--out <assets/cobbletowers dir>] [--only tideforge,rootvale,duskvale]
+    python tools/armor_kit/build.py [--out <assets/cobbletowers dir>] [--only tideforge,rootvale,duskvale,leviathan,heartwood,nightfall]
 
 Writes (default: src/main/resources/assets/cobbletowers):
   textures/models/armor/<set>_layer_1|2.png   the shader-layer art (256x64-style sheet + glow mask), painted by art_<set>.py
@@ -33,10 +33,15 @@ SETS = {"tideforge": (TIDEFORGE_PALETTE, art_tide, designs2.tide), "rootvale": (
         "duskvale": ({}, art_dusk, designs.dusk)}
 
 
+# the rarest (tier III) sets wear the same models and art as their regional set; files are written under the alias
+ALIASES = {"leviathan": "tideforge", "heartwood": "rootvale", "nightfall": "duskvale"}
+
+
 def build(out: Path, name: str) -> None:
-    palette, art, attachment = SETS[name]
-    gt.SPECS[name].update(palette)
-    look = gt.Look(name, gt.SPECS[name])
+    base = ALIASES.get(name, name)
+    palette, art, attachment = SETS[base]
+    gt.SPECS[base].update(palette)
+    look = gt.Look(base, gt.SPECS[base])
     layers = out / "textures/models/armor"
     layers.mkdir(parents=True, exist_ok=True)
     l1 = np.zeros((128, 256, 4), np.uint8)
@@ -44,7 +49,7 @@ def build(out: Path, name: str) -> None:
     art.paint(l1, l2, look)
     gt.with_emission(Image.fromarray(l1, "RGBA"), look).save(layers / f"{name}_layer_1.png")
     gt.with_emission(Image.fromarray(l2, "RGBA"), look).save(layers / f"{name}_layer_2.png")
-    parts = attachment(look) + designs3.ACCENTS[name](look)
+    parts = attachment(look) + designs3.ACCENTS[base](look)
     write(parts, name, layers, out)
     moving = rig.write(out / f"geo/{name}.geo.json", out / f"animations/{name}.animation.json", name)
     print(f"wrote {name}: {len(parts)} ornament planes/boxes, {moving} animated bones")
@@ -53,7 +58,7 @@ def build(out: Path, name: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--out", type=Path, default=HERE.parent.parent / "src/main/resources/assets/cobbletowers")
-    parser.add_argument("--only", default=",".join(SETS))
+    parser.add_argument("--only", default=",".join(list(SETS) + list(ALIASES)))
     args = parser.parse_args()
     for name in args.only.split(","):
         build(args.out, name)

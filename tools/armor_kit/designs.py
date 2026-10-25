@@ -68,7 +68,7 @@ def dusk(look):
         for n in ("top", "bottom"):
             shade(v[n], np.ones(v[n].shape[:2], bool), deep, "none", edge=False)
     parts.append(Part(B, [-3.6, 21.0, 2.9], [7.2, 2.6, 2.2], paint=yoke))
-    parts.append(Part(B, [-0.7, 22.4, 4.9], [1.4, 4.8, 0.8], paint=yoke))     # a bracket to the moon
+    parts.append(Part(B, [-0.7, 22.4, 4.2], [1.4, 3.0, 0.8], paint=yoke))     # a bracket tucked behind the moon plane (5.4), so it never shows through
 
     # tendrils: pivot at the waist, fanned in 22.5 degree steps; the long ones in the middle
     spec = [(-52, 4.2, 15, 0.6, -4.2), (-28, 4.8, 20, 1.9, -2.1), (0, 5.4, 22, 3.1, 0), (28, 4.8, 20, 4.4, 2.1), (52, 4.2, 15, 5.2, 4.2)]

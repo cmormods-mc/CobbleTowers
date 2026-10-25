@@ -27,6 +27,12 @@ public final class FlarePlan {
     public static String setOf(String namespace, String path) {
         if (!"cobbletowers".equals(namespace) || !path.endsWith("_chestplate")) return null;
         String set = path.substring(0, path.length() - "_chestplate".length());
+        set = switch (set) {                                     // the rarest tier wears the same attachment as its region
+            case "leviathan" -> "tideforge";
+            case "heartwood" -> "rootvale";
+            case "nightfall" -> "duskvale";
+            default -> set;
+        };
         return SETS.contains(set) ? set : null;
     }
 
@@ -43,7 +49,7 @@ public final class FlarePlan {
         List<Emit> out = new ArrayList<>(4);
         switch (set) {
             case "tideforge" -> tideforge(out, pass, phase, underwater, sprinting);
-            case "rootvale" -> rootvale(out, pass, phase, sprinting);
+            case "rootvale" -> rootvale(out, pass, phase, underwater, sprinting);
             case "duskvale" -> duskvale(out, pass, phase, sprinting);
             default -> {
             }
@@ -69,18 +75,23 @@ public final class FlarePlan {
     }
 
     // Rootvale: leaves shake loose from the shield and fall, the boss seed sparkles.
-    private static void rootvale(List<Emit> out, long pass, int phase, boolean sprinting) {
-        if (every(pass, phase, 4)) {
-            double[] xs = {-0.55, 0.42, -0.22, 0.55, 0.0, -0.46};      // across the tower shield, which spans shoulder to ankle
-            double[] ys = {1.45, 1.25, 1.00, 0.75, 0.45, 1.10};
-            int slot = (int) Math.floorMod(pass / 4 + phase, 6);
-            out.add(new Emit("block:azalea_leaves", xs[slot], ys[slot], 0.45, 0, 0, 0.02, 0, 1));
+    private static void rootvale(List<Emit> out, long pass, int phase, boolean underwater, boolean sprinting) {
+        String leaf = underwater ? "bubble" : "block:azalea_leaves";      // leaves would sink like stones, so water gets bubbles
+        if (every(pass, phase, 2)) {
+            double[] xs = {-0.55, 0.42, -0.22, 0.55, 0.0, -0.46, 0.20, -0.62};   // across the tower shield, which spans shoulder to ankle
+            double[] ys = {1.45, 1.25, 1.00, 0.75, 0.45, 1.10, 0.62, 0.85};
+            int slot = (int) Math.floorMod(pass / 2 + phase, 8);
+            double drift = (slot % 2 == 0 ? 1 : -1) * 0.012;                      // leaves slip sideways as they fall
+            out.add(new Emit(leaf, xs[slot], ys[slot], 0.45, drift, underwater ? 0.03 : -0.004, 0.02, 0, 1));
+        }
+        if (every(pass, phase, 7)) {
+            out.add(new Emit(leaf, 0.0, 1.20, 0.50, 0.0, 0.025, 0.05, 0, 1));   // one is shaken up and off the top
         }
         if (every(pass, phase, 9)) {
             out.add(new Emit("happy_villager", 0, 1.06, 0.52, 0, 0, 0, 1, 0.16));
         }
         if (sprinting && every(pass, phase, 2)) {
-            out.add(new Emit("block:azalea_leaves", 0.0, 1.1, 0.5, 0, 0, 0.12, 0, 1));
+            out.add(new Emit(leaf, 0.0, 1.1, 0.5, 0, 0, 0.12, 0, 1));
         }
     }
 

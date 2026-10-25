@@ -84,18 +84,37 @@ public final class ArmorFlareService {
         double yaw = Math.toRadians(player.yBodyRot);
         double rx = -Math.cos(yaw), rz = -Math.sin(yaw);            // the wearer's right
         double bx = Math.sin(yaw), bz = -Math.cos(yaw);             // behind them
-        double lift = player.isCrouching() ? 0.85 : player.isSwimming() ? 0.35 : 1.0;
+        boolean prone = player.isSwimming() || player.isVisuallyCrawling();
+        double lean = player.isCrouching() ? 0.4 : 0.0;                 // radians the torso tips forward, about the hip
+        double cos = Math.cos(lean), sin = Math.sin(lean);
+        var motion = player.getDeltaMovement();
         for (FlarePlan.Emit e : emits) {
             ParticleOptions options = options(e.particle());
             if (options == null) continue;
-            double x = player.getX() + rx * e.right() + bx * e.back();
-            double y = player.getY() + e.up() * lift;
-            double z = player.getZ() + rz * e.right() + bz * e.back();
+            double up = e.up(), back = e.back();
+            if (lean != 0.0) {
+                double d = up - 0.75;
+                up = 0.75 + d * cos + back * sin;
+                back = back * cos - d * sin;
+            }
+            double x, y, z;
+            if (prone) {
+                // lying flat: the head leads, so height along the body runs forward and the back faces up
+                x = player.getX() + rx * e.right() - bx * up;
+                z = player.getZ() + rz * e.right() - bz * up;
+                y = player.getY() + 0.2 + back * 0.9;
+            } else {
+                x = player.getX() + rx * e.right() + bx * back;
+                y = player.getY() + up;
+                z = player.getZ() + rz * e.right() + bz * back;
+            }
             if (e.count() == 0) {
-                // count 0 makes the client treat the three offsets as a velocity, so the particle drifts the way the plan says
-                double vx = rx * e.velRight() + bx * e.velBack();
-                double vz = rz * e.velRight() + bz * e.velBack();
-                level.sendParticles(options, x, y, z, 0, vx, e.velUp(), vz, 1.0);
+                // count 0 makes the client treat the three offsets as a velocity, so the particle drifts the way the plan says;
+                // it also carries the wearer's own motion so a jump or a dash does not leave leaves hanging in the air
+                double vx = rx * e.velRight() + bx * e.velBack() + motion.x * 0.8;
+                double vz = rz * e.velRight() + bz * e.velBack() + motion.z * 0.8;
+                double vy = prone ? e.velUp() * 0.3 : e.velUp() + motion.y * 0.5;
+                level.sendParticles(options, x, y, z, 0, vx, vy, vz, 1.0);
             } else {
                 level.sendParticles(options, x, y, z, e.count(), e.spread(), e.spread(), e.spread(), 0.01);
             }
