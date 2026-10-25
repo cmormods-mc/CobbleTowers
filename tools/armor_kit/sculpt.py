@@ -123,23 +123,32 @@ def build(parts, base_art, look, out: Path, name: str, number: int):
     canvas = np.zeros((H, W, 4), np.uint8)
     canvas[: base_art.height, : base_art.width] = np.array(base_art)
     cubes, groups, x, y, row = {}, {}, 0, 33, 0
+    shared = {}                                    # parts with the same `share` key (and size) reuse one painted cell
     for p in parts:
         sx, sy, sz = p.size
-        cw, ch = math.ceil(2 * sz + 2 * sx), math.ceil(sz + sy)
-        if x + cw > TEX_W:
-            x, y, row = 0, y + row, 0
-        if y + ch > TEX_H:
-            raise ValueError("ornament texture is full")
-        lay = {"top": (sz, 0, sx, sz), "bottom": (sz + sx, 0, sx, sz), "left": (0, sz, sz, sy), "front": (sz, sz, sx, sy),
-               "right": (sz + sx, sz, sz, sy), "back": (2 * sz + sx, sz, sx, sy)}
-        views = {}
-        for fn, (fx, fy, fw, fh) in lay.items():
-            x0, y0 = round((x + fx) * K), round((y + fy) * K)
-            x1, y1 = max(x0 + 1, round((x + fx + fw) * K)), max(y0 + 1, round((y + fy + fh) * K))
-            views[fn] = canvas[y0:y1, x0:x1]
-        if p.paint:
-            p.paint(views, look, p.mirror)
-        c = gg.cube(list(p.origin), list(p.size), [x, y], 0.0)
+        key = p.kw.get("share")
+        if key and key in shared:
+            cx, cy = shared[key]
+        else:
+            cw, ch = math.ceil(2 * sz + 2 * sx), math.ceil(sz + sy)
+            if x + cw > TEX_W:
+                x, y, row = 0, y + row, 0
+            if y + ch > TEX_H:
+                raise ValueError("ornament texture is full")
+            lay = {"top": (sz, 0, sx, sz), "bottom": (sz + sx, 0, sx, sz), "left": (0, sz, sz, sy), "front": (sz, sz, sx, sy),
+                   "right": (sz + sx, sz, sz, sy), "back": (2 * sz + sx, sz, sx, sy)}
+            views = {}
+            for fn, (fx, fy, fw, fh) in lay.items():
+                x0, y0 = round((x + fx) * K), round((y + fy) * K)
+                x1, y1 = max(x0 + 1, round((x + fx + fw) * K)), max(y0 + 1, round((y + fy + fh) * K))
+                views[fn] = canvas[y0:y1, x0:x1]
+            if p.paint:
+                p.paint(views, look, p.mirror)
+            cx, cy = x, y
+            if key:
+                shared[key] = (x, y)
+            x, row = x + cw + 1, max(row, ch + 1)
+        c = gg.cube(list(p.origin), list(p.size), [cx, cy], 0.0)
         if any(p.rot):
             c["pivot"] = list(p.pivot) if p.pivot else [p.origin[0] + sx / 2, p.origin[1], p.origin[2] + sz / 2]
             c["rotation"] = list(p.rot)
@@ -147,7 +156,6 @@ def build(parts, base_art, look, out: Path, name: str, number: int):
             groups.setdefault(p.group, {"parent": p.bone, "pivot": list(p.gpivot or [0, 0, 0]), "cubes": []})["cubes"].append(c)
         else:
             cubes.setdefault(p.bone, []).append(c)
-        x, row = x + cw + 1, max(row, ch + 1)
     return Image.fromarray(canvas, "RGBA"), cubes, groups
 
 
