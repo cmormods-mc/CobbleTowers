@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 7,
+  "revision": 8,
   "display_name": "Duskvale Tower Rewards",
   "growth_percent_per_floor": 8,
   "tiers": {
@@ -341,56 +341,56 @@
         "item": "cobbletowers:duskwanderer_helmet",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3,
+        "weight": 2,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:duskwanderer_chestplate",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3,
+        "weight": 2,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:duskwanderer_leggings",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3,
+        "weight": 2,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:duskwanderer_boots",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3,
+        "weight": 2,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:duskvale_helmet",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 2,
+        "weight": 1,
         "min_floor": 5
       },
       {
         "item": "cobbletowers:duskvale_chestplate",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 2,
+        "weight": 1,
         "min_floor": 5
       },
       {
         "item": "cobbletowers:duskvale_leggings",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 2,
+        "weight": 1,
         "min_floor": 5
       },
       {
         "item": "cobbletowers:duskvale_boots",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 2,
+        "weight": 1,
         "min_floor": 5
       }
     ],
@@ -578,56 +578,56 @@
         "item": "cobbletowers:duskwanderer_helmet",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 6,
+        "weight": 3,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:duskwanderer_chestplate",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 6,
+        "weight": 3,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:duskwanderer_leggings",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 6,
+        "weight": 3,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:duskwanderer_boots",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 6,
+        "weight": 3,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:duskvale_helmet",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5,
+        "weight": 2,
         "min_floor": 5
       },
       {
         "item": "cobbletowers:duskvale_chestplate",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5,
+        "weight": 2,
         "min_floor": 5
       },
       {
         "item": "cobbletowers:duskvale_leggings",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5,
+        "weight": 2,
         "min_floor": 5
       },
       {
         "item": "cobbletowers:duskvale_boots",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5,
+        "weight": 2,
         "min_floor": 5
       }
     ]
@@ -827,25 +827,25 @@
           "item": "cobbletowers:nightfall_helmet",
           "min_amount": 1,
           "max_amount": 1,
-          "weight": 2
+          "weight": 1
         },
         {
           "item": "cobbletowers:nightfall_chestplate",
           "min_amount": 1,
           "max_amount": 1,
-          "weight": 2
+          "weight": 1
         },
         {
           "item": "cobbletowers:nightfall_leggings",
           "min_amount": 1,
           "max_amount": 1,
-          "weight": 2
+          "weight": 1
         },
         {
           "item": "cobbletowers:nightfall_boots",
           "min_amount": 1,
           "max_amount": 1,
-          "weight": 2
+          "weight": 1
         }
       ]
     }

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 7,
+  "revision": 8,
   "display_name": "Neutral Tower Rewards",
   "growth_percent_per_floor": 8,
   "tiers": {
@@ -317,56 +317,56 @@
         "item": "cobbletowers:recruit_helmet",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3,
+        "weight": 2,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:recruit_chestplate",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3,
+        "weight": 2,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:recruit_leggings",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3,
+        "weight": 2,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:recruit_boots",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 3,
+        "weight": 2,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:challenger_helmet",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 2,
+        "weight": 1,
         "min_floor": 5
       },
       {
         "item": "cobbletowers:challenger_chestplate",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 2,
+        "weight": 1,
         "min_floor": 5
       },
       {
         "item": "cobbletowers:challenger_leggings",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 2,
+        "weight": 1,
         "min_floor": 5
       },
       {
         "item": "cobbletowers:challenger_boots",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 2,
+        "weight": 1,
         "min_floor": 5
       }
     ],
@@ -518,56 +518,56 @@
         "item": "cobbletowers:recruit_helmet",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 6,
+        "weight": 3,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:recruit_chestplate",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 6,
+        "weight": 3,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:recruit_leggings",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 6,
+        "weight": 3,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:recruit_boots",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 6,
+        "weight": 3,
         "min_floor": 3
       },
       {
         "item": "cobbletowers:challenger_helmet",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5,
+        "weight": 2,
         "min_floor": 5
       },
       {
         "item": "cobbletowers:challenger_chestplate",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5,
+        "weight": 2,
         "min_floor": 5
       },
       {
         "item": "cobbletowers:challenger_leggings",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5,
+        "weight": 2,
         "min_floor": 5
       },
       {
         "item": "cobbletowers:challenger_boots",
         "min_amount": 1,
         "max_amount": 1,
-        "weight": 5,
+        "weight": 2,
         "min_floor": 5
       }
     ]
@@ -731,25 +731,25 @@
           "item": "cobbletowers:paragon_helmet",
           "min_amount": 1,
           "max_amount": 1,
-          "weight": 2
+          "weight": 1
         },
         {
           "item": "cobbletowers:paragon_chestplate",
           "min_amount": 1,
           "max_amount": 1,
-          "weight": 2
+          "weight": 1
         },
         {
           "item": "cobbletowers:paragon_leggings",
           "min_amount": 1,
           "max_amount": 1,
-          "weight": 2
+          "weight": 1
         },
         {
           "item": "cobbletowers:paragon_boots",
           "min_amount": 1,
           "max_amount": 1,
-          "weight": 2
+          "weight": 1
         }
       ]
     }
