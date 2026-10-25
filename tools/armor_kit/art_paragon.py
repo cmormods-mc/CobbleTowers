@@ -1,146 +1,238 @@
-"""Paragon worn armor: ivory feather plate, gold trim, a glowing sun on the chest, a laurel ring on the helm."""
+"""Paragon worn armor: bevelled ivory plate with gold edging over dark padded mail, engraved panel lines, a sun on the chest, gold
+filigree and glowing inlay. Every plate is drawn the same way: shaded body, a seam line, a gold inner edge, rivets at the corners."""
 from armor_art import *
 
-ivory, silver = ramp((238, 234, 246)), ramp((190, 200, 226))
-under, mail = ramp((52, 60, 92)), ramp((112, 124, 164))      # the dark padded under-layer and its mail, so the plates stand out
+ivory, silver = ramp((240, 236, 246)), ramp((196, 204, 228))
+under, mail = ramp((46, 54, 86)), ramp((108, 120, 160))
 gold, goldd = ramp((252, 214, 100)), ramp((190, 142, 52))
-crim = ramp((164, 36, 48))
+SEAM = under[0]
 
 
-def plate(st, tone=under):
-    fill(st, ones(st), tone, "v", lo=2.0, hi=4.2, edge=False)
-    for x in range(7, st.shape[1], 8):
-        st[:, x] = (*tone[1], 255)
+def plate(v, mask, rp=ivory, groove=True, trim=True, lo=2.6, hi=5.0, mode="v"):
+    """One armor plate: shaded body, dark seam, gold inner edge, an engraved groove just inside it."""
+    shade(v, mask, rp, mode, lo, hi, edge=True)
+    put(v, mask & ~erode(mask), SEAM)
+    e1 = erode(mask)
+    if trim:
+        put(v, e1 & ~erode(e1), gold[3])
+        e2 = erode(e1)
+    else:
+        e2 = e1
+    if groove:
+        g = erode(e2)
+        put(v, e2 & ~g, rp[1])
+        put(v, shift(e2 & ~g, 1, 0) & g, rp[5])                       # a lit lip under the groove
 
 
-def trim(st, y, h=3):
-    fill(st, rect(st, 0, y, st.shape[1], h), gold, "v", lo=3.2, hi=5.0, edge=False)
-    st[y - 1, :] = (*gold[2], 255)
-    st[y + h, :] = (*gold[2], 255)
+def corner_rivets(v, mask, rp=gold):
+    ys, xs = np.nonzero(mask)
+    if not len(ys):
+        return
+    for (x, y) in ((xs.min() + 3, ys.min() + 3), (xs.max() - 4, ys.min() + 3), (xs.min() + 3, ys.max() - 4), (xs.max() - 4, ys.max() - 4)):
+        px(v, x, y, rp[5]); px(v, x + 1, y, rp[4]); px(v, x, y + 1, rp[3]); px(v, x + 1, y + 1, rp[1])
 
 
-def hem(st, glow, y0=38):
-    """A gold belt, then a fringe of ivory feathers with a ragged transparent bottom edge."""
-    trim(st, y0 - 6, 4)
-    rivets(st, range(3, st.shape[1] - 2, 8), y0 - 5, gold)
-    st[y0:, :] = 0
-    shingle(st, rect(st, 0, y0, st.shape[1], st.shape[0] - y0), y0, st.shape[0], ivory, silver, 9, 13, 5, glow)
+def band(v, y, h, x0=0, x1=None):
+    """A gold band with a lit top row and a shaded bottom row."""
+    x1 = v.shape[1] if x1 is None else x1
+    m = rect(v, x0, y, x1 - x0, h)
+    shade(v, m, gold, "v", lo=3.0, hi=5.0, edge=False)
+    v[y, x0:x1] = (*gold[5], 255)
+    v[y + h - 1, x0:x1] = (*goldd[2], 255)
+
+
+def gem(v, cx, cy, glow, r=2):
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            if abs(dx) + abs(dy) <= r:
+                px(v, cx + dx, cy + dy, glow[5] if abs(dx) + abs(dy) <= r - 2 else glow[4] if abs(dx) + abs(dy) < r else gold[3])
+
+
+def scroll(v, x0, x1, y, amp=1.6, period=7.0):
+    """A line of gold filigree: a sine curl with a dot in every loop."""
+    for x in range(x0, x1):
+        yy = int(round(y + amp * math.sin((x - x0) * 2 * math.pi / period)))
+        px(v, x, yy, gold[4])
+        if (x - x0) % int(period) == int(period) // 2:
+            px(v, x, int(round(y - amp - 1.5)), gold[5])
 
 
 def sun(f, cx, cy, r, glow):
-    """A gold-ringed disc with a glowing core and eight short rays."""
+    """A gold-ringed disc with a glowing core and eight rays."""
     yy, xx = np.mgrid[0:f.shape[0], 0:f.shape[1]]
     d = np.hypot(xx - cx, yy - cy)
-    fill(f, d <= r, gold, "v", lo=3.0, hi=5.0)
-    fill(f, d <= r - 3, ivory, "v", lo=3.0, hi=5.0)
-    fill(f, d <= r - 5, glow, "v", lo=2.8, hi=5.2)
     for k in range(8):
-        a = k * math.pi / 4
-        for t in range(int(r) + 1, int(r) + 4):
-            x, y = int(round(cx + t * math.cos(a))), int(round(cy + t * math.sin(a)))
-            if 0 <= x < f.shape[1] and 0 <= y < f.shape[0]:
-                f[y, x] = (*gold[4], 255)
+        a = k * math.pi / 4 + math.pi / 8
+        for t in range(int(r) + 1, int(r) + 5):
+            px(f, int(round(cx + t * math.cos(a))), int(round(cy + t * math.sin(a))), gold[4 if t < r + 3 else 3])
+    shade(f, d <= r, gold, "v", lo=3.0, hi=5.0, edge=True)
+    shade(f, d <= r - 2.5, ivory, "v", lo=3.2, hi=5.0, edge=False)
+    shade(f, d <= r - 4.5, glow, "v", lo=2.8, hi=5.2, edge=False)
+
+
+def mailbase(st):
+    """The padded under-layer: dark quilting, a soft horizontal gradient with stitched rows and staggered seams."""
+    fill(st, ones(st), under, "v", lo=2.0, hi=3.4, edge=False)
+    h, w = st.shape[:2]
+    for y in range(3, h, 6):
+        st[y, :] = (*under[1], 255)
+        for x in range((y // 6 % 2) * 4, w, 8):
+            st[y + 1:y + 5, x] = (*under[1], 255)
+    for y in range(4, h, 6):
+        st[y, :] = (*under[3], 255)
+    st[:, ::32] = (*under[1], 255)
 
 
 def head(b, glow):
     st = b.strip
-    plate(st)
-    shingle(st, rect(st, 0, 3, 128, 13), 3, 16, mail, under, 10, 13, 5, glow)         # a feathered brow
-    trim(st, 16, 3)
-    rivets(st, range(4, 126, 9), 17, gold)
-    f = b.face("front")
-    fill(f, rect(f, 4, 21, 24, 9), goldd, "v", lo=2.4, hi=4.2, edge=False)                           # a gold visor with a glowing slit
-    for y in range(24, 27):
-        for x in range(6, 26):
-            px(f, x, y, glow[4] if y < 26 else glow[3])
-    fill(f, rect(f, 14, 20, 4, 10), gold, "h", lo=3.0, hi=5.0)                          # a nose guard
-    for n in ("right", "left"):
-        g = b.face(n)
-        fill(g, rrect(g, 3, 19, 26, 12, 4), silver, "v", lo=2.0, hi=4.6)                 # cheek plates with a gold edge
-        put_edge = rrect(g, 3, 19, 26, 12, 4) & ~erode(rrect(g, 3, 19, 26, 12, 4))
-        g[put_edge] = (*gold[3], 255)
-    g = b.face("back")
-    shingle(g, rect(g, 0, 19, 32, 13), 19, 32, mail, under, 10, 13, 5, glow)
+    mailbase(st)
+    for n in ("right", "front", "left", "back"):
+        f = b.face(n)
+        h, w = f.shape[:2]
+        if n == "front":
+            plate(f, rect(f, 1, 1, w - 2, h - 2), mode="cyl")
+            band(f, 2, 6, 3, w - 3)                                           # a crown band set with gems
+            for x in (8, 15, 22):
+                gem(f, x, 5, glow, 1)
+            fill(f, rect(f, 4, 14, w - 8, 9), under, "v", lo=1.2, hi=3.0)       # the visor, with a glowing slit
+            for x in range(6, w - 6):
+                px(f, x, 17, glow[3]); px(f, x, 18, glow[5]); px(f, x, 19, glow[4])
+            band(f, 8, 22, 14, 18)                                             # the nose guard, gold, with a lit ridge
+            for x in range(8, 25, 4):                                          # breathing slits on the chin plate
+                for y in range(25, 29):
+                    px(f, x, y, under[0])
+            corner_rivets(f, rect(f, 1, 9, w - 2, 21))
+        elif n in ("right", "left"):
+            plate(f, rrect(f, 2, 3, w - 4, h - 6, 3), mode="cyl")
+            for k, c in enumerate((gold[5], gold[4], gold[3])):               # three swept feather strokes
+                for t in range(15):
+                    px(f, 8 + t, 22 - t + k * 2, c)
+            gem(f, 18, 12, glow, 2)
+            corner_rivets(f, rrect(f, 2, 3, w - 4, h - 6, 3))
+        else:
+            plate(f, rect(f, 1, 1, w - 2, 22), mode="cyl")
+            band(f, 2, 3, 3, w - 3)
+            f[3:22, w // 2 - 1:w // 2 + 1] = (*gold[4], 255)                  # a gold ridge down the back
+            scroll(f, 4, w // 2 - 3, 12)
+            scroll(f, w // 2 + 3, w - 4, 12)
+            fill(f, rect(f, 2, 24, w - 4, 7), under, "v", lo=1.4, hi=3.2)     # a mail neck guard
     t = b.top
-    fill(t, ones(t), ivory, "none", lo=3.4, edge=False)                                    # a laurel ring round a glowing seed
+    shade(t, ones(t), ivory, "none", lo=3.4, edge=False)                       # a sunburst with a glowing seed
     c = 15.5
     for k in range(12):
         a = k * math.pi / 6
-        tip = (c + 13 * math.cos(a), c + 13 * math.sin(a))
-        s1 = (c + 7 * math.cos(a + 0.35), c + 7 * math.sin(a + 0.35))
-        s2 = (c + 7 * math.cos(a - 0.35), c + 7 * math.sin(a - 0.35))
-        fill(t, poly(t, [s1, tip, s2]), gold, "v", lo=3.0, hi=5.0)
-    fill(t, ell(t, 11, 11, 10, 10), glow, "v", lo=2.6, hi=5.2)
-    fill(b.bottom, ones(b.bottom), silver, "none", lo=2.0, edge=False)
+        fill(t, poly(t, [(c + 5 * math.cos(a - .22), c + 5 * math.sin(a - .22)), (c + 14.5 * math.cos(a), c + 14.5 * math.sin(a)),
+                         (c + 5 * math.cos(a + .22), c + 5 * math.sin(a + .22))]), gold, "v", lo=3.0, hi=5.0, edge=False)
+    fill(t, ell(t, 11, 11, 10, 10), gold, "v", lo=3.0, hi=5.0)
+    fill(t, ell(t, 13, 13, 6, 6), glow, "v", lo=2.8, hi=5.2, edge=False)
+    fill(b.bottom, ones(b.bottom), under, "none", lo=2.0, edge=False)
 
 
 def chest(b, glow):
     st = b.strip
-    plate(st)
-    f = b.face("front")
-    shingle(f, poly(f, [(4, 12), (28, 12), (28, 22), (16, 38), (4, 22)]), 12, 38, mail, under, 9, 12, 6, glow)   # a feathered bib
-    for x in (3, 25):
-        fill(f, rect(f, x, 0, 4, 40), gold, "h", lo=3.0, hi=5.0)                          # gold shoulder straps
-        rivets(f, (x + 1,), 6, gold)
-    sun(f, 16, 18, 8, glow)
-    fill(st, rect(st, 0, 0, 96, 5), gold, "v", lo=3.0, hi=5.0)                            # a gold collar
-    st[5, :] = (*gold[2], 255)
-    for n in ("right", "left"):
-        g = b.face(n)
-        fill(g, rect(g, 6, 8, 4, 28), gold, "h", lo=3.0, hi=5.0)
-    g = b.face("back")
-    fill(g, rrect(g, 4, 4, 24, 30, 5), silver, "v", lo=2.0, hi=4.4)                      # the root plate the wings grow from
-    for pts in ([(2, 6), (7, 6), (30, 30), (25, 30)], [(30, 6), (25, 6), (2, 30), (7, 30)]):
-        fill(g, poly(g, pts), gold, "h", lo=3.0, hi=5.0)
-    fill(g, ell(g, 10, 11, 12, 12), goldd, "v", lo=1.4, hi=3.4)                          # the halo socket
-    fill(g, ell(g, 13, 14, 6, 6), glow, "v", lo=2.6, hi=5.2)
-    hem(st, glow, 38)
+    mailbase(st)
+    for n in ("right", "front", "left", "back"):
+        f = b.face(n)
+        h, w = f.shape[:2]
+        if n == "front":
+            band(f, 0, 5, 0, w)                                                  # a gold gorget
+            for x in (7, 24):
+                gem(f, x, 2, glow, 1)
+            plate(f, poly(f, [(3, 6), (28, 6), (28, 21), (16, 31), (3, 21)]), mode="cyl")
+            f[8:27, w // 2 - 1:w // 2 + 1] = (*gold[4], 255)                       # a keel down the centre
+            sun(f, 16, 13, 7, glow)
+            for k in range(3):                                                    # three lames below, each with a pointed lower edge
+                y = 30 + k * 5
+                plate(f, poly(f, [(2, y), (29, y), (29, y + 4), (16, y + 6), (2, y + 4)]), groove=False)
+            band(f, 44, 4, 0, w)
+            gem(f, 16, 46, glow, 1)
+        elif n in ("right", "left"):
+            fill(f, rect(f, 5, 0, 4, h), gold, "h", lo=3.0, hi=5.0)
+            rivets(f, (6,), 8, gold); rivets(f, (6,), 24, gold)
+        else:
+            plate(f, rrect(f, 2, 2, w - 4, 38, 5), mode="cyl")                    # the root plate the wings grow from
+            for pts in ([(3, 4), (8, 4), (29, 36), (24, 36)], [(29, 4), (24, 4), (3, 36), (8, 36)]):
+                fill(f, poly(f, pts), gold, "h", lo=3.0, hi=5.0)
+            fill(f, ell(f, 9, 6, 14, 14), goldd, "v", lo=2.4, hi=4.4)             # the halo socket
+            fill(f, ell(f, 12, 9, 8, 8), glow, "v", lo=2.8, hi=5.2, edge=False)
+            f[2:38, w // 2 - 1:w // 2 + 1] = (*gold[4], 255)
+            band(f, 41, 4, 0, w)
     fill(b.top, ones(b.top), ivory, "none", lo=3.4, edge=False)
-    fill(b.bottom, ones(b.bottom), silver, "none", lo=2.0, edge=False)
+    fill(b.bottom, ones(b.bottom), under, "none", lo=2.0, edge=False)
 
 
 def arm(b, glow):
     st = b.strip
-    plate(st)
-    shingle(st, rect(st, 0, 0, 64, 18), 0, 18, mail, under, 14, 16, 7, glow)            # big feathers over the shoulder only
-    trim(st, 33, 7)
-    rivets(st, range(3, 62, 8), 35, gold)
-    for x in range(0, 64, 8):
-        st[34:39, x] = (*gold[1], 255)
-    fill(b.top, ones(b.top), ivory, "none", lo=3.4, edge=False)
-    fill(b.bottom, ones(b.bottom), silver, "none", lo=2.0, edge=False)
+    mailbase(st)
+    for n in ("right", "front", "left", "back"):
+        f = b.face(n)
+        h, w = f.shape[:2]
+        plate(f, rect(f, 0, 0, w, 14), mode="cyl")                               # the pauldron shell
+        for x in range(0, w, 4):                                                 # a scalloped gold lower edge
+            y = 13 + (1 if (x // 4) % 2 else 0)
+            f[y - 1:y + 1, x:x + 4] = (*gold[4], 255)
+        rivets(f, (w // 2 - 1,), 5, gold)
+        band(f, 17, 3, 0, w)                                                     # a gold ring below it
+        plate(f, rrect(f, 1, 24, w - 2, 8, 2), mode="cyl", groove=False)         # an elbow cop
+        plate(f, rect(f, 0, 34, w, 10), mode="cyl")                              # the bracer
+        band(f, 34, 2, 0, w)
+        band(f, 42, 2, 0, w)
+        for x in range(2, w - 2, 5):
+            px(f, x, 39, gold[3]); px(f, x, 40, gold[2])
+        band(f, 44, 4, 0, w)
+    t = b.top
+    shade(t, ones(t), ivory, "none", lo=3.6, edge=False)
+    fill(t, ell(t, 3, 3, 10, 10), gold, "v", lo=3.0, hi=5.0)
+    fill(t, ell(t, 6, 6, 4, 4), glow, "v", lo=2.8, hi=5.2, edge=False)
+    fill(b.bottom, ones(b.bottom), under, "none", lo=2.0, edge=False)
 
 
 def boots(b, glow):
     st = b.strip
     fill(b.top, ones(b.top), ivory, "none", lo=2.8, edge=False)
-    fill(b.bottom, ones(b.bottom), silver, "none", lo=2.0, edge=False)
+    fill(b.bottom, ones(b.bottom), under, "none", lo=2.0, edge=False)
     sub = st[32:48]
-    plate(sub)
-    shingle(sub, rect(sub, 0, 0, 64, 8), 0, 8, mail, under, 8, 8, 3, None)              # a feathered cuff
-    trim(sub, 8, 3)
-    f = b.face("front")[32:48]
-    fill(f, rect(f, 4, 12, 8, 3), gold, "v", lo=3.0, hi=5.0, edge=False)                              # a gold toe cap
-    for x in range(1, 64, 6):
-        px(sub, x, 14, gold[3])
+    mailbase(sub)
+    for n in ("right", "front", "left", "back"):
+        f = b.face(n)[32:48]
+        h, w = f.shape[:2]
+        band(f, 0, 3, 0, w)                                                      # a gold cuff
+        plate(f, rect(f, 0, 3, w, 10), mode="cyl", groove=False)
+        for x in range(2, w - 2, 5):
+            px(f, x, 8, gold[3])
+        fill(f, rect(f, 0, 13, w, 3), under, "v", lo=1.4, hi=3.0, edge=False)   # the sole
 
 
 def legs(b, glow):
     st = b.strip
-    plate(st)
-    shingle(st, rect(st, 0, 0, 64, 20), 0, 20, mail, under, 9, 11, 5, glow)             # feathers over the thighs only
-    f = b.face("front")
-    fill(f, rrect(f, 3, 20, 10, 11, 3), gold, "cyl", lo=2.8, hi=5.0)                     # a gold knee plate
-    fill(f, rrect(f, 5, 22, 6, 7, 2), ivory, "v", lo=3.0, hi=5.0)
-    trim(st, 31, 3)
-    fill(st, rect(st, 0, 35, 64, 13), silver, "v", lo=1.8, hi=3.8)
+    mailbase(st)
+    for n in ("right", "front", "left", "back"):
+        f = b.face(n)
+        h, w = f.shape[:2]
+        plate(f, rect(f, 0, 1, w, 19), mode="cyl")                               # a cuisse
+        scroll(f, 2, w - 2, 10, 1.2, 6.0)
+        band(f, 21, 2, 0, w)
+        plate(f, rect(f, 0, 23, w, 9), gold, mode="cyl", groove=False, trim=False)    # a gold knee cop with a glowing gem
+        gem(f, w // 2, 27, glow, 2)
+        plate(f, rect(f, 0, 33, w, 12), mode="cyl")                              # a greave with a centre ridge
+        f[34:44, w // 2 - 1:w // 2 + 1] = (*gold[4], 255)
+        band(f, 44, 4, 0, w)
     fill(b.top, ones(b.top), ivory, "none", lo=3.0, edge=False)
-    fill(b.bottom, ones(b.bottom), silver, "none", lo=2.0, edge=False)
+    fill(b.bottom, ones(b.bottom), under, "none", lo=2.0, edge=False)
 
 
 def waist(b, glow):
     st = b.strip
-    hem(st, glow, 38)
+    sub = st[32:48]
+    mailbase(sub)
+    for n in ("right", "front", "left", "back"):
+        f = b.face(n)[32:48]
+        h, w = f.shape[:2]
+        band(f, 0, 5, 0, w)                                                      # a gold belt
+        rivets(f, range(3, w - 2, 8), 1, gold)
+        for x in range(0, w, 8):                                                 # pointed ivory lames hanging below
+            plate(f, poly(f, [(x, 5), (x + 8, 5), (x + 8, 11), (x + 4, 15), (x, 11)]), groove=False)
+    gem(b.face("front")[32:48], b.face("front").shape[1] // 2, 2, glow, 2)
     fill(b.top, ones(b.top), ivory, "none", lo=3.4, edge=False)
 
 
