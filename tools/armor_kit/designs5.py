@@ -55,19 +55,23 @@ def make(look):
             parts.append(m)
 
     # ---- helm (cube +-5, top y 33): a gold brow with a diamond, a single swept crest fin, cheek plates -------------------------
-    box(H, -5.0, 28.4, -6.0, 10, 2, 2, "gold", mirror=False)
+    box(H, -2.0, 28.4, -6.0, 4, 2, 2, "gold", mirror=False)
+    box(H, -6.0, 28.4, -6.0, 4, 2, 2, "gold", rot=(0, -40, 0), pivot=[-2.0, 29.4, -5.0])
     box(H, -1.5, 30.2, -6.0, 3, 3, 2, "gem", rot=(0, 0, 45), mirror=False)
     box(H, -1.0, 32.0, -4.0, 2, 8, 8, "plate", rot=(-10, 0, 0), mirror=False, pivot=[0.0, 32.0, 0.0])
     box(H, -1.0, 32.0, -4.6, 2, 5, 2, "gold", rot=(-10, 0, 0), mirror=False, pivot=[0.0, 32.0, 0.0])
     box(H, -6.0, 24.0, -4.0, 2, 6, 6, "plate")
 
     # ---- torso (front face z -2.04): one chest plate, a gem, a belt plate -----------------------------------------------------
-    box(BD, -4.0, 16.0, -3.0, 8, 7, 2, "plate", mirror=False)
+    box(BD, -2.0, 16.0, -3.0, 4, 7, 2, "plate", mirror=False)
+    box(BD, -5.0, 16.0, -3.0, 3, 7, 2, "plate", rot=(0, -28, 0), pivot=[-2.0, 19.5, -2.0])
     box(BD, -1.5, 19.0, -4.0, 3, 3, 2, "gem", rot=(0, 0, 45), mirror=False)
     box(BD, -4.0, 12.4, -3.0, 8, 2, 2, "gold", mirror=False)
 
     # ---- arms (top y 25): a cap over the shoulder, one lame drooping off its outer edge, one spike ------------------------------
-    box("armorRightArm", -9.5, 24.0, -3.5, 7, 2, 7, "plate", side=0)
+    box("armorRightArm", -9.5, 24.0, -1.5, 7, 2, 3, "plate", side=0)
+    box("armorRightArm", -9.5, 24.0, -4.5, 7, 2, 3, "plate", rot=(-28, 0, 0), side=0, pivot=[-6.0, 25.0, -1.5])
+    box("armorRightArm", -9.5, 24.0, 1.5, 7, 2, 3, "plate", rot=(28, 0, 0), side=0, pivot=[-6.0, 25.0, 1.5])
     box("armorRightArm", -14.5, 23.0, -3.5, 5, 2, 7, "gold", rot=(0, 0, -40), side=0, pivot=[-9.5, 24.0, 0.0])
     box("armorRightArm", -9.5, 26.0, -1.0, 2, 5, 2, "gold", rot=(0, 0, -24), side=0, pivot=[-8.5, 26.0, 0.0])
 
@@ -77,7 +81,8 @@ def make(look):
     box(W, -4.0, 6.0, 1.5, 8, 7, 2, "plate", mirror=False)
 
     # ---- legs and feet -------------------------------------------------------------------------------------------------------
-    box("armorRightLeg", -4.4, 3.4, -3.5, 5, 3, 2, "gold", side=1)
+    box("armorRightLeg", -3.9, 3.4, -3.5, 4, 3, 2, "gold", side=1)
+    box("armorRightLeg", -6.4, 3.4, -3.5, 3, 3, 2, "gold", rot=(0, -35, 0), side=1, pivot=[-3.9, 4.9, -2.5])
     box("armorRightBoot", -4.0, 0.4, -5.0, 4, 2, 4, "plate", side=2)
     return parts
 

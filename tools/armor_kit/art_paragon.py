@@ -104,17 +104,21 @@ def head(b, glow):
             corner_rivets(f, rect(f, 1, 9, w - 2, 21))
         elif n in ("right", "left"):
             plate(f, rrect(f, 2, 3, w - 4, h - 6, 3), mode="cyl")
-            for k, c in enumerate((gold[5], gold[4], gold[3])):               # three swept feather strokes
-                for t in range(15):
-                    px(f, 8 + t, 22 - t + k * 2, c)
-            gem(f, 18, 12, glow, 2)
+            for ang, ln in ((-0.95, 13), (-0.55, 15), (-0.15, 13)):             # three swept feathers fanning from the ear
+                pts = []
+                for t in range(ln):
+                    x, y = 9 + t * math.cos(ang), 24 + t * math.sin(ang)
+                    wd = 1.6 * math.sin(math.pi * t / ln) ** 0.7
+                    for dy in range(int(-wd), int(wd) + 1):
+                        px(f, int(round(x)), int(round(y)) + dy, gold[5 if dy < 0 else 4 if dy == 0 else 3])
+            gem(f, 9, 24, glow, 2)
             corner_rivets(f, rrect(f, 2, 3, w - 4, h - 6, 3))
         else:
             plate(f, rect(f, 1, 1, w - 2, 22), mode="cyl")
             band(f, 2, 3, 3, w - 3)
             f[3:22, w // 2 - 1:w // 2 + 1] = (*gold[4], 255)                  # a gold ridge down the back
-            scroll(f, 4, w // 2 - 3, 12)
-            scroll(f, w // 2 + 3, w - 4, 12)
+            scroll(f, 4, w // 2 - 3, 12, 2.2, 9.0)
+            scroll(f, w // 2 + 3, w - 4, 12, 2.2, 9.0)
             fill(f, rect(f, 2, 24, w - 4, 7), under, "v", lo=1.4, hi=3.2)     # a mail neck guard
     t = b.top
     shade(t, ones(t), ivory, "none", lo=3.4, edge=False)                       # a sunburst with a glowing seed
@@ -141,21 +145,23 @@ def chest(b, glow):
             plate(f, poly(f, [(3, 6), (28, 6), (28, 21), (16, 31), (3, 21)]), mode="cyl")
             f[8:27, w // 2 - 1:w // 2 + 1] = (*gold[4], 255)                       # a keel down the centre
             sun(f, 16, 13, 7, glow)
-            for k in range(3):                                                    # three lames below, each with a pointed lower edge
-                y = 30 + k * 5
-                plate(f, poly(f, [(2, y), (29, y), (29, y + 4), (16, y + 6), (2, y + 4)]), groove=False)
+            for k in range(3):                                                    # three separate lames, each with a pointed lower edge
+                y = 29 + k * 5
+                plate(f, poly(f, [(3, y), (28, y), (28, y + 3), (16, y + 5), (3, y + 3)]), groove=False)
             band(f, 44, 4, 0, w)
             gem(f, 16, 46, glow, 1)
         elif n in ("right", "left"):
-            fill(f, rect(f, 5, 0, 4, h), gold, "h", lo=3.0, hi=5.0)
-            rivets(f, (6,), 8, gold); rivets(f, (6,), 24, gold)
+            fill(f, rect(f, 6, 0, 4, h), gold, "h", lo=3.2, hi=5.0, edge=False)
+            f[:, 6] = (*gold[5], 255); f[:, 9] = (*goldd[2], 255)
+            rivets(f, (7,), 8, gold); rivets(f, (7,), 24, gold)
         else:
             plate(f, rrect(f, 2, 2, w - 4, 38, 5), mode="cyl")                    # the root plate the wings grow from
-            for pts in ([(3, 4), (8, 4), (29, 36), (24, 36)], [(29, 4), (24, 4), (3, 36), (8, 36)]):
-                fill(f, poly(f, pts), gold, "h", lo=3.0, hi=5.0)
-            fill(f, ell(f, 9, 6, 14, 14), goldd, "v", lo=2.4, hi=4.4)             # the halo socket
-            fill(f, ell(f, 12, 9, 8, 8), glow, "v", lo=2.8, hi=5.2, edge=False)
+            for pts in ([(4, 5), (8, 5), (28, 36), (24, 36)], [(28, 5), (24, 5), (4, 36), (8, 36)]):
+                fill(f, poly(f, pts), gold, "h", lo=3.2, hi=5.0, edge=False)
             f[2:38, w // 2 - 1:w // 2 + 1] = (*gold[4], 255)
+            fill(f, ell(f, 8, 5, 16, 16), goldd, "v", lo=2.6, hi=4.6)             # the halo socket, over the straps
+            fill(f, ell(f, 11, 8, 10, 10), gold, "v", lo=3.0, hi=5.0)
+            fill(f, ell(f, 13, 10, 6, 6), glow, "v", lo=2.8, hi=5.2, edge=False)
             band(f, 41, 4, 0, w)
     fill(b.top, ones(b.top), ivory, "none", lo=3.4, edge=False)
     fill(b.bottom, ones(b.bottom), under, "none", lo=2.0, edge=False)

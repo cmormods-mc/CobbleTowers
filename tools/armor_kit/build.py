@@ -31,7 +31,7 @@ from sculpt import write  # noqa: E402
 TIDEFORGE_PALETTE = dict(metal=(190, 208, 222), trim=(60, 140, 200), cloth=(30, 84, 140), glow=(170, 240, 255), helm="visor", top="ridge")
 SETS = {"tideforge": (TIDEFORGE_PALETTE, art_tide, designs2.tide), "rootvale": ({}, art_root, designs2.root),
         "duskvale": ({}, art_dusk, designs.dusk), "paragon": ({}, art_paragon, lambda look: designs4.paragon(look) + designs5.paragon_armor(look))}
-designs3.ACCENTS["paragon"] = designs4.paragon_accents
+designs3.ACCENTS["paragon"] = lambda look: []              # the crest fin and plates carry the silhouette; no laurel or shoulder feathers
 
 
 # the rarest (tier III) sets wear the same models and art as their regional set; files are written under the alias
