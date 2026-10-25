@@ -61,14 +61,17 @@ def make(look):
     box(H, -7.4, 23.0, -4.8, 2, 7, 8, "plate", rot=(0, 0, 8), pivot=[-7.0, 30.0, 0.0])
     box(H, -8.2, 23.2, 0.6, 2, 3, 3, "gold", rot=(0, 0, 22), pivot=[-6.2, 24.0, 2.1])
     box(H, -3.5, 21.8, -6.2, 7, 2, 2, "silver", mirror=False)
-    box(H, -1.0, 33.0, -5.0, 2, 8, 10, "plate", rot=(-14, 0, 0), mirror=False, pivot=[0.0, 33.0, 0.0])
-    box(H, -1.0, 40.0, -3.5, 2, 2, 5, "gold", rot=(-14, 0, 0), mirror=False, pivot=[0.0, 33.0, 0.0])
-    box(H, -4.6, 33.0, -2.0, 2, 7, 6, "silver", rot=(-10, 0, -26), pivot=[-3.6, 33.0, 1.0])
+    box(H, -1.0, 33.0, -4.0, 2, 8, 8, "plate", rot=(-12, 0, 0), mirror=False, pivot=[0.0, 33.0, 0.0])
+    box(H, -1.0, 40.4, -3.2, 2, 3, 5, "gold", rot=(-12, 0, 0), mirror=False, pivot=[0.0, 33.0, 0.0])
+    box(H, -1.0, 33.0, -4.6, 2, 6, 2, "gold", mirror=False)
+    box(H, -4.4, 33.0, -2.0, 2, 8, 5, "silver", rot=(-8, 0, -26), pivot=[-3.4, 33.0, 0.0])
+    box(H, -6.9, 38.8, -1.6, 2, 4, 4, "gold", rot=(-8, 0, -26), pivot=[-3.4, 33.0, 0.0])
     box(H, -4.5, 21.4, 4.6, 9, 3, 2, "silver", rot=(-16, 0, 0), mirror=False, pivot=[0.0, 24.0, 5.0])
 
     # ---- torso: a broad gorget, a chest plate over a V of two angled plates, abdomen bands, a back plate ----------------------
     box(BD, -5.0, 23.2, -4.2, 10, 2, 3, "gold", mirror=False)
-    box(BD, -4.0, 18.4, -4.2, 8, 5, 2, "plate", mirror=False)
+    box(BD, -2.0, 18.4, -4.4, 4, 5, 2, "plate", mirror=False)
+    box(BD, -5.0, 18.4, -4.2, 3, 5, 2, "plate", rot=(0, -30, 0), pivot=[-2.0, 21.0, -3.4])
     box(BD, -4.2, 13.2, -4.2, 4, 5, 2, "plate", rot=(0, 0, 14), pivot=[-2.2, 18.2, 0.0])
     box(BD, -1.5, 19.6, -5.6, 3, 3, 2, "gem", rot=(0, 0, 45), mirror=False)
     box(BD, -3.5, 12.4, -4.0, 7, 2, 2, "gold", mirror=False)
@@ -91,9 +94,14 @@ def make(look):
     box(W, -5.4, 6.0, -3.6, 3, 7, 2, "plate", rot=(0, 0, 11), pivot=[-4.0, 13.0, 0.0])
     box(W, -7.0, 7.0, -1.8, 2, 6, 4, "silver", rot=(0, 0, 7), pivot=[-6.0, 13.0, 0.0])
     box(W, -4.0, 6.0, 2.2, 8, 7, 2, "plate", mirror=False)
+    box(W, -2.5, 1.6, -4.6, 5, 5, 2, "gold", mirror=False)                                # a second row of lames, overlapping the first
+    box(W, -6.2, 2.4, -3.8, 4, 5, 2, "plate", rot=(0, 0, 13), pivot=[-4.2, 7.4, 0.0])
+    box(W, -8.4, 3.6, -2.4, 2, 6, 5, "gold", rot=(0, 0, 12), pivot=[-7.4, 9.6, 0.0])
+    box(W, -4.5, 2.0, 2.6, 9, 5, 2, "gold", mirror=False)
 
     # ---- legs: a thigh plate, a gold knee cop with a forward horn, a broad shin plate ---------------------------------------------
     box("armorRightLeg", -3.9, 7.4, -3.4, 4, 4, 2, "plate", side=1)
+    box("armorRightLeg", -6.2, 5.0, -3.0, 2, 7, 5, "silver", rot=(0, 0, -10), side=1, pivot=[-5.2, 12.0, 0.0])   # a thick outer cuisse
     box("armorRightLeg", -4.4, 3.6, -3.8, 5, 3, 2, "gold", side=1)
     box("armorRightLeg", -2.9, 4.1, -6.8, 2, 2, 3, "silver", side=1)
     box("armorRightLeg", -4.0, 0.2, -3.4, 4, 4, 2, "plate", side=1)
