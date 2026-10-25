@@ -72,19 +72,21 @@ def tentacle(parts, bone, p0, u, v, a0, k1, k2, power, length, w0, w1, nseg, see
         alpha = a0 + k1 * s + k2 * s ** power + 0.30 * math.sin(2 * math.pi * 1.25 * s + seed)      # a lean, a curl at the tip, and a sway between
         bn = np.cross(u, v)
         T = unit(math.cos(alpha) * u + math.sin(alpha) * v + 0.28 * math.sin(2 * math.pi * 1.6 * s + seed * 1.7) * bn)
-        N = -math.sin(alpha) * u + math.cos(alpha) * v                  # toward the inside of the curl
+        N0 = -math.sin(alpha) * u + math.cos(alpha) * v
+        N = unit(N0 - T * float(np.dot(N0, T)))                          # toward the inside of the curl, square to the arm
         w = max(1, int(round(w0 + (w1 - w0) * s ** 0.8)))
         L = max(2, int(math.ceil(step * 1.35)))
         c = p + T * step / 2
         parts.append(box_along(bone, c, T, w, L, group=f"leafring_{seed}", gpivot=[float(p0[0]), float(p0[1]), float(p0[2])],
                                paint=paint_skin(skin, spot, glow, (w * 31 + L) % 7 + (i % 2) * 7), share=f"kseg_{w}x{L}_{(w * 31 + L) % 7 + (i % 2) * 7}"))
-        if suckers and s > 0.12 and w >= 2:                              # suckers on the inner curve: one, or a pair on the thick part
-            sw = 3 if w >= 5 else 2
-            B3 = np.cross(T, N)
-            for off in ((0.0,) if w < 4 else (-0.2, 0.2)):
-                sc = c + N * (w / 2 + 0.15) + B3 * off * w
-                parts.append(Part(bone, [sc[0] - sw / 2, sc[1] - 0.5, sc[2] - sw / 2], [sw, 1, sw], rot=orient(N), pivot=[float(sc[0]), float(sc[1]), float(sc[2])],
-                                  paint=paint_sucker(pale, glow), share=f"ksucker_{sw}"))
+        if suckers and s > 0.12 and w >= 3:                              # two even rows of small cups on the thick part, one row on the thin
+            sw = max(2, int(round(w * 0.38)))
+            if sw <= 2 or i % 2 == 0:
+                B3 = np.cross(T, N)
+                for off in ((-0.28, 0.28) if w >= 5 else (0.0,)):
+                    sc = c + N * (w / 2 + 0.1) + B3 * off * w
+                    parts.append(Part(bone, [sc[0] - sw / 2, sc[1] - 0.5, sc[2] - sw / 2], [sw, 1, sw], rot=orient(N), pivot=[float(sc[0]), float(sc[1]), float(sc[2])],
+                                      paint=paint_sucker(pale, glow), share=f"ksucker_{sw}"))
         if i == int(nseg * 0.12):                    # a silver cuff round the arm
             parts.append(box_along(bone, c, T, w + 1, 2, paint=paint_cuff(silver, glow), share=f"kcuff_{w}"))
         if 0.1 < s < 0.6 and rng.random() < 0.2:                        # barnacles on the outer curve
