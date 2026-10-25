@@ -84,51 +84,40 @@ def mailbase(st):
 
 
 def head(b, glow):
+    """A knight's great helm: domed plate, a cross of gold (vertical ridge, horizontal eye slit), breath holes, rivets, a gold rim."""
     st = b.strip
     mailbase(st)
     for n in ("right", "front", "left", "back"):
         f = b.face(n)
         h, w = f.shape[:2]
+        plate(f, rect(f, 1, 1, w - 2, h - 2), mode="cyl")
+        band(f, h - 4, 3, 1, w - 1)                                            # a gold rim round the base
+        band(f, 1, 2, 1, w - 1)                                                # and a thin one over the brow
         if n == "front":
-            plate(f, rect(f, 1, 1, w - 2, h - 2), mode="cyl")
-            band(f, 2, 6, 3, w - 3)                                           # a crown band set with gems
-            for x in (8, 15, 22):
-                gem(f, x, 5, glow, 1)
-            fill(f, rect(f, 4, 14, w - 8, 9), under, "v", lo=1.2, hi=3.0)       # the visor, with a glowing slit
+            fill(f, rect(f, 4, 13, w - 8, 5), under, "v", lo=1.2, hi=3.0)       # the eye slit
             for x in range(6, w - 6):
-                px(f, x, 17, glow[3]); px(f, x, 18, glow[5]); px(f, x, 19, glow[4])
-            band(f, 8, 22, 14, 18)                                             # the nose guard, gold, with a lit ridge
-            for x in range(8, 25, 4):                                          # breathing slits on the chin plate
-                for y in range(25, 29):
-                    px(f, x, y, under[0])
-            corner_rivets(f, rect(f, 1, 9, w - 2, 21))
+                if abs(x - w // 2) > 1:
+                    px(f, x, 15, glow[4]); px(f, x, 16, glow[2])
+            f[3:h - 4, w // 2 - 1:w // 2 + 1] = (*gold[4], 255)                 # the vertical ridge, crossing the slit
+            f[3:h - 4, w // 2 - 1] = (*gold[5], 255)
+            for x in (5, 8, 11, 20, 23, 26):                                    # breath holes either side
+                for y in (21, 24, 27):
+                    px(f, x, y, under[0]); px(f, x, y + 1, under[1])
+            corner_rivets(f, rect(f, 1, 3, w - 2, h - 8))
         elif n in ("right", "left"):
-            plate(f, rrect(f, 2, 3, w - 4, h - 6, 3), mode="cyl")
-            for ang, ln in ((-0.95, 13), (-0.55, 15), (-0.15, 13)):             # three swept feathers fanning from the ear
-                pts = []
-                for t in range(ln):
-                    x, y = 9 + t * math.cos(ang), 24 + t * math.sin(ang)
-                    wd = 1.6 * math.sin(math.pi * t / ln) ** 0.7
-                    for dy in range(int(-wd), int(wd) + 1):
-                        px(f, int(round(x)), int(round(y)) + dy, gold[5 if dy < 0 else 4 if dy == 0 else 3])
-            gem(f, 9, 24, glow, 2)
-            corner_rivets(f, rrect(f, 2, 3, w - 4, h - 6, 3))
+            f[7:h - 5, w // 2 - 1:w // 2 + 1] = (*gold[4], 255)                 # a gold strap down the side
+            gem(f, w // 2, 14, glow, 2)
+            for y in (6, 22):
+                rivets(f, (w // 2 - 6, w // 2 + 4), y, gold)
         else:
-            plate(f, rect(f, 1, 1, w - 2, 22), mode="cyl")
-            band(f, 2, 3, 3, w - 3)
-            f[3:22, w // 2 - 1:w // 2 + 1] = (*gold[4], 255)                  # a gold ridge down the back
-            scroll(f, 4, w // 2 - 3, 12, 2.2, 9.0)
-            scroll(f, w // 2 + 3, w - 4, 12, 2.2, 9.0)
-            fill(f, rect(f, 2, 24, w - 4, 7), under, "v", lo=1.4, hi=3.2)     # a mail neck guard
+            f[3:h - 4, w // 2 - 1:w // 2 + 1] = (*gold[4], 255)                  # a gold ridge down the back
+            for y in (8, 16, 24):
+                rivets(f, (w // 2 - 7, w // 2 + 5), y, gold)
     t = b.top
-    shade(t, ones(t), ivory, "none", lo=3.4, edge=False)                       # a sunburst with a glowing seed
-    c = 15.5
-    for k in range(12):
-        a = k * math.pi / 6
-        fill(t, poly(t, [(c + 5 * math.cos(a - .22), c + 5 * math.sin(a - .22)), (c + 14.5 * math.cos(a), c + 14.5 * math.sin(a)),
-                         (c + 5 * math.cos(a + .22), c + 5 * math.sin(a + .22))]), gold, "v", lo=3.0, hi=5.0, edge=False)
-    fill(t, ell(t, 11, 11, 10, 10), gold, "v", lo=3.0, hi=5.0)
-    fill(t, ell(t, 13, 13, 6, 6), glow, "v", lo=2.8, hi=5.2, edge=False)
+    shade(t, ones(t), ivory, "cyl", lo=3.4, edge=False)                        # the dome, a gold ridge running front to back
+    t[:, 15:17] = (*gold[4], 255)
+    fill(t, ell(t, 12, 12, 8, 8), gold, "v", lo=3.0, hi=5.0)
+    fill(t, ell(t, 14, 14, 4, 4), glow, "v", lo=2.8, hi=5.2, edge=False)
     fill(b.bottom, ones(b.bottom), under, "none", lo=2.0, edge=False)
 
 

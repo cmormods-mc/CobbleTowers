@@ -24,14 +24,15 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
 import art_dusk, art_paragon, art_root, art_tide  # noqa: E402
-import designs, designs2, designs3, designs4, designs7, rig  # noqa: E402
+import designs3, designs4, designs7, rig  # noqa: E402
 import generate_armor_textures as gt  # noqa: E402
 from sculpt import write  # noqa: E402
 
 TIDEFORGE_PALETTE = dict(metal=(190, 208, 222), trim=(60, 140, 200), cloth=(30, 84, 140), glow=(170, 240, 255), helm="visor", top="ridge")
-SETS = {"tideforge": (TIDEFORGE_PALETTE, art_tide, designs2.tide), "rootvale": ({}, art_root, designs2.root),
-        "duskvale": ({}, art_dusk, designs.dusk), "paragon": ({}, art_paragon, lambda look: designs4.paragon(look) + designs7.paragon_touches(look))}
-designs3.ACCENTS["paragon"] = lambda look: []              # the crest fin and plates carry the silhouette; no laurel or shoulder feathers
+SETS = {"tideforge": (TIDEFORGE_PALETTE, art_tide, designs7.region_touches), "rootvale": ({}, art_root, designs7.region_touches),
+        "duskvale": ({}, art_dusk, designs7.region_touches), "paragon": ({}, art_paragon, lambda look: designs4.paragon(look) + designs7.paragon_touches(look))}
+for _s in ("paragon", "tideforge", "rootvale", "duskvale"):
+    designs3.ACCENTS[_s] = lambda look: []              # the crest fin and plates carry the silhouette; no laurel or shoulder feathers
 
 
 # the rarest (tier III) sets wear the same models and art as their regional set; files are written under the alias
