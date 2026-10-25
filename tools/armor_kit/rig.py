@@ -77,6 +77,10 @@ def motion(name):
         return {"rotation": _samples(_wave(3.0, 0.15 * n, 2))}
     if re.match(r"sprout_\d+$", base):
         return {"rotation": _samples(lambda t, a=_wave(5.0, 0.04 * n, 0), b=_wave(2.0, 0.09 * n, 2): [x + y for x, y in zip(a(t), b(t))])}
+    if re.match(r"wing_\d+$", base):
+        return {"rotation": _samples(_wave(5.0 * mirror, 0.045 * n, 2))}            # a flutter that ripples out along the feathers
+    if base == "ring":
+        return {"rotation": _samples(lambda t: [0.0, 0.0, 360.0 * t]), "scale": _samples(_pulse(0.96, 1.06))}
     if base == "gem":
         return {"scale": _samples(_pulse(1.0, 1.18, 0.1))}
     if base == "boss":

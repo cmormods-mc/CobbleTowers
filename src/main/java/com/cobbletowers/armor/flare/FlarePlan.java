@@ -15,7 +15,7 @@ import java.util.Set;
  */
 public final class FlarePlan {
 
-    public static final Set<String> SETS = Set.of("tideforge", "rootvale", "duskvale");
+    public static final Set<String> SETS = Set.of("tideforge", "rootvale", "duskvale", "paragon");
 
     /** One particle: its id (or a {@code block:} / {@code dust_transition} form the service understands), where, how it moves. */
     public record Emit(String particle, double right, double up, double back, double velRight, double velUp, double velBack,
@@ -51,6 +51,7 @@ public final class FlarePlan {
             case "tideforge" -> tideforge(out, pass, phase, underwater, sprinting);
             case "rootvale" -> rootvale(out, pass, phase, underwater, sprinting);
             case "duskvale" -> duskvale(out, pass, phase, sprinting);
+            case "paragon" -> paragon(out, pass, phase, sprinting);
             default -> {
             }
         }
@@ -92,6 +93,26 @@ public final class FlarePlan {
         }
         if (sprinting && every(pass, phase, 2)) {
             out.add(new Emit(leaf, 0.0, 1.1, 0.5, 0, 0, 0.12, 0, 1));
+        }
+    }
+
+    // Paragon: glints circle the halo, gold sparks lift off the wing tips, soft white feathers drift down from the wings.
+    private static void paragon(List<Emit> out, long pass, int phase, boolean sprinting) {
+        if (every(pass, phase, 3)) {
+            int slot = (int) Math.floorMod(pass / 3 + phase, 8);
+            double a = slot * Math.PI / 4;
+            out.add(new Emit("end_rod", 0.42 * Math.cos(a), 1.94 + 0.42 * Math.sin(a), 0.40, 0, 0.004, 0, 0, 1));
+        }
+        if (every(pass, phase, 5)) {
+            int side = (int) Math.floorMod(pass / 5, 2) * 2 - 1;
+            out.add(new Emit("wax_on", 0.70 * side, 1.15 + 0.1 * Math.floorMod(pass / 5 + phase, 4), 0.34, 0.01 * side, 0.012, 0, 0, 1));
+        }
+        if (every(pass, phase, 6)) {
+            int side = (int) Math.floorMod(pass / 6, 2) * 2 - 1;
+            out.add(new Emit("cloud", 0.50 * side, 1.35, 0.38, 0.006 * side, -0.014, 0.01, 0, 1));   // a feather drifting down
+        }
+        if (sprinting && every(pass, phase, 2)) {
+            out.add(new Emit("end_rod", 0.0, 1.3, 0.5, 0, 0, 0.1, 0, 1));
         }
     }
 

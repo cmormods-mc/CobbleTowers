@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rebuilds the worn layers, geo models and ornament textures for Tideforge, Rootvale and Duskvale.
 
-    python tools/armor_kit/build.py [--out <assets/cobbletowers dir>] [--only tideforge,rootvale,duskvale,leviathan,heartwood,nightfall]
+    python tools/armor_kit/build.py [--out <assets/cobbletowers dir>] [--only tideforge,rootvale,duskvale,paragon,leviathan,heartwood,nightfall]
 
 Writes (default: src/main/resources/assets/cobbletowers):
   textures/models/armor/<set>_layer_1|2.png   the shader-layer art (256x64-style sheet + glow mask), painted by art_<set>.py
@@ -23,14 +23,15 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 
-import art_dusk, art_root, art_tide  # noqa: E402
-import designs, designs2, designs3, rig  # noqa: E402
+import art_dusk, art_paragon, art_root, art_tide  # noqa: E402
+import designs, designs2, designs3, designs4, rig  # noqa: E402
 import generate_armor_textures as gt  # noqa: E402
 from sculpt import write  # noqa: E402
 
 TIDEFORGE_PALETTE = dict(metal=(190, 208, 222), trim=(60, 140, 200), cloth=(30, 84, 140), glow=(170, 240, 255), helm="visor", top="ridge")
 SETS = {"tideforge": (TIDEFORGE_PALETTE, art_tide, designs2.tide), "rootvale": ({}, art_root, designs2.root),
-        "duskvale": ({}, art_dusk, designs.dusk)}
+        "duskvale": ({}, art_dusk, designs.dusk), "paragon": ({}, art_paragon, designs4.paragon)}
+designs3.ACCENTS["paragon"] = designs4.paragon_accents
 
 
 # the rarest (tier III) sets wear the same models and art as their regional set; files are written under the alias

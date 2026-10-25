@@ -16,7 +16,7 @@ class FlarePlanTest {
 
     /** Every particle id the service understands: a typo here would otherwise only show up as a skipped particle on a live server. */
     private static final Set<String> KNOWN = Set.of("cloud", "bubble", "bubble_pop", "electric_spark", "block:azalea_leaves",
-            "happy_villager", "end_rod", "dust_transition", "soul");
+            "happy_villager", "end_rod", "dust_transition", "soul", "wax_on");
 
     @Test
     void chestplateIdsMapToTheirSet() {
