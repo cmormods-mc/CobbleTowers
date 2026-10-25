@@ -226,26 +226,16 @@ def root(look):
     deepg = ramp((30, 52, 26))
     TOP, TIP, SHOULDER = 24.8, 2.8, 20.4
     CY = 17.0                                    # the seed
-    ANG = 10.0                                   # each half of the face tilts back this far: a gentle ridge down the middle
-    ZF = 6.0                                     # the ridge's depth
+    ZF = 7.4                                     # the flat face sits here: level with the rim, whose front is at 7.8
     rps = [ramp(c) for c in ((196, 238, 118), (166, 218, 100), (136, 194, 84), (108, 166, 70), (84, 138, 58), (64, 112, 48), (48, 90, 40))]
     parts = []
 
-    # behind the face: a stepped slab (solid from the side) and a dark kite plane so nothing shows daylight
+    # behind the face: a stepped slab (solid from the side) built right up to the face, so the face is level with a solid body
     def slab(a, n):
         shade(a, full(a), deepg if n == "back" else bark, "v", lo=1.2 if n == "back" else 1.6, hi=3.0 if n == "back" else 4.2)
     for y0, hh in ((1, 3), (4, 4), (8, 4), (12, 4), (16, 4), (20, 2)):
         w = max(1, round(2 * min(poly_hw(TOP - y0), poly_hw(TOP - y0 - hh + 0.01)) * 0.85))
-        parts.append(Part(B, [-w / 2, TOP - y0 - hh, 3.2], [w, hh, 1], paint=lambda v, l, m: sides(v, slab, bark)))
-
-    def well(a):
-        h, w = a.shape[:2]
-        a[:] = 0
-        for py in range(h):
-            for px in range(w):
-                if abs((px + 0.5) / 4 - w / 8) <= poly_hw(TOP - (py + 0.5) / 4) - 0.1:
-                    a[py, px] = (*deepg[1 if (px + py) % 5 else 0], 255)
-    parts.append(Part(B, [-9, TOP - 22, 4.3], [18, 22, 0], paint=lambda v, l, m: two(v, well)))
+        parts.append(Part(B, [-w / 2, TOP - y0 - hh, 3.2], [w, hh, 4], paint=lambda v, l, m: sides(v, slab, bark)))
 
     # the face: rings of petals radiating from the seed, outer rings painted first so each inner ring overlaps the one outside it
     RINGS = [(3.0, 7.4, 8, 0.0), (6.0, 10.6, 12, 0.5), (9.0, 13.8, 16, 0.0), (11.8, 16.6, 22, 0.5)]    # r0, r1, petals, angular offset
@@ -294,9 +284,7 @@ def root(look):
                     if 0 <= qy < h and 0 <= qx < w and pid[qy, qx] != pid[py, px] and col[py, px, 3] and not (a[py, px, :3] == np.array(glow[4])).all():
                         a[py, px] = (*ring_rps[3][1][0], 255)
                         break
-    for sgn, x0 in ((1, 0), (-1, -9)):
-        parts.append(Part(B, [x0, TOP - 22, ZF], [9, 22, 0], rot=(0, sgn * ANG, 0), pivot=[0, TOP - 11, ZF],
-                          paint=lambda v, l, m, xe=float(x0 + 9): two(v, lambda a: face_paint(a, xe))))
+    parts.append(Part(B, [-9, TOP - 22, ZF], [18, 22, 0], paint=lambda v, l, m: two(v, lambda a: face_paint(a, 9.0))))
 
     # the rim: slim bark beams, a thin lit inlay down each; whole boxes rotated about their centres to lie on the outline
     def beam_paint(a, n):
@@ -329,7 +317,7 @@ def root(look):
     def sprout(theta, reach, lift, k, rp, cap=99):
         sn, cs = math.sin(math.radians(theta)), math.cos(math.radians(theta))
         bxp, byp = BASE_R * sn, CY + BASE_R * cs
-        zb = ZF - abs(bxp) * math.sin(math.radians(ANG)) + 0.55
+        zb = ZF + 0.5
         length = min(cap, max(3, round((outline_dist(theta) + reach - BASE_R) / math.cos(math.radians(lift)))))
         width = 3 if length < 6 else 4
         return Part(B, [bxp - width / 2, byp, zb], [width, length, 0], rot=(-lift, 0, theta), pivot=[bxp, byp, zb], group=f"sprout_{k}",
@@ -349,7 +337,7 @@ def root(look):
         shade(a, d <= w / 2, bark, "v", lo=1.8, hi=5.0)
         put(a, (d <= w / 2 - 1.5) & (d > w / 2 - 3.0), glow[3])
         put(a, d <= w / 2 - 3.2, rps[6][3])
-    parts.append(Part(B, [-3, CY - 3, ZF + 0.9], [6, 6, 0], paint=lambda v, l, m: two(v, disc)))
+    parts.append(Part(B, [-3, CY - 3, ZF + 0.3], [6, 6, 0], paint=lambda v, l, m: two(v, disc)))
 
     def gem(v, l, m):
         for k in ("front", "left", "right", "top", "bottom"):
@@ -363,5 +351,5 @@ def root(look):
         put(a, poly_mask(w, h, [(0, 0), (c, c), (0, h - 1)]), glow[4])
         put(a, poly_mask(w, h, [(w - 1, 0), (c, c), (w - 1, h - 1)]), glow[3])
         put(a, poly_mask(w, h, [(0, h - 1), (c, c), (w - 1, h - 1)]), glow[2])
-    parts.append(Part(B, [-1.5, CY - 1.5, ZF + 0.95], [3, 3, 1], group="gem", gpivot=[0, CY, ZF + 1.4], paint=gem))
+    parts.append(Part(B, [-1.5, CY - 1.5, ZF + 0.35], [3, 3, 1], group="gem", gpivot=[0, CY, ZF + 0.85], paint=gem))
     return parts
