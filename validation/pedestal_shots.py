@@ -169,45 +169,88 @@ def main() -> None:
             if not wait_state(rcon, "ENCOUNTER_ACTIVE", seconds=60, floor=1):
                 sys.exit("floor 1 never opened: " + run_line(rcon))
             run = re.search(UUID_RE, run_line(rcon)).group(1)
-            clear_floor(rcon, run)
-            if not wait_state(rcon, "INTERMISSION", seconds=30, floor=1):
-                sys.exit("never reached the intermission: " + run_line(rcon))
-            time.sleep(4)
 
             def pos(selector: str) -> list[float]:
                 return nums(rcon.command(f"{IN_TOWER}data get entity {selector} Pos"))
 
-            vendor = pos("@e[type=minecraft:villager,tag=cobbletowers_vendor,limit=1]")
-            boxes = [pos(f"@e[tag=cobbletowers_pedestal_hitbox,tag=cobbletowers_pedestal_card_{i},limit=1]") for i in range(3)]
-            if len(vendor) != 3 or any(len(b) != 3 for b in boxes):
-                sys.exit(f"could not find the vendor/pedestals: {vendor} {boxes}")
-            print("vendor", vendor, "pedestals", boxes)
-            cx, cy, cz = boxes[1]
-            dx, dz = cx - vendor[0], cz - vendor[2]
-            norm = math.hypot(dx, dz) or 1.0
-            dx, dz = dx / norm, dz / norm
-
             def yaw_toward(fx: float, fz: float, tx: float, tz: float) -> float:
                 return math.degrees(math.atan2(-(tx - fx), tz - fz))
+
+            def burst(prefix: str, frames: int, delay: int) -> subprocess.Popen:
+                return subprocess.Popen(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(HERE / "capture_burst.ps1"),
+                                         "-OutDir", str(out / prefix), "-Frames", str(frames), "-DelayMs", str(delay), "-Prefix", prefix,
+                                         "-ProcessId", str(client.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            def sheet(prefix: str, cols: int, keep: int, skip: int = 0) -> None:
+                """A contact sheet of evenly spaced frames from a burst, so a moving effect reads as one picture."""
+                from PIL import Image, ImageDraw
+                files = sorted((out / prefix).glob(f"{prefix}_*.png"))[skip:]
+                if not files:
+                    print("no frames for", prefix)
+                    return
+                picks = [files[round(i * (len(files) - 1) / max(1, keep - 1))] for i in range(min(keep, len(files)))]
+                tiles = [Image.open(f).convert("RGB") for f in picks]
+                w, h = tiles[0].width // 2, tiles[0].height // 2
+                rows = (len(tiles) + cols - 1) // cols
+                canvas = Image.new("RGB", (cols * w, rows * h), "black")
+                for n, tile in enumerate(tiles):
+                    canvas.paste(tile.resize((w, h)), ((n % cols) * w, (n // cols) * h))
+                    ImageDraw.Draw(canvas).text(((n % cols) * w + 8, (n // cols) * h + 6), str(n + 1), fill="white")
+                target = out / f"{prefix}_sheet.png"
+                canvas.save(target)
+                shots.append(target)
+                print("sheet", target.name, len(picks), "frames")
+
+            # Where the row will stand, worked out from floor 1's anchors (entry 45,31,36; exit 51,31,42; spectator 39,31,42),
+            # so the camera is already in place when the cards grow in. Checked against the real entities below.
+            me = pos(VIEWER)
+            vendor_guess = (me[0] - 45.5 + 51.5, me[2] - 36.5 + 42.5)
+            cx, cy, cz = vendor_guess[0] - 4.0, me[1], vendor_guess[1]
+            dx, dz = -1.0, 0.0
 
             def stand(x: float, z: float, tx: float, tz: float, pitch: float) -> None:
                 rcon.command(f"{IN_TOWER}tp {VIEWER} {x:.2f} {cy:.2f} {z:.2f} {yaw_toward(x, z, tx, tz):.1f} {pitch}")
 
             time.sleep(6)  # the client interpolates the first teleport slowly
+            stand(cx + dx * 6.5, cz + dz * 6.5, cx, cz, 6)
+            time.sleep(4)
+            intro = burst("intro", 40, 40)     # the cards grow out of the floor when the floor is cleared
+            time.sleep(2.5)                     # the burst script settles the window before its first frame
+            clear_floor(rcon, run)
+            if not wait_state(rcon, "INTERMISSION", seconds=30, floor=1):
+                sys.exit("never reached the intermission: " + run_line(rcon))
+            intro.wait(timeout=90)
+            sheet("intro", 3, 12, skip=14)
+            time.sleep(2)
+
+            vendor = pos("@e[type=minecraft:villager,tag=cobbletowers_vendor,limit=1]")
+            boxes = [pos(f"@e[tag=cobbletowers_pedestal_hitbox,tag=cobbletowers_pedestal_card_{i},limit=1]") for i in range(3)]
+            if len(vendor) != 3 or any(len(b) != 3 for b in boxes):
+                sys.exit(f"could not find the vendor/pedestals: {vendor} {boxes}")
+            print("vendor", vendor, "pedestals", boxes, "guessed middle pedestal", (cx, cy, cz))
+            cx, cy, cz = boxes[1]
+            dx, dz = cx - vendor[0], cz - vendor[2]
+            norm = math.hypot(dx, dz) or 1.0
+            dx, dz = dx / norm, dz / norm
+
             # 1. overview: back from the row, looking at the middle pedestal
             stand(cx + dx * 7.0, cz + dz * 7.0, cx, cz, 4)
             time.sleep(3)
             photo("1_overview")
-            # 2. gaze: close to the first card, crosshair on its click box
+            # 2. gaze: close to the first card, crosshair on its click box (the card lifts)
             gx, gy, gz = boxes[0]
             stand(gx + dx * 3.4, gz + dz * 3.4, gx, gz, 0)
             time.sleep(3)
             photo("2_gaze_first_card")
-            # 3. a vote: the hologram settles (a solo party settles at once)
-            play(rcon, VIEWER, "pick 1")
-            time.sleep(3)
+            # 3. a vote: the draft locks in (a solo party settles at once); a burst catches the shockwave
             stand(cx + dx * 7.0, cz + dz * 7.0, cx, cz, 4)
-            time.sleep(3)
+            time.sleep(2)
+            lock = burst("lock", 40, 40)
+            time.sleep(1.3)
+            play(rcon, VIEWER, "pick 1")
+            lock.wait(timeout=90)
+            sheet("lock", 3, 12, skip=3)
+            time.sleep(2)
             photo("3_after_vote")
             # 4. the vendor beside them
             vx, vz = vendor[0], vendor[2]

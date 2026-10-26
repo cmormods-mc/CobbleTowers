@@ -16,6 +16,7 @@ final class PedestalHolo {
 
     private static final Pattern PAYOUT = Pattern.compile("\\+\\d+%");
     static final int MAX_DETAIL_CHARS = 30;
+    static final int MAX_NAME_CHARS = 22;
     private static final int CYAN = 0x6AE4FF;
     private static final int RED = 0xFF6B6B;
     private static final int MAGENTA = 0xFF7BFF;
@@ -29,7 +30,7 @@ final class PedestalHolo {
         boolean dim = settled && !chosen;
         int accent = dim ? DIM : look.accent();
 
-        Component name = text("▶ " + card.displayName().toUpperCase(Locale.ROOT), accent, true, false);
+        Component name = text("▶ " + clip(titleOf(card).toUpperCase(Locale.ROOT), MAX_NAME_CHARS), accent, true, false);
         Component big = text(payoutOf(card), dim ? DIM : (card.risk() < 0 ? CYAN : 0xFFF35A), true, false);
 
         MutableComponent body = Component.empty();
@@ -54,8 +55,20 @@ final class PedestalHolo {
         return card.risk() < 0 ? "EVENT" : "—";
     }
 
-    /** The card's downside (a "[-]" line) or, for a room, its first line; short enough for one row. */
+    /** A room's name runs on ("Forge: every player pays 125 CobbleDollars"): the part before the colon is its title. */
+    static String titleOf(IntermissionStatePayload.Card card) {
+        String raw = card.displayName();
+        int colon = raw.indexOf(':');
+        return card.risk() < 0 && colon > 0 ? raw.substring(0, colon).strip() : raw;
+    }
+
+    /** The card's downside (a "[-]" line) or, for a room, what follows its title; short enough for one row. */
     static String detailOf(IntermissionStatePayload.Card card) {
+        if (card.risk() < 0) {
+            String raw = card.displayName();
+            int colon = raw.indexOf(':');
+            if (colon > 0 && colon < raw.length() - 1) return clip(raw.substring(colon + 1).strip(), MAX_DETAIL_CHARS);
+        }
         String detail = "";
         for (String line : card.lines()) {
             if (line.startsWith("[-]")) {

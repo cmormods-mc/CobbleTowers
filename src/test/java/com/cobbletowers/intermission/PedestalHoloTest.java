@@ -41,8 +41,29 @@ class PedestalHoloTest {
     }
 
     @Test
-    void aRoomShowsItsFirstLineAsTheDetail() {
-        assertEquals("Library: study", PedestalHolo.detailOf(card(-1, "Library: study")));
+    void aRoomShowsItsFirstLineAsTheDetailWhenItsNameHasNoColon() {
+        IntermissionStatePayload.Card room = new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "x"),
+                "Mystery", 0, -1, "theme", List.of("A quiet place"));
+        assertEquals("A quiet place", PedestalHolo.detailOf(room));
+    }
+
+    @Test
+    void aRoomNameIsSplitAtTheColonIntoATitleAndADetail() {
+        IntermissionStatePayload.Card room = new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "x"),
+                "Forge: every player pays 125 CobbleDollars for a battle", 0, -1, "theme", List.of("Forge: every player pays 125 CobbleDollars for a battle"));
+        assertEquals("Forge", PedestalHolo.titleOf(room));
+        String detail = PedestalHolo.detailOf(room);
+        assertTrue(detail.startsWith("every player pays"), detail);
+        assertTrue(detail.length() <= PedestalHolo.MAX_DETAIL_CHARS, detail);
+        String name = PedestalHolo.build(room, 0, 1, false, false).name().getString();
+        assertTrue(name.length() <= PedestalHolo.MAX_NAME_CHARS + 2, name);
+    }
+
+    @Test
+    void aLongModifierNameIsClippedToOneRow() {
+        IntermissionStatePayload.Card long1 = new IntermissionStatePayload.Card(ResourceLocation.fromNamespaceAndPath("cobbletowers", "x"),
+                "An extraordinarily long modifier name indeed", 0, 1, "theme", List.of("[-] x"));
+        assertTrue(PedestalHolo.build(long1, 0, 1, false, false).name().getString().length() <= PedestalHolo.MAX_NAME_CHARS + 2);
     }
 
     @Test

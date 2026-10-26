@@ -88,6 +88,7 @@ public final class IntermissionService {
         if (run.isEmpty()) return "You are not at an intermission.";
         if (run.get().modifiers().draft().filter(draft -> !draft.resolved()).isEmpty()) return "There is nothing to vote on.";
         DraftService.vote(server, run.get().runId(), player.getUUID(), cardIndex, System.currentTimeMillis());
+        PedestalService.noteVote(run.get().runId(), cardIndex);
         PedestalService.refresh(server, run.get().runId());
         return afterChange(server, run.get().runId(), "Vote recorded.");
     }

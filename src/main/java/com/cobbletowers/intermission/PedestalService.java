@@ -35,6 +35,9 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -48,35 +51,69 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
 /**
- * The modifier cards as pedestals (P55, the "Arcade Cabinet" look): per card a neon-capped stand, a spinning gem, three
- * stacked text pieces (name, big payout, details) and an invisible click box, standing near the vendor for an
- * intermission on a tower with {@code pedestal_votes}. A right-click votes through the same {@link
- * IntermissionService#pick} as the menu. Entities only, so releasing the cell removes them; what they show is rebuilt
- * from the draft, never stored.
+ * The modifier cards as pedestals (P55, the "Arcade Cabinet" look): per card a neon stand on a glowing pad, a light
+ * beam, a spinning gem with dust orbiting it, three stacked text plates (name, big payout, details) and an invisible
+ * click box, standing near the vendor for an intermission on a tower with {@code pedestal_votes}. A right-click votes
+ * through the same {@link IntermissionService#pick} as the menu. Cards grow out of the floor one after another, the
+ * card under a crosshair lifts, and a settled vote fires a shockwave. Entities and particles only, so releasing the
+ * cell removes them; what they show is rebuilt from the draft, never stored.
  */
 public final class PedestalService {
 
     private static final int GAZE_EVERY_TICKS = 4;
     private static final int SYNC_EVERY_TICKS = 20;
-    private static final int AMBIENT_EVERY_TICKS = 8;
     private static final int SPIN_TICKS = 20;
-    /** Plate colours (ARGB): normal, the chosen card, and the cards that lost. */
+    private static final int GROW_TICKS = 10;
+    private static final int CARD_STAGGER_TICKS = 8;
+    /** Plate colours (ARGB): normal, a card under a crosshair, the chosen card, and the cards that lost. */
     private static final int PLATE = 0xE6040410;
+    private static final int PLATE_LIFTED = 0xE61A2A66;
     private static final int PLATE_CHOSEN = 0xE6063A1E;
     private static final int PLATE_LOST = 0x99040410;
+    private static final float TINY = 0.001f;
 
-    /** What stands for one run: enough to aim at it, redo it, and tell what changed. */
+    /** The entities of one card, by what they are, so an animation can reach each. */
+    private record CardParts(List<UUID> stand, UUID gem, UUID beam, UUID padOuter, UUID padInner, List<UUID> texts, UUID hitbox) {}
+
+    /** What stands for one run: enough to aim at it, redo it, and tell what changed. {@code lifted} is the cards under a crosshair. */
     private record Placed(List<PedestalRules.Slot> slots, List<String> names, List<PedestalStyle.Style> styles,
-                          String signature, boolean settled, int[] votes, int chosen, List<UUID> gems, List<UUID> texts) {}
+                          String signature, boolean settled, int[] votes, int chosen, List<CardParts> cards, Set<Integer> lifted,
+                          List<IntermissionStatePayload.Card> draftCards, long hold) {}
+
+    /** A pose of a display: where its model's corner lands, how it turns, how big it is. Text anchors at its own origin. */
+    private record Pose(double[] t, double[] q, float sx, float sy, float sz, boolean block) {
+        CompoundTag tag() {
+            return transformation(t, q, sx, sy, sz);
+        }
+
+        /** The same display shrunk to nothing at the point its middle sits, for a card that has not grown yet. */
+        CompoundTag collapsed() {
+            double[] centre = t;
+            if (block) {
+                double[] half = PedestalRules.rotate(q, sx / 2.0, sy / 2.0, sz / 2.0);
+                centre = new double[] {t[0] + half[0], t[1] + half[1], t[2] + half[2]};
+            }
+            return transformation(centre, q, TINY, TINY, TINY);
+        }
+    }
+
+    /** A display waiting to grow to its pose. */
+    private record Grow(UUID id, Pose pose, boolean text) {}
 
     private static final Map<UUID, Placed> PLACED = new HashMap<>();
     /** Which card each player's crosshair was last on, so the chime sounds once per look. */
     private static final Map<UUID, Integer> LAST_GAZE = new HashMap<>();
+    /** The card a player last clicked in each run: the guess at the winner when the record does not say. */
+    private static final Map<UUID, Integer> LAST_VOTE = new HashMap<>();
     private static final UUID NO_VIEWER = new UUID(0L, 0L);
+    /** How long the old cards stay up to celebrate before the next round grows in. */
+    private static final int LOCK_HOLD_TICKS = 26;
 
     static {
         ServerState.onStop(PLACED::clear);
         ServerState.onStop(LAST_GAZE::clear);
+        ServerState.onStop(LAST_VOTE::clear);
+        ServerState.onStop(PedestalAnim::clear);
     }
 
     private PedestalService() {}
@@ -97,9 +134,10 @@ public final class PedestalService {
             if (!live) entity.discard();
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTickCount() % GAZE_EVERY_TICKS != 0) return;
+            long now = server.getTickCount();
             try {
-                tick(server);
+                if (!PedestalAnim.idle()) PedestalAnim.run(server, now);
+                if (now % GAZE_EVERY_TICKS == 0) tick(server);
             } catch (RuntimeException ex) {
                 TowerLog.error("A pedestal tick failed", ex);
             }
@@ -139,6 +177,10 @@ public final class PedestalService {
                 toward.getX() + 0.5, toward.getZ() + 0.5, vendor.getY(), count);
         boolean settled = draft.state() == 2;
         int voters = Math.max(1, DraftService.voters(run).size());
+        Placed before = PLACED.get(run.runId());
+        long now = server.getTickCount();
+        if (before != null && before.hold() > now) return;   // the old cards are celebrating; a scheduled sync follows
+        Set<Integer> lifted = before == null ? new HashSet<>() : before.lifted();
 
         List<PedestalHolo.Holo> holos = new ArrayList<>();
         List<String> names = new ArrayList<>();
@@ -154,25 +196,82 @@ public final class PedestalService {
             votes[i] = card.votes();
             signature.append('|').append(holo.name().getString()).append(holo.big().getString()).append(holo.body().getString());
         }
-        Placed before = PLACED.get(run.runId());
         if (before != null && before.signature().equals(signature.toString())) return;
 
-        if (before != null && before.slots().equals(slots) && updateTexts(level, before.texts(), holos, settled, draft.chosen())) {
-            react(level, before, slots, styles, votes, settled, draft.chosen());
+        boolean sameCards = before != null && before.names().equals(names) && before.slots().equals(slots);
+        // A vote that settled the draft and opened the next round in one go: the old cards celebrate first.
+        if (before != null && !sameCards && !before.settled() && !before.cards().isEmpty()) {
+            int winner = winnerOf(before, run);
+            if (winner >= 0) {
+                finishRound(server, level, run, before, winner);
+                return;
+            }
+        }
+        if (sameCards && updateTexts(level, before.cards(), holos, settled, draft.chosen(), lifted)) {
+            react(server, level, before, run, slots, styles, votes, settled, draft.chosen());
             PLACED.put(run.runId(), new Placed(slots, names, styles, signature.toString(), settled, votes, draft.chosen(),
-                    before.gems(), before.texts()));
+                    before.cards(), lifted, draft.cards(), 0));
             return;
         }
+        // A new set of cards (the first draft, or an event room's next round) grows in; a repair does not replay it.
+        boolean intro = !sameCards && !settled;
+        PedestalAnim.cancel(run.runId());
         removeEntities(level, run);
-        List<UUID> gems = new ArrayList<>();
-        List<UUID> texts = new ArrayList<>();
-        if (!spawnAll(level, run, slots, styles, holos, settled, draft.chosen(), gems, texts)) {
+        List<CardParts> cards = new ArrayList<>();
+        List<List<Grow>> grows = new ArrayList<>();
+        lifted = new HashSet<>();
+        if (!spawnAll(level, run, slots, styles, holos, settled, draft.chosen(), intro, cards, grows)) {
             removeEntities(level, run);
             PLACED.remove(run.runId());
             TowerLog.warn("Run {}: the modifier pedestals could not be spawned", run.runId());
             return;
         }
-        PLACED.put(run.runId(), new Placed(slots, names, styles, signature.toString(), settled, votes, draft.chosen(), gems, texts));
+        PLACED.put(run.runId(), new Placed(slots, names, styles, signature.toString(), settled, votes, draft.chosen(), cards, lifted,
+                draft.cards(), 0));
+        if (intro) scheduleIntro(server, run.runId(), slots, styles, cards, grows);
+    }
+
+    /** Remembers which card a player just clicked, as the fallback guess at a round's winner. */
+    static void noteVote(UUID runId, int cardIndex) {
+        LAST_VOTE.put(runId, cardIndex);
+    }
+
+    /**
+     * Which of the old cards won, or -1. The run's record says it for a modifier or a relic (it is the newest one held);
+     * for a room the best the pedestals can do is the most-voted card, then the card last clicked.
+     */
+    private static int winnerOf(Placed old, PersistedRun run) {
+        List<net.minecraft.resources.ResourceLocation> won = new ArrayList<>();
+        var modifiers = run.modifiers();
+        if (!modifiers.accumulated().isEmpty()) won.add(modifiers.accumulated().get(modifiers.accumulated().size() - 1));
+        if (!modifiers.relics().isEmpty()) won.add(modifiers.relics().get(modifiers.relics().size() - 1));
+        for (int i = 0; i < old.draftCards().size(); i++) {
+            if (won.contains(old.draftCards().get(i).id())) return i;
+        }
+        int best = -1;
+        for (int i = 0; i < old.votes().length; i++) {
+            if (old.votes()[i] > 0 && (best < 0 || old.votes()[i] > old.votes()[best])) best = i;
+        }
+        if (best >= 0) return best;
+        Integer clicked = LAST_VOTE.get(run.runId());
+        return clicked != null && clicked < old.cards().size() ? clicked : -1;
+    }
+
+    /** Plays the lock-in on the old cards, keeps them up for a moment, then lets the next round grow in. */
+    private static void finishRound(MinecraftServer server, ServerLevel level, PersistedRun run, Placed old, int winner) {
+        long now = server.getTickCount();
+        LAST_VOTE.remove(run.runId());
+        int voters = Math.max(1, DraftService.voters(run).size());
+        List<PedestalHolo.Holo> settled = new ArrayList<>();
+        for (int i = 0; i < old.draftCards().size(); i++) {
+            IntermissionStatePayload.Card card = old.draftCards().get(i);
+            settled.add(PedestalHolo.build(card, card.votes() + (i == winner ? 1 : 0), voters, true, i == winner));
+        }
+        updateTexts(level, old.cards(), settled, true, winner, old.lifted());
+        lockIn(server, level, old, run, old.slots(), old.styles(), winner);
+        PLACED.put(run.runId(), new Placed(old.slots(), old.names(), old.styles(), "held", true, old.votes(), winner, old.cards(),
+                old.lifted(), old.draftCards(), now + LOCK_HOLD_TICKS));
+        PedestalAnim.at(now + LOCK_HOLD_TICKS, run.runId(), s -> refresh(s, run.runId()));
     }
 
     /** Called after a vote so the count on the hologram changes at once rather than at the next sync. */
@@ -183,6 +282,8 @@ public final class PedestalService {
     /** Takes the run's pedestals down. Safe to call at any time and more than once. */
     public static void despawn(MinecraftServer server, PersistedRun run) {
         PLACED.remove(run.runId());
+        LAST_VOTE.remove(run.runId());
+        PedestalAnim.cancel(run.runId());
         ServerLevel level = TowerDimension.level(server);
         if (level != null && !run.cell().isEmpty()) removeEntities(level, run);
     }
@@ -199,8 +300,14 @@ public final class PedestalService {
         for (Entity entity : entitiesOf(level, run)) entity.discard();
     }
 
-    private static int plate(boolean settled, int chosen, int index) {
-        return !settled ? PLATE : chosen == index ? PLATE_CHOSEN : PLATE_LOST;
+    private static Entity live(ServerLevel level, UUID id) {
+        Entity entity = id == null ? null : level.getEntity(id);
+        return entity == null || entity.isRemoved() ? null : entity;
+    }
+
+    private static int plate(boolean settled, int chosen, int index, boolean lifted) {
+        if (settled) return chosen == index ? PLATE_CHOSEN : PLATE_LOST;
+        return lifted ? PLATE_LIFTED : PLATE;
     }
 
     private static Component piece(PedestalHolo.Holo holo, int line) {
@@ -211,15 +318,16 @@ public final class PedestalService {
         };
     }
 
-    private static boolean updateTexts(ServerLevel level, List<UUID> texts, List<PedestalHolo.Holo> holos, boolean settled, int chosen) {
-        if (texts.size() != holos.size() * 3) return false;
+    private static boolean updateTexts(ServerLevel level, List<CardParts> cards, List<PedestalHolo.Holo> holos, boolean settled,
+                                       int chosen, Set<Integer> lifted) {
+        if (cards.size() != holos.size()) return false;
         for (int i = 0; i < holos.size(); i++) {
             for (int line = 0; line < 3; line++) {
-                Entity entity = level.getEntity(texts.get(i * 3 + line));
-                if (entity == null || entity.isRemoved()) return false;
+                Entity entity = live(level, cards.get(i).texts().get(line));
+                if (entity == null) return false;
                 CompoundTag data = entity.saveWithoutId(new CompoundTag());
                 data.putString("text", Component.Serializer.toJson(piece(holos.get(i), line), level.registryAccess()));
-                data.putInt("background", plate(settled, chosen, i));
+                data.putInt("background", plate(settled, chosen, i, lifted.contains(i)));
                 entity.load(data);
             }
         }
@@ -228,76 +336,87 @@ public final class PedestalService {
 
     private static boolean spawnAll(ServerLevel level, PersistedRun run, List<PedestalRules.Slot> slots,
                                     List<PedestalStyle.Style> styles, List<PedestalHolo.Holo> holos, boolean settled,
-                                    int chosen, List<UUID> gems, List<UUID> texts) {
+                                    int chosen, boolean intro, List<CardParts> out, List<List<Grow>> grows) {
         PedestalRules.Stack stack = PedestalRules.stack(PedestalRules.BODY_LINES);
+        double[] ys = {stack.nameY(), stack.bigY(), stack.bodyY()};
+        double[] scales = {PedestalRules.NAME_SCALE, PedestalRules.BIG_SCALE, PedestalRules.BODY_SCALE};
+        int[] widths = {400, 200, 190};
+        double[] noMove = {0, 0, 0};
+        double[] noTurn = {0, 0, 0, 1};
         for (int i = 0; i < slots.size(); i++) {
             PedestalRules.Slot slot = slots.get(i);
             PedestalStyle.Style look = styles.get(i);
             String[] tags = {PedestalRules.TAG, PedestalRules.runTag(run.runId()), PedestalRules.cardTag(i)};
-            List<CompoundTag> parts = new ArrayList<>();
+            List<Grow> grow = new ArrayList<>();
 
-            // stand: dark base and column, neon trim and cap
-            parts.add(block("minecraft:black_concrete", slot, 0, -0.55f, 0f, -0.55f, 1.1f, 0.28f, 1.1f, false, tags, PedestalRules.PART_STAND));
-            parts.add(block(look.capBlock(), slot, 0, -0.58f, 0.28f, -0.58f, 1.16f, 0.05f, 1.16f, true, tags, PedestalRules.PART_STAND));
-            parts.add(block("minecraft:polished_blackstone", slot, 0, -0.35f, 0.33f, -0.35f, 0.7f, 0.62f, 0.7f, false, tags, PedestalRules.PART_STAND));
-            parts.add(block(look.capBlock(), slot, 0, -0.45f, 0.95f, -0.45f, 0.9f, 0.1f, 0.9f, true, tags, PedestalRules.PART_STAND));
+            UUID padOuter = block(level, look.capBlock(), slot, 0, new Pose(new double[] {-1.0, 0.005, -1.0}, noTurn, 2.0f, 0.03f, 2.0f, true),
+                    true, tags, PedestalRules.PART_STAND, intro, grow);
+            UUID padInner = block(level, "minecraft:black_concrete", slot, 0, new Pose(new double[] {-0.91, 0.0075, -0.91}, noTurn, 1.82f, 0.035f, 1.82f, true),
+                    false, tags, PedestalRules.PART_STAND, intro, grow);
+            List<UUID> stand = new ArrayList<>();
+            stand.add(block(level, "minecraft:black_concrete", slot, 0, new Pose(new double[] {-0.55, 0, -0.55}, noTurn, 1.1f, 0.28f, 1.1f, true),
+                    false, tags, PedestalRules.PART_STAND, intro, grow));
+            stand.add(block(level, look.capBlock(), slot, 0, new Pose(new double[] {-0.58, 0.28, -0.58}, noTurn, 1.16f, 0.05f, 1.16f, true),
+                    true, tags, PedestalRules.PART_STAND, intro, grow));
+            stand.add(block(level, "minecraft:polished_blackstone", slot, 0, new Pose(new double[] {-0.35, 0.33, -0.35}, noTurn, 0.7f, 0.62f, 0.7f, true),
+                    false, tags, PedestalRules.PART_STAND, intro, grow));
+            stand.add(block(level, look.capBlock(), slot, 0, new Pose(new double[] {-0.45, 0.95, -0.45}, noTurn, 0.9f, 0.1f, 0.9f, true),
+                    true, tags, PedestalRules.PART_STAND, intro, grow));
+            UUID beam = block(level, look.beamBlock(), slot, 0, beamPose(0.14), true, tags, PedestalRules.PART_STAND, intro, grow);
+            UUID gem = block(level, look.gemBlock(), slot, PedestalRules.GEM_HEIGHT, gemPose(0, 0), true, tags, PedestalRules.PART_GEM, intro, grow);
 
-            CompoundTag gem = base("minecraft:block_display", slot.x(), slot.y() + PedestalRules.GEM_HEIGHT, slot.z(), tags, PedestalRules.PART_GEM);
-            CompoundTag state = new CompoundTag();
-            state.putString("Name", look.gemBlock());
-            gem.put("block_state", state);
-            gem.put("transformation", gemTransformation(0));
-            gem.put("brightness", fullbright());
-            gem.putInt("interpolation_duration", SPIN_TICKS);
-
-            double[] ys = {stack.nameY(), stack.bigY(), stack.bodyY()};
-            double[] scales = {PedestalRules.NAME_SCALE, PedestalRules.BIG_SCALE, PedestalRules.BODY_SCALE};
-            int[] widths = {400, 200, 190};
-            List<CompoundTag> lines = new ArrayList<>();
+            List<UUID> texts = new ArrayList<>();
             for (int line = 0; line < 3; line++) {
+                float s = (float) scales[line];
+                Pose pose = new Pose(noMove, noTurn, s, s, s, false);
                 CompoundTag text = base("minecraft:text_display", slot.x(), slot.y() + ys[line], slot.z(), tags, PedestalRules.PART_TEXT);
                 text.getList("Tags", 8).add(StringTag.valueOf(PedestalRules.lineTag(line)));
                 text.putString("text", Component.Serializer.toJson(piece(holos.get(i), line), level.registryAccess()));
                 text.putString("billboard", "center");
                 text.putString("alignment", "center");
                 text.putInt("line_width", widths[line]);
-                text.putInt("background", plate(settled, chosen, i));
+                text.putInt("background", plate(settled, chosen, i, false));
                 text.putBoolean("shadow", true);
                 text.put("brightness", fullbright());
-                float s = (float) scales[line];
-                text.put("transformation", transformation(new double[] {0, 0, 0}, new double[] {0, 0, 0, 1}, s, s, s));
-                lines.add(text);
+                text.put("transformation", intro ? pose.collapsed() : pose.tag());
+                if (intro) text.putByte("text_opacity", (byte) 5);
+                UUID id = add(level, text);
+                if (id == null) return false;
+                texts.add(id);
+                if (intro) grow.add(new Grow(id, pose, true));
             }
 
             CompoundTag hitbox = base("minecraft:interaction", slot.x(), slot.y(), slot.z(), tags, PedestalRules.PART_HITBOX);
             hitbox.putFloat("width", (float) PedestalRules.HITBOX_WIDTH);
             hitbox.putFloat("height", (float) PedestalRules.HITBOX_HEIGHT);
             hitbox.putBoolean("response", true);
+            UUID hit = add(level, hitbox);
 
-            for (CompoundTag tag : parts) if (!add(level, tag, null)) return false;
-            if (!add(level, gem, gems)) return false;
-            for (CompoundTag tag : lines) if (!add(level, tag, texts)) return false;
-            if (!add(level, hitbox, null)) return false;
+            if (hit == null || gem == null || beam == null || padOuter == null || padInner == null || stand.contains(null)) return false;
+            out.add(new CardParts(stand, gem, beam, padOuter, padInner, texts, hit));
+            grows.add(grow);
         }
         return true;
     }
 
-    private static boolean add(ServerLevel level, CompoundTag tag, List<UUID> sink) {
+    private static UUID add(ServerLevel level, CompoundTag tag) {
         Optional<Entity> made = EntityType.create(tag, level);
-        if (made.isEmpty() || !level.addFreshEntity(made.get())) return false;
-        if (sink != null) sink.add(made.get().getUUID());
-        return true;
+        if (made.isEmpty() || !level.addFreshEntity(made.get())) return null;
+        return made.get().getUUID();
     }
 
-    private static CompoundTag block(String blockId, PedestalRules.Slot slot, double dy, float tx, float ty, float tz,
-                                     float sx, float sy, float sz, boolean glow, String[] tags, String part) {
+    /** One block display at the slot, collapsed first when the card is about to grow in. Null when it could not be spawned. */
+    private static UUID block(ServerLevel level, String blockId, PedestalRules.Slot slot, double dy, Pose pose, boolean glow,
+                              String[] tags, String part, boolean intro, List<Grow> grow) {
         CompoundTag tag = base("minecraft:block_display", slot.x(), slot.y() + dy, slot.z(), tags, part);
         CompoundTag state = new CompoundTag();
         state.putString("Name", blockId);
         tag.put("block_state", state);
-        tag.put("transformation", transformation(new double[] {tx, ty, tz}, new double[] {0, 0, 0, 1}, sx, sy, sz));
+        tag.put("transformation", intro ? pose.collapsed() : pose.tag());
         if (glow) tag.put("brightness", fullbright());
-        return tag;
+        UUID id = add(level, tag);
+        if (id != null && intro) grow.add(new Grow(id, pose, false));
+        return id;
     }
 
     private static CompoundTag fullbright() {
@@ -323,10 +442,21 @@ public final class PedestalService {
         return tag;
     }
 
-    private static CompoundTag gemTransformation(double spin) {
+    /** The beam: a thin translucent column from the cap toward the ceiling; {@code width} makes it breathe. */
+    private static Pose beamPose(double width) {
+        return new Pose(new double[] {-width / 2, 1.05, -width / 2}, new double[] {0, 0, 0, 1}, (float) width, 5.6f, (float) width, true);
+    }
+
+    private static Pose padPose(double size) {
+        return new Pose(new double[] {-size / 2, 0.005, -size / 2}, new double[] {0, 0, 0, 1}, (float) size, 0.03f, (float) size, true);
+    }
+
+    /** The gem at {@code spin} radians; {@code lift} raises and enlarges it (1 for a card under a crosshair, 2 for the winner). */
+    private static Pose gemPose(double spin, double lift) {
         double[] q = PedestalRules.gemRotation(spin);
-        return transformation(PedestalRules.centreOffset(q, PedestalRules.GEM_SIZE), q,
-                (float) PedestalRules.GEM_SIZE, (float) PedestalRules.GEM_SIZE, (float) PedestalRules.GEM_SIZE);
+        double size = PedestalRules.GEM_SIZE * (1 + 0.2 * lift);
+        double[] centre = PedestalRules.centreOffset(q, size);
+        return new Pose(new double[] {centre[0], centre[1] + 0.18 * lift, centre[2]}, q, (float) size, (float) size, (float) size, true);
     }
 
     private static CompoundTag transformation(double[] translation, double[] rotation, float sx, float sy, float sz) {
@@ -342,6 +472,37 @@ public final class PedestalService {
         ListTag list = new ListTag();
         for (float v : values) list.add(FloatTag.valueOf(v));
         return list;
+    }
+
+    /** Moves a display to a pose over {@code ticks}; the client interpolates, so one update gives a smooth move. */
+    private static void pose(ServerLevel level, UUID id, Pose pose, int ticks) {
+        Entity entity = live(level, id);
+        if (entity == null) return;
+        CompoundTag data = entity.saveWithoutId(new CompoundTag());
+        data.put("transformation", pose.tag());
+        data.putInt("start_interpolation", 0);
+        data.putInt("interpolation_duration", ticks);
+        entity.load(data);
+    }
+
+    private static void opacity(ServerLevel level, List<UUID> texts, int value) {
+        for (UUID id : texts) {
+            Entity entity = live(level, id);
+            if (entity == null) continue;
+            CompoundTag data = entity.saveWithoutId(new CompoundTag());
+            data.putByte("text_opacity", (byte) value);
+            entity.load(data);
+        }
+    }
+
+    private static void background(ServerLevel level, List<UUID> texts, int argb) {
+        for (UUID id : texts) {
+            Entity entity = live(level, id);
+            if (entity == null) continue;
+            CompoundTag data = entity.saveWithoutId(new CompoundTag());
+            data.putInt("background", argb);
+            entity.load(data);
+        }
     }
 
     // ---- effects ---------------------------------------------------------------------------------------------
@@ -361,9 +522,46 @@ public final class PedestalService {
         }
     }
 
-    /** What changed since the last look: a card that gained a vote pops, and a card that wins fires. */
-    private static void react(ServerLevel level, Placed before, List<PedestalRules.Slot> slots, List<PedestalStyle.Style> styles,
-                              int[] votes, boolean settled, int chosen) {
+    /** Each card grows out of the floor in turn, its plates flickering in, with a spark and a chime as it lands. */
+    private static void scheduleIntro(MinecraftServer server, UUID runId, List<PedestalRules.Slot> slots, List<PedestalStyle.Style> styles,
+                                      List<CardParts> cards, List<List<Grow>> grows) {
+        long start = server.getTickCount() + 6;
+        for (int i = 0; i < cards.size(); i++) {
+            final int card = i;
+            long due = start + (long) i * CARD_STAGGER_TICKS;
+            PedestalAnim.at(due, runId, s -> {
+                ServerLevel level = TowerDimension.level(s);
+                if (level == null) return;
+                for (Grow g : grows.get(card)) {
+                    Entity entity = live(level, g.id());
+                    if (entity == null) continue;
+                    CompoundTag data = entity.saveWithoutId(new CompoundTag());
+                    data.put("transformation", g.pose().tag());
+                    data.putInt("start_interpolation", 0);
+                    data.putInt("interpolation_duration", g.text() ? GROW_TICKS - 2 : GROW_TICKS);
+                    if (g.text()) data.putByte("text_opacity", (byte) 40);
+                    entity.load(data);
+                }
+                PedestalRules.Slot slot = slots.get(card);
+                burst(level, slot, styles.get(card), 14, false);
+                level.playSound(null, slot.x(), slot.y() + 1.5, slot.z(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS,
+                        0.9f, 0.9f + 0.25f * card);
+            });
+            // the plates flicker in: dim, bright, dim, solid
+            int[] flicker = {200, 70, 255};
+            for (int step = 0; step < flicker.length; step++) {
+                final int value = flicker[step];
+                PedestalAnim.at(due + 2L * (step + 1), runId, s -> {
+                    ServerLevel level = TowerDimension.level(s);
+                    if (level != null) opacity(level, cards.get(card).texts(), value);
+                });
+            }
+        }
+    }
+
+    /** What changed since the last look: a card that gained a vote pops, and a settled draft locks in. */
+    private static void react(MinecraftServer server, ServerLevel level, Placed before, PersistedRun run,
+                              List<PedestalRules.Slot> slots, List<PedestalStyle.Style> styles, int[] votes, boolean settled, int chosen) {
         for (int i = 0; i < slots.size() && i < before.votes().length; i++) {
             if (votes[i] > before.votes()[i]) {
                 PedestalRules.Slot slot = slots.get(i);
@@ -371,40 +569,118 @@ public final class PedestalService {
                 level.playSound(null, slot.x(), slot.y() + 1.5, slot.z(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.BLOCKS, 0.8f, 1.3f);
             }
         }
-        if (settled && !before.settled() && chosen >= 0 && chosen < slots.size()) {
-            PedestalRules.Slot slot = slots.get(chosen);
-            burst(level, slot, styles.get(chosen), 28, true);
-            level.playSound(null, slot.x(), slot.y() + 1.5, slot.z(), SoundEvents.PLAYER_LEVELUP, SoundSource.BLOCKS, 0.7f, 1.0f);
-        }
+        if (settled && !before.settled() && chosen >= 0 && chosen < slots.size()) lockIn(server, level, before, run, slots, styles, chosen);
     }
 
-    /** Turns each gem a quarter turn; the client interpolates the second between, so the spin looks continuous. */
-    private static void spin(ServerLevel level, long tick) {
-        double angle = (tick / SPIN_TICKS) * (Math.PI / 2);
-        for (UUID runId : List.copyOf(PLACED.keySet())) {
-            Placed placed = PLACED.get(runId);
-            for (UUID id : placed.gems()) {
-                Entity gem = level.getEntity(id);
-                if (gem == null || gem.isRemoved()) {
-                    PLACED.remove(runId);   // the next sync puts the stand back up
-                    break;
+    /**
+     * The vote locks in: a shockwave runs out across the floor, the winning gem and beam surge, a title tells the party,
+     * and the cards that lost flicker out to static.
+     */
+    private static void lockIn(MinecraftServer server, ServerLevel level, Placed placed, PersistedRun run,
+                               List<PedestalRules.Slot> slots, List<PedestalStyle.Style> styles, int chosen) {
+        long now = server.getTickCount();
+        UUID runId = run.runId();
+        PedestalRules.Slot slot = slots.get(chosen);
+        PedestalStyle.Style look = styles.get(chosen);
+        CardParts winner = placed.cards().get(chosen);
+        placed.lifted().clear();
+
+        burst(level, slot, look, 28, true);
+        level.playSound(null, slot.x(), slot.y() + 1.5, slot.z(), SoundEvents.PLAYER_LEVELUP, SoundSource.BLOCKS, 0.8f, 1.0f);
+        level.playSound(null, slot.x(), slot.y() + 1.0, slot.z(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 1.0f, 0.7f);
+        announce(server, DraftService.voters(run), placed.names().get(chosen), look.accent());
+
+        pose(level, winner.gem(), gemPose(angleAt(now), 2), 4);
+        pose(level, winner.beam(), beamPose(0.5), 4);
+        pose(level, winner.padOuter(), padPose(2.5), 4);
+        PedestalAnim.at(now + 10, runId, s -> {
+            ServerLevel l = TowerDimension.level(s);
+            if (l == null) return;
+            pose(l, winner.gem(), gemPose(angleAt(s.getTickCount()), 0), 8);
+            pose(l, winner.beam(), beamPose(0.14), 8);
+            pose(l, winner.padOuter(), padPose(2.0), 8);
+        });
+        for (int k = 1; k <= 10; k++) {
+            final double radius = 0.5 + 0.55 * k;
+            PedestalAnim.at(now + k, runId, s -> {
+                ServerLevel l = TowerDimension.level(s);
+                if (l == null) return;
+                for (int j = 0; j < 28; j++) {
+                    double[] p = PedestalRules.ring(slot.x(), slot.z(), radius, j * Math.PI * 2 / 28);
+                    l.sendParticles(ParticleTypes.END_ROD, p[0], slot.y() + 0.15, p[1], 0, 0, 0.03, 0, 1.0);
+                    if (j % 2 == 0) l.sendParticles(dust(look, 1.2f), p[0], slot.y() + 0.12, p[1], 1, 0, 0, 0, 0.0);
                 }
-                CompoundTag data = gem.saveWithoutId(new CompoundTag());
-                data.put("transformation", gemTransformation(angle));
-                data.putInt("start_interpolation", 0);
-                data.putInt("interpolation_duration", SPIN_TICKS);
-                gem.load(data);
+            });
+        }
+        // the losing cards flicker to static, then stay dim
+        int[] flicker = {60, 200, 40, 120};
+        for (int i = 0; i < placed.cards().size(); i++) {
+            if (i == chosen) continue;
+            final List<UUID> texts = placed.cards().get(i).texts();
+            for (int step = 0; step < flicker.length; step++) {
+                final int value = flicker[step];
+                PedestalAnim.at(now + 2L * (step + 1), runId, s -> {
+                    ServerLevel l = TowerDimension.level(s);
+                    if (l != null) opacity(l, texts, value);
+                });
             }
         }
     }
 
-    /** A few tinted sparks hovering round each gem. */
-    private static void ambient(ServerLevel level) {
+    private static void announce(MinecraftServer server, List<UUID> audience, String name, int accent) {
+        Component title = Component.literal("LOCKED IN").setStyle(Style.EMPTY.withColor(accent).withBold(true));
+        Component subtitle = Component.literal(name.toUpperCase(Locale.ROOT)).setStyle(Style.EMPTY.withColor(0xFFFFFF));
+        for (UUID id : audience) {
+            ServerPlayer player = server.getPlayerList().getPlayer(id);
+            if (player == null) continue;
+            player.connection.send(new ClientboundSetTitlesAnimationPacket(4, 26, 10));
+            player.connection.send(new ClientboundSetSubtitleTextPacket(subtitle));
+            player.connection.send(new ClientboundSetTitleTextPacket(title));
+        }
+    }
+
+    private static double angleAt(long tick) {
+        return (tick / SPIN_TICKS) * (Math.PI / 2);
+    }
+
+    /** Every second: each gem turns a quarter, and the beams and pads breathe. The client smooths the second between. */
+    private static void spin(ServerLevel level, long tick) {
+        double angle = angleAt(tick);
+        boolean wide = (tick / SPIN_TICKS) % 2 == 0;
+        for (UUID runId : List.copyOf(PLACED.keySet())) {
+            Placed placed = PLACED.get(runId);
+            for (int i = 0; i < placed.cards().size(); i++) {
+                CardParts card = placed.cards().get(i);
+                if (live(level, card.gem()) == null) {
+                    PLACED.remove(runId);   // the next sync puts the stand back up
+                    break;
+                }
+                if (placed.settled() && placed.chosen() != i) continue;   // the cards that lost stand still
+                pose(level, card.gem(), gemPose(angle, placed.lifted().contains(i) ? 1 : 0), SPIN_TICKS);
+                pose(level, card.beam(), beamPose(wide ? 0.2 : 0.12), SPIN_TICKS);
+                pose(level, card.padOuter(), padPose(wide ? 2.14 : 2.0), SPIN_TICKS);
+            }
+        }
+    }
+
+    /** Dust orbiting each gem on two crossed rings, a spark rising up each beam, and the odd drift of runes. */
+    private static void ambient(ServerLevel level, long tick) {
+        double angle = tick * 0.22;
         for (Placed placed : PLACED.values()) {
             for (int i = 0; i < placed.slots().size(); i++) {
+                if (placed.settled() && placed.chosen() != i) continue;
                 PedestalRules.Slot slot = placed.slots().get(i);
-                level.sendParticles(dust(placed.styles().get(i), 0.9f), slot.x(), slot.y() + PedestalRules.GEM_HEIGHT, slot.z(),
-                        2, 0.4, 0.4, 0.4, 0.0);
+                PedestalStyle.Style look = placed.styles().get(i);
+                double gy = slot.y() + PedestalRules.GEM_HEIGHT;
+                for (int ring = 0; ring < 2; ring++) {
+                    for (int j = 0; j < 3; j++) {
+                        double[] p = PedestalRules.orbit(slot.x(), gy, slot.z(), 0.62, (ring == 0 ? angle : -angle) + j * Math.PI * 2 / 3,
+                                ring == 0 ? 0.55 : -0.55);
+                        level.sendParticles(dust(look, 0.8f), p[0], p[1], p[2], 1, 0, 0, 0, 0.0);
+                    }
+                }
+                level.sendParticles(ParticleTypes.END_ROD, slot.x(), slot.y() + 1.3, slot.z(), 0, 0, 1.0, 0, 0.04);
+                if (tick % 16 == 0) level.sendParticles(ParticleTypes.ENCHANT, slot.x(), gy + 0.3, slot.z(), 6, 0.6, 0.5, 0.6, 0.5);
             }
         }
     }
@@ -436,6 +712,7 @@ public final class PedestalService {
         boolean syncNow = now % SYNC_EVERY_TICKS == 0;
         Set<UUID> synced = new HashSet<>();
         Set<UUID> watching = new HashSet<>();
+        Map<UUID, Set<Integer>> looked = new HashMap<>();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (!player.level().dimension().equals(TowerDimension.LEVEL)) continue;
             Optional<PersistedRun> run = TowerRuns.forPlayer(player.getUUID()).filter(r -> r.state() == RunState.INTERMISSION);
@@ -444,15 +721,36 @@ public final class PedestalService {
             // A run with nothing standing yet (after a restart) is brought up here, then kept in step each second.
             if ((syncNow || !PLACED.containsKey(runId)) && synced.add(runId)) sync(server, run.get());
             watching.add(player.getUUID());
-            gaze(player, PLACED.get(runId));
+            int index = gaze(player, PLACED.get(runId));
+            if (index >= 0) looked.computeIfAbsent(runId, id -> new HashSet<>()).add(index);
         }
         LAST_GAZE.keySet().retainAll(watching);
         ServerLevel level = TowerDimension.level(server);
         if (level == null || PLACED.isEmpty()) return;
-        if (now % AMBIENT_EVERY_TICKS == 0) ambient(level);
+        lift(level, now, looked);
+        ambient(level, now);
         if (syncNow) {
             prune(server);
             spin(level, now);
+        }
+    }
+
+    /** The card under any player's crosshair lifts and its plates brighten; it settles back when nobody looks. */
+    private static void lift(ServerLevel level, long now, Map<UUID, Set<Integer>> looked) {
+        for (Map.Entry<UUID, Placed> entry : PLACED.entrySet()) {
+            Placed placed = entry.getValue();
+            if (placed.settled()) continue;
+            Set<Integer> want = looked.getOrDefault(entry.getKey(), Set.of());
+            if (want.equals(placed.lifted())) continue;
+            for (int i = 0; i < placed.cards().size(); i++) {
+                boolean on = want.contains(i);
+                if (on == placed.lifted().contains(i)) continue;
+                CardParts card = placed.cards().get(i);
+                pose(level, card.gem(), gemPose(angleAt(now), on ? 1 : 0), 4);
+                background(level, card.texts(), on ? PLATE_LIFTED : PLATE);
+            }
+            placed.lifted().clear();
+            placed.lifted().addAll(want);
         }
     }
 
@@ -462,23 +760,25 @@ public final class PedestalService {
             Optional<PersistedRun> run = TowerRuns.get(runId);
             if (run.isEmpty()) {
                 PLACED.remove(runId);
+                PedestalAnim.cancel(runId);
             } else if (run.get().state() != RunState.INTERMISSION) {
                 despawn(server, run.get());
             }
         }
     }
 
-    private static void gaze(ServerPlayer player, Placed placed) {
+    /** What the player's crosshair is on: prompts, chimes and sparkles for them alone. Returns the card index, or -1. */
+    private static int gaze(ServerPlayer player, Placed placed) {
         if (placed == null || placed.settled()) {
             LAST_GAZE.remove(player.getUUID());
-            return;
+            return -1;
         }
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle();
         Optional<Integer> hit = PedestalRules.gazedAt(eye.x, eye.y, eye.z, look.x, look.y, look.z, placed.slots());
         if (hit.isEmpty() || hit.get() >= placed.names().size()) {
             LAST_GAZE.remove(player.getUUID());
-            return;
+            return -1;
         }
         int index = hit.get();
         PedestalRules.Slot slot = placed.slots().get(index);
@@ -494,5 +794,6 @@ public final class PedestalService {
             player.serverLevel().sendParticles(player, ParticleTypes.ELECTRIC_SPARK, false, slot.x(), slot.y() + PedestalRules.GEM_HEIGHT,
                     slot.z(), 8, 0.4, 0.3, 0.4, 0.0);
         }
+        return index;
     }
 }

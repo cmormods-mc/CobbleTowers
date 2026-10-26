@@ -110,6 +110,25 @@ class PedestalRulesTest {
     }
 
     @Test
+    void anOrbitStaysOnItsRadiusWhateverTheTilt() {
+        for (double tilt : new double[] {0, 0.6, 1.2}) {
+            for (double angle : new double[] {0, 1.1, 3.0, 5.5}) {
+                double[] p = PedestalRules.orbit(10, 20, 30, 0.6, angle, tilt);
+                double d = Math.sqrt(Math.pow(p[0] - 10, 2) + Math.pow(p[1] - 20, 2) + Math.pow(p[2] - 30, 2));
+                assertEquals(0.6, d, 1e-9);
+            }
+        }
+    }
+
+    @Test
+    void aShockwaveRingIsRoundAndGrows() {
+        double[] near = PedestalRules.ring(5, 5, 1.0, 0.7);
+        double[] far = PedestalRules.ring(5, 5, 3.0, 0.7);
+        assertEquals(1.0, Math.hypot(near[0] - 5, near[1] - 5), 1e-9);
+        assertEquals(3.0, Math.hypot(far[0] - 5, far[1] - 5), 1e-9);
+    }
+
+    @Test
     void theNearerOfTwoOverlappingPedestalsWins() {
         List<PedestalRules.Slot> slots = List.of(new PedestalRules.Slot(0, 0, 0), new PedestalRules.Slot(-2, 0, 0));
         assertEquals(Optional.of(0), PedestalRules.gazedAt(4, 1, 0, -1, 0, 0, slots));

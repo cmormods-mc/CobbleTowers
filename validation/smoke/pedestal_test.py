@@ -157,9 +157,13 @@ def main() -> None:
             boxes = wait_count(rcon, "@e[tag=cobbletowers_pedestal_hitbox]", 3)
             results.append(Result("three click boxes stand", boxes == 3, str(boxes)))
             # per card: 3 text pieces (name, payout, details), 4 stand parts, 1 gem
-            for part, each in (("text", 3), ("stand", 4), ("gem", 1)):
+            time.sleep(4)   # the cards grow out of the floor one after another
+            for part, each in (("text", 3), ("stand", 7), ("gem", 1)):
                 n = count(rcon, f"@e[tag=cobbletowers_pedestal_{part}]")
                 results.append(Result(f"{each} {part} entities per card stand", n == each * boxes, str(n)))
+            grown = data(rcon, card(0, "gem"), "transformation.scale[0]")
+            found = re.search(r"(\d+\.\d+)f", grown)
+            results.append(Result("the first card has finished growing in", bool(found) and float(found.group(1)) > 0.3, grown[:120]))
             results.append(Result("a pedestal is tagged with its run",
                                   run in data(rcon, card(0, "hitbox"), "Tags"), data(rcon, card(0, "hitbox"), "Tags")))
 
@@ -215,7 +219,7 @@ def main() -> None:
             left = wait_count(rcon, "@e[tag=cobbletowers_pedestal]", 0)
             results.append(Result("the pedestals are gone once the next floor opens", left == 0, str(left)))
             text = log_text(server.log)
-            results.append(Result("no pedestal fault was logged", "pedestal tick failed" not in text.lower()
+            results.append(Result("no pedestal fault was logged", "pedestal tick failed" not in text.lower() and "pedestal animation step failed" not in text.lower()
                                   and "pedestals could not be spawned" not in text,
                                   "; ".join(l for l in text.splitlines() if "edestal" in l and "WARN" in l)[:300]))
     except Exception as exc:  # noqa: BLE001

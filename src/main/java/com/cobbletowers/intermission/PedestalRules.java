@@ -96,6 +96,21 @@ public final class PedestalRules {
         return new Stack(body, big, name, name + textHeight(1, NAME_SCALE));
     }
 
+    /**
+     * A point on a circle of {@code radius} round (cx, cy, cz) at {@code angle}, in a plane tilted {@code tilt} radians
+     * about the X axis: the orbit of a rune round a gem.
+     */
+    public static double[] orbit(double cx, double cy, double cz, double radius, double angle, double tilt) {
+        double flat = Math.cos(angle) * radius;
+        double depth = Math.sin(angle) * radius;
+        return new double[] {cx + flat, cy + depth * Math.sin(tilt), cz + depth * Math.cos(tilt)};
+    }
+
+    /** A point on a ring of {@code radius} on the floor round (cx, cz), for a shockwave. */
+    public static double[] ring(double cx, double cz, double radius, double angle) {
+        return new double[] {cx + Math.cos(angle) * radius, cz + Math.sin(angle) * radius};
+    }
+
     /** The gem's orientation after {@code spin} radians: tilted 45 degrees on Z (a diamond), then turned about Y. x, y, z, w. */
     public static double[] gemRotation(double spin) {
         double[] tilt = {0, 0, Math.sin(Math.PI / 8), Math.cos(Math.PI / 8)};

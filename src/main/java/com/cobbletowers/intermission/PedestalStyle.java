@@ -9,17 +9,18 @@ public final class PedestalStyle {
      * @param gemBlock the spinning gem, drawn fullbright
      * @param dust particle tint, each channel 0..1
      * @param pitch the gaze chime's pitch
+     * @param beamBlock the translucent light beam rising from the cap, drawn fullbright
      */
-    public record Style(int accent, String capBlock, String gemBlock, float[] dust, float pitch) {}
+    public record Style(int accent, String capBlock, String gemBlock, float[] dust, float pitch, String beamBlock) {}
 
     private static final Style MINOR = new Style(0x55FF99, "minecraft:lime_concrete", "minecraft:lime_stained_glass",
-            new float[] {0.33f, 1.0f, 0.6f}, 1.8f);
+            new float[] {0.33f, 1.0f, 0.6f}, 1.8f, "minecraft:lime_stained_glass");
     private static final Style MODERATE = new Style(0xFFD34D, "minecraft:yellow_concrete", "minecraft:gold_block",
-            new float[] {1.0f, 0.83f, 0.3f}, 1.4f);
+            new float[] {1.0f, 0.83f, 0.3f}, 1.4f, "minecraft:yellow_stained_glass");
     private static final Style SEVERE = new Style(0xFF4D8D, "minecraft:magenta_concrete", "minecraft:crying_obsidian",
-            new float[] {1.0f, 0.3f, 0.55f}, 1.0f);
+            new float[] {1.0f, 0.3f, 0.55f}, 1.0f, "minecraft:magenta_stained_glass");
     private static final Style EVENT = new Style(0x6AE4FF, "minecraft:cyan_concrete", "minecraft:sea_lantern",
-            new float[] {0.4f, 0.9f, 1.0f}, 1.2f);
+            new float[] {0.4f, 0.9f, 1.0f}, 1.2f, "minecraft:cyan_stained_glass");
 
     private PedestalStyle() {}
 
