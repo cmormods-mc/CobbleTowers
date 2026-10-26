@@ -62,39 +62,72 @@ public final class TowerNetworking {
     /** The server-side half. */
     public static void installServerReceivers() {
         ServerPlayNetworking.registerGlobalReceiver(TowerFeatureRequest.TYPE, (payload, context) ->
-                context.server().execute(() -> com.cobbletowers.menu.TowerFeatureService.handle(context.server(), context.player(), payload)));
+                queue(context.server(), context.player(), () -> com.cobbletowers.menu.TowerFeatureService.handle(context.server(), context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(TowerHallActionPayload.TYPE, (payload, context) ->
-                context.server().execute(() -> com.cobbletowers.menu.TowerHallService.handle(context.server(), context.player(), payload)));
+                queue(context.server(), context.player(), () -> com.cobbletowers.menu.TowerHallService.handle(context.server(), context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(TrackActionPayload.TYPE, (payload, context) ->
-                context.server().execute(() -> com.cobbletowers.track.TrackService.handle(context.server(), context.player(), payload)));
+                queue(context.server(), context.player(), () -> com.cobbletowers.track.TrackService.handle(context.server(), context.player(), payload)));
         ServerPlayNetworking.registerGlobalReceiver(CycleTeammatePayload.TYPE, (payload, context) -> {
             ServerPlayer spectator = context.player();
-            context.server().execute(() -> handleCycle(spectator, payload.next()));
+            queue(context.server(), spectator, () -> handleCycle(spectator, payload.next()));
         });
         ServerPlayNetworking.registerGlobalReceiver(IntermissionActionPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
-            context.server().execute(() -> handleIntermissionAction(context.server(), player, payload));
+            queue(context.server(), player, () -> handleIntermissionAction(context.server(), player, payload));
         });
         ServerPlayNetworking.registerGlobalReceiver(MasteryRequestPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
-            context.server().execute(() -> MasteryScreens.handleRequest(context.server(), player, payload));
+            queue(context.server(), player, () -> MasteryScreens.handleRequest(context.server(), player, payload));
         });
         ServerPlayNetworking.registerGlobalReceiver(RanksRequestPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
-            context.server().execute(() -> RanksScreens.handleRequest(context.server(), player, payload));
+            queue(context.server(), player, () -> RanksScreens.handleRequest(context.server(), player, payload));
         });
         ServerPlayNetworking.registerGlobalReceiver(RentalDraftActionPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
-            context.server().execute(() -> com.cobbletowers.lobby.RentalDraftService.handle(context.server(), player, payload));
+            queue(context.server(), player, () -> com.cobbletowers.lobby.RentalDraftService.handle(context.server(), player, payload));
         });
         ServerPlayNetworking.registerGlobalReceiver(PlayActionPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
-            context.server().execute(() -> handlePlayAction(context.server(), player, payload));
+            queue(context.server(), player, () -> handlePlayAction(context.server(), player, payload));
         });
         ServerPlayNetworking.registerGlobalReceiver(VendorPurchasePayload.TYPE, (payload, context) -> {
             ServerPlayer buyer = context.player();
-            context.server().execute(() -> handlePurchase(context.server(), buyer, payload));
+            queue(context.server(), buyer, () -> handlePurchase(context.server(), buyer, payload));
         });
+        net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            UUID id = handler.getPlayer().getUUID();
+            server.execute(() -> ACTION_RATE.forget(id));
+        });
+        com.cobbletowers.ServerState.onStop(ACTION_RATE::clear);
+    }
+
+    private static final ActionRate ACTION_RATE = new ActionRate();
+
+    /** Hands a client's action to the server thread, where it is taken like any other. */
+    private static void queue(MinecraftServer server, ServerPlayer player, Runnable action) {
+        server.execute(() -> guarded(player, action));
+    }
+
+    /**
+     * A screen action from a client, whichever transport it came by: rate-limited, and a fault ends that action, not the
+     * tick. A modified client is untrusted; the handlers still check everything themselves.
+     */
+    private static void guarded(ServerPlayer player, Runnable action) {
+        switch (ACTION_RATE.check(player.getUUID(), System.currentTimeMillis())) {
+            case DROP -> { return; }
+            case DROP_AND_SAY -> {
+                TowerLog.warn("Dropping screen actions from {}: more than {} a second", player.getGameProfile().getName(),
+                        (int) ActionRate.PER_SECOND);
+                return;
+            }
+            case ALLOW -> { }
+        }
+        try {
+            action.run();
+        } catch (RuntimeException ex) {
+            TowerLog.error("A screen action from " + player.getUUID() + " failed", ex);
+        }
     }
 
     /**
@@ -102,6 +135,10 @@ public final class TowerNetworking {
      * bridge both end here, so a click on a web page is handled by exactly the code a click on a native screen is.
      */
     public static void handleAction(MinecraftServer server, ServerPlayer player, net.minecraft.network.protocol.common.custom.CustomPacketPayload action) {
+        guarded(player, () -> dispatchAction(server, player, action));
+    }
+
+    private static void dispatchAction(MinecraftServer server, ServerPlayer player, net.minecraft.network.protocol.common.custom.CustomPacketPayload action) {
         if (action instanceof IntermissionActionPayload a) handleIntermissionAction(server, player, a);
         else if (action instanceof PlayActionPayload a) handlePlayAction(server, player, a);
         else if (action instanceof RentalDraftActionPayload a) com.cobbletowers.lobby.RentalDraftService.handle(server, player, a);
