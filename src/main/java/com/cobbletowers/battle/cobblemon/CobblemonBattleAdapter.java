@@ -54,6 +54,9 @@ public final class CobblemonBattleAdapter {
     private static final Map<UUID, List<UUID>> BATTLES_BY_RUN = new HashMap<>();
     /** When each battle last did something, for the watchdog (a start or a faint). */
     private static final Map<UUID, Long> LAST_ACTIVITY = new HashMap<>();
+    /** When to look once at a battle that has not moved on from its first turn; one entry per floor battle. */
+    private static final Map<UUID, Long> PROBE_AT = new HashMap<>();
+    private static final long PROBE_DELAY_MILLIS = 20_000;
     private static boolean installed;
 
     /** Marks an entity this adapter spawned as a tower opponent, so a stray one can be told from anything else. */
@@ -87,6 +90,7 @@ public final class CobblemonBattleAdapter {
         CobblemonEvents.BATTLE_FAINTED.subscribe(CobblemonBattleAdapter::onFaintedSafely);
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
             retryPendingDiscards(server);
+            probeQuietBattles(System.currentTimeMillis());
             if (++sweepTicks % ORPHAN_SWEEP_TICKS != 0) return;
             try {
                 sweepOrphanOpponents(server);
@@ -139,6 +143,7 @@ public final class CobblemonBattleAdapter {
                 System.currentTimeMillis(), exhibition);
         BY_BATTLE.put(battleId, binding);
         LAST_ACTIVITY.put(battleId, binding.startedAt());
+        if (!exhibition) PROBE_AT.put(battleId, binding.startedAt() + PROBE_DELAY_MILLIS);
         BATTLES_BY_RUN.computeIfAbsent(runId, key -> new ArrayList<>()).add(battleId);
         // An Echo's Pokemon is named by what is actually built, not by the pool species the slot was drawn from.
         String opponentName = snapshot.echoProperties().map(com.cobbletowers.echo.EchoPolicy::speciesOf)
@@ -146,6 +151,36 @@ public final class CobblemonBattleAdapter {
         TowerLog.info("Floor {} battle {} started{}: {} vs {} at level {}", floorIndex, battleId,
                 exhibition ? " (Echo duel)" : "", player.getGameProfile().getName(), opponentName, snapshot.level());
         return Optional.of(battleId);
+    }
+
+    /**
+     * Says once, 20 s after a floor battle started, where it stands if it is still on its first turn: a battle nobody
+     * can move in (a stall) otherwise leaves no trace, and the floor watchdog only acts after minutes.
+     */
+    private static void probeQuietBattles(long now) {
+        if (PROBE_AT.isEmpty()) return;
+        var due = PROBE_AT.entrySet().iterator();
+        while (due.hasNext()) {
+            var entry = due.next();
+            if (now < entry.getValue()) continue;
+            due.remove();
+            try {
+                PokemonBattle battle = BattleRegistry.getBattle(entry.getKey());
+                Binding binding = BY_BATTLE.get(entry.getKey());
+                if (battle == null || binding == null || battle.getEnded() || battle.getTurn() > 1) continue;
+                StringBuilder actors = new StringBuilder();
+                for (var actor : battle.getActors()) {
+                    actors.append(' ').append(actor.getShowdownId()).append("{mustChoose=").append(actor.getMustChoose())
+                            .append(",request=").append(actor.getRequest() != null)
+                            .append(",responses=").append(actor.getResponses().size()).append('}');
+                }
+                TowerLog.warn("Floor {} battle {} of run {} is still on turn {} {} s after it started (started={}):{}",
+                        binding.floorIndex(), entry.getKey(), binding.runId(), battle.getTurn(), PROBE_DELAY_MILLIS / 1000,
+                        battle.getStarted(), actors);
+            } catch (RuntimeException ex) {
+                TowerLog.errorOnce("battle-probe", "The quiet battle probe failed", ex);
+            }
+        }
     }
 
     private static BattleStartResult startPve(ServerPlayer player, PokemonEntity opponent, boolean exhibition) {
@@ -449,6 +484,7 @@ public final class CobblemonBattleAdapter {
         BY_BATTLE.clear();
         BATTLES_BY_RUN.clear();
         LAST_ACTIVITY.clear();
+        PROBE_AT.clear();
         return held;
     }
 }
