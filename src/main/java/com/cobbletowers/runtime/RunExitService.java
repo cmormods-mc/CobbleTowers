@@ -135,11 +135,16 @@ public final class RunExitService {
                 // A cell already cleared in slices releases cheaply and takes no slot.
                 if (!com.cobbletowers.instance.CellClearJobs.isClean(run.cell().getAsInt())
                         && !com.cobbletowers.instance.HeavyWork.tryAcquire(now)) break;
-                // A cell is never reset under the people who were in the run: anyone still inside (an operator the
-                // loop above
-                // chose to leave alone, say) goes home first, or they would be left standing in an empty dimension.
-                evacuateParticipants(server, run);
-                RunTransitionService.releaseCell(server, run, now);
+                // A run that cannot be released must not hold up the cells behind it.
+                try {
+                    // A cell is never reset under the people who were in the run: anyone still inside (an operator the
+                    // loop above
+                    // chose to leave alone, say) goes home first, or they would be left standing in an empty dimension.
+                    evacuateParticipants(server, run);
+                    RunTransitionService.releaseCell(server, run, now);
+                } catch (RuntimeException ex) {
+                    TowerLog.errorOnce("release-" + run.runId(), "Could not release the cell of run " + run.runId(), ex);
+                }
             }
         }
     }
