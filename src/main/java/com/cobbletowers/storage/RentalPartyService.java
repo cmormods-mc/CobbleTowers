@@ -162,10 +162,19 @@ public final class RentalPartyService {
             }
             JOINED.remove(id);
             ServerPlayer player = server.getPlayerList().getPlayer(id);
-            if (player != null) sweep(server, player);
+            if (player != null) sweepSafely(server, player);
         }
         if (ticks % SWEEP_EVERY_TICKS != 0) return;
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) sweep(server, player);
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) sweepSafely(server, player);
+    }
+
+    /** One player's storage that cannot be swept must not keep everyone after them from being swept. */
+    private static void sweepSafely(MinecraftServer server, ServerPlayer player) {
+        try {
+            sweep(server, player);
+        } catch (RuntimeException ex) {
+            TowerLog.errorOnce("rental-sweep-" + player.getUUID(), "The rental sweep of " + player.getUUID() + " failed", ex);
+        }
     }
 
     /**
