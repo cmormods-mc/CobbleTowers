@@ -59,7 +59,10 @@ public final class CobblemonBattleAdapter {
     private static final long PROBE_DELAY_MILLIS = 20_000;
     /** Turn counters of open battles: a turn that moves counts as activity, not only a faint. */
     private static final TurnTracker TURNS = INDEX.turns;
+    private static final StallWatch STALLS = INDEX.stalls;
     private static final int TURN_POLL_TICKS = 20;
+    /** A stall is looked for twice a second: a player should not sit in a frozen battle for long. */
+    private static final int STALL_POLL_TICKS = 10;
     private static int pollTicks;
     /** The running server, so a result never depends on a participant still being online to find it. */
     private static volatile MinecraftServer runningServer;
@@ -102,7 +105,9 @@ public final class CobblemonBattleAdapter {
             try {
                 retryPendingDiscards(server);
                 probeQuietBattles(System.currentTimeMillis());
-                if (++pollTicks % TURN_POLL_TICKS == 0) pollTurns(System.currentTimeMillis());
+                pollTicks++;
+                if (pollTicks % TURN_POLL_TICKS == 0) pollTurns(System.currentTimeMillis());
+                if (pollTicks % STALL_POLL_TICKS == 0) watchStalls(System.currentTimeMillis());
             } catch (RuntimeException ex) {
                 TowerLog.errorOnce("battle-tick", "The battle adapter tick failed", ex);
             }
@@ -203,16 +208,9 @@ public final class CobblemonBattleAdapter {
                 PokemonBattle battle = BattleRegistry.getBattle(entry.getKey());
                 Binding binding = BY_BATTLE.get(entry.getKey());
                 if (battle == null || binding == null || battle.getEnded() || battle.getTurn() > 1) continue;
-                StringBuilder actors = new StringBuilder();
-                for (var actor : battle.getActors()) {
-                    actors.append(' ').append(actor.getShowdownId()).append("{mustChoose=").append(actor.getMustChoose())
-                            .append(",request=").append(actor.getRequest() != null)
-                            .append(",responses=").append(actor.getResponses().size()).append('}');
-                }
                 TowerLog.warn("Floor {} battle {} of run {} is still on turn {} {} s after it started (started={}):{}",
                         binding.floorIndex(), entry.getKey(), binding.runId(), battle.getTurn(), PROBE_DELAY_MILLIS / 1000,
-                        battle.getStarted(), actors);
-                nudgeIdleOpponents(battle, binding);
+                        battle.getStarted(), describeActors(battle));
             } catch (RuntimeException ex) {
                 TowerLog.errorOnce("battle-probe", "The quiet battle probe failed", ex);
             }
@@ -220,18 +218,49 @@ public final class CobblemonBattleAdapter {
     }
 
     /**
-     * Cobblemon can drop the opponent's request when the player answers first, so the AI's choice never reaches
-     * Showdown and the turn waits forever (seen live: only {@code >p1} written). Showdown picks a legal move for an
-     * AI side told {@code default}; done once, only when every actor is idle on turn 1.
+     * Twice a second: a battle whose every actor has been idle on one turn for a couple of seconds is stalled, so its AI side is told
+     * to choose. Cobblemon can drop the opponent's request when the player answers first, so the AI's choice never reaches
+     * Showdown and the turn waits forever (seen live: only {@code >p1} written). Showdown picks a legal move for an AI side
+     * told {@code default}. Any turn: a player should never sit in a frozen battle for the 20 s the probe above waits.
      */
+    private static void watchStalls(long now) {
+        if (BY_BATTLE.isEmpty()) return;
+        for (UUID battleId : new ArrayList<>(BY_BATTLE.keySet())) {
+            try {
+                PokemonBattle battle = BattleRegistry.getBattle(battleId);
+                Binding binding = BY_BATTLE.get(battleId);
+                if (battle == null || binding == null || battle.getEnded() || !battle.getStarted()) {
+                    STALLS.forget(battleId);
+                    continue;
+                }
+                boolean allIdle = true;
+                for (var actor : battle.getActors()) {
+                    if (actor.getMustChoose() || actor.getRequest() != null || !actor.getResponses().isEmpty()) allIdle = false;
+                }
+                if (STALLS.observe(battleId, battle.getTurn(), allIdle, now)) nudgeIdleOpponents(battle, binding);
+            } catch (RuntimeException ex) {
+                TowerLog.errorOnce("battle-stall-watch", "The stalled-battle check failed", ex);
+            }
+        }
+    }
+
+    /** Each actor's showdown id and whether it must choose, has a request, and has answered: the shape of a stall. */
+    private static String describeActors(PokemonBattle battle) {
+        StringBuilder actors = new StringBuilder();
+        for (var actor : battle.getActors()) {
+            actors.append(' ').append(actor.getShowdownId()).append("{mustChoose=").append(actor.getMustChoose())
+                    .append(",request=").append(actor.getRequest() != null)
+                    .append(",responses=").append(actor.getResponses().size()).append('}');
+        }
+        return actors.toString();
+    }
+
     private static void nudgeIdleOpponents(PokemonBattle battle, Binding binding) {
         for (var actor : battle.getActors()) {
-            if (actor.getMustChoose() || actor.getRequest() != null || !actor.getResponses().isEmpty()) return;
-        }
-        for (var actor : battle.getActors()) {
             if (!(actor instanceof com.cobblemon.mod.common.api.battles.model.actor.AIBattleActor)) continue;
-            TowerLog.warn("Floor {} battle of run {}: telling the idle opponent {} to choose", binding.floorIndex(),
-                    binding.runId(), actor.getShowdownId());
+            TowerLog.warn("Floor {} battle of run {} is stalled on turn {} ({} s into the battle): telling the idle opponent {} to choose ({})",
+                    binding.floorIndex(), binding.runId(), battle.getTurn(), (System.currentTimeMillis() - binding.startedAt()) / 1000,
+                    actor.getShowdownId(), describeActors(battle).trim());
             battle.writeShowdownAction(">" + actor.getShowdownId() + " default");
         }
     }

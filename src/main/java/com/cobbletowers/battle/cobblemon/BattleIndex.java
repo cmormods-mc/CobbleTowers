@@ -21,6 +21,8 @@ final class BattleIndex {
     /** When to look once at a battle that has not moved on from its first turn; one entry per floor battle. */
     final Map<UUID, Long> probeAt = new HashMap<>();
     final TurnTracker turns = new TurnTracker();
+    /** Which battles nobody can move in, so the opponent can be told to choose. */
+    final StallWatch stalls = new StallWatch();
 
     void register(UUID battleId, Binding binding, long probeAfterMillis) {
         byBattle.put(battleId, binding);
@@ -34,6 +36,7 @@ final class BattleIndex {
         lastActivity.remove(battleId);
         probeAt.remove(battleId);
         turns.forget(battleId);
+        stalls.forget(battleId);
         Binding binding = byBattle.remove(battleId);
         if (binding != null) {
             List<UUID> battles = byRun.get(binding.runId());
@@ -51,5 +54,6 @@ final class BattleIndex {
         lastActivity.clear();
         probeAt.clear();
         turns.clear();
+        stalls.clear();
     }
 }
