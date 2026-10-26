@@ -349,16 +349,30 @@ public final class CobblemonBattleAdapter {
         Binding binding = forget(event.getBattle().getBattleId());
         if (binding == null) return;  // somebody else's battle; the reason this index exists
 
-        boolean playerWon = BattleOutcome.playerWon(
-                event.getWinners().stream().map(actor -> actor.getUuid()).toList(), binding.playerId());
+        List<UUID> winnerIds = event.getWinners().stream().map(actor -> actor.getUuid()).toList();
+        boolean playerWon = BattleOutcome.playerWon(winnerIds, binding.playerId());
         MinecraftServer server = serverFor(event.getBattle());
         if (server == null) {
             TowerLog.error("Battle of run {} floor {} ended with no server to report it to", binding.runId(),
                     binding.floorIndex());
             return;
         }
+        if (BattleOutcome.isTie(winnerIds)) healAfterTie(server, binding);
         discardOpponent(server, binding);
         listener.onResolved(server, binding, playerWon);
+    }
+
+    /** A tie leaves the whole party fainted; the player gets it back whole for what comes next. */
+    private static void healAfterTie(MinecraftServer server, Binding binding) {
+        try {
+            ServerPlayer player = server.getPlayerList().getPlayer(binding.playerId());
+            if (player == null) return;
+            Cobblemon.INSTANCE.getStorage().getParty(player).heal();
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                    "Both sides fell together. It counts as your win, and your team is fully healed."));
+        } catch (RuntimeException ex) {
+            TowerLog.error("Could not heal the party after a tied floor battle", ex);
+        }
     }
 
     /** The running server; a participant may already be gone by the time a result arrives. */

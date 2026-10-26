@@ -8,8 +8,13 @@ final class BattleOutcome {
 
     private BattleOutcome() {}
 
+    /** Nobody won: both sides fainted together. */
+    static boolean isTie(Collection<UUID> winners) {
+        return winners.isEmpty();
+    }
+
     /** The player won, or the battle was a tie (no winners: both sides fainted together), which counts for the player. */
     static boolean playerWon(Collection<UUID> winners, UUID player) {
-        return winners.isEmpty() || winners.contains(player);
+        return isTie(winners) || winners.contains(player);
     }
 }
