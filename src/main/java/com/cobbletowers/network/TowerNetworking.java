@@ -1,7 +1,6 @@
 package com.cobbletowers.network;
 
 import com.cobbletowers.TowerLog;
-import com.cobbletowers.api.tower.participant.ParticipantState;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.definition.VendorServiceDefinition;
@@ -12,12 +11,10 @@ import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
 import com.cobbletowers.persistence.TowerWalletStore;
 import com.cobbletowers.runtime.ParticipantService;
-import com.cobbletowers.spectator.SpectatorPresentation;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -34,67 +31,23 @@ public final class TowerNetworking {
      */
     public static void registerPayloadTypes() {
         PayloadTypeRegistry.playS2C().register(TowerFeatureState.TYPE, TowerFeatureState.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(TowerFeatureRequest.TYPE, TowerFeatureRequest.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(TowerHallStatePayload.TYPE, TowerHallStatePayload.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(TowerHallActionPayload.TYPE, TowerHallActionPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(TrackStatePayload.TYPE, TrackStatePayload.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(TrackActionPayload.TYPE, TrackActionPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(SpectatorPanelPayload.TYPE, SpectatorPanelPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(RewardRevealPayload.TYPE, RewardRevealPayload.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(CycleTeammatePayload.TYPE, CycleTeammatePayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(VendorCatalogPayload.TYPE, VendorCatalogPayload.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(VendorPurchasePayload.TYPE, VendorPurchasePayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(ScoutingRevealPayload.TYPE, ScoutingRevealPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(PlayStatePayload.TYPE, PlayStatePayload.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(PlayActionPayload.TYPE, PlayActionPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(RegistrationStatePayload.TYPE, RegistrationStatePayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(IntermissionStatePayload.TYPE, IntermissionStatePayload.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(IntermissionActionPayload.TYPE, IntermissionActionPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(ArmorSetsPayload.TYPE, ArmorSetsPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(MasteryScreenPayload.TYPE, MasteryScreenPayload.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(MasteryRequestPayload.TYPE, MasteryRequestPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(RanksStatePayload.TYPE, RanksStatePayload.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(RanksRequestPayload.TYPE, RanksRequestPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(RentalDraftPayload.TYPE, RentalDraftPayload.STREAM_CODEC);
-        PayloadTypeRegistry.playC2S().register(RentalDraftActionPayload.TYPE, RentalDraftActionPayload.STREAM_CODEC);
     }
 
-    /** The server-side half. */
+    /** The server-side half: the rate limiter's upkeep. Screen actions arrive through the WebGUI bridge, not a native channel. */
     public static void installServerReceivers() {
-        ServerPlayNetworking.registerGlobalReceiver(TowerFeatureRequest.TYPE, (payload, context) ->
-                queue(context.server(), context.player(), () -> com.cobbletowers.menu.TowerFeatureService.handle(context.server(), context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(TowerHallActionPayload.TYPE, (payload, context) ->
-                queue(context.server(), context.player(), () -> com.cobbletowers.menu.TowerHallService.handle(context.server(), context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(TrackActionPayload.TYPE, (payload, context) ->
-                queue(context.server(), context.player(), () -> com.cobbletowers.track.TrackService.handle(context.server(), context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(CycleTeammatePayload.TYPE, (payload, context) -> {
-            ServerPlayer spectator = context.player();
-            queue(context.server(), spectator, () -> handleCycle(spectator, payload.next()));
-        });
-        ServerPlayNetworking.registerGlobalReceiver(IntermissionActionPayload.TYPE, (payload, context) -> {
-            ServerPlayer player = context.player();
-            queue(context.server(), player, () -> handleIntermissionAction(context.server(), player, payload));
-        });
-        ServerPlayNetworking.registerGlobalReceiver(MasteryRequestPayload.TYPE, (payload, context) -> {
-            ServerPlayer player = context.player();
-            queue(context.server(), player, () -> MasteryScreens.handleRequest(context.server(), player, payload));
-        });
-        ServerPlayNetworking.registerGlobalReceiver(RanksRequestPayload.TYPE, (payload, context) -> {
-            ServerPlayer player = context.player();
-            queue(context.server(), player, () -> RanksScreens.handleRequest(context.server(), player, payload));
-        });
-        ServerPlayNetworking.registerGlobalReceiver(RentalDraftActionPayload.TYPE, (payload, context) -> {
-            ServerPlayer player = context.player();
-            queue(context.server(), player, () -> com.cobbletowers.lobby.RentalDraftService.handle(context.server(), player, payload));
-        });
-        ServerPlayNetworking.registerGlobalReceiver(PlayActionPayload.TYPE, (payload, context) -> {
-            ServerPlayer player = context.player();
-            queue(context.server(), player, () -> handlePlayAction(context.server(), player, payload));
-        });
-        ServerPlayNetworking.registerGlobalReceiver(VendorPurchasePayload.TYPE, (payload, context) -> {
-            ServerPlayer buyer = context.player();
-            queue(context.server(), buyer, () -> handlePurchase(context.server(), buyer, payload));
-        });
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             UUID id = handler.getPlayer().getUUID();
             server.execute(() -> ACTION_RATE.forget(id));
@@ -131,8 +84,7 @@ public final class TowerNetworking {
     }
 
     /**
-     * The server half of any screen action, whichever transport it arrived on. The native receivers above and the WebGUI
-     * bridge both end here, so a click on a web page is handled by exactly the code a click on a native screen is.
+     * The server half of any screen action, whichever transport it arrived on. The WebGUI bridge ends here, so a click on a web page is handled by exactly the code a native screen's click was.
      */
     public static void handleAction(MinecraftServer server, ServerPlayer player, net.minecraft.network.protocol.common.custom.CustomPacketPayload action) {
         guarded(player, () -> dispatchAction(server, player, action));
@@ -222,18 +174,6 @@ public final class TowerNetworking {
         if (payload.action() != IntermissionActionPayload.Action.VENDOR) {
             IntermissionService.openScreen(server, player, reply);
         }
-    }
-
-    private static void handleCycle(ServerPlayer spectator, boolean next) {
-        UUID spectatorId = spectator.getUUID();
-        Optional<PersistedRun> run = ParticipantService.runOf(spectatorId);
-        if (run.isEmpty()) return;
-        Optional<ParticipantState> state = ParticipantService.stateOf(run.get(), spectatorId);
-        if (state.isEmpty() || !state.get().isSpectating()) {
-            TowerLog.warn("Player {} asked to cycle teammates while not spectating; ignored", spectatorId);
-            return;
-        }
-        SpectatorPresentation.cycle(run.get(), spectator, next);
     }
 
     private static void handlePurchase(MinecraftServer server, ServerPlayer buyer, VendorPurchasePayload payload) {

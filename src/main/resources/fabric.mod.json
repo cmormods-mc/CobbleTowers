@@ -16,7 +16,6 @@
     "preLaunch": ["com.cobbletowers.TowerPreLaunch"],
     "main": ["com.cobbletowers.CobbleTowers"]
   },
-  "accessWidener": "cobbletowers.accesswidener",
   "mixins": ["mixins/cobbletowers.mixins.json"],
   "depends": {
     "fabricloader": ">=0.17.2",
