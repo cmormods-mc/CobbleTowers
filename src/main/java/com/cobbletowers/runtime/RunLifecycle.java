@@ -106,6 +106,13 @@ public final class RunLifecycle {
         } catch (RuntimeException ex) {
             TowerLog.error("Opening floor of run {} threw", runId, ex);
         }
+        // Whatever the floor had started before it failed (a battle for the first player, say) is ended with it: a
+        // parked run is not in the watchdog's sight, and nothing else would.
+        try {
+            TowerEncounters.abandon(server, runId);
+        } catch (RuntimeException ex) {
+            TowerLog.error("Ending the half-opened floor of run {} threw", runId, ex);
+        }
         RunTransitionService.apply(server, runId, RunEvent.TECHNICAL_FAILURE, now);
         return false;
     }
@@ -124,7 +131,15 @@ public final class RunLifecycle {
             RunTransitionService.apply(server, runId, RunEvent.TECHNICAL_FAILURE, now);
             return Opened.FAILED;
         }
-        if (!rebuildIfStructureChanged(server, runId)) {
+        boolean rebuilt;
+        try {
+            rebuilt = rebuildIfStructureChanged(server, runId);
+        } catch (RuntimeException ex) {
+            // The run has already moved to the next floor: parking it is what keeps it from sitting there unwatched.
+            TowerLog.error("Rebuilding the cell of run " + runId + " for its next floor threw", ex);
+            rebuilt = false;
+        }
+        if (!rebuilt) {
             RunTransitionService.apply(server, runId, RunEvent.TECHNICAL_FAILURE, now);
             return Opened.FAILED;
         }
