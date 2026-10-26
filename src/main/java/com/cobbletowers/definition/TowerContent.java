@@ -220,6 +220,17 @@ public record TowerContent(
         return towers.values().stream().filter(tower -> !isRotating(tower.id())).toList();
     }
 
+    /**
+     * The towers a player's lists show (mastery, tracks): every loaded one, but an event tower only inside its window or once the
+     * player has played it, so a closed event is not advertised and past progress stays visible (P54).
+     */
+    public List<ResourceLocation> listedTowerIds(long nowMillis, java.util.function.Predicate<ResourceLocation> hasHistory) {
+        return sortedTowerIds().stream().filter(id -> {
+            TowerDefinition tower = towers.get(id);
+            return tower == null || tower.window().isEmpty() || tower.isOpen(nowMillis) || hasHistory.test(id);
+        }).toList();
+    }
+
     /** The towers a player can start now: an event tower is listed only inside its window (P54). */
     public List<TowerDefinition> openCatalogTowers(long nowMillis) {
         return catalogTowers().stream().filter(tower -> tower.isOpen(nowMillis)).toList();
