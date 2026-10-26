@@ -77,6 +77,7 @@ export const SHOTS = {
   desk_route: { payloads: [fixture('IntermissionState')], look: 'desk' },
   desk_route_pick: { payloads: [fixture('IntermissionState')], look: 'desk', steps: async (page) => { await page.click('.dstop.now >> nth=1'); } },
   desk_atlas: { payloads: [atlasShot('Tideforge Tower')], look: 'desk' },
+  desk_atlas_pick: { payloads: [atlasShot('Tideforge Tower')], look: 'desk', steps: async (page) => { await page.click('.awin.st-reach[role="button"] >> nth=0'); } },
   desk_atlas_hollow: { payloads: [atlasShot('Hollow’s Eve')], look: 'desk' },
   desk_route_edge: { payloads: [fixture('IntermissionState', (d) => { d.floor = 3; d.extras.cycleFloor = 3; d.extras.route.lane = 0; d.extras.route.now = [{ lane: 0, card: 0, kind: 'SHRINE' }, { lane: 1, card: 1, kind: 'BATTLE' }]; d.draft.cards = d.draft.cards.slice(0, 2); d.extras.route.ahead = d.extras.route.ahead.slice(0, 2); })], look: 'desk' },
   desk_inter: { payloads: [fixture('IntermissionState', (d) => { d.extras.route = { lane: -1, now: [], ahead: [] }; })], look: 'desk' },
