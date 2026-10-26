@@ -274,7 +274,7 @@ public final class TowerEncounters {
         settle(server, updated, now);
     }
 
-    /** A retry of an opponent that could not be started at once; gives the player up as cleared once the tries run out. */
+    /** A retry of an opponent that could not be started at once; once the tries run out the run is parked, not credited. */
     static void retryNextOpponent(MinecraftServer server, NextOpponentRetries.Pending pending) {
         Round round = ROUNDS.get(pending.runId());
         if (round == null || round.byPlayer().get(pending.playerId()) != Status.FIGHTING) return;
@@ -285,14 +285,9 @@ public final class TowerEncounters {
         }
         TowerLog.warn("Gave up starting the next opponent of floor {} of run {} for {}",
                 round.floorIndex(), pending.runId(), pending.playerId());
-        long now = System.currentTimeMillis();
-        Map<UUID, Status> byPlayer = new LinkedHashMap<>(round.byPlayer());
-        byPlayer.put(pending.playerId(), Status.CLEARED);
-        Round updated = new Round(round.runId(), round.floorIndex(), round.phase(), byPlayer, round.waves(), round.startedAt());
-        ROUNDS.put(pending.runId(), updated);
-        TowerRuns.get(pending.runId())
-                .ifPresent(run -> SpectatorPresentation.refreshFollowersOf(server, run, pending.playerId()));
-        settle(server, updated, now);
+        // A wave never fought earns nothing, and the player did nothing wrong: park the run like a failed boss start.
+        ROUNDS.remove(pending.runId());
+        RunTransitionService.apply(server, pending.runId(), RunEvent.TECHNICAL_FAILURE, System.currentTimeMillis());
     }
 
     /** Runs once nobody is still fighting, whether the last one lost, won or was dropped. */
