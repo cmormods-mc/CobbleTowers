@@ -25,7 +25,7 @@ public final class PlayCommand {
 
     /** The typed commands a player sees after /tower itself (which opens the screens): guide, leave, invite answer, feedback. */
     private static final java.util.Set<String> PLAYER_COMMANDS =
-            java.util.Set.of("help", "leave", "accept", "decline", "report");
+            java.util.Set.of("help", "leave", "accept", "decline", "report", "claim");
 
     private PlayCommand() {}
 
@@ -39,6 +39,7 @@ public final class PlayCommand {
         SeasonCommand.playerCommands().forEach(playRoot::then);
         CosmeticsCommand.playerCommands().forEach(playRoot::then);
         ReportCommand.playerCommands().forEach(playRoot::then);
+        ClaimCommand.playerCommands().forEach(playRoot::then);
         HelpCommand.playerCommands().forEach(playRoot::then);
         var playNode = playRoot
                         .executes(PlayCommand::open)

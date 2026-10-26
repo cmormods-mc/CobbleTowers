@@ -4,6 +4,7 @@ import com.cobbletowers.TowerLog;
 import com.cobbleraids.api.points.CobbleRaidsPoints;
 import com.cobbletowers.economy.CobbleDollars;
 import com.cobbletowers.economy.RaidPointsCurrency;
+import com.cobbletowers.instance.TowerDimension;
 import com.cobbletowers.network.RewardRevealPayload;
 import com.cobbletowers.network.TowerNetworking;
 import com.cobbletowers.persistence.PendingTowerReward;
@@ -11,7 +12,9 @@ import com.cobbletowers.persistence.TowerPendingRewardStore;
 import com.cobbletowers.persistence.TowerWalletStore;
 import java.util.ArrayList;
 import java.util.List;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -21,8 +24,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Hands a player whatever the tower owes them as soon as they can receive it. No choice and no claim command (P9): a
- * roll from {@link RewardValuation} is simply delivered.
+ * Hands a player whatever the tower owes them as soon as they can receive it: a roll from {@link RewardValuation} is
+ * simply delivered. What does not fit in the inventory is held for {@code /tower claim}, never dropped.
  */
 public final class RewardDelivery {
 
@@ -30,21 +33,33 @@ public final class RewardDelivery {
 
     /** Subscribed once, for the life of the JVM, the way every other event install here is. */
     public static void install() {
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
-                guarded(() -> deliver(server, handler.getPlayer())));
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> guarded(() -> {
+            ServerPlayer player = handler.getPlayer();
+            deliver(server, player);
+            if (!player.level().dimension().equals(TowerDimension.LEVEL)) remindHeld(server, player);
+        }));
+        // Stepping out of the tower is when a player can do something about a full inventory.
+        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
+            if (origin.dimension().equals(TowerDimension.LEVEL) && !destination.dimension().equals(TowerDimension.LEVEL)) {
+                guarded(() -> remindHeld(destination.getServer(), player));
+            }
+        });
     }
 
-    /** Drains {@code player}'s queue into their inventory, overflow dropped at their feet. */
+    /**
+     * Drains {@code player}'s queue into their inventory. What does not fit is held for {@code /tower claim}; a reward
+     * whose item no longer exists is discarded with an error; one that throws is held too, so it is never retried on
+     * its own.
+     */
     public static int deliver(MinecraftServer server, ServerPlayer player) {
         TowerPendingRewardStore store = TowerPendingRewardStore.get(server);
         List<PendingTowerReward> queue = store.drain(player.getUUID());
         if (queue.isEmpty()) return 0;
 
         List<PendingTowerReward> delivered = new ArrayList<>(queue.size());
-        List<PendingTowerReward> failed = new ArrayList<>();
+        int heldBefore = store.heldFor(player.getUUID()).size();
         boolean creditedWallet = false;
         for (PendingTowerReward reward : queue) {
-            int before = delivered.size();
             try {
                 if (reward.item().equals(CobbleDollars.ITEM_ID)) {
                     // A player's mastery of the tower the reward was earned in (P31) adds to their CobbleDollars.
@@ -65,36 +80,85 @@ public final class RewardDelivery {
                     var material = com.cobbletowers.economy.AscensionMaterials.of(reward.item()).get();
                     PendingTowerReward built = new PendingTowerReward(reward.runId(), reward.floorIndex(), reward.item(), reward.amount(),
                             reward.grantedAt(), material.stack(), material.label());
-                    if (giveWithComponents(player, built)) delivered.add(built);
+                    file(store, player, built, giveWithComponents(player, built), delivered);
                 } else if (!reward.components().isEmpty()) {
-                    // A card (P33b): an item that is its data. Not handed over, and not lost, if the mod that owns it is
-                    // gone.
-                    if (giveWithComponents(player, reward)) delivered.add(reward);
+                    // A card (P33b): an item that is its data. Discarded, with an error, if the mod that owns it is gone.
+                    file(store, player, reward, giveWithComponents(player, reward), delivered);
                 } else {
                     // The 777 Unique (AscensionLib) can enlarge an item reward; what is listed to the player is what was
-                    // given. The key is the
-                    // reward itself, so the rounding of a fraction is the same however often delivery is retried.
+                    // given. The key is the reward itself, so the rounding of a fraction is the same however often
+                    // delivery is retried.
                     int amount = com.cobbletowers.economy.AscensionLibItemBonus.scale(player.getUUID(), reward.amount(),
                             reward.runId() + "|" + reward.floorIndex() + "|" + reward.item() + "|" + reward.grantedAt());
-                    if (give(player, reward.item(), amount)) {
-                        delivered.add(amount == reward.amount() ? reward : new PendingTowerReward(reward.runId(), reward.floorIndex(),
-                                reward.item(), amount, reward.grantedAt(), reward.components(), reward.label()));
-                    }
+                    PendingTowerReward scaled = amount == reward.amount() ? reward : new PendingTowerReward(reward.runId(),
+                            reward.floorIndex(), reward.item(), amount, reward.grantedAt(), reward.components(), reward.label());
+                    file(store, player, scaled, give(player, reward.item(), amount), delivered);
                 }
             } catch (RuntimeException ex) {
-                TowerLog.error("A pending tower reward ({}) failed to deliver; keeping it queued", reward.item(), ex);
+                TowerLog.error("A pending tower reward ({}) failed to deliver; holding it for /tower claim", reward.item(), ex);
+                store.hold(player.getUUID(), reward);
             }
-            // Nothing was handed over: keep it queued, drained rewards are otherwise gone.
-            if (delivered.size() == before) failed.add(reward);
         }
-        for (PendingTowerReward reward : failed) store.add(player.getUUID(), reward);
         store.checkpoint(server);
         if (creditedWallet) TowerWalletStore.get(server).checkpoint(server);
         if (!delivered.isEmpty()) {
             player.sendSystemMessage(Component.literal("Tower rewards delivered: " + summarize(delivered)));
             TowerNetworking.sendRewardReveal(player, revealOf(delivered));
         }
+        if (store.heldFor(player.getUUID()).size() > heldBefore) {
+            player.sendSystemMessage(Component.literal(
+                    "Some rewards did not fit in your inventory. Make room, then use /tower claim.").withStyle(ChatFormatting.GOLD));
+        }
         return delivered.size();
+    }
+
+    /**
+     * Files one placed reward. {@code left} is how many did not fit; -1 means the item no longer resolves, so the
+     * reward is discarded (the placing code logged why).
+     */
+    private static void file(TowerPendingRewardStore store, ServerPlayer player, PendingTowerReward reward, int left,
+                             List<PendingTowerReward> delivered) {
+        if (left < 0) return;
+        if (left < reward.amount()) delivered.add(reward);
+        if (left > 0) store.hold(player.getUUID(), remainder(reward, left));
+    }
+
+    private static PendingTowerReward remainder(PendingTowerReward reward, int amount) {
+        return new PendingTowerReward(reward.runId(), reward.floorIndex(), reward.item(), amount, reward.grantedAt(),
+                reward.components(), reward.label());
+    }
+
+    /** {@code /tower claim}: tries again to place what was held. @return how many rewards were placed, in full or part */
+    public static int claim(MinecraftServer server, ServerPlayer player) {
+        TowerPendingRewardStore store = TowerPendingRewardStore.get(server);
+        List<PendingTowerReward> held = store.takeHeld(player.getUUID());
+        List<PendingTowerReward> placed = new ArrayList<>();
+        for (PendingTowerReward reward : held) {
+            int left;
+            try {
+                // Already final stacks (any bonus was applied when they were first rolled): never scaled again.
+                left = reward.components().isEmpty() ? give(player, reward.item(), reward.amount())
+                        : giveWithComponents(player, reward);
+            } catch (RuntimeException ex) {
+                TowerLog.error("A held tower reward ({}) failed to claim", reward.item(), ex);
+                left = reward.amount();
+            }
+            if (left < 0) left = reward.amount();   // its item is not available now: it stays held
+            if (left < reward.amount()) placed.add(reward);
+            if (left > 0) store.hold(player.getUUID(), remainder(reward, left));
+        }
+        store.checkpoint(server);
+        if (!placed.isEmpty()) player.sendSystemMessage(Component.literal("Claimed: " + summarize(placed)));
+        return placed.size();
+    }
+
+    /** Tells the player if rewards are waiting; called when they step out of the tower and when they join. */
+    public static void remindHeld(MinecraftServer server, ServerPlayer player) {
+        int waiting = TowerPendingRewardStore.get(server).heldFor(player.getUUID()).size();
+        if (waiting == 0) return;
+        player.sendSystemMessage(Component.literal("You have " + waiting + " unclaimed tower reward"
+                + (waiting == 1 ? "" : "s") + ". Make room in your inventory, then use /tower claim.")
+                .withStyle(ChatFormatting.GOLD));
     }
 
     /** The reward as it is listed to the player: what was actually paid, under a readable name. */
@@ -113,56 +177,51 @@ public final class RewardDelivery {
         return new RewardRevealPayload(throughFloor, List.copyOf(grants));
     }
 
-    /**
-     * Into the inventory, the rest dropped at the player's feet. The drop names the player as thrower: vanilla's own
-     * overflow drop has none, and the tower dimension's drop guard removes every item with no thrower, which would
-     * silently delete an overflowing reward.
-     */
-    private static void hand(ServerPlayer player, ItemStack stack) {
+    /** Into the inventory. @return how many of the stack did not fit */
+    private static int hand(ServerPlayer player, ItemStack stack) {
         player.getInventory().add(stack);
-        if (!stack.isEmpty()) player.drop(stack, false, true);
+        return stack.isEmpty() ? 0 : stack.getCount();
     }
 
     /**
-     * Places one reward in the inventory, dropping the rest at the player's feet. Returns false, granting nothing,
-     * when the item no longer resolves ({@code BuiltInRegistries.ITEM.get} returns air for an unknown id).
+     * Places one reward in the inventory. Returns how many did not fit, or -1, granting nothing, when the item no
+     * longer resolves ({@code BuiltInRegistries.ITEM.get} returns air for an unknown id).
      */
-    private static boolean give(ServerPlayer player, ResourceLocation itemId, int amount) {
+    private static int give(ServerPlayer player, ResourceLocation itemId, int amount) {
         Item item = BuiltInRegistries.ITEM.get(itemId);
         if (!BuiltInRegistries.ITEM.getKey(item).equals(itemId)) {
-            TowerLog.error("A pending tower reward names item {}, which is not registered; skipping it.", itemId);
-            return false;
+            TowerLog.error("A tower reward names item {}, which is not registered; it cannot be given.", itemId);
+            return -1;
         }
         int remaining = amount;
+        int left = 0;
         while (remaining > 0) {
             ItemStack stack = new ItemStack(item);
             int chunk = Math.min(remaining, stack.getMaxStackSize());
             stack.setCount(chunk);
-            hand(player, stack);
+            left += hand(player, stack);
             remaining -= chunk;
         }
-        return true;
+        return left;
     }
 
-    /**
-     * Builds the stack the pending reward describes and places it in the inventory; false, granting nothing, if it
-     * does not resolve.
-     */
-    private static boolean giveWithComponents(ServerPlayer player, PendingTowerReward reward) {
+    /** As {@link #give}, for the stack the reward's components describe; -1 if it does not resolve. */
+    private static int giveWithComponents(ServerPlayer player, PendingTowerReward reward) {
         java.util.Optional<ItemStack> built = com.cobbletowers.rental.CardStacks.parse(player.registryAccess(), reward.components());
         if (built.isEmpty()) {
-            TowerLog.error("A pending tower reward ({}) could not be turned into an item; skipping it. Is the mod that owns {} installed?",
+            TowerLog.error("A tower reward ({}) could not be turned into an item. Is the mod that owns {} installed?",
                     reward.label().isEmpty() ? reward.item() : reward.label(), reward.item());
-            return false;
+            return -1;
         }
         int remaining = reward.amount();
+        int left = 0;
         while (remaining > 0) {
             ItemStack stack = built.get().copy();
             stack.setCount(Math.min(remaining, stack.getMaxStackSize()));
             remaining -= stack.getCount();
-            hand(player, stack);
+            left += hand(player, stack);
         }
-        return true;
+        return left;
     }
 
     private static String summarize(List<PendingTowerReward> rewards) {

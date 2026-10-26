@@ -23,8 +23,11 @@ public final class TowerPendingRewardStore extends TowerStore {
     private static final String PLAYERS = "players";
     private static final String PLAYER_ID = "player";
     private static final String QUEUE = "queue";
+    private static final String HELD = "held";
 
     private final Map<UUID, List<PendingTowerReward>> pending = new LinkedHashMap<>();
+    /** What did not fit in a full inventory: waits for the player to claim it, never delivered on its own. */
+    private final Map<UUID, List<PendingTowerReward>> held = new LinkedHashMap<>();
 
     /** The store for this server. Created empty on a world that has never granted a reward. */
     public static TowerPendingRewardStore get(MinecraftServer server) {
@@ -63,16 +66,43 @@ public final class TowerPendingRewardStore extends TowerStore {
         return queue == null ? List.of() : List.copyOf(queue);
     }
 
+    /** Keeps an overflow reward for the player to claim. */
+    public void hold(UUID playerId, PendingTowerReward reward) {
+        held.computeIfAbsent(playerId, ignored -> new ArrayList<>()).add(reward);
+        setDirty();
+    }
+
+    /** One player's held rewards. A copy. */
+    public List<PendingTowerReward> heldFor(UUID playerId) {
+        return List.copyOf(held.getOrDefault(playerId, List.of()));
+    }
+
+    /** Removes and returns everything held for one player. */
+    public List<PendingTowerReward> takeHeld(UUID playerId) {
+        List<PendingTowerReward> list = held.remove(playerId);
+        if (list != null && !list.isEmpty()) setDirty();
+        return list == null ? List.of() : List.copyOf(list);
+    }
+
     /** Package-private rather than private so a test can round-trip the file without a server. */
     static TowerPendingRewardStore load(CompoundTag tag, HolderLookup.Provider registries) {
         TowerPendingRewardStore store = new TowerPendingRewardStore();
-        ListTag players = tag.getList(PLAYERS, Tag.TAG_COMPOUND);
+        int dropped = readPlayers(tag.getList(PLAYERS, Tag.TAG_COMPOUND), QUEUE, store.pending)
+                + readPlayers(tag.getList(HELD, Tag.TAG_COMPOUND), QUEUE, store.held);
+        if (dropped > 0) {
+            TowerLog.error("Dropped {} unreadable pending tower reward(s).", dropped);
+        }
+        return store;
+    }
+
+    /** Reads one per-player list of rewards into {@code into}. @return how many entries were unreadable */
+    private static int readPlayers(ListTag players, String key, Map<UUID, List<PendingTowerReward>> into) {
         int dropped = 0;
         for (int i = 0; i < players.size(); i++) {
             CompoundTag playerTag = players.getCompound(i);
             UUID playerId = playerTag.getUUID(PLAYER_ID);
             List<PendingTowerReward> queue = new ArrayList<>();
-            ListTag entries = playerTag.getList(QUEUE, Tag.TAG_COMPOUND);
+            ListTag entries = playerTag.getList(key, Tag.TAG_COMPOUND);
             for (int j = 0; j < entries.size(); j++) {
                 try {
                     queue.add(PendingTowerReward.fromTag(entries.getCompound(j)));
@@ -80,18 +110,14 @@ public final class TowerPendingRewardStore extends TowerStore {
                     dropped++;
                 }
             }
-            if (!queue.isEmpty()) store.pending.put(playerId, queue);
+            if (!queue.isEmpty()) into.put(playerId, queue);
         }
-        if (dropped > 0) {
-            TowerLog.error("Dropped {} unreadable pending tower reward(s).", dropped);
-        }
-        return store;
+        return dropped;
     }
 
-    @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    private static ListTag writePlayers(Map<UUID, List<PendingTowerReward>> from) {
         ListTag players = new ListTag();
-        for (Map.Entry<UUID, List<PendingTowerReward>> entry : pending.entrySet()) {
+        for (Map.Entry<UUID, List<PendingTowerReward>> entry : from.entrySet()) {
             CompoundTag playerTag = new CompoundTag();
             playerTag.putUUID(PLAYER_ID, entry.getKey());
             ListTag queue = new ListTag();
@@ -99,7 +125,13 @@ public final class TowerPendingRewardStore extends TowerStore {
             playerTag.put(QUEUE, queue);
             players.add(playerTag);
         }
-        tag.put(PLAYERS, players);
+        return players;
+    }
+
+    @Override
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+        tag.put(PLAYERS, writePlayers(pending));
+        tag.put(HELD, writePlayers(held));
         return tag;
     }
 }

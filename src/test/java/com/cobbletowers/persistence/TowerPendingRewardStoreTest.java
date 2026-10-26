@@ -37,6 +37,35 @@ class TowerPendingRewardStoreTest {
     }
 
     @Test
+    @DisplayName("held (overflow) rewards survive a save and load, apart from the queue")
+    void heldRoundTrip() {
+        TowerPendingRewardStore store = new TowerPendingRewardStore();
+        store.add(PLAYER_A, new PendingTowerReward(UUID.randomUUID(), 5, ITEM, 3, 1L));
+        store.hold(PLAYER_A, new PendingTowerReward(UUID.randomUUID(), 5, ITEM, 7, 1L));
+
+        TowerPendingRewardStore restored = TowerPendingRewardStore.load(store.save(new CompoundTag(), null), null);
+
+        assertEquals(store.heldFor(PLAYER_A), restored.heldFor(PLAYER_A));
+        assertEquals(1, restored.queueFor(PLAYER_A).size(), "the queue is not mixed with the held list");
+        assertEquals(1, restored.takeHeld(PLAYER_A).size());
+        assertEquals(0, restored.heldFor(PLAYER_A).size(), "taking is exhaustive");
+    }
+
+    @Test
+    @DisplayName("a save from before the held list existed still loads")
+    void oldFileHasNoHeldList() {
+        TowerPendingRewardStore store = new TowerPendingRewardStore();
+        store.add(PLAYER_A, new PendingTowerReward(UUID.randomUUID(), 5, ITEM, 3, 1L));
+        CompoundTag tag = store.save(new CompoundTag(), null);
+        tag.remove("held");
+
+        TowerPendingRewardStore restored = TowerPendingRewardStore.load(tag, null);
+
+        assertEquals(1, restored.queueFor(PLAYER_A).size());
+        assertEquals(0, restored.heldFor(PLAYER_A).size());
+    }
+
+    @Test
     @DisplayName("draining removes and returns a player's whole queue")
     void draining() {
         TowerPendingRewardStore store = new TowerPendingRewardStore();
