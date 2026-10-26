@@ -4,6 +4,10 @@ import { pretty } from '../util.js';
 import { residentsOf, shortName, standingOf, standingText } from './standings.js';
 
 /** The facts of a tower for its briefing; `found` is false for a tower the server no longer lists. */
+/** "Nov 2, 8:00 PM" in the player's own time zone; empty for a tower that never closes. */
+export const endsText = (endsAt) => (endsAt > 0
+  ? new Date(endsAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
+
 export function towerBrief(hall, id) {
   const t = hall.towers.find((x) => x.id === id);
   if (!t) return { found: false, name: '', facts: [], residents: [], standing: null };
@@ -11,6 +15,7 @@ export function towerBrief(hall, id) {
   return {
     found: true, id, name: shortName(t.name),
     facts: [['Floors', t.floors + ' per cycle'], ['Milestones', String(t.milestones)], ['Ascension', t.ascends ? 'Continues into harder cycles' : 'Ends after the final floor'],
+      ...(t.endsAt > 0 ? [['Limited time', 'Closes ' + endsText(t.endsAt)]] : []),
       ['Your mastery', standingText(st)]],
     residents: residentsOf(id), standing: st,
   };

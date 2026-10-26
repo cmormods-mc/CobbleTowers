@@ -20,6 +20,7 @@ export const TOWER_EMBLEMS = Object.freeze({
   tideforge: medallion('gold', 'u', ['..w.', '.ww.', 'wWww', '.ww.']),
   rootvale: medallion('gold', 'o', ['..hh', '.hh.', 'hh..', 'h...']),
   duskvale: medallion('gold', 'k', ['.qq.', 'q...', 'q...', '.qq.']),
+  halloween: medallion('gold', 'k', ['.ee.', 'cccc', 'cKKc', '.cc.']),
   other: medallion('gold', 'j', ['..W.', 'WWWW', '.WW.', '.W.W']),
 });
 
@@ -30,7 +31,7 @@ export const RANK_MEDALS = Object.freeze(Object.fromEntries(Object.keys(METALS).
 /** "cobbletowers:tideforge" -> "tideforge"; the test tower wears the neutral one, any other tower the star. */
 export const towerKey = (id) => {
   const tail = String(id || '').split(':').pop().toLowerCase();
-  return tail === 'test' ? 'neutral' : ['neutral', 'tideforge', 'rootvale', 'duskvale'].includes(tail) ? tail : 'other';
+  return tail === 'test' ? 'neutral' : ['neutral', 'tideforge', 'rootvale', 'duskvale', 'halloween'].includes(tail) ? tail : 'other';
 };
 
 /** @param {{tower: string, w?: number}} props */

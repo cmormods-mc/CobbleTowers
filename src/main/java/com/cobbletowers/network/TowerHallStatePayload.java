@@ -55,13 +55,19 @@ public record TowerHallStatePayload(List<Destination> towers, List<Trial> trials
                 ByteBufCodecs.stringUtf8(200).apply(ByteBufCodecs.list(12)), Extras::modeProblems, Extras::new);
     }
 
-    public record Destination(ResourceLocation id, String name, int floors, int milestones, boolean ascends) {
+    /** @param endsAt epoch millis an event tower closes (P54); 0 for a tower that never does */
+    public record Destination(ResourceLocation id, String name, int floors, int milestones, boolean ascends, long endsAt) {
         static final StreamCodec<RegistryFriendlyByteBuf, Destination> CODEC = StreamCodec.composite(
                 ResourceLocation.STREAM_CODEC, Destination::id,
                 ByteBufCodecs.stringUtf8(256), Destination::name,
                 ByteBufCodecs.VAR_INT, Destination::floors,
                 ByteBufCodecs.VAR_INT, Destination::milestones,
-                ByteBufCodecs.BOOL, Destination::ascends, Destination::new);
+                ByteBufCodecs.BOOL, Destination::ascends,
+                ByteBufCodecs.VAR_LONG, Destination::endsAt, Destination::new);
+
+        public Destination(ResourceLocation id, String name, int floors, int milestones, boolean ascends) {
+            this(id, name, floors, milestones, ascends, 0L);
+        }
     }
 
     public record Trial(String kind, String revision, String title, ResourceLocation tower, List<String> rules) {

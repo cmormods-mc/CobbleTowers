@@ -41,7 +41,7 @@ public final class TowerHallService {
                 .sorted(Comparator.comparing(t -> t.displayName()))
                 .limit(256)
                 .map(t -> new TowerHallStatePayload.Destination(t.id(), t.displayName(), t.floorIds().size(),
-                        t.milestoneIds().size(), t.ascension())).toList();
+                        t.milestoneIds().size(), t.ascension(), t.window().map(w -> w.endMillis()).orElse(0L))).toList();
         List<TowerHallStatePayload.Trial> trials = new ArrayList<>();
         for (Kind kind : Kind.values()) TrialService.current(kind).ifPresent(t -> {
             List<String> rules = new ArrayList<>();

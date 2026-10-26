@@ -14,7 +14,12 @@ const fixture = (kind, mutate) => {
   if (mutate) mutate(d);
   return [kind, d];
 };
-const openDraft = (d) => { d.complete = false; d.current = 0; d.packs.forEach((p) => { p.kept = []; }); };
+// the event tower (P54) as the Hall lists it inside its window
+const withHalloween = (d) => {
+  d.towers.push({ id: 'cobbletowers:halloween', name: 'Hollow’s Eve', floors: 10, milestones: 2, ascends: true, endsAt: Date.UTC(2026, 10, 3) });
+  d.extras.standings.push({ tower: 'cobbletowers:halloween', rank: 'Unranked', level: 0, toNext: 3, ascension: 0 });
+};
+const openDraft =(d) => { d.complete = false; d.current = 0; d.packs.forEach((p) => { p.kept = []; }); };
 
 // name -> payloads sent to the page, then optional steps run before the shot
 export const SHOTS = {
@@ -67,6 +72,8 @@ export const SHOTS = {
   desk_progress_pick: { payloads: [fixture('TowerHallState'), fixture('TrackState')], look: 'desk', steps: async (page) => { await page.click('.fd .pills a >> text=Progress'); await page.click('.dtile.open'); } },
   desk_progress_season: { payloads: [fixture('TowerHallState'), fixture('TrackState')], look: 'desk', steps: async (page) => { await page.click('.fd .pills a >> text=Progress'); await page.click('.fd .trow >> nth=2'); await page.click('.dtile >> nth=2'); } },
   desk_tower_brief: { payloads: [fixture('TowerHallState')], look: 'desk', steps: async (page) => { await page.click('.fd .trow >> nth=0'); await page.click('.fd .dbtn:not(.gh) >> nth=-1'); } },
+  desk_halloween: { payloads: [fixture('TowerHallState', withHalloween)], look: 'desk' },
+  desk_halloween_brief: { payloads: [fixture('TowerHallState', withHalloween)], look: 'desk', steps: async (page) => { await page.click('.fd .trow >> text=Hollow'); await page.click('.fd .dbtn:not(.gh) >> nth=-1'); } },
   desk_trials: { payloads: [fixture('TowerHallState')], look: 'desk', steps: async (page) => { await page.click('.fd .pills a >> text=Trials'); } },
   desk_trial_brief: { payloads: [fixture('TowerHallState')], look: 'desk', steps: async (page) => { await page.click('.fd .pills a >> text=Trials'); await page.click('.fd .dbtn >> nth=0'); } },
   desk_social: { payloads: [fixture('TowerHallState')], look: 'desk', steps: async (page) => { await page.click('.fd .pills a >> text=Social'); } },

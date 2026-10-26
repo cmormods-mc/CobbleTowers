@@ -38,4 +38,4 @@ export const canSelect = (hall, busy) => !busy && hall.runStatus === '' && hall.
 export const partyLine = (levels) => (levels.length ? levels.map((l) => 'Lv ' + l).join(', ') : 'no Pokemon');
 
 /** Region of a tower id for its banner colours. */
-export const regionOf = (id) => (/tideforge/.test(id) ? 'tideforge' : /rootvale/.test(id) ? 'rootvale' : /duskvale/.test(id) ? 'duskvale' : 'neutral');
+export const regionOf = (id) => (/tideforge/.test(id) ? 'tideforge' : /rootvale/.test(id) ? 'rootvale' : /duskvale/.test(id) ? 'duskvale' : /halloween/.test(id) ? 'halloween' : 'neutral');
