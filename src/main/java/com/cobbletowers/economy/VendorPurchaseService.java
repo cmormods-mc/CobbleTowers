@@ -23,7 +23,9 @@ public final class VendorPurchaseService {
     /** Why a purchase did or did not go through -- named so a client can show the actual reason. */
     public enum Result {
         SUCCESS, RUN_NOT_FOUND, NOT_INTERMISSION, UNKNOWN_SERVICE, TARGET_NOT_IN_RUN, TARGET_OFFLINE,
-        SOLD_OUT, INSUFFICIENT_FUNDS, VENDOR_CLOSED
+        SOLD_OUT, INSUFFICIENT_FUNDS, VENDOR_CLOSED,
+        /** The effect threw after the charge; the price was given back. */
+        FAILED
     }
 
     private VendorPurchaseService() {}
@@ -40,6 +42,7 @@ public final class VendorPurchaseService {
             case UNKNOWN_SERVICE -> "That service does not exist.";
             case RUN_NOT_FOUND -> "You are not in a run.";
             case VENDOR_CLOSED -> "The vendor is closed in this mode.";
+            case FAILED -> "That did not work. You were not charged.";
         };
     }
 
@@ -79,7 +82,15 @@ public final class VendorPurchaseService {
         // Flushed immediately: a crash before the run write costs a purchase count, never a duplicated debit.
         TowerWalletStore.get(server).checkpoint(server);
 
-        VendorServices.apply(service.get().effect(), target);
+        try {
+            VendorServices.apply(service.get().effect(), target);
+        } catch (RuntimeException ex) {
+            // Charged and flushed above: a service that did nothing must not cost anything.
+            TowerLog.error("Run " + runId + ": " + serviceId + " threw after " + payingPlayerId + " was charged; refunding", ex);
+            TowerWalletStore.get(server).credit(payingPlayerId, price);
+            TowerWalletStore.get(server).checkpoint(server);
+            return Result.FAILED;
+        }
 
         long now = System.currentTimeMillis();
         TowerRuns.save(server, run.withVendorPurchase(serviceId, now), false);
