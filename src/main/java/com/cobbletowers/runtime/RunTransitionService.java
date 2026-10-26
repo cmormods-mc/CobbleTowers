@@ -137,23 +137,25 @@ public final class RunTransitionService {
             // Beta telemetry and the per-run history a player report reads (P48); never disturbs the run.
             com.cobbletowers.report.RunTelemetry.onTransition(server, runId, move.from(), move.next().state(), event);
             // The physical vendor stands only for an intermission (P28), so it goes the moment the run leaves one.
+            // Each side effect on its own: the state is already saved, and a fault in one (a draft that will not open)
+            // must not skip the ones after it (banking the rewards, releasing the cell).
             if (move.from() == RunState.INTERMISSION) {
-                com.cobbletowers.vendor.VendorNpc.despawn(server, run);
-                com.cobbletowers.echo.EchoDuels.cancel(server, runId);
+                effect("despawn the vendor", runId, () -> com.cobbletowers.vendor.VendorNpc.despawn(server, run));
+                effect("cancel the echo duels", runId, () -> com.cobbletowers.echo.EchoDuels.cancel(server, runId));
             }
             // Everybody who is out comes back on arriving at an intermission, whatever road got there.
             if (move.next().state() == RunState.INTERMISSION) {
-                ParticipantService.reviveAtIntermission(server, runId, now);
-                DraftService.open(server, runId, now);
+                effect("revive the party", runId, () -> ParticipantService.reviveAtIntermission(server, runId, now));
+                effect("open the draft", runId, () -> DraftService.open(server, runId, now));
                 // Before banking below, so a reward reveal sent when a floor banks lands on top of the
                 // intermission screen rather than under it.
-                IntermissionService.onArrival(server, runId);
+                effect("open the intermission", runId, () -> IntermissionService.onArrival(server, runId));
             }
             // Tied to arrival so a resume after a crash re-attempts banking; bank() decides whether it is a payout
             // point (docs/design/P9-economy.md section 4a).
             if (move.next().state() == RunState.INTERMISSION || move.next().state() == RunState.COMPLETED
                     || move.next().state() == RunState.CASHED_OUT) {
-                RewardBankService.bank(server, runId, now);
+                effect("bank the rewards", runId, () -> RewardBankService.bank(server, runId, now));
             }
             // A rental run that completed earns real cards (P33b), read from the party journal before the player is
             // given their own
@@ -168,18 +170,21 @@ public final class RunTransitionService {
             // The settled draft is cleared on the way out rather than when it settles, so that
             // `runs show` and the reward-reveal still have it to read for the whole intermission.
             if (move.next().state() == RunState.NEXT_FLOOR_READY) {
-                DraftService.clearIfSettled(server, runId, now);
+                effect("clear the settled draft", runId, () -> DraftService.clearIfSettled(server, runId, now));
             }
             // Re-fetched: bank() may have written a newer record, and saving the stale move.next() would overwrite
             // it.
             if (move.next().state().isTerminal()) {
-                releaseInstance(server, TowerRuns.get(runId).orElse(move.next()), now);
+                // The exit sweep releases a finished run's cell too, so a fault here only delays it.
+                effect("release the cell", runId, () -> releaseInstance(server, TowerRuns.get(runId).orElse(move.next()), now));
             }
             // Crossing into a new Ascension (P30) happens as the first floor of the cycle is confirmed.
             if (event == RunEvent.NEXT_FLOOR_CONFIRMED) {
-                com.cobbletowers.ascension.AscensionService.onFloorConfirmed(server, runId, now);
+                effect("cross into the next ascension", runId,
+                        () -> com.cobbletowers.ascension.AscensionService.onFloorConfirmed(server, runId, now));
                 // A rental draft's team grows as the floors climb (P40); a no-op for everyone else.
-                com.cobbletowers.rental.RentalScaling.onFloorConfirmed(server, runId);
+                effect("grow the rental team", runId,
+                        () -> com.cobbletowers.rental.RentalScaling.onFloorConfirmed(server, runId));
             }
             // Mastery (P31): floor timing, cycle clears, run endings. Never allowed to disturb the run it is
             // watching.
@@ -191,6 +196,15 @@ public final class RunTransitionService {
             TowerMetrics.recordTransition(server, runId, (System.nanoTime() - started) / 1_000_000);
         }
         return outcome;
+    }
+
+    /** Runs one side effect of a move, logging a fault instead of letting it skip the effects after it. */
+    private static void effect(String what, UUID runId, Runnable work) {
+        try {
+            work.run();
+        } catch (RuntimeException ex) {
+            TowerLog.error("Run " + runId + " could not " + what, ex);
+        }
     }
 
     /**
@@ -225,6 +239,14 @@ public final class RunTransitionService {
         // The clearing is done a slice per tick first; the exit sweep comes back to finish the release once it is clean.
         if (!com.cobbletowers.instance.CellClearJobs.ensureClear(server, cell.getAsInt())) {
             TowerLog.info("Run {} ended; its cell {} is being cleared in slices before it is released", run.runId(), cell.getAsInt());
+            return;
+        }
+        // A cell another run now holds is not this run's to reset: only its record of it is stale.
+        Optional<UUID> holder = InstanceAllocator.runIn(cell.getAsInt());
+        if (holder.isPresent() && !holder.get().equals(run.runId())) {
+            TowerLog.warn("Run {} names cell {}, which run {} holds; dropping the stale claim without touching it",
+                    run.runId(), cell.getAsInt(), holder.get());
+            TowerRuns.save(server, run.withCell(OptionalInt.empty(), now), true);
             return;
         }
         com.cobbletowers.vendor.VendorNpc.despawn(server, run);
