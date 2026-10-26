@@ -114,6 +114,16 @@ public final class RewardDelivery {
     }
 
     /**
+     * Into the inventory, the rest dropped at the player's feet. The drop names the player as thrower: vanilla's own
+     * overflow drop has none, and the tower dimension's drop guard removes every item with no thrower, which would
+     * silently delete an overflowing reward.
+     */
+    private static void hand(ServerPlayer player, ItemStack stack) {
+        player.getInventory().add(stack);
+        if (!stack.isEmpty()) player.drop(stack, false, true);
+    }
+
+    /**
      * Places one reward in the inventory, dropping the rest at the player's feet. Returns false, granting nothing,
      * when the item no longer resolves ({@code BuiltInRegistries.ITEM.get} returns air for an unknown id).
      */
@@ -128,7 +138,7 @@ public final class RewardDelivery {
             ItemStack stack = new ItemStack(item);
             int chunk = Math.min(remaining, stack.getMaxStackSize());
             stack.setCount(chunk);
-            player.getInventory().placeItemBackInInventory(stack);
+            hand(player, stack);
             remaining -= chunk;
         }
         return true;
@@ -150,7 +160,7 @@ public final class RewardDelivery {
             ItemStack stack = built.get().copy();
             stack.setCount(Math.min(remaining, stack.getMaxStackSize()));
             remaining -= stack.getCount();
-            player.getInventory().placeItemBackInInventory(stack);
+            hand(player, stack);
         }
         return true;
     }
