@@ -212,9 +212,27 @@ public final class CobblemonBattleAdapter {
                 TowerLog.warn("Floor {} battle {} of run {} is still on turn {} {} s after it started (started={}):{}",
                         binding.floorIndex(), entry.getKey(), binding.runId(), battle.getTurn(), PROBE_DELAY_MILLIS / 1000,
                         battle.getStarted(), actors);
+                nudgeIdleOpponents(battle, binding);
             } catch (RuntimeException ex) {
                 TowerLog.errorOnce("battle-probe", "The quiet battle probe failed", ex);
             }
+        }
+    }
+
+    /**
+     * Cobblemon can drop the opponent's request when the player answers first, so the AI's choice never reaches
+     * Showdown and the turn waits forever (seen live: only {@code >p1} written). Showdown picks a legal move for an
+     * AI side told {@code default}; done once, only when every actor is idle on turn 1.
+     */
+    private static void nudgeIdleOpponents(PokemonBattle battle, Binding binding) {
+        for (var actor : battle.getActors()) {
+            if (actor.getMustChoose() || actor.getRequest() != null || !actor.getResponses().isEmpty()) return;
+        }
+        for (var actor : battle.getActors()) {
+            if (!(actor instanceof com.cobblemon.mod.common.api.battles.model.actor.AIBattleActor)) continue;
+            TowerLog.warn("Floor {} battle of run {}: telling the idle opponent {} to choose", binding.floorIndex(),
+                    binding.runId(), actor.getShowdownId());
+            battle.writeShowdownAction(">" + actor.getShowdownId() + " default");
         }
     }
 
@@ -331,8 +349,8 @@ public final class CobblemonBattleAdapter {
         Binding binding = forget(event.getBattle().getBattleId());
         if (binding == null) return;  // somebody else's battle; the reason this index exists
 
-        boolean playerWon = event.getWinners().stream()
-                .anyMatch(actor -> binding.playerId().equals(actor.getUuid()));
+        boolean playerWon = BattleOutcome.playerWon(
+                event.getWinners().stream().map(actor -> actor.getUuid()).toList(), binding.playerId());
         MinecraftServer server = serverFor(event.getBattle());
         if (server == null) {
             TowerLog.error("Battle of run {} floor {} ended with no server to report it to", binding.runId(),

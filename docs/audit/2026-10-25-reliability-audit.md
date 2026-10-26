@@ -171,3 +171,19 @@ stalls come in clusters, so the cause itself needs finding on the Cobblemon / Co
 ## For the owner to decide or check
 
 See the end of the conversation summary; the same list is in memory (`cobbletowers-reliability-audit-2026-10-25`).
+
+## F33 follow-up (2026-10-26): cause found, recovered in the tower
+
+Showdown trace on the rig (Cobblemon 1.8.2): in a stalled battle Showdown receives `>p1 move ...` and never `>p2 ...`.
+Cobblemon's `checkForInputDispatch` writes the actors that have answered, then clears every actor's responses and request;
+the opponent's request had not been marked as awaiting a choice yet, so its choice is never written and the turn waits
+forever. Not a Showdown, CobbleRaids or JS fault (no JS error, every message that reached Showdown was handled).
+Mitigation: the 20 s probe now writes `>pN default` for an idle AI actor (`nudgeIdleOpponents`). Stress rig: 12/12
+beaten, two stalls recovered in 28 s (before: about 40% of rounds timed out).
+
+## Owner decisions applied (2026-10-26)
+
+Tie counts as a player win; a wave that cannot start parks the run (technical failure) instead of crediting it; a fled
+battle is a knockout; overflow rewards are held for `/tower claim` with a reminder on leaving the tower; a reward whose
+item no longer exists is discarded with an error, one that throws is held, nothing re-queues on its own; the native C2S
+payloads and the client access widener are removed; the action rate limit stays.
