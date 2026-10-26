@@ -138,7 +138,14 @@ public final class CellWarmPool {
     static void advance(MinecraftServer server) {
         SlicedBuild build = BUILD;
         if (build == null) return;
-        SlicedBuild.Status status = build.advance(server, SLICE_BUDGET_NANOS);
+        SlicedBuild.Status status;
+        try {
+            status = build.advance(server, SLICE_BUDGET_NANOS);
+        } catch (RuntimeException ex) {
+            // A build that throws would run again every tick and hold up the pool; it is given back like a failed one.
+            TowerLog.error("Building warm cell " + build.cell + " threw", ex);
+            status = SlicedBuild.Status.FAILED;
+        }
         if (status == SlicedBuild.Status.WORKING) return;
         UUID tenant = BUILD_TENANT;
         BUILD = null;

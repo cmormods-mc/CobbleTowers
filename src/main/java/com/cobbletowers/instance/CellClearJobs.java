@@ -83,17 +83,25 @@ public final class CellClearJobs {
         long started = System.nanoTime();
         long deadline = started + BUDGET_NANOS;
         boolean waiting = false;
-        do {
-            if (job.next >= job.chunks.size()) break;
-            ChunkPos pos = job.chunks.get(job.next);
-            LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
-            if (chunk == null) {
-                waiting = true;
-                break;
-            }
-            job.cleared += CellPreparer.resetChunk(level, chunk);
-            job.next++;
-        } while (System.nanoTime() < deadline);
+        try {
+            do {
+                if (job.next >= job.chunks.size()) break;
+                ChunkPos pos = job.chunks.get(job.next);
+                LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
+                if (chunk == null) {
+                    waiting = true;
+                    break;
+                }
+                job.cleared += CellPreparer.resetChunk(level, chunk);
+                job.next++;
+            } while (System.nanoTime() < deadline);
+        } catch (RuntimeException ex) {
+            // Always the first job that runs: one that throws would repeat every tick and hold up every other job and
+            // the warm pool. The cell stays dirty, so the release clears it in full.
+            TowerLog.error("Clearing cell " + cell + " in slices failed; the release will clear it", ex);
+            JOBS.remove(cell);
+            return;
+        }
         job.workNanos += System.nanoTime() - started;
 
         if (job.next >= job.chunks.size()) {
