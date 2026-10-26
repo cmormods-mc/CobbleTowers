@@ -53,7 +53,22 @@ def wait_count(rcon: Rcon, selector: str, want: int, seconds: int = 15) -> int:
 
 
 def card(index: int, part: str) -> str:
-    return f"@e[tag=cobbletowers_pedestal_{part},tag=cobbletowers_pedestal_card_{index},limit=1]"
+    # the details block is the third text piece of a card (line 2); the other parts have one entity each
+    extra = ",tag=cobbletowers_pedestal_line_2" if part == "text" else ""
+    return f"@e[tag=cobbletowers_pedestal_{part},tag=cobbletowers_pedestal_card_{index}{extra},limit=1]"
+
+
+def casts(text: str) -> int:
+    """How many filled vote pips the details block shows (the RCON reply may carry the glyph as a literal or an escape)."""
+    return text.count("●") + text.count("\\u25cf")
+
+
+def voted(text: str) -> bool:
+    return casts(text) > 0
+
+
+def waiting(text: str) -> bool:
+    return casts(text) == 0
 
 
 def data(rcon: Rcon, selector: str, path: str) -> str:
@@ -141,9 +156,10 @@ def main() -> None:
 
             boxes = wait_count(rcon, "@e[tag=cobbletowers_pedestal_hitbox]", 3)
             results.append(Result("three click boxes stand", boxes == 3, str(boxes)))
-            for part in ("text", "stand"):
+            # per card: 3 text pieces (name, payout, details), 4 stand parts, 1 gem
+            for part, each in (("text", 3), ("stand", 4), ("gem", 1)):
                 n = count(rcon, f"@e[tag=cobbletowers_pedestal_{part}]")
-                results.append(Result(f"three {part} entities stand", n == boxes, str(n)))
+                results.append(Result(f"{each} {part} entities per card stand", n == each * boxes, str(n)))
             results.append(Result("a pedestal is tagged with its run",
                                   run in data(rcon, card(0, "hitbox"), "Tags"), data(rcon, card(0, "hitbox"), "Tags")))
 
@@ -156,8 +172,8 @@ def main() -> None:
             results.append(Result("the middle pedestal stands within 6 blocks of the vendor", near, f"{vendor_at} {box_at}"))
 
             text0 = data(rcon, card(0, "text"), "text")
-            results.append(Result("the hologram offers a right-click", "Right-click to vote" in text0, text0[:200]))
-            results.append(Result("the hologram starts at no votes", "0 votes" in text0, text0[:200]))
+            results.append(Result("the hologram offers a right-click", "Right-click" in text0, text0[:200]))
+            results.append(Result("the hologram starts at no votes", waiting(text0), text0[:200]))
 
             # --- a participant's click votes -------------------------------------------------------
             stand_by_card(rcon, A, 0)
@@ -168,7 +184,7 @@ def main() -> None:
             results.append(Result("a participant's click reaches the pedestal",
                                   re.search(rf"Pedestal of run {run}: {A} clicked card 0", text) is not None, text[-300:]))
             text0 = data(rcon, card(0, "text"), "text")
-            results.append(Result("the hologram counts the vote", "1 vote" in text0, text0[:200]))
+            results.append(Result("the hologram counts the vote", voted(text0), text0[:200]))
 
             # --- an outsider's click does not -------------------------------------------------------
             stand_by_card(rcon, C, 0)
@@ -176,7 +192,7 @@ def main() -> None:
             click(bots[C])
             time.sleep(3)
             text0 = data(rcon, card(0, "text"), "text")
-            results.append(Result("an outsider's click adds no vote", "1 vote" in text0 and "2 votes" not in text0, text0[:200]))
+            results.append(Result("an outsider's click adds no vote", casts(text0) == 1, text0[:200]))
 
             # --- the second vote settles the draft --------------------------------------------------
             stand_by_card(rcon, B, 0)
@@ -186,7 +202,7 @@ def main() -> None:
             # Both voted: the draft settles, and an event room (P34b) may open a second round on the same pedestals.
             text0 = data(rcon, card(0, "text"), "text")
             results.append(Result("the hologram moves on once the draft settles (CHOSEN, or a fresh round)",
-                                  "CHOSEN" in text0 or "0 votes" in text0, text0[:200]))
+                                  "CHOSEN" in text0 or waiting(text0), text0[:200]))
 
             # --- the pedestals leave with the intermission ------------------------------------------
             for _ in range(2):

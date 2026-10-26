@@ -79,6 +79,37 @@ class PedestalRulesTest {
     }
 
     @Test
+    void lineTagsRoundTrip() {
+        assertEquals(Optional.of(2), PedestalRules.lineOf(PedestalRules.lineTag(2)));
+        assertTrue(PedestalRules.lineOf("cobbletowers_pedestal_line_-3").isEmpty());
+        assertTrue(PedestalRules.lineOf("nope").isEmpty());
+    }
+
+    @Test
+    void theTextStacksUpwardWithoutOverlap() {
+        PedestalRules.Stack stack = PedestalRules.stack(PedestalRules.BODY_LINES);
+        assertEquals(PedestalRules.TEXT_BASE, stack.bodyY(), 1e-9);
+        assertTrue(stack.bigY() >= stack.bodyY() + PedestalRules.textHeight(PedestalRules.BODY_LINES, PedestalRules.BODY_SCALE));
+        assertTrue(stack.nameY() >= stack.bigY() + PedestalRules.textHeight(1, PedestalRules.BIG_SCALE));
+        assertTrue(stack.top() <= PedestalRules.HITBOX_HEIGHT, "the click box covers the whole stack: " + stack.top());
+    }
+
+    @Test
+    void theGemRotationIsAUnitQuaternionAndTurnsAboutItsCentre() {
+        for (double spin : new double[] {0, Math.PI / 2, Math.PI, 2.3}) {
+            double[] q = PedestalRules.gemRotation(spin);
+            assertEquals(1.0, Math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]), 1e-9);
+            // the cube's centre, rotated and shifted by the offset, lands back on the centre of the unrotated cube
+            double s = 0.42;
+            double[] c = PedestalRules.rotate(q, s / 2, s / 2, s / 2);
+            double[] offset = PedestalRules.centreOffset(q, s);
+            assertEquals(0.0, c[0] + offset[0], 1e-9);
+            assertEquals(0.0, c[1] + offset[1], 1e-9);
+            assertEquals(0.0, c[2] + offset[2], 1e-9);
+        }
+    }
+
+    @Test
     void theNearerOfTwoOverlappingPedestalsWins() {
         List<PedestalRules.Slot> slots = List.of(new PedestalRules.Slot(0, 0, 0), new PedestalRules.Slot(-2, 0, 0));
         assertEquals(Optional.of(0), PedestalRules.gazedAt(4, 1, 0, -1, 0, 0, slots));

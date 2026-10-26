@@ -12,18 +12,38 @@ public final class PedestalRules {
     public static final String PART_STAND = "cobbletowers_pedestal_stand";
     public static final String PART_TEXT = "cobbletowers_pedestal_text";
     public static final String PART_HITBOX = "cobbletowers_pedestal_hitbox";
+    public static final String PART_GEM = "cobbletowers_pedestal_gem";
 
     private static final String RUN_PREFIX = "cobbletowers_pedestal_run:";
     private static final String CARD_PREFIX = "cobbletowers_pedestal_card_";
+    private static final String LINE_PREFIX = "cobbletowers_pedestal_line_";
 
     /** How far from the vendor the row stands, and the gap between pedestal centres. */
     static final double ROW_DISTANCE = 4.0;
-    static final double SPACING = 3.4;
+    static final double SPACING = 3.6;
 
     /** The click and gaze box: wide enough to catch the hologram, short of the next pedestal. */
     public static final double HITBOX_WIDTH = 2.4;
-    public static final double HITBOX_HEIGHT = 3.0;
+    public static final double HITBOX_HEIGHT = 3.8;
     public static final double GAZE_RANGE = 6.0;
+
+    /** The three stacked text pieces of one card, top to bottom: the name, the big payout, the detail block. */
+    public static final int LINE_NAME = 0;
+    public static final int LINE_BIG = 1;
+    public static final int LINE_BODY = 2;
+    public static final int BODY_LINES = 5;
+
+    /** Text scales and metrics, in blocks. A text row is 10 px at scale 1 and a block is 40 px; calibrated live. */
+    public static final double NAME_SCALE = 0.8;
+    public static final double BIG_SCALE = 1.6;
+    public static final double BODY_SCALE = 0.68;
+    static final double LINE_HEIGHT = 0.25;
+    static final double TEXT_PAD = 0.05;
+    static final double TEXT_GAP = 0.03;
+    /** Where the bottom of the lowest text sits above the floor: over the stand and the gem. */
+    public static final double TEXT_BASE = 2.05;
+    public static final double GEM_HEIGHT = 1.55;
+    public static final double GEM_SIZE = 0.42;
 
     private PedestalRules() {}
 
@@ -45,6 +65,62 @@ public final class PedestalRules {
         } catch (IllegalArgumentException ex) {
             return Optional.empty();
         }
+    }
+
+    public static String lineTag(int line) {
+        return LINE_PREFIX + line;
+    }
+
+    public static Optional<Integer> lineOf(String tag) {
+        if (!tag.startsWith(LINE_PREFIX)) return Optional.empty();
+        try {
+            int line = Integer.parseInt(tag.substring(LINE_PREFIX.length()));
+            return line < 0 ? Optional.empty() : Optional.of(line);
+        } catch (NumberFormatException ex) {
+            return Optional.empty();
+        }
+    }
+
+    /** Height of {@code lines} rows of text at {@code scale}, in blocks. */
+    public static double textHeight(int lines, double scale) {
+        return (lines * LINE_HEIGHT + TEXT_PAD) * scale;
+    }
+
+    /** Heights above the floor at which the bottom of each text piece sits (text grows upward from its anchor). */
+    public record Stack(double bodyY, double bigY, double nameY, double top) {}
+
+    public static Stack stack(int bodyLines) {
+        double body = TEXT_BASE;
+        double big = body + textHeight(bodyLines, BODY_SCALE) + TEXT_GAP;
+        double name = big + textHeight(1, BIG_SCALE) + TEXT_GAP;
+        return new Stack(body, big, name, name + textHeight(1, NAME_SCALE));
+    }
+
+    /** The gem's orientation after {@code spin} radians: tilted 45 degrees on Z (a diamond), then turned about Y. x, y, z, w. */
+    public static double[] gemRotation(double spin) {
+        double[] tilt = {0, 0, Math.sin(Math.PI / 8), Math.cos(Math.PI / 8)};
+        double[] turn = {0, Math.sin(spin / 2), 0, Math.cos(spin / 2)};
+        return multiply(turn, tilt);
+    }
+
+    /** Offset that makes a cube of {@code size} turn about its centre rather than its corner, for a display's translation. */
+    public static double[] centreOffset(double[] q, double size) {
+        double[] v = rotate(q, size / 2, size / 2, size / 2);
+        return new double[] {-v[0], -v[1], -v[2]};
+    }
+
+    static double[] multiply(double[] a, double[] b) {
+        return new double[] {
+            a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+            a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+            a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+            a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]};
+    }
+
+    static double[] rotate(double[] q, double x, double y, double z) {
+        double[] conj = {-q[0], -q[1], -q[2], q[3]};
+        double[] r = multiply(multiply(q, new double[] {x, y, z, 0}), conj);
+        return new double[] {r[0], r[1], r[2]};
     }
 
     public static Optional<Integer> cardOf(String tag) {

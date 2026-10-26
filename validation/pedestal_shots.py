@@ -162,6 +162,7 @@ def main() -> None:
             rcon.command("time set noon")
             rcon.command(f"gamemode survival {VIEWER}")
             give_party(rcon, VIEWER)
+            rcon.command(f"give {VIEWER} cobbletowers:tower_key 3")   # the fixed name has used up its free first run
             play(rcon, VIEWER, f"tower {TOWER}")
             play(rcon, VIEWER, "confirm")
             play(rcon, VIEWER, "start")
