@@ -70,6 +70,15 @@ public final class TowerRunStatsStore extends TowerStore {
         return byRun.size();
     }
 
+    /** Drops the stats of every run not in {@code known} (a run removed some way that never ended it). @return how many */
+    public int retainOnly(java.util.Set<UUID> known) {
+        int before = byRun.size();
+        byRun.keySet().retainAll(known);
+        int removed = before - byRun.size();
+        if (removed > 0) setDirty();
+        return removed;
+    }
+
     static TowerRunStatsStore load(CompoundTag tag, HolderLookup.Provider registries) {
         TowerRunStatsStore store = new TowerRunStatsStore();
         ListTag list = tag.getList("runs", Tag.TAG_COMPOUND);

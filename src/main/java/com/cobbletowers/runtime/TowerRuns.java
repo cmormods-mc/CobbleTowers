@@ -44,6 +44,9 @@ public final class TowerRuns {
         if (retired > 0) {
             TowerLog.info("Retired {} finished tower run(s) older than the retention window.", retired);
         }
+        // Per-run figures kept beside the runs: a run that is gone has no use for them.
+        int stale = com.cobbletowers.persistence.TowerRunStatsStore.get(server).retainOnly(BY_ID.keySet());
+        if (stale > 0) TowerLog.info("Dropped the stats of {} tower run(s) that no longer exist.", stale);
         return BY_ID.size();
     }
 
