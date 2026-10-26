@@ -1,5 +1,6 @@
 package com.cobbletowers.encounter;
 
+import com.cobbletowers.TowerLog;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -37,6 +38,13 @@ final class NextOpponentRetries {
         if (QUEUE.isEmpty() || server.getTickCount() % EVERY_TICKS != 0) return;
         List<Pending> due = List.copyOf(QUEUE);
         QUEUE.clear();
-        for (Pending pending : due) TowerEncounters.retryNextOpponent(server, pending);
+        for (Pending pending : due) {
+            // A throw here would reach the server tick; one bad retry must not cost the others.
+            try {
+                TowerEncounters.retryNextOpponent(server, pending);
+            } catch (RuntimeException ex) {
+                TowerLog.error("Retrying the next opponent of run " + pending.runId() + " failed", ex);
+            }
+        }
     }
 }

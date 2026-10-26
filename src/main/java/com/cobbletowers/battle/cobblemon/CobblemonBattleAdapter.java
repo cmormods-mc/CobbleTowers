@@ -98,9 +98,14 @@ public final class CobblemonBattleAdapter {
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED
                 .register(server -> runningServer = server);
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
-            retryPendingDiscards(server);
-            probeQuietBattles(System.currentTimeMillis());
-            if (++pollTicks % TURN_POLL_TICKS == 0) pollTurns(System.currentTimeMillis());
+            // An exception out of a tick callback ends the server: every step is contained.
+            try {
+                retryPendingDiscards(server);
+                probeQuietBattles(System.currentTimeMillis());
+                if (++pollTicks % TURN_POLL_TICKS == 0) pollTurns(System.currentTimeMillis());
+            } catch (RuntimeException ex) {
+                TowerLog.errorOnce("battle-tick", "The battle adapter tick failed", ex);
+            }
             if (++sweepTicks % ORPHAN_SWEEP_TICKS != 0) return;
             try {
                 sweepOrphanOpponents(server);
