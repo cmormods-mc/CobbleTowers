@@ -10,6 +10,7 @@ public final class DevTools {
 
     public static void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
         WebPreviewCommand.register(dispatcher);
+        PayloadDumpCommand.register(dispatcher);
     }
 
     /** Halts the JVM after a season finalisation step, to test crash recovery. */

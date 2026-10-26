@@ -284,6 +284,11 @@ public final class IntermissionService {
     private static void send(MinecraftServer server, PersistedRun run, ServerPlayer viewer, String message, boolean open) {
         // A screen that opens by itself (a floor cleared) must show even if the player's page looks open from its pings.
         if (open) com.cobbletowers.webgui.WebGuiBridge.userAsked(viewer);
+        TowerNetworking.sendIntermissionState(viewer, payloadOf(server, run, viewer, message, open));
+    }
+
+    /** What the intermission page receives for {@code viewer}; also read by the dev tools that dump it. */
+    public static IntermissionStatePayload payloadOf(MinecraftServer server, PersistedRun run, ServerPlayer viewer, String message, boolean open) {
         IntermissionRound round = ROUNDS.computeIfAbsent(run.runId(), id -> new IntermissionRound());
         IntermissionStatePayload.Draft draft = draftOf(run, viewer.getUUID());
 
@@ -295,8 +300,8 @@ public final class IntermissionService {
             members.add(new IntermissionStatePayload.Member(name, round.isReady(participant.playerId()),
                     round.votedCashOut(participant.playerId())));
         }
-        TowerNetworking.sendIntermissionState(viewer, new IntermissionStatePayload(run.floorIndex(), draft, members,
-                round.secondsLeft(System.currentTimeMillis()), message, open, extrasOf(run, viewer)));
+        return new IntermissionStatePayload(run.floorIndex(), draft, members,
+                round.secondsLeft(System.currentTimeMillis()), message, open, extrasOf(run, viewer));
     }
 
     /** The team's health and the run's place in its tower, for the Frontier Desk page; decoration, so a failure sends none. */
