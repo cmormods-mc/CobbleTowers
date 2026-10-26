@@ -222,30 +222,36 @@ public final class TowerPresence {
      * forward.
      */
     public static void sweep(MinecraftServer server, long now) {
-        expireGraceWindows(server, now);
-        settleAbandonedDrafts(server, now);
+        // Each step on its own: a fault in one must not leave the floors below unwatched.
+        guarded("expire the reconnect windows", () -> expireGraceWindows(server, now));
+        guarded("settle the abandoned drafts", () -> settleAbandonedDrafts(server, now));
 
         for (TowerEncounters.Round round : TowerEncounters.activeRounds()) {
-            // The boss is CobbleRaids', and it has its own lifetime cap on a boss that goes nowhere.
-            // A second timer on one fight would only give the two something to disagree about.
-            if (round.phase() != TowerEncounters.Phase.PREREQUISITE) continue;
+            guarded("judge floor " + round.floorIndex() + " of run " + round.runId(),
+                    () -> judgeRound(server, round, now));
+        }
+    }
 
-            Verdict verdict = judge(CobblemonBattleAdapter.lastActivityByPlayer(round.runId()),
-                    round.startedAt(), now);
-            if (verdict.isQuiet()) continue;
+    private static void judgeRound(MinecraftServer server, TowerEncounters.Round round, long now) {
+        // The boss is CobbleRaids', and it has its own lifetime cap on a boss that goes nowhere.
+        // A second timer on one fight would only give the two something to disagree about.
+        if (round.phase() != TowerEncounters.Phase.PREREQUISITE) return;
 
-            if (verdict.park()) {
-                TowerLog.error("Floor {} of run {} has produced nothing for {} minute(s); parking the run",
-                        round.floorIndex(), round.runId(), FLOOR_STALL_MILLIS / 60_000);
-                TowerEncounters.abandon(server, round.runId());
-                RunTransitionService.apply(server, round.runId(), RunEvent.TECHNICAL_FAILURE, now);
-                continue;
-            }
-            for (UUID playerId : verdict.drop()) {
-                TowerLog.warn("Player {} has not moved floor {} of run {} for {} minute(s); dropping them",
-                        playerId, round.floorIndex(), round.runId(), PLAYER_STALL_MILLIS / 60_000);
-                TowerEncounters.dropPlayer(server, round.runId(), playerId, "stopped answering", now);
-            }
+        Verdict verdict = judge(CobblemonBattleAdapter.lastActivityByPlayer(round.runId()),
+                round.startedAt(), now);
+        if (verdict.isQuiet()) return;
+
+        if (verdict.park()) {
+            TowerLog.error("Floor {} of run {} has produced nothing for {} minute(s); parking the run",
+                    round.floorIndex(), round.runId(), FLOOR_STALL_MILLIS / 60_000);
+            TowerEncounters.abandon(server, round.runId());
+            RunTransitionService.apply(server, round.runId(), RunEvent.TECHNICAL_FAILURE, now);
+            return;
+        }
+        for (UUID playerId : verdict.drop()) {
+            TowerLog.warn("Player {} has not moved floor {} of run {} for {} minute(s); dropping them",
+                    playerId, round.floorIndex(), round.runId(), PLAYER_STALL_MILLIS / 60_000);
+            TowerEncounters.dropPlayer(server, round.runId(), playerId, "stopped answering", now);
         }
     }
 
@@ -280,7 +286,7 @@ public final class TowerPresence {
             TowerLog.warn("Run {} has had a draft open at floor {} with nobody to vote for {} minute(s);"
                             + " settling it", run.runId(), run.floorIndex(),
                     ParticipantService.RECONNECT_WINDOW_MILLIS / 60_000);
-            DraftService.settle(server, run.runId(), now);
+            guarded("settle the draft of run " + run.runId(), () -> DraftService.settle(server, run.runId(), now));
         }
     }
 
