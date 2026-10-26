@@ -133,9 +133,10 @@ public final class PartyJournalService {
 
         if (!restoration.stranded().isEmpty()) {
             // Nowhere to put them: keep the journal so a later sweep can try again once there is room.
-            TowerLog.error("Could not restore {} Pokemon of {}: no free slot anywhere. Journal kept.",
-                    restoration.stranded().size(), player.getUUID());
             if (TOLD_FULL.add(player.getUUID())) {
+                // Said once: the sweep retries every second until the player makes room.
+                TowerLog.error("Could not restore {} Pokemon of {}: no free slot anywhere. Journal kept.",
+                        restoration.stranded().size(), player.getUUID());
                 player.sendSystemMessage(Component.literal("Some of your Pokemon could not be put back: your party"
                         + " and boxes are full. Free a slot and they will be restored."));
             }
@@ -171,7 +172,12 @@ public final class PartyJournalService {
             if (player == null) continue;
             if (!runIsOverFor(entry)) continue;
             if (PartyStorage.inBattle(player)) continue;
-            restoreNow(server, player);
+            // One player's broken entry must not keep everyone else's Pokemon from coming back.
+            try {
+                restoreNow(server, player);
+            } catch (RuntimeException ex) {
+                TowerLog.errorOnce("restore-" + entry.player(), "Could not restore the Pokemon of " + entry.player(), ex);
+            }
         }
     }
 
