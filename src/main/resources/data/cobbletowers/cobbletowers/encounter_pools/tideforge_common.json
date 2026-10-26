@@ -14,7 +14,6 @@
     { "species": "cobblemon:lanturn", "weight": 90 },
     { "species": "cobblemon:corviknight", "weight": 80 },
     { "species": "cobblemon:perrserker", "weight": 80 },
-    { "species": "cobblemon:greninja", "weight": 70, "level_offset": 1 },
     { "species": "cobblemon:drednaw", "weight": 70 },
     { "species": "cobblemon:toxtricity", "weight": 60, "level_offset": 2 },
     { "species": "cobblemon:basculin", "weight": 100 }
