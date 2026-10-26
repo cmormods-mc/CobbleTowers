@@ -422,34 +422,45 @@ public final class LobbyService {
 
     static void tick(MinecraftServer server, long now) {
         for (TowerLobby lobby : List.copyOf(BY_HOST.values())) {
-            for (UUID lapsed : lobby.expire(now)) {
-                ServerPlayer player = server.getPlayerList().getPlayer(lapsed);
-                if (player != null) {
-                    player.sendSystemMessage(Component.literal("Your invite to the team lapsed."));
-                    sendState(server, player, null, "");
-                }
-                broadcast(server, lobby, "An invite lapsed.");
+            // One lobby's fault must not stall the others, nor repeat every tick: its countdown is cancelled.
+            try {
+                tickLobby(server, lobby, now);
+            } catch (RuntimeException ex) {
+                TowerLog.error("The lobby of " + lobby.host() + " failed to tick; cancelling its countdown", ex);
+                lobby.cancelCountdown();
+                broadcast(server, lobby, "The run could not start. Try again.");
             }
-            if (!lobby.counting()) continue;
-            if (lobby.countdownDue(now)) {
-                if (!com.cobbletowers.instance.HeavyWork.tryAcquire(now)) {
-                    // The tower is busy building or clearing other arenas (one at a time keeps the server
-                    // responsive): wait a second.
-                    lobby.beginCountdown(now, 1_000L);
-                    for (UUID id : lobby.team()) {
-                        ServerPlayer player = server.getPlayerList().getPlayer(id);
-                        if (player != null) player.displayClientMessage(Component.literal("The tower is preparing other arenas; starting in a moment..."), true);
-                    }
-                    continue;
-                }
-                LobbyLaunch.launch(server, lobby, now);
-            } else {
-                int left = lobby.secondsLeft(now);
-                if (!lobby.announce(left)) continue;
+        }
+    }
+
+    private static void tickLobby(MinecraftServer server, TowerLobby lobby, long now) {
+        for (UUID lapsed : lobby.expire(now)) {
+            ServerPlayer player = server.getPlayerList().getPlayer(lapsed);
+            if (player != null) {
+                player.sendSystemMessage(Component.literal("Your invite to the team lapsed."));
+                sendState(server, player, null, "");
+            }
+            broadcast(server, lobby, "An invite lapsed.");
+        }
+        if (!lobby.counting()) return;
+        if (lobby.countdownDue(now)) {
+            if (!com.cobbletowers.instance.HeavyWork.tryAcquire(now)) {
+                // The tower is busy building or clearing other arenas (one at a time keeps the server
+                // responsive): wait a second.
+                lobby.beginCountdown(now, 1_000L);
                 for (UUID id : lobby.team()) {
                     ServerPlayer player = server.getPlayerList().getPlayer(id);
-                    if (player != null) player.displayClientMessage(Component.literal("Starting in " + left + "..."), true);
+                    if (player != null) player.displayClientMessage(Component.literal("The tower is preparing other arenas; starting in a moment..."), true);
                 }
+                return;
+            }
+            LobbyLaunch.launch(server, lobby, now);
+        } else {
+            int left = lobby.secondsLeft(now);
+            if (!lobby.announce(left)) return;
+            for (UUID id : lobby.team()) {
+                ServerPlayer player = server.getPlayerList().getPlayer(id);
+                if (player != null) player.displayClientMessage(Component.literal("Starting in " + left + "..."), true);
             }
         }
     }

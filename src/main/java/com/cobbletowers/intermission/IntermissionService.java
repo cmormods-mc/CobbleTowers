@@ -197,40 +197,49 @@ public final class IntermissionService {
 
     static void tick(MinecraftServer server, long now) {
         for (UUID runId : List.copyOf(ROUNDS.keySet())) {
-            Optional<PersistedRun> found = TowerRuns.get(runId);
-            if (found.isEmpty() || found.get().state() != RunState.INTERMISSION) {
+            // One run's fault must not stall the countdowns of the others.
+            try {
+                tickRun(server, runId, now);
+            } catch (RuntimeException ex) {
+                TowerLog.error("The intermission of run " + runId + " failed to tick", ex);
+            }
+        }
+    }
+
+    private static void tickRun(MinecraftServer server, UUID runId, long now) {
+        Optional<PersistedRun> found = TowerRuns.get(runId);
+        if (found.isEmpty() || found.get().state() != RunState.INTERMISSION) {
+            ROUNDS.remove(runId);
+            return;
+        }
+        IntermissionRound round = ROUNDS.get(runId);
+        if (!round.counting()) return;
+        if (!round.countdownDue(now)) {
+            int left = round.secondsLeft(now);
+            if (!round.announce(left)) return;
+            for (PersistedParticipant participant : found.get().participants()) {
+                ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+                if (player != null) player.displayClientMessage(Component.literal("Next floor in " + left + "..."), true);
+            }
+            return;
+        }
+        round.cancelCountdown();
+        if (com.cobbletowers.echo.EchoDuels.active(server, runId)) return;   // an Echo Duel holds the floor
+        // A playlist's party clauses (P32) hold every floor, not only the first: a party that stopped complying
+        // waits.
+        List<String> problems = PlaylistGuard.problems(server, found.get());
+        if (!problems.isEmpty()) {
+            TowerLog.info("Run {} cannot open its next floor: {}", runId, String.join("; ", problems));
+            broadcast(server, found.get(), "Cannot open the next floor: " + String.join("; ", problems), false);
+            return;
+        }
+        RunLifecycle.Opened result = RunLifecycle.openNextFloor(server, runId, now);
+        switch (result) {
+            case OPENED -> ROUNDS.remove(runId);
+            case BLOCKED -> broadcast(server, found.get(), "The next floor cannot open yet.", false);
+            case FAILED -> {
                 ROUNDS.remove(runId);
-                continue;
-            }
-            IntermissionRound round = ROUNDS.get(runId);
-            if (!round.counting()) continue;
-            if (!round.countdownDue(now)) {
-                int left = round.secondsLeft(now);
-                if (!round.announce(left)) continue;
-                for (PersistedParticipant participant : found.get().participants()) {
-                    ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
-                    if (player != null) player.displayClientMessage(Component.literal("Next floor in " + left + "..."), true);
-                }
-                continue;
-            }
-            round.cancelCountdown();
-            if (com.cobbletowers.echo.EchoDuels.active(server, runId)) continue;   // an Echo Duel holds the floor
-            // A playlist's party clauses (P32) hold every floor, not only the first: a party that stopped complying
-            // waits.
-            List<String> problems = PlaylistGuard.problems(server, found.get());
-            if (!problems.isEmpty()) {
-                TowerLog.info("Run {} cannot open its next floor: {}", runId, String.join("; ", problems));
-                broadcast(server, found.get(), "Cannot open the next floor: " + String.join("; ", problems), false);
-                continue;
-            }
-            RunLifecycle.Opened result = RunLifecycle.openNextFloor(server, runId, now);
-            switch (result) {
-                case OPENED -> ROUNDS.remove(runId);
-                case BLOCKED -> broadcast(server, found.get(), "The next floor cannot open yet.", false);
-                case FAILED -> {
-                    ROUNDS.remove(runId);
-                    notifyAll(server, found.get(), "The next floor could not be opened; the run is parked for recovery.");
-                }
+                notifyAll(server, found.get(), "The next floor could not be opened; the run is parked for recovery.");
             }
         }
     }
