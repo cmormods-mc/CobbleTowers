@@ -3,6 +3,7 @@ package com.cobbletowers.battle.cobblemon;
 import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import com.cobblemon.mod.common.api.events.battles.BattleFaintedEvent;
+import com.cobblemon.mod.common.api.events.battles.BattleFledEvent;
 import com.cobblemon.mod.common.api.events.battles.BattleVictoryEvent;
 import com.cobblemon.mod.common.api.battles.model.PokemonBattle;
 import com.cobblemon.mod.common.battles.BattleRegistry;
@@ -50,13 +51,18 @@ public final class CobblemonBattleAdapter {
         }
     }
 
-    private static final Map<UUID, Binding> BY_BATTLE = new LinkedHashMap<>();
-    private static final Map<UUID, List<UUID>> BATTLES_BY_RUN = new HashMap<>();
-    /** When each battle last did something, for the watchdog (a start or a faint). */
-    private static final Map<UUID, Long> LAST_ACTIVITY = new HashMap<>();
-    /** When to look once at a battle that has not moved on from its first turn; one entry per floor battle. */
-    private static final Map<UUID, Long> PROBE_AT = new HashMap<>();
+    private static final BattleIndex INDEX = new BattleIndex();
+    private static final Map<UUID, Binding> BY_BATTLE = INDEX.byBattle;
+    private static final Map<UUID, List<UUID>> BATTLES_BY_RUN = INDEX.byRun;
+    private static final Map<UUID, Long> LAST_ACTIVITY = INDEX.lastActivity;
+    private static final Map<UUID, Long> PROBE_AT = INDEX.probeAt;
     private static final long PROBE_DELAY_MILLIS = 20_000;
+    /** Turn counters of open battles: a turn that moves counts as activity, not only a faint. */
+    private static final TurnTracker TURNS = INDEX.turns;
+    private static final int TURN_POLL_TICKS = 20;
+    private static int pollTicks;
+    /** The running server, so a result never depends on a participant still being online to find it. */
+    private static volatile MinecraftServer runningServer;
     private static boolean installed;
 
     /** Marks an entity this adapter spawned as a tower opponent, so a stray one can be told from anything else. */
@@ -88,9 +94,13 @@ public final class CobblemonBattleAdapter {
         installed = true;
         CobblemonEvents.BATTLE_VICTORY.subscribe(CobblemonBattleAdapter::onVictorySafely);
         CobblemonEvents.BATTLE_FAINTED.subscribe(CobblemonBattleAdapter::onFaintedSafely);
+        CobblemonEvents.BATTLE_FLED.subscribe(CobblemonBattleAdapter::onFledSafely);
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED
+                .register(server -> runningServer = server);
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
             retryPendingDiscards(server);
             probeQuietBattles(System.currentTimeMillis());
+            if (++pollTicks % TURN_POLL_TICKS == 0) pollTurns(System.currentTimeMillis());
             if (++sweepTicks % ORPHAN_SWEEP_TICKS != 0) return;
             try {
                 sweepOrphanOpponents(server);
@@ -141,16 +151,36 @@ public final class CobblemonBattleAdapter {
         UUID battleId = success.getBattle().getBattleId();
         Binding binding = new Binding(runId, player.getUUID(), floorIndex, snapshot.species(), opponent.getUUID(),
                 System.currentTimeMillis(), exhibition);
-        BY_BATTLE.put(battleId, binding);
-        LAST_ACTIVITY.put(battleId, binding.startedAt());
-        if (!exhibition) PROBE_AT.put(battleId, binding.startedAt() + PROBE_DELAY_MILLIS);
-        BATTLES_BY_RUN.computeIfAbsent(runId, key -> new ArrayList<>()).add(battleId);
+        register(battleId, binding);
         // An Echo's Pokemon is named by what is actually built, not by the pool species the slot was drawn from.
         String opponentName = snapshot.echoProperties().map(com.cobbletowers.echo.EchoPolicy::speciesOf)
                 .orElse(snapshot.species().toString());
         TowerLog.info("Floor {} battle {} started{}: {} vs {} at level {}", floorIndex, battleId,
                 exhibition ? " (Echo duel)" : "", player.getGameProfile().getName(), opponentName, snapshot.level());
         return Optional.of(battleId);
+    }
+
+    private static void register(UUID battleId, Binding binding) {
+        INDEX.register(battleId, binding, PROBE_DELAY_MILLIS);
+    }
+
+    /** Drops a battle from every index. @return its binding, null if it was not (or no longer) ours */
+    private static Binding forget(UUID battleId) {
+        return INDEX.forget(battleId);
+    }
+
+    /** A turn that moved is the player acting; the watchdog reads it as life. Once a second is plenty. */
+    private static void pollTurns(long now) {
+        if (BY_BATTLE.isEmpty()) return;
+        try {
+            for (UUID battleId : BY_BATTLE.keySet()) {
+                PokemonBattle battle = BattleRegistry.getBattle(battleId);
+                if (battle == null || battle.getEnded()) continue;
+                if (TURNS.advanced(battleId, battle.getTurn())) LAST_ACTIVITY.put(battleId, now);
+            }
+        } catch (RuntimeException ex) {
+            TowerLog.errorOnce("battle-turns", "Could not poll battle turns", ex);
+        }
     }
 
     /**
@@ -293,24 +323,55 @@ public final class CobblemonBattleAdapter {
     }
 
     private static void onVictory(BattleVictoryEvent event) {
-        LAST_ACTIVITY.remove(event.getBattle().getBattleId());
-        Binding binding = BY_BATTLE.remove(event.getBattle().getBattleId());
+        Binding binding = forget(event.getBattle().getBattleId());
         if (binding == null) return;  // somebody else's battle; the reason this index exists
-
-        List<UUID> battles = BATTLES_BY_RUN.get(binding.runId());
-        if (battles != null) {
-            battles.remove(event.getBattle().getBattleId());
-            if (battles.isEmpty()) BATTLES_BY_RUN.remove(binding.runId());
-        }
 
         boolean playerWon = event.getWinners().stream()
                 .anyMatch(actor -> binding.playerId().equals(actor.getUuid()));
-        MinecraftServer server = event.getBattle().getPlayers().isEmpty()
-                ? null : event.getBattle().getPlayers().get(0).getServer();
-        if (server != null) {
-            discardOpponent(server, binding);
-            listener.onResolved(server, binding, playerWon);
+        MinecraftServer server = serverFor(event.getBattle());
+        if (server == null) {
+            TowerLog.error("Battle of run {} floor {} ended with no server to report it to", binding.runId(),
+                    binding.floorIndex());
+            return;
         }
+        discardOpponent(server, binding);
+        listener.onResolved(server, binding, playerWon);
+    }
+
+    /** The running server; a participant may already be gone by the time a result arrives. */
+    private static MinecraftServer serverFor(PokemonBattle battle) {
+        MinecraftServer server = runningServer;
+        if (server != null) return server;
+        return battle.getPlayers().isEmpty() ? null : battle.getPlayers().get(0).getServer();
+    }
+
+    /** A fled battle ends without a victory event; one stopped from outside is left to the watchdog. */
+    private static void onFledSafely(BattleFledEvent event) {
+        try {
+            resolveWithoutWinner(event.getBattle(), "was fled");
+        } catch (RuntimeException ex) {
+            TowerLog.error("A tower floor failed to handle a fled battle", ex);
+        }
+    }
+
+    /**
+     * A player who left a floor battle has lost it. Idempotent: whoever takes the binding first resolves it.
+     * Deferred a tick so Cobblemon finishes ending the battle before the floor moves the player.
+     */
+    private static void resolveWithoutWinner(PokemonBattle battle, String how) {
+        Binding binding = forget(battle.getBattleId());
+        if (binding == null) return;
+        MinecraftServer server = serverFor(battle);
+        if (server == null) {
+            TowerLog.error("Battle of run {} floor {} {} with no server to report it to", binding.runId(),
+                    binding.floorIndex(), how);
+            return;
+        }
+        TowerLog.info("Floor {} battle of run {} {}; counted as lost", binding.floorIndex(), binding.runId(), how);
+        server.execute(() -> {
+            discardOpponentNow(server, binding);
+            listener.onResolved(server, binding, false);
+        });
     }
 
     /**
@@ -338,8 +399,7 @@ public final class CobblemonBattleAdapter {
         if (battles == null) return 0;
         int ended = 0;
         for (UUID battleId : List.copyOf(battles)) {
-            Binding binding = BY_BATTLE.remove(battleId);
-            LAST_ACTIVITY.remove(battleId);
+            Binding binding = forget(battleId);
             if (binding == null) continue;
             closeBattle(server, battleId);
             discardOpponent(server, binding);
@@ -350,12 +410,7 @@ public final class CobblemonBattleAdapter {
 
     /** Whether the player is a participant in a battle that has not ended, ours or CobbleRaids'. */
     public static boolean inLiveBattle(ServerPlayer player) {
-        try {
-            PokemonBattle battle = BattleRegistry.getBattleByParticipatingPlayer(player);
-            return battle != null && !battle.getEnded();
-        } catch (RuntimeException ex) {
-            return false;
-        }
+        return inBattle(player);
     }
 
     /** Ends whatever battle a player is in, including one CobbleRaids started. @return true if one was ended */
@@ -410,17 +465,11 @@ public final class CobblemonBattleAdapter {
 
     /** Ends one player's battle and removes their opponent, leaving the floor alone. */
     public static boolean endPlayer(MinecraftServer server, UUID runId, UUID playerId) {
-        for (Map.Entry<UUID, Binding> entry : Map.copyOf(BY_BATTLE).entrySet()) {
-            Binding binding = entry.getValue();
-            if (!binding.runId().equals(runId) || !binding.playerId().equals(playerId)) continue;
-            BY_BATTLE.remove(entry.getKey());
-            LAST_ACTIVITY.remove(entry.getKey());
-            List<UUID> battles = BATTLES_BY_RUN.get(runId);
-            if (battles != null) {
-                battles.remove(entry.getKey());
-                if (battles.isEmpty()) BATTLES_BY_RUN.remove(runId);
-            }
-            closeBattle(server, entry.getKey());
+        for (UUID battleId : List.copyOf(BATTLES_BY_RUN.getOrDefault(runId, List.of()))) {
+            Binding binding = BY_BATTLE.get(battleId);
+            if (binding == null || !binding.playerId().equals(playerId)) continue;
+            forget(battleId);
+            closeBattle(server, battleId);
             discardOpponent(server, binding);
             return true;
         }
@@ -481,10 +530,11 @@ public final class CobblemonBattleAdapter {
     public static int onServerStopped(MinecraftServer server) {
         int held = BY_BATTLE.size();
         for (Binding binding : List.copyOf(BY_BATTLE.values())) discardOpponent(server, binding);
-        BY_BATTLE.clear();
-        BATTLES_BY_RUN.clear();
-        LAST_ACTIVITY.clear();
-        PROBE_AT.clear();
+        INDEX.clear();
+        PENDING_DISCARDS.clear();
+        sweepTicks = 0;
+        pollTicks = 0;
+        runningServer = null;
         return held;
     }
 }
