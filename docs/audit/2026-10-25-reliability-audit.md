@@ -88,6 +88,62 @@ Cleared with no change: Pokemon moves (two-phase with rollback, rental deletes t
 | F27 | P2 | Intermission, lobby, recovery, rental, cell-clear and warm-build ticks each aborted for everything after one failing item, and repeated every tick. | Each item fails alone; a failed lobby cancels its countdown; a failed clear/build is dropped. |
 | F28 | P3 | A malformed `contract-reroll` argument threw. | Answers "Unsupported action." |
 
+## Third pass (2026-10-26)
+
+Read: `ParticipantService`, `DraftService` (open, vote), `DraftVote`, `VendorPurchaseService`, `WornSets`, `LobbyLaunch`,
+`EchoService`, `EchoDuels`, `SeasonProgressService`, `MasteryService` (transitions, cycle clear), `TowerRunStatsStore`,
+`TowerWalletStore`, `TowerDefinitionRegistry` (reload), `WebUiFiles`, `WebGuiLink`, `PageSession`, plus sweeps for
+unchecked `get(0)`, division by variable denominators, unsafe HTML in the web UI, and every static UUID-keyed map.
+
+| ID | Sev | Finding | Fix |
+|---|---|---|---|
+| F29 | P1 | `VendorPurchaseService` debited and flushed before applying the effect; an effect that threw charged the player for nothing and left the purchase uncounted. | The price is credited back and the player told they were not charged (`Result.FAILED`). |
+| F30 | P2 | Armor set attribute bonuses are transient modifiers; a respawn builds a new player without them, but the cache still matched, so with `keepInventory` they were never reapplied. | The refresh also checks the modifiers are actually on the player. |
+| F31 | P1 | `LobbyLaunch.launch`: a throw after the run was saved left it registered with nothing started, the party moved, and the team unable to retry ("already in a run"). | The launch abandons the run and restores the parties on a throw. |
+| F32 | P3 | Per-run stats were removed only when a run ended normally. | Stats of runs that no longer exist are dropped when the runs load (tested). |
+
+**Verified, not assumed:** WebGUI 1.8.1 hops to the server thread (`MinecraftServer.execute`) before firing the page event
+the bridge listens to, so every handler behind it runs on the server thread as the code assumes. Cobblemon 1.8.2 has
+`BATTLE_FLED`; 1.8.1 lacks `BATTLE_ENDED` (the compatibility gate caught that).
+
+**Cleared with no change:** `ParticipantService`, draft voting and tie-break (floorMod), wallet (long, never negative),
+claim paths (idempotent by key), mastery cycle-clear (only from `FLOOR_RESOLVING`), `ContractSchedule` (the free-index
+search always terminates), tower floor counts (validated >= 1), season step cost (validated >= 1), reload (prepare off
+thread, content swapped as one volatile write), `WebUiFiles` (a bundle copy, stamp written last), web HTML building
+(escaped; the unescaped fields are server-built numbers).
+
+## Performance evidence
+
+Measured with a throwaway test (not committed), synthetic finished runs, warm JIT, serialise + gzip of the whole runs
+file, which every checkpoint rewrites:
+
+| retained runs | gzipped | time |
+|---|---|---|
+| 100 | 2.7 KB | 1.2 ms |
+| 1,000 | 22 KB | 5.3 ms |
+| 5,000 | 109 KB | 23.7 ms |
+
+Real runs carry a ledger, modifiers and a journal, so budget 3-5x. A checkpoint also writes every other dirty store.
+At 1,000 retained runs and a few checkpoints per floor this is a few percent of a tick at worst; it grows linearly with
+retained runs (7 days). Everything else in the tick path is either per-N-ticks, bounded, or throttled (see the
+`END_SERVER_TICK` list in the first pass). No unbounded per-tick scan was found.
+
+## Verification matrix
+
+| Area | Verified how | Result |
+|---|---|---|
+| Battle index, turn tracker, action rate, run stats | unit tests (new) | pass |
+| Everything else changed | `ci_local.sh` (build, 900+ unit tests, architecture / API / persistence validators, binary compat with Cobblemon 1.8.2 and 1.8.1) | pass |
+| Flee, disconnect at last faint, no-faint stall, overflow reward, vendor refund, respawn bonus, failed launch, failed cell release | live rig | NOT RUN (ports held by the owner's server) |
+| Soak, `bot_stress_test.py` | live rig | NOT RUN |
+
+## Residual risk
+
+- Behaviour that only a live Cobblemon shows: whether a floor battle can be fled, what `battle.getTurn()` does around forced switches, whether `Player.drop` with a thrower is picked up by teammates as expected.
+- Vanilla `SavedData` writes in place; a crash during a write can corrupt that one file. Loads drop unreadable records one at a time, which limits the damage; nothing here can make the write atomic.
+- Cross-store atomicity: an item handed to an inventory and the claim record are in different files (player data, mod data), so a crash between them can repeat or lose one grant. Claims are ordered to repeat rather than lose.
+- Unaudited: the web UI's JS logic, art / structure resources, the rest of `trial/` scheduling and `definition/` field parsing (covered by their validators and tests), and the Showdown JS extensions.
+
 ## For the owner to decide or check
 
 See the end of the conversation summary; the same list is in memory (`cobbletowers-reliability-audit-2026-10-25`).
