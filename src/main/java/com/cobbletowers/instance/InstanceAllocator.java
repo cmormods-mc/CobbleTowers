@@ -140,6 +140,14 @@ public final class InstanceAllocator {
             CellStateStore.get(server).quarantine(server,
                     new CellQuarantine(cell, report.summary(), System.currentTimeMillis()));
             return new Quarantined(cell, report.summary());
+        } catch (RuntimeException ex) {
+            // The lease is dropped below either way, so a cell that could not even be checked must not go back in
+            // service: another run would be handed a cell the finished run's record still names.
+            TowerLog.error("Releasing cell " + cell + " threw; quarantining it", ex);
+            CellCleanliness.markDirty(cell);
+            String reason = "release threw: " + ex;
+            CellStateStore.get(server).quarantine(server, new CellQuarantine(cell, reason, System.currentTimeMillis()));
+            return new Quarantined(cell, reason);
         } finally {
             // TDS #60/section 11: the sweep-and-verify path, timed the same way allocation is.
             TowerMetrics.recordCleanup(server, (System.nanoTime() - started) / 1_000_000);
