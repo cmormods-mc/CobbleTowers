@@ -33,7 +33,7 @@ the web UI source. These have their own tests and soaks; they are unaudited here
 
 | ID | Sev | Finding | Fix |
 |---|---|---|---|
-| F1 | P1 | `BATTLE_FLED` was never subscribed. A fled floor battle fires no victory event, so the round stayed `FIGHTING` until the 10-minute watchdog. | Fled counts as a loss, once (idempotent), a tick later. Unverified live: whether a floor battle can be fled at all. |
+| F1 | P3 (was P1) | `BATTLE_FLED` was never subscribed. A fled floor battle fires no victory event, so the round would stay `FIGHTING` until the 10-minute watchdog. | Fled counts as a loss, once (idempotent), a tick later. **Verified live: not reachable today.** Cobblemon flees a battle only when the player is farther than the opponent's flee distance, and the tower starts every floor battle with `fleeDistance = Float.MAX_VALUE`; the Run button only raises an event and shows a prompt (seen live: `run_prompt`, battle unchanged). The handler is a safeguard for a changed flee distance or another mod. |
 | F2 | P1 | A battle result with no participant left online was dropped: no `onResolved`, opponent leaked, then the whole floor parked 30 min later. | The adapter keeps the running server (`SERVER_STARTED`), no longer finds it through a participant. |
 | F3 | P1 | Per-player "activity" was a start or a faint, so a long fight with no faint could drop an active player at 10 min. | A once-a-second poll of the battle's turn counter counts as activity. |
 | F16 | P1 | `RewardDelivery` drained the queue before delivering; an item that did not resolve (card mod absent) or a throw lost it and every reward after it, against its own "not lost" comment. | Each reward is delivered on its own; anything not handed over is put back on the queue. |
@@ -143,6 +143,30 @@ retained runs (7 days). Everything else in the tick path is either per-N-ticks, 
 - Vanilla `SavedData` writes in place; a crash during a write can corrupt that one file. Loads drop unreadable records one at a time, which limits the damage; nothing here can make the write atomic.
 - Cross-store atomicity: an item handed to an inventory and the claim record are in different files (player data, mod data), so a crash between them can repeat or lose one grant. Claims are ordered to repeat rather than lose.
 - Unaudited: the web UI's JS logic, art / structure resources, the rest of `trial/` scheduling and `definition/` field parsing (covered by their validators and tests), and the Showdown JS extensions.
+
+## Live verification (2026-10-26, throwaway server on ports 25566/25576)
+
+The new jar boots on Cobblemon 1.8.2 (mixins apply, 5 towers resolve, Done in 3.8 s). `bot_stress_test.py` (patched copy
+on the alternate ports) beat 5 of 6 opponents in 8-10 s each with the changed adapter: start, win, resolve, discard and
+cleanup work live.
+
+**F33 (P1, not caused by this audit, unresolved): floor battles intermittently never advance.** Reproduces in the
+stress rig at roughly 35-40% of rounds (pre-change build 5/12; this audit's build 1/6, 3/10, 5/12, 4/12; only the required
+mods 4/12), often in clusters of 2-3. Trace (bot packet log with timestamps against the server log):
+- The battle starts and the bot receives its request and "choose now" within about a second, answers, and the server
+  echoes the choice. Then no turn result ever comes back: no further request, no messages, until the run is abandoned.
+  Healthy battles get the next request and messages about 50 ms after the answer.
+- Your probe line shows it on the server: `p1{mustChoose=false,request=false,responses=0} p2{...}` at turn 1.
+- The server is not hung: a thread dump during a stall shows the server thread idle, nothing blocked, no deadlock.
+- Ruled out: this audit's changes (the pre-change build stalls too); AscensionLib, cards, accessories, owo, WebGUI (still
+  stalls without them); `battle.end()` versus `battle.stop()` when the tower force-ends a battle (no difference).
+- Not ruled out: Cobblemon's Showdown service or CobbleRaids' Showdown/battle hooks (CobbleRaids is a required mod and
+  patches the select-actions and Showdown paths). Stalls start after a few battles in one session.
+Reproduce: copy `validation/smoke` with ports changed, run `bot_stress_test.py --rounds 12` against a copy of a rig;
+add `BOT_TRACE=1` and a timestamp prefix to the bot's `console.log` to see the packet gap.
+This is very likely the same stall your probe commit (ded11a6) was added for. A mitigation the tower could add: on the
+20 s probe, end the battle and start a fresh one for that player (one retry) before the 10-minute watchdog; but the
+stalls come in clusters, so the cause itself needs finding on the Cobblemon / CobbleRaids side first.
 
 ## For the owner to decide or check
 
