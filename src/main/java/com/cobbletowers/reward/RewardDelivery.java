@@ -41,44 +41,53 @@ public final class RewardDelivery {
         if (queue.isEmpty()) return 0;
 
         List<PendingTowerReward> delivered = new ArrayList<>(queue.size());
+        List<PendingTowerReward> failed = new ArrayList<>();
         boolean creditedWallet = false;
         for (PendingTowerReward reward : queue) {
-            if (reward.item().equals(CobbleDollars.ITEM_ID)) {
-                // A player's mastery of the tower the reward was earned in (P31) adds to their CobbleDollars.
-                int bonus = com.cobbletowers.mastery.MasteryService.perksForRun(server, player.getUUID(), reward.runId())
-                        .cobbleDollarBonusPercent();
-                int credited = (int) Math.min(Integer.MAX_VALUE, reward.amount() + (long) reward.amount() * bonus / 100);
-                TowerWalletStore.get(server).credit(player.getUUID(), credited);
-                // Listed as what was paid (bonus included) and named: a currency is not an item, so the id alone reads as air.
-                delivered.add(shown(reward, credited, "CobbleDollars"));
-                creditedWallet = true;
-            } else if (reward.item().equals(RaidPointsCurrency.ITEM_ID)) {
-                // CobbleRaids' own currency, credited through its public API (P21).
-                int points = com.cobbletowers.armor.ArmorBonusEffects.raidPoints(player, reward.amount(), reward.runId());
-                CobbleRaidsPoints.award(server, player.getUUID(), points);
-                delivered.add(shown(reward, points, "Raid Points"));
-            } else if (com.cobbletowers.economy.AscensionMaterials.of(reward.item()).isPresent()) {
-                // An AscensionLib material (dust, facet, mark, scouter, core): its own stack, named as the library names it.
-                var material = com.cobbletowers.economy.AscensionMaterials.of(reward.item()).get();
-                PendingTowerReward built = new PendingTowerReward(reward.runId(), reward.floorIndex(), reward.item(), reward.amount(),
-                        reward.grantedAt(), material.stack(), material.label());
-                if (giveWithComponents(player, built)) delivered.add(built);
-            } else if (!reward.components().isEmpty()) {
-                // A card (P33b): an item that is its data. Not handed over, and not lost, if the mod that owns it is
-                // gone.
-                if (giveWithComponents(player, reward)) delivered.add(reward);
-            } else {
-                // The 777 Unique (AscensionLib) can enlarge an item reward; what is listed to the player is what was
-                // given. The key is the
-                // reward itself, so the rounding of a fraction is the same however often delivery is retried.
-                int amount = com.cobbletowers.economy.AscensionLibItemBonus.scale(player.getUUID(), reward.amount(),
-                        reward.runId() + "|" + reward.floorIndex() + "|" + reward.item() + "|" + reward.grantedAt());
-                if (give(player, reward.item(), amount)) {
-                    delivered.add(amount == reward.amount() ? reward : new PendingTowerReward(reward.runId(), reward.floorIndex(),
-                            reward.item(), amount, reward.grantedAt(), reward.components(), reward.label()));
+            int before = delivered.size();
+            try {
+                if (reward.item().equals(CobbleDollars.ITEM_ID)) {
+                    // A player's mastery of the tower the reward was earned in (P31) adds to their CobbleDollars.
+                    int bonus = com.cobbletowers.mastery.MasteryService.perksForRun(server, player.getUUID(), reward.runId())
+                            .cobbleDollarBonusPercent();
+                    int credited = (int) Math.min(Integer.MAX_VALUE, reward.amount() + (long) reward.amount() * bonus / 100);
+                    TowerWalletStore.get(server).credit(player.getUUID(), credited);
+                    // Listed as what was paid (bonus included) and named: a currency is not an item, so the id alone reads as air.
+                    delivered.add(shown(reward, credited, "CobbleDollars"));
+                    creditedWallet = true;
+                } else if (reward.item().equals(RaidPointsCurrency.ITEM_ID)) {
+                    // CobbleRaids' own currency, credited through its public API (P21).
+                    int points = com.cobbletowers.armor.ArmorBonusEffects.raidPoints(player, reward.amount(), reward.runId());
+                    CobbleRaidsPoints.award(server, player.getUUID(), points);
+                    delivered.add(shown(reward, points, "Raid Points"));
+                } else if (com.cobbletowers.economy.AscensionMaterials.of(reward.item()).isPresent()) {
+                    // An AscensionLib material (dust, facet, mark, scouter, core): its own stack, named as the library names it.
+                    var material = com.cobbletowers.economy.AscensionMaterials.of(reward.item()).get();
+                    PendingTowerReward built = new PendingTowerReward(reward.runId(), reward.floorIndex(), reward.item(), reward.amount(),
+                            reward.grantedAt(), material.stack(), material.label());
+                    if (giveWithComponents(player, built)) delivered.add(built);
+                } else if (!reward.components().isEmpty()) {
+                    // A card (P33b): an item that is its data. Not handed over, and not lost, if the mod that owns it is
+                    // gone.
+                    if (giveWithComponents(player, reward)) delivered.add(reward);
+                } else {
+                    // The 777 Unique (AscensionLib) can enlarge an item reward; what is listed to the player is what was
+                    // given. The key is the
+                    // reward itself, so the rounding of a fraction is the same however often delivery is retried.
+                    int amount = com.cobbletowers.economy.AscensionLibItemBonus.scale(player.getUUID(), reward.amount(),
+                            reward.runId() + "|" + reward.floorIndex() + "|" + reward.item() + "|" + reward.grantedAt());
+                    if (give(player, reward.item(), amount)) {
+                        delivered.add(amount == reward.amount() ? reward : new PendingTowerReward(reward.runId(), reward.floorIndex(),
+                                reward.item(), amount, reward.grantedAt(), reward.components(), reward.label()));
+                    }
                 }
+            } catch (RuntimeException ex) {
+                TowerLog.error("A pending tower reward ({}) failed to deliver; keeping it queued", reward.item(), ex);
             }
+            // Nothing was handed over: keep it queued, drained rewards are otherwise gone.
+            if (delivered.size() == before) failed.add(reward);
         }
+        for (PendingTowerReward reward : failed) store.add(player.getUUID(), reward);
         store.checkpoint(server);
         if (creditedWallet) TowerWalletStore.get(server).checkpoint(server);
         if (!delivered.isEmpty()) {
