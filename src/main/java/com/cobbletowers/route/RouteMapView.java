@@ -44,8 +44,8 @@ public final class RouteMapView {
         List<Integer> trail = new ArrayList<>(row + 1);
         trail.add(RouteMap.MIDDLE);
         for (int r = 1; r <= row; r++) {
-            // the first floor and a milestone each stand in the middle lane; any other row stands where the party went
-            int lane = r == 1 || milestone.test(r) ? RouteMap.MIDDLE : laneAtFloor.applyAsInt(cycleStart + r - 1);
+            // a forced row (the first floor, a milestone, the floor after one) stands in the middle lane; any other row stands where the party went
+            int lane = RouteMap.forced(milestone, r) ? RouteMap.MIDDLE : laneAtFloor.applyAsInt(cycleStart + r - 1);
             if (lane < 0 || map.stopAt(r, lane) == null) lane = RouteMap.MIDDLE;
             trail.add(lane);
         }

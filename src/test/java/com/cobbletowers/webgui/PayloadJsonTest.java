@@ -199,6 +199,28 @@ class PayloadJsonTest {
     }
 
     @Test
+    @DisplayName("the route map reaches the page as stops, links, the party's trail and how far scouting sees (P56)")
+    void routeGraph() {
+        var graph = new IntermissionStatePayload.Route.Graph(10, 4, List.of(1, 1, 0),
+                List.of(new IntermissionStatePayload.Route.Graph.Stop(0, 1, "START"), new IntermissionStatePayload.Route.Graph.Stop(1, 1, "BATTLE")),
+                List.of(new IntermissionStatePayload.Route.Graph.Link(0, 1, 1)));
+        var route = new IntermissionStatePayload.Route(0, List.of(), List.of(), graph);
+        var extras = new IntermissionStatePayload.Extras("Hollow's Eve", 3, 10, List.of(5, 10), List.of(), route);
+        var sent = new IntermissionStatePayload(3, new IntermissionStatePayload.Draft(0, List.of(), -1, -1), List.of(), -1, "", true, extras);
+        JsonObject g = PayloadJson.envelope(sent).getAsJsonObject("data").getAsJsonObject("extras").getAsJsonObject("route").getAsJsonObject("graph");
+        assertEquals(10, g.get("rows").getAsInt());
+        assertEquals(4, g.get("reveal").getAsInt());
+        assertEquals(3, g.getAsJsonArray("trail").size());
+        assertEquals("BATTLE", g.getAsJsonArray("stops").get(1).getAsJsonObject().get("kind").getAsString());
+        assertEquals(1, g.getAsJsonArray("links").get(0).getAsJsonObject().get("to").getAsInt());
+        // a route with no map sends rows 0, which the page reads as "no map"
+        var plain = new IntermissionStatePayload.Route(-1, List.of(), List.of());
+        var none = new IntermissionStatePayload(3, new IntermissionStatePayload.Draft(0, List.of(), -1, -1), List.of(), -1, "", true,
+                new IntermissionStatePayload.Extras("", 0, 0, List.of(), List.of(), plain));
+        assertEquals(0, PayloadJson.envelope(none).getAsJsonObject("data").getAsJsonObject("extras").getAsJsonObject("route").getAsJsonObject("graph").get("rows").getAsInt());
+    }
+
+    @Test
     @DisplayName("a feature menu keeps its entries, their lines and the actions on both levels")
     void featureMenu() throws IOException {
         var buy = new com.cobbletowers.network.TowerFeatureState.Action("title-wear", "Wear this title", "champion", "Wear Champion?", "");

@@ -86,6 +86,7 @@ class RouteMapTest {
                 if (MILESTONES.test(n.row() + 1)) assertEquals(Stop.REST, n.stop(), "rest before a boss: " + n);
             }
             assertEquals(List.of(new Node(1, 1, Stop.BATTLE)), map.nodes().stream().filter(n -> n.row() == 1).toList(), "the first floor has no choice");
+            assertEquals(List.of(new Node(6, 1, Stop.BATTLE)), map.nodes().stream().filter(n -> n.row() == 6).toList(), "a milestone pays a relic, so the floor after it has no choice");
             assertEquals(1, map.nodes().stream().filter(n -> n.row() == 5).count());
             assertEquals(1, map.nodes().stream().filter(n -> n.row() == 10).count());
         }

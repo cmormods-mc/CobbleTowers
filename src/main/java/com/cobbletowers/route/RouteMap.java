@@ -11,7 +11,8 @@ import java.util.function.IntPredicate;
 /**
  * The whole branching map of one cycle of a tower (P56): stops in rows, edges between adjacent rows, all drawn from the run
  * seed. Pure. Row 0 is the start, rows 1..{@code rows} are floors. Row 1 (the first floor has no choice) is one battle in the
- * middle lane, and so is a milestone row (a boss); every path funnels through them. Edges join the same or an adjacent lane, so LEFT never links to RIGHT, and no two edges of a row cross.
+ * middle lane, and so is a milestone row (a boss) and the row after it (a milestone pays a relic, not a step); every path
+ * funnels through them. Edges join the same or an adjacent lane, so LEFT never links to RIGHT, and no two edges of a row cross.
  */
 public final class RouteMap {
 
@@ -73,7 +74,7 @@ public final class RouteMap {
             int lane = MIDDLE;
             addEdge(edges, seen, 0, MIDDLE, lane);
             for (int row = 1; row < rows; row++) {
-                int to = milestone.test(row + 1) ? MIDDLE : fanOut(seed, row, path, lane, edges);
+                int to = forced(milestone, row + 1) ? MIDDLE : fanOut(seed, row, path, lane, edges);
                 addEdge(edges, seen, row, lane, to);
                 lane = to;
             }
@@ -84,12 +85,17 @@ public final class RouteMap {
         for (Edge e : edges) {
             int row = e.row() + 1;
             if (placed.add(key(row, e.toLane()))) {
-                nodes.add(new Node(row, e.toLane(), milestone.test(row) ? Stop.BOSS : row == 1 ? Stop.BATTLE : stopFor(seed, row, e.toLane(), eventTower, milestone, playable)));
+                nodes.add(new Node(row, e.toLane(), milestone.test(row) ? Stop.BOSS : forced(milestone, row) ? Stop.BATTLE : stopFor(seed, row, e.toLane(), eventTower, milestone, playable)));
             }
         }
         nodes.sort((a, b) -> a.row() != b.row() ? Integer.compare(a.row(), b.row()) : Integer.compare(a.lane(), b.lane()));
         edges.sort((a, b) -> a.row() != b.row() ? Integer.compare(a.row(), b.row()) : a.fromLane() != b.fromLane() ? Integer.compare(a.fromLane(), b.fromLane()) : Integer.compare(a.toLane(), b.toLane()));
         return new Map(rows, List.copyOf(nodes), List.copyOf(edges));
+    }
+
+    /** Whether a row is a lone stop in the middle lane: the first floor, a milestone, and the floor after a milestone, none of which offers a choice. */
+    public static boolean forced(IntPredicate milestone, int row) {
+        return row == 1 || milestone.test(row) || (row > 1 && milestone.test(row - 1));
     }
 
     private static int fanOut(long seed, int row, int path, int lane, List<Edge> edges) {
