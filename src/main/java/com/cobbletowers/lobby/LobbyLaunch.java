@@ -89,10 +89,20 @@ final class LobbyLaunch {
         }
         UUID runId = created.get().run().runId();
         TowerRuns.save(server, created.get().run(), true);
-        if (lobby.trial().isEmpty()) announceCode(server, lobby, plan, created.get());
+        try {
+            if (lobby.trial().isEmpty()) announceCode(server, lobby, plan, created.get());
 
-        if (!lockParties(server, lobby, plan, runId, now)) return;
-        if (!setUp(server, lobby, plan, runId, now)) return;
+            if (!lockParties(server, lobby, plan, runId, now)) return;
+            if (!setUp(server, lobby, plan, runId, now)) return;
+        } catch (RuntimeException ex) {
+            // The returns above undo themselves; a throw would leave the run registered with nothing started and the
+            // team's Pokemon moved, and the team unable to try again ("already in a run").
+            TowerLog.error("Starting run " + runId + " threw; abandoning it", ex);
+            RunTransitionService.apply(server, runId, RunEvent.ABANDON_REQUESTED, now);
+            restoreParties(server, plan.players());
+            LobbyService.broadcast(server, lobby, "Cannot start: something went wrong on the server. Try again.");
+            return;
+        }
 
         // The attempt is spent only now that the run has really started: a launch that failed above costs nothing.
         keyKind.ifPresent(kind -> takeKeys(server, plan, runId, kind));
