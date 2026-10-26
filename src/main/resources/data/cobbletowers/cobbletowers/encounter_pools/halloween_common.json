@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "entries": [
+    {
+      "species": "cobblemon:mimikyu",
+      "weight": 80,
+      "level_offset": 2
+    },
+    {
+      "species": "cobblemon:phantump",
+      "weight": 100
+    },
+    {
+      "species": "cobblemon:trevenant",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:pumpkaboo",
+      "weight": 100
+    },
+    {
+      "species": "cobblemon:gourgeist",
+      "weight": 80,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:gastly",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:haunter",
+      "weight": 90
+    },
+    {
+      "species": "cobblemon:gengar",
+      "weight": 70,
+      "level_offset": 2
+    },
+    {
+      "species": "cobblemon:misdreavus",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:mismagius",
+      "weight": 70,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:shuppet",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:banette",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:litwick",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:lampent",
+      "weight": 70
+    },
+    {
+      "species": "cobblemon:chandelure",
+      "weight": 60,
+      "level_offset": 2
+    },
+    {
+      "species": "cobblemon:duskull",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:dusclops",
+      "weight": 70,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:dusknoir",
+      "weight": 60,
+      "level_offset": 2
+    },
+    {
+      "species": "cobblemon:sableye",
+      "weight": 70
+    },
+    {
+      "species": "cobblemon:froslass",
+      "weight": 70,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:spiritomb",
+      "weight": 60,
+      "level_offset": 2
+    },
+    {
+      "species": "cobblemon:drifloon",
+      "weight": 80
+    },
+    {
+      "species": "cobblemon:drifblim",
+      "weight": 70,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:polteageist",
+      "weight": 60,
+      "level_offset": 1
+    },
+    {
+      "species": "cobblemon:cofagrigus",
+      "weight": 60,
+      "level_offset": 2
+    },
+    {
+      "species": "cobblemon:decidueye",
+      "weight": 50,
+      "level_offset": 2
+    },
+    {
+      "species": "cobblemon:eevee",
+      "weight": 40
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "entries": [
+    {
+      "definition": "cobbleraids:dragapult",
+      "weight": 100,
+      "level_offset": 2
+    },
+    {
+      "definition": "cobbleraids:lunala",
+      "weight": 90,
+      "level_offset": 2
+    },
+    {
+      "definition": "cobbleraids:giratina",
+      "weight": 80,
+      "level_offset": 3
+    },
+    {
+      "definition": "cobbleraids:darkrai",
+      "weight": 80,
+      "level_offset": 3
+    }
+  ]
+}

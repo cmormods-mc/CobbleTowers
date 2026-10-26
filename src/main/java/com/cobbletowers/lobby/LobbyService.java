@@ -107,6 +107,9 @@ public final class LobbyService {
         if (!TowerDefinitionRegistry.content().towers().containsKey(towerId)) {
             return "No tower " + towerId + " is loaded.";
         }
+        if (!TowerDefinitionRegistry.content().towers().get(towerId).isOpen(System.currentTimeMillis())) {
+            return towerName(towerId) + " is not open right now.";
+        }
         if (inRun(player.getUUID())) return "You are already in a tower run.";
 
         Optional<TowerLobby> existing = lobbyOf(player.getUUID());
@@ -582,7 +585,7 @@ public final class LobbyService {
 
     public static PlayStatePayload playState(MinecraftServer server, ServerPlayer player, TowerLobby lobby, String message, boolean open) {
         TowerContent content = TowerDefinitionRegistry.content();
-        List<PlayStatePayload.Tower> towers = content.catalogTowers().stream()
+        List<PlayStatePayload.Tower> towers = content.openCatalogTowers(System.currentTimeMillis()).stream()
                 .map(tower -> new PlayStatePayload.Tower(tower.id(), tower.displayName())).toList();
         List<Integer> levels = PartyReader.members(player).stream().map(PartyMember::level).toList();
 

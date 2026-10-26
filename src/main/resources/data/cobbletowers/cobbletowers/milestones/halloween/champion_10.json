@@ -1,0 +1,6 @@
+{
+  "floor": 10,
+  "kind": "champion",
+  "banks_rewards": true,
+  "raid_definition": "cobbleraids:darkrai"
+}

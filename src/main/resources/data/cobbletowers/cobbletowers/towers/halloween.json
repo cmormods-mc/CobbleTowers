@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "display_name": "Hollow's Eve",
+  "ruleset": "cobbletowers:standard",
+  "reward_table": "cobbletowers:halloween",
+  "floors": [
+    "cobbletowers:halloween/floor_01",
+    "cobbletowers:halloween/floor_02",
+    "cobbletowers:halloween/floor_03",
+    "cobbletowers:halloween/floor_04",
+    "cobbletowers:halloween/floor_05",
+    "cobbletowers:halloween/floor_06",
+    "cobbletowers:halloween/floor_07",
+    "cobbletowers:halloween/floor_08",
+    "cobbletowers:halloween/floor_09",
+    "cobbletowers:halloween/floor_10"
+  ],
+  "milestones": [
+    "cobbletowers:halloween/boss_05",
+    "cobbletowers:halloween/champion_10"
+  ],
+  "ascension": true,
+  "window": { "start": "2026-10-31T00:00:00Z", "end": "2026-11-03T00:00:00Z" }
+}

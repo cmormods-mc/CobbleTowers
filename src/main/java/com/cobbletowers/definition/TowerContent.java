@@ -220,6 +220,11 @@ public record TowerContent(
         return towers.values().stream().filter(tower -> !isRotating(tower.id())).toList();
     }
 
+    /** The towers a player can start now: an event tower is listed only inside its window (P54). */
+    public List<TowerDefinition> openCatalogTowers(long nowMillis) {
+        return catalogTowers().stream().filter(tower -> tower.isOpen(nowMillis)).toList();
+    }
+
     /**
      * This content plus one rotating trial's tower and floors (P46). Its problems are checked with the same rules as a
      * file's and added to the list; it stays out of {@link #sortedTowerIds}, so no screen lists it.

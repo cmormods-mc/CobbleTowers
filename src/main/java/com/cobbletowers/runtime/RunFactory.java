@@ -79,7 +79,7 @@ public final class RunFactory {
                                                 int ascension, RunOptions options, List<ResourceLocation> extraModifiers,
                                                 List<ResourceLocation> startingRelics, long seed, long now) {
         TowerDefinition tower = content.towers().get(towerId);
-        if (tower == null) return Optional.empty();
+        if (tower == null || !tower.isOpen(now)) return Optional.empty();
         int startAscension = tower.ascension() ? Math.max(0, ascension) : 0;
         int startFloor = AscensionPolicy.firstFloorOf(startAscension, tower.floorCount());
         RunModifierState startModifiers = RunModifierState.EMPTY;

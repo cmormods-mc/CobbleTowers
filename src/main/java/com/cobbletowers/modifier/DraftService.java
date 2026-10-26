@@ -204,7 +204,7 @@ public final class DraftService {
         if (lane < 0) return -1;
         List<ResourceLocation> others = new ArrayList<>();
         for (var tower : content.catalogTowers()) {
-            if (tower.id().equals(run.towerId()) || tower.id().getPath().equals("test")) continue;
+            if (tower.id().equals(run.towerId()) || tower.id().getPath().equals("test") || tower.window().isPresent()) continue;
             if (content.floorAt(tower.id(), floor + 1).flatMap(f -> f.layout()).isPresent()) others.add(tower.id());
         }
         others.sort(java.util.Comparator.comparing(ResourceLocation::toString));

@@ -28,7 +28,17 @@ public record TowerDefinition(
         List<ResourceLocation> milestoneIds,
         Optional<ResourceLocation> regionalTheme,
         Optional<ResourceLocation> scoutingProfile,
-        boolean ascension) {
+        boolean ascension,
+        Optional<TowerWindow> window) {
+
+    /** A tower open all the time, which is every tower before P54. */
+    public TowerDefinition(ResourceLocation id, String displayName, int schemaVersion, int revision,
+                           ResourceLocation rulesetId, ResourceLocation rewardTableId, List<ResourceLocation> floorIds,
+                           List<ResourceLocation> milestoneIds, Optional<ResourceLocation> regionalTheme,
+                           Optional<ResourceLocation> scoutingProfile, boolean ascension) {
+        this(id, displayName, schemaVersion, revision, rulesetId, rewardTableId, floorIds, milestoneIds, regionalTheme,
+                scoutingProfile, ascension, Optional.empty());
+    }
 
     /** A tower that ends at its last floor, which is what every tower was before P30. */
     public TowerDefinition(ResourceLocation id, String displayName, int schemaVersion, int revision,
@@ -48,6 +58,7 @@ public record TowerDefinition(
         Objects.requireNonNull(rewardTableId, "rewardTableId");
         Objects.requireNonNull(regionalTheme, "regionalTheme");
         Objects.requireNonNull(scoutingProfile, "scoutingProfile");
+        Objects.requireNonNull(window, "window");
         if (displayName == null || displayName.isBlank()) {
             throw new IllegalArgumentException("display_name must not be blank");
         }
@@ -65,6 +76,14 @@ public record TowerDefinition(
         if (new HashSet<>(milestoneIds).size() != milestoneIds.size()) {
             throw new IllegalArgumentException("milestones must not repeat: " + milestoneIds);
         }
+    }
+
+    /**
+     * Whether a new run may start at {@code nowMillis}; a tower without a window is always open. A rig opens event
+     * towers early with {@code -Dcobbletowers.ignoreWindows=true}.
+     */
+    public boolean isOpen(long nowMillis) {
+        return Boolean.getBoolean("cobbletowers.ignoreWindows") || window.map(w -> w.contains(nowMillis)).orElse(true);
     }
 
     public int floorCount() {
@@ -96,6 +115,9 @@ public record TowerDefinition(
                 TowerJson.ids(root, "milestones"),
                 TowerJson.optionalId(root, "regional_theme"),
                 TowerJson.optionalId(root, "scouting_profile"),
-                TowerJson.bool(root, "ascension", false));
+                TowerJson.bool(root, "ascension", false),
+                root.has("window") ? Optional.of(TowerWindow.parse(
+                        TowerJson.requireString(TowerJson.object(root, "window"), "start"),
+                        TowerJson.requireString(TowerJson.object(root, "window"), "end"))) : Optional.empty());
     }
 }
