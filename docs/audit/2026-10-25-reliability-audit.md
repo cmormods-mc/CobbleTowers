@@ -69,3 +69,25 @@ the web UI source. These have their own tests and soaks; they are unaudited here
 4. A full inventory at a milestone: overflow lies on the ground, owned by the player, and survives.
 5. `bot_stress_test.py` (my standing note: run it after touching battle code) and a soak.
 6. A flood of web-page actions from a test page: dropped with one warning per 30 s, the tick time unchanged.
+
+## Second pass (2026-10-26)
+
+Read: `PartyJournalService`, `PartyStorage`, `RentalStorage`, `RunTransitionService`, `InstanceAllocator`,
+`IntermissionService`, `IntermissionRound`, `LobbyService.tick`, `RentalDraftService.handle`, `TowerFeatureService`,
+`Watching`, `RunLifecycle`, `CellClearJobs`, `CellWarmPool`, `RecoverySweep`, `RentalPartyService`, `AscensionLibRewards`
+(retry and invoke), the config loaders, the claim paths (club, track, season), the web UI's HTML-building code.
+Cleared with no change: Pokemon moves (two-phase with rollback, rental deletes tag-guarded), every config loader
+(guarded, ranges checked), client-string parsing (all `tryParse`/bounds-checked), web escaping, the settlement retry.
+
+| ID | Sev | Finding | Fix |
+|---|---|---|---|
+| F23 | P1 | `InstanceAllocator.release` dropped the lease in `finally` even when the reset threw, so a cell the finished run still named could be handed to a new run and then wiped by the exit sweep's retry. | A throw quarantines the cell; `releaseCell` never resets a cell another run holds (it only clears the stale claim). |
+| F24 | P1 | `RunTransitionService.apply` ran revive, draft, intermission, reward banking, cell release and the floor hooks in one sequence after saving; a fault in an early one skipped banking and release. | Each effect runs on its own and logs its own fault. |
+| F25 | P1 | `RunLifecycle`: a throw from the structure rebuild left a run on a floor nothing fought; a floor that failed after starting a battle parked the run with that battle still bound. | Rebuild throw parks the run; a failed floor ends its battles first. |
+| F26 | P2 | One broken journal entry stopped every player's Pokemon restore each sweep; a full box repeated its error line every second. | Per-player restore, logged once. |
+| F27 | P2 | Intermission, lobby, recovery, rental, cell-clear and warm-build ticks each aborted for everything after one failing item, and repeated every tick. | Each item fails alone; a failed lobby cancels its countdown; a failed clear/build is dropped. |
+| F28 | P3 | A malformed `contract-reroll` argument threw. | Answers "Unsupported action." |
+
+## For the owner to decide or check
+
+See the end of the conversation summary; the same list is in memory (`cobbletowers-reliability-audit-2026-10-25`).
