@@ -339,3 +339,29 @@ html.paused .fd *, html.paused .fd *::before, html.paused .fd *::after { animati
 .fd .rvchamps ol { list-style: none; margin: calc(var(--u) * .6) 0 0; padding: 0; display: grid; gap: calc(var(--u) * .3); }
 .fd .rvchamps li { display: flex; justify-content: space-between; gap: calc(var(--u) * 1); padding: calc(var(--u) * .5) 0; border-bottom: calc(var(--u) * .1) dashed var(--line); font-size: calc(var(--u) * 1.3); overflow-wrap: anywhere; }
 .fd .rvchamps li b { font-variant-numeric: tabular-nums; }
+
+/* ---- the branching route map (P56): a cut face of the tower; Hollow's Eve is the Halloween skin ---- */
+.fd .rk-elite { --k: #e5533d; } .fd .rk-merchant { --k: #e0b422; } .fd .rk-trick_or_treat { --k: #ff8a2b; } .fd .rk-boss { --k: #d6264e; } .fd .rk-start { --k: #93a2c9; }
+.fd .datlas { --stone: #2b2833; --brick: #1d1b24; --shaft: #0d0c12; --slab: #3c3846; --pipe: #b87333; --pipe-hi: #e7a561; --pipe-dim: #5a4a3a; --lit: #ffb866; --face: #16141c; --flo: #8f89a1;
+  position: relative; flex: 1; min-height: 0; display: flex; align-items: stretch; justify-content: center; gap: calc(var(--u) * 3); background: var(--shaft); border: calc(var(--u) * .15) solid var(--line); border-radius: calc(var(--u) * 1.4); box-shadow: 0 calc(var(--u) * .3) 0 var(--edge); overflow: hidden; }
+.fd .datlas.hollow { --stone: #1b1228; --brick: #12091c; --shaft: #090511; --slab: #2e1f44; --pipe: #7d5fb0; --pipe-hi: #c9a6ff; --pipe-dim: #3a2c55; --lit: #ff9a3a; --face: #130a1f; --flo: #9a86bd; }
+.fd .datlas > svg { height: 100%; width: auto; min-width: 0; max-width: 60%; display: block; }
+.fd .alegend { list-style: none; margin: 0; padding: calc(var(--u) * 1) 0; display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * .55); min-height: 0; overflow: hidden; }
+.fd .alegend li { display: flex; align-items: center; gap: calc(var(--u) * .7); font: 600 calc(var(--u) * 1) Outfit; color: var(--soft); white-space: nowrap; } .fd .alegend svg { width: calc(var(--u) * 1.9); height: calc(var(--u) * 1.9); color: var(--k); flex: none; }
+.fd .abrick-a { fill: var(--stone); } .fd .abrick-l { stroke: var(--brick); } .fd .ashaft { fill: var(--shaft); opacity: .85; } .fd .aslab { fill: var(--slab); }
+.fd .afloor { font: 600 11px "Outfit", sans-serif; fill: var(--flo); } .fd .aweb { fill: none; stroke: #7d6a9c; stroke-width: 1; opacity: .5; }
+.fd .aedge .abg { stroke: #0c0b10; stroke-width: 7; stroke-linecap: round; } .fd .aedge .apipe { stroke-linecap: round; stroke-width: 3.4; stroke: var(--pipe-dim); }
+.fd .aedge.st-future { opacity: .7; } .fd .aedge.st-dead { opacity: .3; }
+.fd .aedge.st-open .abg { stroke: #4a2b10; stroke-width: 8; } .fd .aedge.st-open .apipe { stroke: var(--pipe); stroke-width: 4.5; }
+.fd .aedge.st-taken .abg { stroke: #6b3d17; stroke-width: 9; } .fd .aedge.st-taken .apipe { stroke: var(--lit); stroke-width: 5; }
+.fd .awin .awface { fill: var(--face); stroke: var(--k, #6f6a80); stroke-width: 2.4; } .fd .awin .aglow { fill: none; stroke: var(--k, #6f6a80); stroke-width: 6; opacity: .3; display: none; }
+.fd .awin.st-reach .aglow, .fd .awin.st-current .aglow { display: block; } .fd .awin.st-current .awface { stroke: #fff; stroke-width: 3; }
+.fd .awin.st-reach .awface { stroke-width: 3.2; } .fd .awin .aicon { color: var(--k, #6f6a80); } .fd .awin .aq { font: 700 20px "Outfit", sans-serif; fill: #6f6a80; }
+.fd .awin.st-passed { opacity: .38; } .fd .awin.st-fog { opacity: .5; } .fd .awin.st-seen { opacity: .85; }
+.fd .awin .aname { font: 600 10px "Outfit", sans-serif; fill: var(--ink); paint-order: stroke; stroke: #0c0b10; stroke-width: 3; }
+.fd .awin .ayou { fill: #fff; } .fd .awin .adone circle { fill: #1b1810; stroke: var(--lit); stroke-width: 1.5; } .fd .awin .adone path { fill: none; stroke: var(--lit); stroke-width: 1.6; }
+.fd .awin.st-reach[role="button"] { cursor: pointer; } .fd .awin.st-reach[role="button"]:hover .awface { fill: var(--surf2); }
+.fd .awin.sel .awface, .fd .awin.chosen .awface { fill: var(--k); } .fd .awin.sel .aicon, .fd .awin.chosen .aicon { color: #fff; }
+.fd .awin[role="button"]:focus-visible { outline: 3px solid var(--pri); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) { .fd .awin.st-reach .aglow { animation: apulse 2.4s ease-in-out infinite; } }
+@keyframes apulse { 0%, 100% { opacity: .15; } 50% { opacity: .5; } }

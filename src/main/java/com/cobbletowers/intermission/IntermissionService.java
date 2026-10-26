@@ -322,10 +322,16 @@ public final class IntermissionService {
         if (!com.cobbletowers.modifier.DraftService.routeEnabled()) return IntermissionStatePayload.Route.NONE;
         var draft = run.modifiers().draft().filter(PersistedDraft::route);
         int ahead = 1 + Math.max(0, com.cobbletowers.modifier.DraftService.effects(run).scoutingBonus());
-        return com.cobbletowers.route.RouteView.of(run.seed(), run.floorIndex(), run.modifiers().lastLane(),
+        var route = com.cobbletowers.route.RouteView.of(run.seed(), run.floorIndex(), run.modifiers().lastLane(),
                 draft.map(PersistedDraft::lanes).orElse(List.of()), draft.map(PersistedDraft::kinds).orElse(List.of()),
                 draft.map(PersistedDraft::arenas).orElse(List.of()), ahead,
                 com.cobbletowers.modifier.DraftService.routeRules(run), floor -> content.milestoneAt(run.towerId(), floor).isPresent());
+        var tower = content.towers().get(run.towerId());
+        if (tower == null || !tower.routeMap() || route.now().isEmpty()) return route;
+        // a tower with a branching map shows the whole map; the per-step look-ahead would disagree with it
+        var spot = com.cobbletowers.modifier.DraftService.mapSpot(content, tower, run);
+        return new IntermissionStatePayload.Route(spot.lane(), route.now(), List.of(),
+                com.cobbletowers.route.RouteMapView.graph(spot, spot.row() + 1 + ahead));
     }
 
     static IntermissionStatePayload.Draft draftOf(PersistedRun run, UUID viewer) {

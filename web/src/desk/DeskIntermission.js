@@ -12,6 +12,8 @@ import { choicesOf, clearedText, hpTone, pathNodes } from './choices.js';
 import { RouteMap } from './DeskRoute.js';
 import { ModArt, RiskGems, artOf } from './modArt.js';
 import { hasRoute } from './routeMap.js';
+import { Atlas, skinOf } from './DeskAtlas.js';
+import { hasGraph } from './atlasMap.js';
 import { Logo } from './Logo.js';
 
 const send = (action, argument = 0) => act('IntermissionAction', { action, argument });
@@ -87,6 +89,9 @@ export function DeskIntermission({ inter, at: arrived }) {
       <div style="display:flex;flex-direction:column;gap:calc(var(--u) * 1);min-height:0">
         <div class="dhint">${hint}${inter.countdown >= 0 ? html`<${Countdown} from=${inter.countdown} at=${arrived} />` : ''}</div>
         ${n === 0 ? html`<div class="dcard empty" style="flex:1;display:grid;place-items:center">No modifier is on offer this floor. You can still visit the vendor, ready up or cash out.</div>`
+          : hasGraph(extras) ? html`<${Atlas} route=${extras.route} choices=${choices} selected=${open ? selected : -1} chosen=${draft.state === 2 ? draft.chosen : -1}
+            enabled=${open && idle && !pending} skin=${skinOf(extras.tower)}
+            onPick=${(card) => setView({ offer, selected: card })} onHover=${(card) => setHover(card)} />`
           : hasRoute(extras) ? html`<${RouteMap} route=${extras.route} choices=${choices} selected=${open ? selected : -1} chosen=${draft.state === 2 ? draft.chosen : -1}
             enabled=${open && idle && !pending} lead=${(extras.party && extras.party[0] && extras.party[0].species) || ''}
             onPick=${(card) => setView({ offer, selected: card })} onHover=${(card) => setHover(card)} />`

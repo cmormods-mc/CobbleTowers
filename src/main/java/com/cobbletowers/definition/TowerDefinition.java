@@ -17,6 +17,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param ascension whether the tower continues past its last floor into harder cycles (P30)
  * @param scoutingProfile the reveal-threshold profile (P12); empty means everything reveals (TDS #49)
  * @param pedestalVotes whether the intermission shows the modifier cards as clickable hologram pedestals (P55)
+ * @param routeMap whether the route is one branching map drawn from the run seed, not a fresh draw per step (P56)
  */
 public record TowerDefinition(
         ResourceLocation id,
@@ -31,7 +32,18 @@ public record TowerDefinition(
         Optional<ResourceLocation> scoutingProfile,
         boolean ascension,
         Optional<TowerWindow> window,
-        boolean pedestalVotes) {
+        boolean pedestalVotes,
+        boolean routeMap) {
+
+    /** A tower whose route is the per-step draw, which is every tower before P56. */
+    public TowerDefinition(ResourceLocation id, String displayName, int schemaVersion, int revision,
+                           ResourceLocation rulesetId, ResourceLocation rewardTableId, List<ResourceLocation> floorIds,
+                           List<ResourceLocation> milestoneIds, Optional<ResourceLocation> regionalTheme,
+                           Optional<ResourceLocation> scoutingProfile, boolean ascension, Optional<TowerWindow> window,
+                           boolean pedestalVotes) {
+        this(id, displayName, schemaVersion, revision, rulesetId, rewardTableId, floorIds, milestoneIds, regionalTheme,
+                scoutingProfile, ascension, window, pedestalVotes, false);
+    }
 
     /** A tower whose modifier vote is the menu alone, which is every tower before P55. */
     public TowerDefinition(ResourceLocation id, String displayName, int schemaVersion, int revision,
@@ -130,6 +142,7 @@ public record TowerDefinition(
                 root.has("window") ? Optional.of(TowerWindow.parse(
                         TowerJson.requireString(TowerJson.object(root, "window"), "start"),
                         TowerJson.requireString(TowerJson.object(root, "window"), "end"))) : Optional.empty(),
-                TowerJson.bool(root, "pedestal_votes", false));
+                TowerJson.bool(root, "pedestal_votes", false),
+                TowerJson.bool(root, "route_map", false));
     }
 }

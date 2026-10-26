@@ -2,17 +2,21 @@ package com.cobbletowers.route;
 
 import com.cobbletowers.encounter.EncounterSeed;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.IntPredicate;
 
 /**
- * The whole branching map of a run (P56): stops in rows, edges between adjacent rows, all drawn from the run seed. Pure.
- * Row 0 is the start, rows 1..{@code rows} are floors, the row after is the boss. Edges join the same or an adjacent lane,
- * so LEFT never links to RIGHT, and no two edges of a row cross.
+ * The whole branching map of one cycle of a tower (P56): stops in rows, edges between adjacent rows, all drawn from the run
+ * seed. Pure. Row 0 is the start, rows 1..{@code rows} are floors. Row 1 (the first floor has no choice) is one battle in the
+ * middle lane, and so is a milestone row (a boss); every path funnels through them. Edges join the same or an adjacent lane, so LEFT never links to RIGHT, and no two edges of a row cross.
  */
 public final class RouteMap {
 
     public static final int LANES = RouteGraph.LANES;
+    public static final int MIDDLE = 1;
 
     /** Its own ordinal space, apart from every other draw (see {@code DraftDraw}). */
     static final int ORDINAL_BASE = 6_200_047;
@@ -22,6 +26,10 @@ public final class RouteMap {
 
     /** What a stop is. Separate from {@link RouteGraph.Kind} on purpose: adding values there would shift every existing seed. */
     public enum Stop { START, BATTLE, ELITE, REST, SHRINE, FORGE, LIBRARY, VAULT, POOL, MERCHANT, TRICK_OR_TREAT, BOSS }
+
+    /** The stops that have gameplay today; a live run draws only from these. */
+    public static final Set<Stop> PLAYABLE = EnumSet.of(Stop.START, Stop.BATTLE, Stop.REST, Stop.SHRINE, Stop.FORGE, Stop.LIBRARY,
+            Stop.VAULT, Stop.POOL, Stop.BOSS);
 
     public record Node(int row, int lane, Stop stop) {}
 
@@ -36,41 +44,58 @@ public final class RouteMap {
             out.sort(null);
             return out;
         }
+
+        /** What stands on a lane of a row, or null where nothing does. */
+        public Stop stopAt(int row, int lane) {
+            for (Node n : nodes) if (n.row() == row && n.lane() == lane) return n.stop();
+            return null;
+        }
     }
 
     private RouteMap() {}
 
+    /** The seed of the map for the cycle {@code cycle} of a run (0 is the first), so each cycle of an ascending tower differs. */
+    public static long cycleSeed(long runSeed, int cycle) {
+        return cycle == 0 ? runSeed : EncounterSeed.of(runSeed, cycle, ORDINAL_BASE + 200);
+    }
+
     /**
-     * @param rows floors in the tower (the boss sits on the row after)
+     * @param rows floors in the cycle
      * @param eventTower whether the tower is an event tower, which may use event-only stops
+     * @param milestone whether a row (1..rows) is a milestone, which is a lone boss stop
+     * @param playable the stops that may be placed
      */
-    public static Map generate(long runSeed, int rows, boolean eventTower) {
+    public static Map generate(long seed, int rows, boolean eventTower, IntPredicate milestone, Set<Stop> playable) {
         List<Edge> edges = new ArrayList<>();
         TreeSet<Long> seen = new TreeSet<>();
         for (int path = 0; path < PATHS; path++) {
-            int lane = (int) Math.floorMod(EncounterSeed.of(runSeed, 1, ORDINAL_BASE + path), LANES);
-            addEdge(edges, seen, 0, 1, lane);
+            // the first floor has no choice, so every path starts on its one stop and fans out from there
+            int lane = MIDDLE;
+            addEdge(edges, seen, 0, MIDDLE, lane);
             for (int row = 1; row < rows; row++) {
-                int step = (int) Math.floorMod(EncounterSeed.of(runSeed, row, ORDINAL_BASE + 16 + path), 3) - 1;
-                int to = Math.max(0, Math.min(LANES - 1, lane + step));
-                if (crosses(edges, row, lane, to)) to = lane;
+                int to = milestone.test(row + 1) ? MIDDLE : fanOut(seed, row, path, lane, edges);
                 addEdge(edges, seen, row, lane, to);
                 lane = to;
             }
-            addEdge(edges, seen, rows, lane, 1);
         }
         TreeSet<Long> placed = new TreeSet<>();
         List<Node> nodes = new ArrayList<>();
-        nodes.add(new Node(0, 1, Stop.START));
+        nodes.add(new Node(0, MIDDLE, Stop.START));
         for (Edge e : edges) {
-            if (e.row() + 1 <= rows && placed.add(key(e.row() + 1, e.toLane()))) {
-                nodes.add(new Node(e.row() + 1, e.toLane(), stopFor(runSeed, e.row() + 1, e.toLane(), rows, eventTower)));
+            int row = e.row() + 1;
+            if (placed.add(key(row, e.toLane()))) {
+                nodes.add(new Node(row, e.toLane(), milestone.test(row) ? Stop.BOSS : row == 1 ? Stop.BATTLE : stopFor(seed, row, e.toLane(), eventTower, milestone, playable)));
             }
         }
-        nodes.add(new Node(rows + 1, 1, Stop.BOSS));
         nodes.sort((a, b) -> a.row() != b.row() ? Integer.compare(a.row(), b.row()) : Integer.compare(a.lane(), b.lane()));
         edges.sort((a, b) -> a.row() != b.row() ? Integer.compare(a.row(), b.row()) : a.fromLane() != b.fromLane() ? Integer.compare(a.fromLane(), b.fromLane()) : Integer.compare(a.toLane(), b.toLane()));
         return new Map(rows, List.copyOf(nodes), List.copyOf(edges));
+    }
+
+    private static int fanOut(long seed, int row, int path, int lane, List<Edge> edges) {
+        int step = (int) Math.floorMod(EncounterSeed.of(seed, row, ORDINAL_BASE + 16 + path), 3) - 1;
+        int to = Math.max(0, Math.min(LANES - 1, lane + step));
+        return crosses(edges, row, lane, to) ? lane : to;
     }
 
     /**
@@ -78,14 +103,17 @@ public final class RouteMap {
      * where elites may not appear, where a rest must come before the boss, and where the event-only stops fit.
      * Weights are untuned.
      */
-    static Stop stopFor(long runSeed, int row, int lane, int rows, boolean eventTower) {
-        if (row == rows) return Stop.REST;
+    static Stop stopFor(long seed, int row, int lane, boolean eventTower, IntPredicate milestone, Set<Stop> playable) {
+        if (milestone.test(row + 1) && playable.contains(Stop.REST)) return Stop.REST;
         Stop[] stops = Stop.values();
         int[] weights = new int[stops.length];
-        for (Stop stop : stops) weights[stop.ordinal()] = weightOf(stop, row, eventTower);
         int total = 0;
-        for (int w : weights) total += w;
-        long roll = Math.floorMod(EncounterSeed.of(runSeed, row, ORDINAL_BASE + 64 + lane), total);
+        for (Stop stop : stops) {
+            weights[stop.ordinal()] = playable.contains(stop) ? weightOf(stop, row, eventTower) : 0;
+            total += weights[stop.ordinal()];
+        }
+        if (total == 0) return Stop.BATTLE;
+        long roll = Math.floorMod(EncounterSeed.of(seed, row, ORDINAL_BASE + 64 + lane), total);
         for (Stop stop : stops) {
             roll -= weights[stop.ordinal()];
             if (roll < 0) return stop;

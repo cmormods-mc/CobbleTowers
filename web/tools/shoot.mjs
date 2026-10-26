@@ -21,6 +21,23 @@ const withHalloween = (d) => {
 };
 const openDraft =(d) => { d.complete = false; d.current = 0; d.packs.forEach((p) => { p.kept = []; }); };
 
+// a branching route map (P56) with every adjacent link, for the look of the atlas; milestones at rows 5 and 10
+const atlasGraph = (trail, reveal) => {
+  const kinds = ['BATTLE', 'FORGE', 'REST', 'SHRINE', 'ELITE', 'LIBRARY', 'MERCHANT', 'VAULT', 'POOL', 'TRICK_OR_TREAT'];
+  const boss = (r) => r === 5 || r === 10, stops = [{ row: 0, lane: 1, kind: 'START' }], links = [];
+  for (let r = 1; r <= 10; r++) for (let l = 0; l < 3; l++) if (!boss(r) || l === 1) stops.push({ row: r, lane: l, kind: boss(r) ? 'BOSS' : kinds[(r * 3 + l * 2) % kinds.length] });
+  for (let r = 0; r < 10; r++) for (let f = 0; f < 3; f++) for (let t = 0; t < 3; t++) {
+    const has = (row, lane) => stops.some((s) => s.row === row && s.lane === lane);
+    if (has(r, f) && has(r + 1, t) && Math.abs(f - t) <= 1) links.push({ row: r, from: f, to: t });
+  }
+  return { rows: 10, reveal, trail, stops, links };
+};
+const atlasShot = (tower) => fixture('IntermissionState', (d) => {
+  d.floor = 2; d.extras.tower = tower; d.extras.cycleFloor = 2; d.extras.cycleLength = 10;
+  d.extras.route = { lane: 0, now: [{ lane: 0, card: 0, kind: 'FORGE', arena: '' }, { lane: 1, card: 1, kind: 'BATTLE', arena: '' }], ahead: [], graph: atlasGraph([1, 1, 0], 4) };
+  d.draft.cards = d.draft.cards.slice(0, 2);
+});
+
 // name -> payloads sent to the page, then optional steps run before the shot
 export const SHOTS = {
   intermission: { payloads: [fixture('IntermissionState')] },
@@ -59,6 +76,8 @@ export const SHOTS = {
   hall: { payloads: [fixture('TowerHallState')] },
   desk_route: { payloads: [fixture('IntermissionState')], look: 'desk' },
   desk_route_pick: { payloads: [fixture('IntermissionState')], look: 'desk', steps: async (page) => { await page.click('.dstop.now >> nth=1'); } },
+  desk_atlas: { payloads: [atlasShot('Tideforge Tower')], look: 'desk' },
+  desk_atlas_hollow: { payloads: [atlasShot('Hollow’s Eve')], look: 'desk' },
   desk_route_edge: { payloads: [fixture('IntermissionState', (d) => { d.floor = 3; d.extras.cycleFloor = 3; d.extras.route.lane = 0; d.extras.route.now = [{ lane: 0, card: 0, kind: 'SHRINE' }, { lane: 1, card: 1, kind: 'BATTLE' }]; d.draft.cards = d.draft.cards.slice(0, 2); d.extras.route.ahead = d.extras.route.ahead.slice(0, 2); })], look: 'desk' },
   desk_inter: { payloads: [fixture('IntermissionState', (d) => { d.extras.route = { lane: -1, now: [], ahead: [] }; })], look: 'desk' },
   desk_inter_pick: { payloads: [fixture('IntermissionState', (d) => { d.extras.route = { lane: -1, now: [], ahead: [] }; })], look: 'desk', steps: async (page) => { await page.click('.dmc >> nth=1'); } },

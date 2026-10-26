@@ -47,8 +47,41 @@ public record IntermissionStatePayload(int floor, Draft draft, List<Member> memb
      *     building its battle is fought in when that is a detour (empty for the run's own); empty when this step is not a route step
      * @param ahead the steps scouting can see, with the kinds of their stops (empty for a milestone, which pays a relic)
      */
-    public record Route(int lane, List<Node> now, List<Step> ahead) {
+    public record Route(int lane, List<Node> now, List<Step> ahead, Graph graph) {
         public static final Route NONE = new Route(-1, List.of(), List.of());
+
+        /** A route with no branching map: every tower before P56. */
+        public Route(int lane, List<Node> now, List<Step> ahead) {
+            this(lane, now, ahead, Graph.NONE);
+        }
+
+        /**
+         * The branching map of the tower's cycle (P56): every stop and link, and the stop the party stands on.
+         * @param rows floors in the cycle; 0 when this tower has no map
+         * @param reveal the highest row whose kinds the party can see
+         * @param trail the party's lane at each row from the start (row 0) to its stop; its length less one is the row it stands on
+         */
+        public record Graph(int rows, int reveal, List<Integer> trail, List<Stop> stops, List<Link> links) {
+            public static final Graph NONE = new Graph(0, 0, List.of(), List.of(), List.of());
+
+            /** A stop: its row, its lane, and a {@code RouteMap.Stop} name. */
+            public record Stop(int row, int lane, String kind) {
+                static final StreamCodec<RegistryFriendlyByteBuf, Stop> CODEC = StreamCodec.composite(
+                        ByteBufCodecs.VAR_INT, Stop::row, ByteBufCodecs.VAR_INT, Stop::lane, ByteBufCodecs.stringUtf8(16), Stop::kind, Stop::new);
+            }
+
+            /** A link from a lane of {@code row} to a lane of the row above. */
+            public record Link(int row, int from, int to) {
+                static final StreamCodec<RegistryFriendlyByteBuf, Link> CODEC = StreamCodec.composite(
+                        ByteBufCodecs.VAR_INT, Link::row, ByteBufCodecs.VAR_INT, Link::from, ByteBufCodecs.VAR_INT, Link::to, Link::new);
+            }
+
+            static final StreamCodec<RegistryFriendlyByteBuf, Graph> CODEC = StreamCodec.composite(
+                    ByteBufCodecs.VAR_INT, Graph::rows, ByteBufCodecs.VAR_INT, Graph::reveal,
+                    ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list(64)), Graph::trail,
+                    Stop.CODEC.apply(ByteBufCodecs.list(128)), Graph::stops,
+                    Link.CODEC.apply(ByteBufCodecs.list(256)), Graph::links, Graph::new);
+        }
 
         public record Node(int lane, int card, String kind, String arena) {
             static final StreamCodec<RegistryFriendlyByteBuf, Node> CODEC = StreamCodec.composite(
@@ -65,7 +98,8 @@ public record IntermissionStatePayload(int floor, Draft draft, List<Member> memb
         static final StreamCodec<RegistryFriendlyByteBuf, Route> CODEC = StreamCodec.composite(
                 ByteBufCodecs.VAR_INT, Route::lane,
                 Node.CODEC.apply(ByteBufCodecs.list(3)), Route::now,
-                Step.CODEC.apply(ByteBufCodecs.list(8)), Route::ahead, Route::new);
+                Step.CODEC.apply(ByteBufCodecs.list(8)), Route::ahead,
+                Graph.CODEC, Route::graph, Route::new);
     }
 
     /**

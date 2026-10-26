@@ -170,18 +170,24 @@ public final class DraftService {
     static PersistedDraft routeDraft(TowerContent content, PersistedRun run, List<ResourceLocation> cards,
                                      java.util.function.ToLongFunction<UUID> balance) {
         int floor = run.floorIndex();
-        var kinds = com.cobbletowers.route.RouteGraph.kindsAt(run.seed(), floor, routeRules(run));
+        var tower = content.towers().get(run.towerId());
+        var spot = tower != null && tower.routeMap() ? mapSpot(content, tower, run) : null;
+        var kinds = spot != null ? List.<com.cobbletowers.route.RouteGraph.Kind>of()
+                : com.cobbletowers.route.RouteGraph.kindsAt(run.seed(), floor, routeRules(run));
         List<ResourceLocation> offered = new ArrayList<>();
         List<Integer> lanes = new ArrayList<>();
         List<String> named = new ArrayList<>();
         List<String> arenas = new ArrayList<>();
         List<String> places = new ArrayList<>();
         int detour = detourFor(content, run, floor, places);
-        List<Integer> reach = new ArrayList<>(com.cobbletowers.route.RouteGraph.reachable(run.modifiers().lastLane()));
-        if (reach.stream().noneMatch(lane -> lane < cards.size() && lane < kinds.size())) reach = List.of(0);
+        List<Integer> reach = new ArrayList<>(spot != null ? spot.reachable() : com.cobbletowers.route.RouteGraph.reachable(run.modifiers().lastLane()));
+        // the map names the stop of a lane; the per-step draw names all of them up front
+        java.util.function.IntFunction<com.cobbletowers.route.RouteGraph.Kind> kindAt = lane -> spot != null
+                ? com.cobbletowers.route.RouteMapView.kindOf(spot.map().stopAt(spot.row() + 1, lane)) : kinds.get(lane);
+        if (reach.stream().noneMatch(lane -> lane < cards.size() && (spot != null || lane < kinds.size()))) reach = List.of(0);
         for (int lane : reach) {
-            if (lane >= cards.size() || lane >= kinds.size()) continue;
-            var kind = kinds.get(lane);
+            if (lane >= cards.size() || (spot == null && lane >= kinds.size())) continue;
+            var kind = kindAt.apply(lane);
             if (kind.room().isPresent() && !com.cobbletowers.intermission.IntermissionEvents.canOffer(content, run, floor, kind.room().get(), balance)) {
                 kind = com.cobbletowers.route.RouteGraph.Kind.BATTLE;
             }
@@ -191,6 +197,12 @@ public final class DraftService {
             arenas.add(lane == detour ? places.get(0) : "");
         }
         return PersistedDraft.openingRoute(floor, offered, lanes, named, arenas);
+    }
+
+    /** Where the run stands on its tower's branching map (P56); only for a tower with {@code route_map}. */
+    public static com.cobbletowers.route.RouteMapView.Spot mapSpot(TowerContent content, com.cobbletowers.definition.TowerDefinition tower, PersistedRun run) {
+        return com.cobbletowers.route.RouteMapView.at(run.seed(), run.floorIndex(), tower.floorCount(), tower.window().isPresent(),
+                row -> content.milestoneAt(run.towerId(), row).isPresent(), run.modifiers()::laneAt);
     }
 
     /**
