@@ -81,10 +81,22 @@ public final class WornSets {
     public static void refresh(ServerPlayer player) {
         ActiveBonuses wanted = SetBonusResolver.resolve(wornItems(player), ArmorSetRegistry.sets());
         ActiveBonuses before = CACHE.getOrDefault(player.getUUID(), ActiveBonuses.NONE);
-        if (wanted.equals(before)) return;
+        // The same set can still need applying: modifiers are transient, and a respawn builds a new player that has
+        // none of them while the cache still says they are on.
+        if (wanted.equals(before) && modifiersPresent(player, wanted)) return;
         applyAttributes(player, before, wanted);
         if (wanted.isNone()) CACHE.remove(player.getUUID());
         else CACHE.put(player.getUUID(), wanted);
+    }
+
+    private static boolean modifiersPresent(ServerPlayer player, ActiveBonuses bonuses) {
+        for (ActiveBonuses.Attribute attribute : bonuses.attributes()) {
+            Holder<Attribute> holder = BuiltInRegistries.ATTRIBUTE.getHolder(attribute.attribute()).orElse(null);
+            AttributeInstance instance = holder == null ? null : player.getAttribute(holder);
+            // An attribute this player does not have cannot be put on; it is not a reason to retry every interval.
+            if (instance != null && instance.getModifier(attribute.key()) == null) return false;
+        }
+        return true;
     }
 
     /** Test seam: the cache is bypassed and the resolved result returned without being applied. */
