@@ -128,6 +128,8 @@ public final class TowerFeatureService {
                     .orElse("Invalid run code. Check the complete CT1 code.");
             case "contract-reroll" -> {
                 String[] pair=arg.split(":");
+                // A page can send anything: a malformed pair is an unsupported action, not a fault.
+                if(pair.length!=2||!pair[1].matches("\\d{1,3}"))yield "Unsupported action.";
                 yield com.cobbletowers.contract.ContractService.reroll(server,id,pair[0].equals("daily")?ContractTemplateDefinition.Period.DAILY:ContractTemplateDefinition.Period.WEEKLY,Integer.parseInt(pair[1]));
             }
             default -> "Unsupported action.";
