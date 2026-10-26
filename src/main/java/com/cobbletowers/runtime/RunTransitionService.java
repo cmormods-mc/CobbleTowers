@@ -141,6 +141,7 @@ public final class RunTransitionService {
             // must not skip the ones after it (banking the rewards, releasing the cell).
             if (move.from() == RunState.INTERMISSION) {
                 effect("despawn the vendor", runId, () -> com.cobbletowers.vendor.VendorNpc.despawn(server, run));
+                effect("despawn the pedestals", runId, () -> com.cobbletowers.intermission.PedestalService.despawn(server, run));
                 effect("cancel the echo duels", runId, () -> com.cobbletowers.echo.EchoDuels.cancel(server, runId));
             }
             // Everybody who is out comes back on arriving at an intermission, whatever road got there.
@@ -250,6 +251,7 @@ public final class RunTransitionService {
             return;
         }
         com.cobbletowers.vendor.VendorNpc.despawn(server, run);
+        com.cobbletowers.intermission.PedestalService.despawn(server, run);
         InstanceAllocator.Release release = InstanceAllocator.release(server, run.runId(), cell.getAsInt());
         if (release instanceof InstanceAllocator.Quarantined quarantined) {
             TowerLog.warn("Run {} ended leaving cell {} unfit for reuse: {}",

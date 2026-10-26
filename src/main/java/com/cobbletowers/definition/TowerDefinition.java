@@ -16,6 +16,7 @@ import net.minecraft.resources.ResourceLocation;
  * @param regionalTheme a regional theme id; carried, resolved elsewhere
  * @param ascension whether the tower continues past its last floor into harder cycles (P30)
  * @param scoutingProfile the reveal-threshold profile (P12); empty means everything reveals (TDS #49)
+ * @param pedestalVotes whether the intermission shows the modifier cards as clickable hologram pedestals (P55)
  */
 public record TowerDefinition(
         ResourceLocation id,
@@ -29,7 +30,17 @@ public record TowerDefinition(
         Optional<ResourceLocation> regionalTheme,
         Optional<ResourceLocation> scoutingProfile,
         boolean ascension,
-        Optional<TowerWindow> window) {
+        Optional<TowerWindow> window,
+        boolean pedestalVotes) {
+
+    /** A tower whose modifier vote is the menu alone, which is every tower before P55. */
+    public TowerDefinition(ResourceLocation id, String displayName, int schemaVersion, int revision,
+                           ResourceLocation rulesetId, ResourceLocation rewardTableId, List<ResourceLocation> floorIds,
+                           List<ResourceLocation> milestoneIds, Optional<ResourceLocation> regionalTheme,
+                           Optional<ResourceLocation> scoutingProfile, boolean ascension, Optional<TowerWindow> window) {
+        this(id, displayName, schemaVersion, revision, rulesetId, rewardTableId, floorIds, milestoneIds, regionalTheme,
+                scoutingProfile, ascension, window, false);
+    }
 
     /** A tower open all the time, which is every tower before P54. */
     public TowerDefinition(ResourceLocation id, String displayName, int schemaVersion, int revision,
@@ -118,6 +129,7 @@ public record TowerDefinition(
                 TowerJson.bool(root, "ascension", false),
                 root.has("window") ? Optional.of(TowerWindow.parse(
                         TowerJson.requireString(TowerJson.object(root, "window"), "start"),
-                        TowerJson.requireString(TowerJson.object(root, "window"), "end"))) : Optional.empty());
+                        TowerJson.requireString(TowerJson.object(root, "window"), "end"))) : Optional.empty(),
+                TowerJson.bool(root, "pedestal_votes", false));
     }
 }

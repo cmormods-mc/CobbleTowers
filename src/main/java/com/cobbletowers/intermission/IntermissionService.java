@@ -68,6 +68,7 @@ public final class IntermissionService {
         ROUNDS.put(runId, new IntermissionRound());
         TowerRuns.get(runId).ifPresent(run -> {
             com.cobbletowers.vendor.VendorNpc.spawn(server, run);
+            PedestalService.sync(server, run);
             if (com.cobbletowers.modifier.DraftService.customs(run).healsEachIntermission()) {
                 for (PersistedParticipant participant : run.participants()) {
                     ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
@@ -87,6 +88,7 @@ public final class IntermissionService {
         if (run.isEmpty()) return "You are not at an intermission.";
         if (run.get().modifiers().draft().filter(draft -> !draft.resolved()).isEmpty()) return "There is nothing to vote on.";
         DraftService.vote(server, run.get().runId(), player.getUUID(), cardIndex, System.currentTimeMillis());
+        PedestalService.refresh(server, run.get().runId());
         return afterChange(server, run.get().runId(), "Vote recorded.");
     }
 
@@ -325,7 +327,7 @@ public final class IntermissionService {
                 com.cobbletowers.modifier.DraftService.routeRules(run), floor -> content.milestoneAt(run.towerId(), floor).isPresent());
     }
 
-    private static IntermissionStatePayload.Draft draftOf(PersistedRun run, UUID viewer) {
+    static IntermissionStatePayload.Draft draftOf(PersistedRun run, UUID viewer) {
         Optional<PersistedDraft> found = run.modifiers().draft();
         if (found.isEmpty()) return new IntermissionStatePayload.Draft(0, List.of(), -1, -1);
         PersistedDraft draft = found.get();

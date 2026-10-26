@@ -83,7 +83,10 @@ public final class VendorNpc {
         if (level == null || layout.isEmpty()) return false;
         if (!vendorsOf(server, run).isEmpty()) return true;
 
-        BlockPos origin = CellGrid.originOf(run.cell().getAsInt());
+        // Anchors are relative to where the structure was pasted, not to the cell corner.
+        Optional<BlockPos> pasted = com.cobbletowers.instance.CellPreparer.originFor(server, run.cell().getAsInt(), layout.get());
+        if (pasted.isEmpty()) return false;
+        BlockPos origin = pasted.get();
         BlockPos spot = layout.get().exit().in(origin);
         BlockPos entry = layout.get().entry().in(origin);
 

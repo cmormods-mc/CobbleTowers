@@ -21,5 +21,6 @@
     "cobbletowers:halloween/champion_10"
   ],
   "ascension": true,
-  "window": { "start": "2026-10-31T00:00:00Z", "end": "2026-11-03T00:00:00Z" }
+  "pedestal_votes": true,
+  "window": { "start": "2026-10-31T04:00:00Z", "end": "2026-11-03T05:00:00Z" }
 }

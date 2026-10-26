@@ -149,6 +149,7 @@ public final class CobbleTowers implements ModInitializer {
         com.cobbletowers.instance.TowerDropGuard.install();
         com.cobbletowers.instance.FaintDropGuard.install();
         com.cobbletowers.vendor.VendorNpc.install();
+        com.cobbletowers.intermission.PedestalService.install();
         com.cobbletowers.mastery.MasteryService.install();
         com.cobbletowers.trial.TrialService.install();
         com.cobbletowers.season.Seasons.install();
