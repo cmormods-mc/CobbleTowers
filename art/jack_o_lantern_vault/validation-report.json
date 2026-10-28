@@ -8,7 +8,7 @@
   {
    "check": "texture is a square RGBA PNG, power of two",
    "ok": true,
-   "detail": "(512, 512)"
+   "detail": "(1024, 1024)"
   },
   {
    "check": "every element: bounds -16..32, non-empty, legal rotation, uv in 0..16, texture #0",
@@ -28,27 +28,27 @@
   {
    "check": "atlas is used (>8%) and fits",
    "ok": true,
-   "detail": "42% of the 512x512 texels belong to islands"
+   "detail": "14% of the 1024x1024 texels belong to islands"
   },
   {
    "check": "full model stays inside vanilla's -16..32 and the pumpkin is centred on the block (x and z symmetric about 8)",
    "ok": true,
-   "detail": "[[-3.7, 0.0, -4.6], [19.7, 28.0, 19.7]]"
+   "detail": "[[-3.45, 0.0, -4.6], [19.4, 28.5, 19.9]]"
   },
   {
    "check": "lid sits on the rim (lid bottom y == rim top)",
    "ok": true,
-   "detail": "lid min y 13.5"
+   "detail": "lid min y 12.5"
   },
   {
    "check": "hinge axis lies on the lid's back-bottom edge (y == lid bottom, z == the lid's farthest back point: nothing of the lid is behind it)",
    "ok": true,
-   "detail": "lid max z 19.00 hinge z 19.0"
+   "detail": "lid max z 19.50 hinge z 19.5"
   },
   {
    "check": "plate is centred on the front (x symmetric about 8) and proud of the front lobe",
    "ok": true,
-   "detail": "x 3.8..12.2 front z -4.6"
+   "detail": "x 4.15..11.85 front z -4.6"
   },
   {
    "check": "stationary candy stays within radius 7.6 of the axis (inside the bowl and the lid hollow)",
@@ -58,10 +58,10 @@
   {
    "check": "stationary candy stays under the lid's ceiling",
    "ok": true,
-   "detail": "top 13.78 ceiling 20.50"
+   "detail": "top 12.88 ceiling 21.00"
   },
   {
-   "check": "the candy slab discs fit inside the bowl walls at their height",
+   "check": "the candy slab discs stay inside the bowl wall (corners may sink into it, never through it)",
    "ok": true,
    "detail": ""
   },
@@ -78,7 +78,7 @@
   {
    "check": "vault_full == body + lid + face_plate + candy_fill (element count)",
    "ok": true,
-   "detail": "523 vs 523"
+   "detail": "949 vs 949"
   },
   {
    "check": "reveal pieces are centred at (8, 8, 8) (spin about their own middle)",
@@ -93,7 +93,7 @@
   {
    "check": "at peak overshoot the lid stays above the floor and behind the front",
    "ok": true,
-   "detail": "lowest lid point y=12.00"
+   "detail": "lowest lid point y=11.39"
   },
   {
    "check": "at rest all four persistent pieces share one transform (no per-piece offset: no double offset)",
@@ -118,22 +118,22 @@
   {
    "check": "lid transform equals root*T(h)*Rx(10)*T(-h) applied to a lid point",
    "ok": true,
-   "detail": "[ 5.         19.5515498   4.83565233] vs [ 5.         19.5515498   4.83565233]"
+   "detail": "[ 5.         19.62318164  5.01689663] vs [ 5.         19.62318164  5.01689663]"
   },
   {
    "check": "lid transform equals root*T(h)*Rx(45)*T(-h) applied to a lid point",
    "ok": true,
-   "detail": "[ 5.         26.58147545 10.86827202] vs [ 5.         26.58147545 10.86827202]"
+   "detail": "[ 5.         26.64213562 11.72182541] vs [ 5.         26.64213562 11.72182541]"
   },
   {
    "check": "lid transform equals root*T(h)*Rx(100)*T(-h) applied to a lid point",
    "ok": true,
-   "detail": "[ 5.         27.66434767 25.0515498 ] vs [ 5.         27.66434767 25.0515498 ]"
+   "detail": "[ 5.         26.98310337 26.62318164] vs [ 5.         26.98310337 26.62318164]"
   },
   {
    "check": "lid transform equals root*T(h)*Rx(118)*T(-h) applied to a lid point",
    "ok": true,
-   "detail": "[ 5.         25.10106342 29.13239002] vs [ 5.         25.10106342 29.13239002]"
+   "detail": "[ 5.         24.07306566 30.75007339] vs [ 5.         24.07306566 30.75007339]"
   },
   {
    "check": "every sequence: seconds == ticks / 20",
@@ -193,57 +193,57 @@
  ],
  "dimensions": {
   "body_x": [
-   -3.7,
-   19.7
+   -3.45,
+   19.157432891182673
   ],
   "body_z": [
-   -3.7,
-   19.7
+   -3.1574328911826743,
+   19.9
   ],
-  "rim_top_y": 13.5,
-  "max_belly_radius": 11.95,
+  "rim_top_y": 12.5,
+  "max_belly_radius": 11.37,
   "lid_x": [
-   -2.99,
-   18.99
+   -3.4,
+   19.4
   ],
   "plate": [
    [
-    3.8,
-    3.55,
+    4.15,
+    2.25,
     -4.6
    ],
    [
-    12.2,
-    12.65,
-    -1.8
+    11.85,
+    11.15,
+    -2.2
    ]
   ],
   "full_bounds": [
    [
-    -3.7,
+    -3.45,
     0.0,
     -4.6
    ],
    [
-    19.7,
-    28.0,
-    19.7
+    19.4,
+    28.5,
+    19.9
    ]
   ],
   "candy_pile": {
-   "slab_top_y": 8.66,
-   "slab_fraction_of_cavity": 0.539,
-   "mean_candy_top_y": 11.47,
-   "mean_top_fraction_of_cavity": 0.806,
-   "highest_candy_top_y": 13.78,
-   "rim_top_y": 13.5
+   "slab_top_y": 7.86,
+   "slab_fraction_of_cavity": 0.512,
+   "mean_candy_top_y": 10.57,
+   "mean_top_fraction_of_cavity": 0.797,
+   "highest_candy_top_y": 12.88,
+   "rim_top_y": 12.5
   },
   "lid": {
-   "bottom_y": 13.5,
-   "top_of_dome_y": 23.36,
-   "height_without_stem": 9.86,
-   "stem_top_y": 28.0,
-   "stem_height": 4.64
+   "bottom_y": 12.5,
+   "top_of_dome_y": 24.36,
+   "height_without_stem": 11.86,
+   "stem_top_y": 28.5,
+   "stem_height": 4.14
   }
  },
  "failed": []

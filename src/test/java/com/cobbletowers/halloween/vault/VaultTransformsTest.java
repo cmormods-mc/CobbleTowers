@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class VaultTransformsTest {
 
     private static final double EPS = 1e-9;
-    private static final double[] HINGE_MODEL = {8, 13.5, 19};
+    private static final double[] HINGE_MODEL = {8, 12.5, 19.5};
 
     private static VaultPose lid(double deg) {
         return new VaultPose(deg, 0, 0);
@@ -71,7 +71,7 @@ class VaultTransformsTest {
 
     @Test
     void positiveAngleLiftsTheFrontAndSwingsItBack() {
-        double[] front = {8, 13.5, 0};
+        double[] front = {8, 12.5, 0};
         double[] a = VaultTransforms.worldPoint(VaultPiece.LID, VaultPose.REST, VaultFacing.NORTH, front);
         double[] b = VaultTransforms.worldPoint(VaultPiece.LID, lid(30), VaultFacing.NORTH, front);
         assertTrue(b[1] > a[1] && b[2] > a[2]);
@@ -80,7 +80,7 @@ class VaultTransformsTest {
     @Test
     void lidMatchesTheIndependentMatrixFormula() {
         // root * translate(h) * Rx * translate(-h) applied to a lid point, written out as matrices
-        double[] pt = {5, 17, 4};
+        double[] pt = {5, 16, 4};
         for (double deg : new double[] {10, 45, 100, 118}) {
             double r = Math.toRadians(deg), c = Math.cos(r), s = Math.sin(r);
             double dy = pt[1] - HINGE_MODEL[1], dz = pt[2] - HINGE_MODEL[2];
@@ -141,7 +141,7 @@ class VaultTransformsTest {
     void revealCandyStartsInsideThePileAndRisesAboveTheOpenLid() {
         VaultReveal reveal = new VaultReveal(VaultManifest.load().animation());
         VaultReveal.State first = reveal.state(0, 0);
-        assertTrue(first.blocks()[1] * 16 < 13.5 && Math.abs(first.blocks()[0]) < 5.0 / 16 && Math.abs(first.blocks()[2]) < 5.0 / 16);
+        assertTrue(first.blocks()[1] * 16 < 12.5 && Math.abs(first.blocks()[0]) < 5.0 / 16 && Math.abs(first.blocks()[2]) < 5.0 / 16);
         assertTrue(reveal.state(0, 40).blocks()[1] * 16 > 20);
         assertEquals(null, reveal.state(2, 2), "the third candy waits for its stagger");
         assertEquals(0.3, first.scale(), 1e-9);

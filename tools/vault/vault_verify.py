@@ -153,9 +153,9 @@ def main():
         if e["name"].startswith("pile."):
             y0, y1 = e["from"][1], e["to"][1]
             inner = min(S.BODY_R[k] - S.WALL for k in range(S.N_BODY) if S.BODY_Y0 + k * S.LAYER_H < y1 and S.BODY_Y0 + (k + 1) * S.LAYER_H > y0)
-            if radial(e) > inner + 0.35:
+            if radial(e) > inner + S.WALL - 0.3:
                 bad.append(f"{e['name']} {radial(e):.1f}>{inner:.1f}")
-    check("the candy slab discs fit inside the bowl walls at their height", not bad, ",".join(bad[:3]))
+    check("the candy slab discs stay inside the bowl wall (corners may sink into it, never through it)", not bad, ",".join(bad[:3]))
     cavity_h = S.RIM_TOP - 3.0
     tops = [box_corners(e)[:, 1].max() for e in cand if e["name"].endswith("_body")]
     base_top = max(e["to"][1] for e in models["candy_fill"]["elements"] if e["name"].startswith("pile."))

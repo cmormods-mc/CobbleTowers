@@ -27,9 +27,9 @@ import random
 from dataclasses import dataclass, field
 
 CX, CZ = 8.0, 8.0
-RIM_TOP = 13.5
-LIP_R = 9.8                                    # outer radius of the rim band and of the lid's lip band
-HINGE_Z = 19.0                                 # the farthest back the lid reaches (its second layer, 10.3 + 0.7 lobe, + chord overhang)
+RIM_TOP = 12.5                                 # the seam: the pumpkin is split horizontally here into two equal halves
+LIP_R = 11.1                                   # outer radius of the iron hoop round the seam (both halves)
+HINGE_Z = 19.5                                 # the farthest back the lid reaches (the hoop, 11.1, + chord overhang)
 HINGE = (8.0, RIM_TOP, HINGE_Z)                # a point on the hinge axis (x is the middle; the axis runs along x)
 LID_MAX_DEG = 115.0                            # final open angle, checked clear of the body over the whole sweep
 PIECES = ("body", "lid", "face_plate", "candy_fill", "reveal_a", "reveal_b", "reveal_c")
@@ -110,7 +110,7 @@ def stave(m: Model, piece, group, name, phi, r_out, y0, y1, thick, width, mat_ou
 def ring(m: Model, piece, group, k, n, y0, y1, r_out, thick, mat_out, mat_in, r_below, r_above, lobe=0.45, mat_top=None, mat_bottom=None,
           band=False):
     """Layer k of n: 16 staves at the given outer radius; even staves (every 45 degrees) stand `lobe` proud, odd ones sit `lobe` back."""
-    chord = 2.0 * r_out * math.tan(math.radians(11.25)) + 0.55          # a little over, so the 22.5 degree turns leave no gap
+    chord = 2.0 * r_out * math.tan(math.radians(11.25)) + 0.3          # a little over, so the 22.5 degree turns leave no gap
     for i in range(16):
         phi = 22.5 * i
         bulge = (i % 2 == 0)
@@ -139,20 +139,24 @@ def disc(m: Model, piece, group, name, y0, y1, radius, mat, skip=()):
 
 
 # body -----------------------------------------------------------------------------------------------------------------------------------
-def _belly(t):
-    """Outer radius of the pumpkin belly at height fraction t (0 at the floor ring, 1 at the rim): rises to 10.9 at t = 0.45, eases to 9.8."""
-    if t <= 0.45:
-        return 6.3 + 4.6 * math.sin(math.pi / 2 * t / 0.45)
-    return 10.9 - 1.1 * ((t - 0.45) / 0.55) ** 1.6
+def _lower(t):
+    """Outer radius of the lower half at height fraction t (0 floor ring, 1 equator): a quarter sine, so the belly meets the seam vertically."""
+    return 6.3 + 4.6 * math.sin(math.pi / 2 * t)
 
 
-BODY_Y0, LAYER_H, WALL = 1.5, 1.0, 1.6
-N_BODY, N_BAND = 12, 2                                        # 12 one-unit layers from y 1.5; the top two are the charcoal rim band
-BODY_R = [round(_belly((k + 0.5) / (N_BODY - N_BAND)), 2) if k < N_BODY - N_BAND else LIP_R for k in range(N_BODY)]
-N_LID = 9
-LID_H = [1.0] * N_LID
-LID_R = [LIP_R] + [round(3.0 + 7.3 * math.cos(math.pi / 2 * ((k + 0.5) / (N_LID - 1)) ** 1.3), 2) for k in range(N_LID - 1)]
+def _upper(t):
+    """Outer radius of the upper half (0 equator, 1 top): a quarter cosine, the mirror of the lower half but closing to the stem."""
+    return 3.4 + 7.5 * math.cos(math.pi / 2 * t ** 1.25)
+
+
+BODY_Y0, LAYER_H, WALL = 1.5, 0.5, 1.6
+N_BODY, N_BAND = 22, 2                                        # 22 half-unit layers from y 1.5 to the seam; the top two are the iron hoop
+BODY_R = [round(_lower((k + 0.5) / N_BODY), 2) if k < N_BODY - N_BAND else LIP_R for k in range(N_BODY)]
+N_LID = 22
+LID_H = [0.5] * N_LID
+LID_R = [LIP_R if k < N_BAND else round(_upper((k + 0.5) / N_LID), 2) for k in range(N_LID)]
 LID_TOP = RIM_TOP + sum(LID_H)                               # a cap plate closes the dome
+LOBE = 0.3
 
 
 def _body(m: Model):
@@ -164,7 +168,7 @@ def _body(m: Model):
         above = BODY_R[k + 1] if k < n - 1 else r
         band = (k >= n - N_BAND)
         ring(m, P, G, k, n, y0, y0 + LAYER_H, r, WALL, "charcoal" if band else "pumpkin", "flesh_lit" if not band else "charcoal",
-             below, above, lobe=0.0 if band else 0.8, mat_top="charcoal" if band else "pumpkin_top", mat_bottom="pumpkin_bottom", band=band)
+             below, above, lobe=0.0 if band else LOBE, mat_top="charcoal" if band else "pumpkin_top", mat_bottom="pumpkin_bottom", band=band)
     # the floor of the cavity, three stepped discs (the bowl narrows toward the bottom): the candy sits on them
     disc(m, P, "floor", "d0", 1.5, 3.0, 4.9, "flesh", skip=("up", "north", "south", "east", "west"))
     # four stubby charcoal feet turned 45 degrees under the belly
@@ -176,10 +180,10 @@ def _body(m: Model):
         phi = FRONT_PHI + sgn * 45.0
         for k in range(1, n - N_BAND):
             y0 = BODY_Y0 + k * LAYER_H
-            stave(m, P, "straps", f"{tag}{k}", phi, BODY_R[k] + 0.45 + 0.8, y0, y0 + LAYER_H, 0.9, 2.2, "charcoal", "charcoal", skip=("up", "down"))
-        stave(m, P, "straps", f"{tag}_stud", phi, BODY_R[5] + 0.45 + 0.8 + 0.4, 6.0, 7.4, 0.4, 1.4, "charcoal_lit", "charcoal_lit", skip=("up", "down"))
+            stave(m, P, "straps", f"{tag}{k}", phi, BODY_R[k] + LOBE + 0.8, y0, y0 + LAYER_H, 0.9, 2.2, "charcoal", "charcoal", skip=("up", "down"))
+        stave(m, P, "straps", f"{tag}_stud", phi, BODY_R[10] + LOBE + 0.8 + 0.4, 6.0, 7.4, 0.4, 1.4, "charcoal_lit", "charcoal_lit", skip=("up", "down"))
     for i, x in enumerate((CX - 4.5, CX + 4.5)):          # the body halves of the two hinge leaves
-        m.box(P, "hinge", f"body{i}", (x - 1.0, 11.7, 16.9), (x + 1.0, RIM_TOP, HINGE_Z + 0.4), "charcoal_lit", skip=("up",))
+        m.box(P, "hinge", f"body{i}", (x - 1.0, RIM_TOP - 1.8, 18.0), (x + 1.0, RIM_TOP, HINGE_Z + 0.4), "charcoal_lit", skip=("up",))
     _body_vines(m)
 
 
@@ -188,36 +192,37 @@ def _body_vines(m: Model):
     # a vine climbs the belly on the viewer's right of the front, from the ground bulge up to just under the rim band, turning 22.5 degrees every
     # few layers so it spirals; leaves are wider flat boards on top of it
     for j, k in enumerate(range(1, N_BODY - N_BAND)):
-        phi = 270.0 - 22.5 * (j // 3)
+        phi = 270.0 - 22.5 * (j // 7)
         y0 = BODY_Y0 + k * LAYER_H
-        stave(m, P, G, f"v{j}", phi, BODY_R[k] + 0.45 + 0.3, y0, y0 + LAYER_H, 0.3, 1.0, "vine" if j % 3 else "vine_lit", "vine", skip=("up", "down"))
-    stave(m, P, G, "leaf_a", 247.5, BODY_R[4] + 0.9, 5.4, 7.0, 0.3, 2.0, "leaf", "leaf", skip=("up", "down"))
-    stave(m, P, G, "leaf_b", 270.0, BODY_R[7] + 0.9, 9.0, 10.5, 0.3, 1.8, "leaf", "leaf", skip=("up", "down"))
+        stave(m, P, G, f"v{j}", phi, BODY_R[k] + LOBE + 0.3, y0, y0 + LAYER_H, 0.3, 1.0, "vine" if j % 3 else "vine_lit", "vine", skip=("up", "down"))
+    stave(m, P, G, "leaf_a", 247.5, BODY_R[8] + 0.9, 5.4, 7.0, 0.3, 2.0, "leaf", "leaf", skip=("up", "down"))
+    stave(m, P, G, "leaf_b", 270.0, BODY_R[16] + 0.9, 9.0, 10.5, 0.3, 1.8, "leaf", "leaf", skip=("up", "down"))
 
 
-# face plate -------------------------------------------------------------------------------------------------------------------------------
-PLATE_MASK = [          # 11 columns x 12 rows, one cell = CELL units; '#' orange, '.' open (shows the dark backing)
+# face plate: an iron lock plate with the jack-o'-lantern carved into it --------------------------------------------------------------------------
+PLATE_MASK = [          # 11 columns x 13 rows, one cell = CELL units; '#' solid, '.' open (shows the dark backing): two angled eyes over a keyhole
     " ######### ",
     "###########",
-    "#...###...#",
-    "#...###...#",
-    "#...###...#",
-    "##.#####.##",
+    "#..#####..#",
+    "##..###..##",
     "###########",
-    "#..#...#..#",
-    "#.........#",
-    "#...#.#...#",
+    "####...####",
+    "###.....###",
+    "###.....###",
+    "####...####",
+    "####...####",
+    "###.....###",
     "###########",
     " ######### ",
 ]
-CELL = 0.7
-PLATE_X0, PLATE_TOP = CX - 11 * CELL / 2, 12.3
-# three layers in depth, front is -z: the dark backing (the candle inside, its back inside the pumpkin), a bezel layer 0.35 wider than the face
-# (so the silhouette and every hole step down in two stages) and the raised face. The belly's front lobe reaches z = -3.35.
-PLATE_Z_FRONT, PLATE_Z_STEP, PLATE_Z_BODY, PLATE_Z_BACK = -4.6, -3.7, -2.8, -1.8
+CELL = 0.6
+PLATE_X0, PLATE_TOP = CX - 11 * CELL / 2, 10.6
+# front is -z. Layers: the dark backing (the candle inside), the iron bezel (0.3 wider than the face, so the silhouette and every hole step down
+# in two stages), the raised pumpkin face, and four rivets. Behind the backing a charcoal mount follows the belly so the plate does not float.
+PLATE_Z_FRONT, PLATE_Z_STEP, PLATE_Z_BODY, PLATE_Z_BACK = -4.6, -3.8, -3.0, -2.2
 
 
-def _runs(m, rows, z0, z1, mat_north, tag, grow=0.0):
+def _runs(m, rows, z0, z1, mat_north, mat_all, tag, grow=0.0):
     h, w = len(rows), len(rows[0])
     for r, row in enumerate(rows):
         c = 0
@@ -236,7 +241,7 @@ def _runs(m, rows, z0, z1, mat_north, tag, grow=0.0):
                 if r < h - 1 and all(rows[r + 1][c0:c]):
                     skip.append("down")
             m.box("face_plate", "plate", f"{tag}{r}_{c0}", (PLATE_X0 + c0 * CELL - grow, y1 - CELL - grow, z0),
-                  (PLATE_X0 + c * CELL + grow, y1 + grow, z1), "plate", skip=tuple(skip), mats={"north": mat_north})
+                  (PLATE_X0 + c * CELL + grow, y1 + grow, z1), mat_all, skip=tuple(skip), mats={"north": mat_north})
 
 
 def _plate(m: Model):
@@ -244,8 +249,20 @@ def _plate(m: Model):
     h, w = len(rows), len(rows[0])
     m.box("face_plate", "plate", "backing", (PLATE_X0, PLATE_TOP - h * CELL, PLATE_Z_BODY), (PLATE_X0 + w * CELL, PLATE_TOP, PLATE_Z_BACK),
           "plate_back", skip=("south", "up", "down", "east", "west"))
-    _runs(m, rows, PLATE_Z_STEP, PLATE_Z_BODY, "plate_step", "b", grow=0.35)
-    _runs(m, rows, PLATE_Z_FRONT, PLATE_Z_STEP, "plate_face", "f")
+    _runs(m, rows, PLATE_Z_STEP, PLATE_Z_BODY, "charcoal_lit", "charcoal", "b", grow=0.3)          # the iron bezel
+    _runs(m, rows, PLATE_Z_FRONT, PLATE_Z_STEP, "plate_face", "plate", "f")                         # the raised pumpkin face
+    for i, (dx, dy) in enumerate(((-1, 1), (1, 1), (-1, -1), (1, -1))):                              # four rivets on the bezel corners
+        cx, cy = CX + dx * (w * CELL / 2 + 0.05), PLATE_TOP - h * CELL / 2 + dy * (h * CELL / 2 + 0.05)
+        m.box("face_plate", "plate", f"rivet{i}", (cx - 0.5, cy - 0.5, PLATE_Z_STEP - 0.5), (cx + 0.5, cy + 0.5, PLATE_Z_STEP), "charcoal_lit", skip=("south",))
+    # the mount: charcoal blocks from the backing back into the belly, one per half-unit row, so the lock sits on the pumpkin rather than hovering
+    y = PLATE_TOP - h * CELL
+    while y < PLATE_TOP - 0.01:
+        k = min(N_BODY - N_BAND - 1, max(0, int((y + 0.25 - BODY_Y0) / LAYER_H)))
+        z_in = CZ - (BODY_R[k] - 1.0)
+        if z_in < PLATE_Z_BACK - 0.05:
+            m.box("face_plate", "mount", f"m{int(round(y * 10))}", (CX - 3.0, y, z_in), (CX + 3.0, min(y + 0.6, PLATE_TOP), PLATE_Z_BACK), "charcoal",
+                  skip=("south", "up", "down", "east", "west"))
+        y += 0.6
 
 
 # lid ----------------------------------------------------------------------------------------------------------------------------------
@@ -262,7 +279,7 @@ def _lid(m: Model):
         band = (k == 0)
         thick = min(WALL, r - 0.6)
         ring(m, P, G, k, n, y0, y1, r, thick, "charcoal" if band else "pumpkin_lid", "charcoal" if band else "flesh_lit", below, above,
-             lobe=0.0 if band else 0.7, mat_top="pumpkin_top", mat_bottom="charcoal" if band else "flesh_lit", band=band)
+             lobe=0.0 if band else LOBE, mat_top="pumpkin_top", mat_bottom="charcoal" if band else "flesh_lit", band=band)
         y = y1
     # a ceiling under the narrow top, and the cap that closes the dome
     kc = next(k for k, r in enumerate(LID_R) if r < 6.6)
@@ -271,25 +288,25 @@ def _lid(m: Model):
     # the straps run on from the body straps over the dome: boards per layer (stepped like the dome)
     for sgn, tag in ((-1, "l"), (1, "r")):
         phi = FRONT_PHI + sgn * 45.0
-        for k in range(1, n):
+        for k in range(N_BAND, n):
             y0, y1 = ys[k]
-            stave(m, P, "straps", f"{tag}{k}", phi, LID_R[k] + 0.4 + 0.7, y0, y1, 0.8, 2.0, "charcoal", "charcoal", skip=("up", "down"))
-        stave(m, P, "straps", f"{tag}_stud", phi, LID_R[2] + 0.4 + 0.7 + 0.4, ys[2][0] + 0.1, ys[2][1] + 0.9, 0.4, 1.2, "charcoal_lit", "charcoal_lit",
+            stave(m, P, "straps", f"{tag}{k}", phi, LID_R[k] + LOBE + 0.7, y0, y1, 0.8, 2.0, "charcoal", "charcoal", skip=("up", "down"))
+        stave(m, P, "straps", f"{tag}_stud", phi, LID_R[8] + LOBE + 0.7 + 0.4, ys[8][0] + 0.1, ys[8][1] + 0.9, 0.4, 1.2, "charcoal_lit", "charcoal_lit",
               skip=("up", "down"))
     for i, x in enumerate((CX - 4.5, CX + 4.5)):          # the lid halves of the hinge leaves: all behind the axis' front, none beyond it
-        m.box(P, "hinge", f"lid{i}", (x - 1.0, RIM_TOP, 17.4), (x + 1.0, RIM_TOP + 1.8, HINGE_Z), "charcoal_lit", skip=("down",))
+        m.box(P, "hinge", f"lid{i}", (x - 1.0, RIM_TOP, 18.0), (x + 1.0, RIM_TOP + 1.8, HINGE_Z), "charcoal_lit", skip=("down",))
     # the stem: a small blocky green stem with a bent tip and two leaf pads
     s0 = LID_TOP + 0.8
-    m.box(P, "stem", "base", (CX - 1.8, s0, CZ - 1.8), (CX + 1.8, s0 + 2.4, CZ + 1.8), "stem")
-    m.box(P, "stem", "mid", (CX - 1.2, s0 + 2.4, CZ - 1.2), (CX + 1.2, s0 + 3.8, CZ + 1.2), "stem")
-    m.box(P, "stem", "tip", (CX - 0.4, s0 + 3.8, CZ - 1.0), (CX + 2.0, s0 + 4.7, CZ + 1.4), "stem_lit")
+    m.box(P, "stem", "base", (CX - 1.6, s0, CZ - 1.6), (CX + 1.6, s0 + 2.2, CZ + 1.6), "stem")
+    m.box(P, "stem", "mid", (CX - 1.1, s0 + 2.2, CZ - 1.1), (CX + 1.1, s0 + 3.4, CZ + 1.1), "stem")
+    m.box(P, "stem", "tip", (CX - 0.4, s0 + 3.4, CZ - 1.0), (CX + 2.0, s0 + 4.2, CZ + 1.4), "stem_lit")
     m.box(P, "stem", "leaf_a", (CX + 1.6, s0, CZ - 4.2), (CX + 4.4, s0 + 0.8, CZ - 0.8), "leaf", rot=("y", 22.5, (CX + 3.0, s0 + 0.4, CZ - 2.5)))
     m.box(P, "stem", "leaf_b", (CX - 4.6, s0, CZ + 0.6), (CX - 1.4, s0 + 0.8, CZ + 3.6), "leaf", rot=("y", -22.5, (CX - 3.0, s0 + 0.4, CZ + 2.1)))
     # lid vines: a spiral up the dome from the second layer (never the lip band, so none bridges the seam)
-    for j, k in enumerate(range(1, 7)):
+    for j, k in enumerate(range(N_BAND + 1, N_BAND + 15)):
         y0, y1 = ys[k]
-        stave(m, P, "vines_lid", f"v{j}", 112.5 + 22.5 * (j // 2), LID_R[k] + 0.4 + 0.3, y0, y1, 0.3, 1.0, "vine" if j % 2 else "vine_lit", "vine", skip=("up", "down"))
-    stave(m, P, "vines_lid", "leaf_a", 135.0, LID_R[3] + 0.9, ys[3][0] + 0.1, ys[3][1] + 0.6, 0.3, 1.8, "leaf", "leaf", skip=("up", "down"))
+        stave(m, P, "vines_lid", f"v{j}", 112.5 + 22.5 * (j // 5), LID_R[k] + LOBE + 0.3, y0, y1, 0.3, 1.0, "vine" if j % 2 else "vine_lit", "vine", skip=("up", "down"))
+    stave(m, P, "vines_lid", "leaf_a", 135.0, LID_R[9] + 0.9, ys[9][0] + 0.1, ys[9][1] + 1.2, 0.3, 1.8, "leaf", "leaf", skip=("up", "down"))
 
 
 # candy ----------------------------------------------------------------------------------------------------------------------------------
@@ -317,20 +334,20 @@ def candy(m: Model, piece, group, name, centre, kind, along="x", yaw=0.0, scale=
 
 def _candy_fill(m: Model):
     P = "candy_fill"
-    # the pile's body: three stepped slabs following the narrowing bowl, up to y = 8.6; wrapped candies heap on it to about y = 14
+    # the pile's body: three stepped slabs following the narrowing bowl, up to y = 7.8; wrapped candies heap on it to about y = 13
     disc(m, P, "pile", "s0", 3.0, 4.5, 4.8, "candy_mix", skip=("north", "south", "east", "west", "down"))
     disc(m, P, "pile", "s1", 4.5, 6.0, 6.6, "candy_mix", skip=("north", "south", "east", "west", "down"))
-    disc(m, P, "pile", "s2", 6.0, 8.6, 7.8, "candy_mix", skip=("down",))
+    disc(m, P, "pile", "s2", 6.0, 7.8, 7.2, "candy_mix", skip=("down",))
     rnd = random.Random(1031)
     kinds = list(CANDY_KINDS)
     spots = []
     for i in range(6):                                   # outer ring, lowest
         a = math.radians(30 + 60 * i)
-        spots.append((CX + 4.6 * math.sin(a), 9.7, CZ + 4.6 * math.cos(a)))
+        spots.append((CX + 4.6 * math.sin(a), 8.8, CZ + 4.6 * math.cos(a)))
     for i in range(5):                                   # middle ring
         a = math.radians(10 + 72 * i)
-        spots.append((CX + 3.0 * math.sin(a), 10.9, CZ + 3.0 * math.cos(a)))
-    spots += [(CX + 0.6, 12.1, CZ - 0.4), (CX - 1.0, 12.9, CZ + 0.9)]
+        spots.append((CX + 3.0 * math.sin(a), 10.0, CZ + 3.0 * math.cos(a)))
+    spots += [(CX + 0.6, 11.2, CZ - 0.4), (CX - 1.0, 12.0, CZ + 0.9)]
     for i, (x, y, z) in enumerate(spots):
         candy(m, P, "candies", f"c{i}", (x, y, z), kinds[(i * 3) % len(kinds)], rnd.choice(("x", "z")), rnd.choice((0.0, 22.5, -22.5, 45.0, -45.0)))
 

@@ -223,12 +223,12 @@ def paint_stave(mat, face, ipos, isize):
     t = (j + 0.5) / h
     lobe = 1.0 - (2 * s - 1.0) ** 2
     bulge = kind == "o"
-    v = (0.56 if bulge else 0.28) + (0.22 if bulge else 0.10) * lobe
+    v = (0.60 if bulge else 0.42) + (0.20 if bulge else 0.12) * lobe
     if t < 0.18:
         v += 0.08                                           # lit top lip of each board
     elif t > 0.78:
         v -= 0.12                                           # shaded bottom: the ledge below
-    ao = 0.14 * (1.0 - k / max(1, n - 1))                    # the belly darkens toward the ground
+    ao = 0.07 * (1.0 - k / max(1, n - 1))                    # the belly darkens toward the ground
     v += -ao if name == "pumpkin" else (0.04 * k / max(1, n - 1) - 0.06)
     if (i == 0 or i == w - 1) and w > 3:
         v -= 0.18                                           # the seam between boards

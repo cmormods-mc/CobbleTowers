@@ -116,14 +116,22 @@ Lesson kept in `animation.json` and the README: the contract is what the client 
 
 After review the face plate was rebuilt in three layers (backing, bezel, raised face) so the silhouette, eyes and mouth step down visibly, the eyes and mouth were enlarged, and the atlas was repainted at 4 texels per unit in the clean style of the supplied Mystery Box pack (flat ramps, one-texel outlines, no noise). Python 36/36 and Java 967/967 pass again; the real client was re-checked (`previews/realclient/revision2_*`).
 
-## 12. Revision 3: fully organic pumpkin
+## 12. Revision 3: fully organic pumpkin (rings of 1 unit; superseded in shape by revision 4)
 
 Requested after comparing with commercial Halloween crate models (research notes: they use Model Engine, i.e. the same vanilla item-model renderer, so quality comes from modelling craft, not a different renderer). The vault is rebuilt as a round pumpkin: 16-board rings (every direction a multiple of 22.5, so vanilla-legal), a belly profile, 8 lobes, a domed lid, a rim band, iron straps, 4 feet, hinge leaves, vines that spiral, a carved face plate on the front lobe, a ring-pattern candy pile.
 Sizes: 23.4 across (x -3.7..19.7), 28.0 tall, rim top 13.5, lid dome top 23.4, stem 4.6; hinge (8, 13.5, 19); 532 cubes (body 233, lid 184, plate 55, candy 51, reveals 9); 512 x 512 atlas, 3 texels per unit.
 Checks: Python 38/38 (the clearance sweep now uses exact oriented boxes; it caught the lid's overhang sinking into the body behind the old hinge, so the hinge moved to the lid's farthest back point), Java suite green.
 The sections above that give old dimensions (posts, 16 x 13, stepped lid) describe revisions 1 and 2.
 
-## 13. Deviations from the concept
+## 13. Revision 4: lock face, horizontal halves, smooth round shape
+
+* **The pumpkin is split horizontally at the equator**: the body is the lower half, the lid the upper half, both with the same radius (10.9) at the seam, joined by a 1-unit iron hoop on each half. Hinge (8, 12.5, 19.5) at the lid's farthest back point.
+* **Smooth round shape**: 22 half-unit rings per half (was 1-unit rings), a quarter-sine belly and a quarter-cosine dome that meet the seam vertically, board overlap cut from 0.55 to 0.3, lobes cut to 0.3 (the lobe look now comes mostly from the baked shading). 958 cubes; the silhouette is a 16-gon turned smooth by the fine layering, the faceting only shows at the rim.
+* **Lock face**: an iron lock plate (bezel, four rivets, a charcoal mount that follows the belly) with the raised pumpkin face carved with two angled eyes over a keyhole (round top, slot, widening foot) that reads as the nose and mouth. The press animation still moves the plate 0.6 unit.
+* Checks: Python 38/38, Java green, real client re-checked in four facings (`previews/realclient/revision4_*`). Sizes: x -3.7..19.7 across, 28 tall incl. stem (halves 11 each plus cap and stem), atlas 1024 x 1024 (44 KB PNG).
+* Not re-done: animation grabs for this revision; motion still unjudged in a real client; the `.bbmodel` (now 958 cubes) still never opened in Blockbench.
+
+## 14. Deviations from the concept
 
 * Face plate is larger and deeper than the concept (the carved face needs 11 cells across to read, and the depth was asked for).
 * No glow, sparks or embers in the model (item models cannot be emissive): they are the manifest's particles. The concept's candy glow is painted flat.
