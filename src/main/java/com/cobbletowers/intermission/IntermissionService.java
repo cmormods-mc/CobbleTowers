@@ -67,6 +67,9 @@ public final class IntermissionService {
     public static void onArrival(MinecraftServer server, UUID runId) {
         ROUNDS.put(runId, new IntermissionRound());
         TowerRuns.get(runId).ifPresent(run -> {
+            // A walkable tower: the floor is won, so the way to the vendor's room opens, and anybody left on the gallery ledge comes back.
+            com.cobbletowers.route.TowerGates.rescueFromGallery(server, run);
+            com.cobbletowers.route.TowerGates.openA(server, run);
             com.cobbletowers.vendor.VendorNpc.spawn(server, run);
             PedestalService.sync(server, run);
             if (com.cobbletowers.modifier.DraftService.customs(run).healsEachIntermission()) {
@@ -216,6 +219,10 @@ public final class IntermissionService {
             return;
         }
         IntermissionRound round = ROUNDS.get(runId);
+        if (round.walking()) {
+            tickWalk(server, found.get(), round, now);
+            return;
+        }
         if (!round.counting()) return;
         if (!round.countdownDue(now)) {
             int left = round.secondsLeft(now);
@@ -236,13 +243,78 @@ public final class IntermissionService {
             broadcast(server, found.get(), "Cannot open the next floor: " + String.join("; ", problems), false);
             return;
         }
+        if (beginWalk(server, found.get(), round, now)) return;
+        openNext(server, runId, found.get(), now);
+    }
+
+    /**
+     * A walkable tower is left on foot: the stair gate opens and the next floor begins when the whole team is at the arena door, or after
+     * {@link com.cobbletowers.route.WalkRules#WALK_MILLIS}, when whoever is left behind is taken there. Anything else (the last floor of a cycle,
+     * a detour to another building, a tower with no gates) opens the next floor at once, as it always did.
+     * @return whether the team is now walking
+     */
+    private static boolean beginWalk(MinecraftServer server, PersistedRun run, IntermissionRound round, long now) {
+        if (run.cell().isEmpty()) return false;
+        var content = TowerDefinitionRegistry.content();
+        var current = com.cobbletowers.route.FloorLayouts.layoutOf(content, run, run.floorIndex());
+        var next = com.cobbletowers.route.FloorLayouts.layoutOf(content, run, run.floorIndex() + 1);
+        if (current.isEmpty() || !com.cobbletowers.route.WalkRules.onFoot(current.get(), next)) return false;
+        com.cobbletowers.route.TowerGates.openB(server, run);
+        round.beginWalk(now, com.cobbletowers.route.WalkRules.WALK_MILLIS);
+        broadcast(server, run, "The gate to the stair is open. Climb to the next floor: the fight starts when the whole team is at the arena door.", false);
+        return true;
+    }
+
+    private static void tickWalk(MinecraftServer server, PersistedRun run, IntermissionRound round, long now) {
+        if (com.cobbletowers.echo.EchoDuels.active(server, run.runId())) return;
+        if (!round.walkDue(now) && !everyoneArrived(server, run)) {
+            int left = round.walkSecondsLeft(now);
+            if (round.announce(left) && left % 15 == 0 && left > 0) {
+                for (PersistedParticipant participant : run.participants()) {
+                    ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+                    if (player != null) player.displayClientMessage(Component.literal("Climb to the next floor: " + left + "s"), true);
+                }
+            }
+            return;
+        }
+        round.cancelWalk();
+        List<String> problems = PlaylistGuard.problems(server, run);
+        if (!problems.isEmpty()) {
+            TowerLog.info("Run {} cannot open its next floor: {}", run.runId(), String.join("; ", problems));
+            broadcast(server, run, "Cannot open the next floor: " + String.join("; ", problems), false);
+            return;
+        }
+        openNext(server, run.runId(), run, now);
+    }
+
+    /** Every fighter who is online is standing at the next floor's entry anchor. Nobody online counts as not there, so the deadline decides. */
+    private static boolean everyoneArrived(MinecraftServer server, PersistedRun run) {
+        var content = TowerDefinitionRegistry.content();
+        var next = com.cobbletowers.route.FloorLayouts.layoutOf(content, run, run.floorIndex() + 1);
+        if (next.isEmpty() || run.cell().isEmpty()) return false;
+        var origin = com.cobbletowers.instance.CellPreparer.originFor(server, run.cell().getAsInt(), next.get());
+        if (origin.isEmpty()) return false;
+        var entry = next.get().entry().in(origin.get());
+        int fighters = 0;
+        for (PersistedParticipant participant : run.participants()) {
+            if (!participant.state().canFight()) continue;
+            ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+            if (player == null) continue;
+            fighters++;
+            if (!com.cobbletowers.route.WalkRules.arrived(player.getX(), player.getY(), player.getZ(),
+                    entry.getX() + 0.5, entry.getY(), entry.getZ() + 0.5)) return false;
+        }
+        return fighters > 0;
+    }
+
+    private static void openNext(MinecraftServer server, UUID runId, PersistedRun run, long now) {
         RunLifecycle.Opened result = RunLifecycle.openNextFloor(server, runId, now);
         switch (result) {
             case OPENED -> ROUNDS.remove(runId);
-            case BLOCKED -> broadcast(server, found.get(), "The next floor cannot open yet.", false);
+            case BLOCKED -> broadcast(server, run, "The next floor cannot open yet.", false);
             case FAILED -> {
                 ROUNDS.remove(runId);
-                notifyAll(server, found.get(), "The next floor could not be opened; the run is parked for recovery.");
+                notifyAll(server, run, "The next floor could not be opened; the run is parked for recovery.");
             }
         }
     }

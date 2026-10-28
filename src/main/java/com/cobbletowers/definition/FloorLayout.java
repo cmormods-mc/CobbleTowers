@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -14,15 +15,26 @@ import net.minecraft.resources.ResourceLocation;
  * @param presentation where the opposing Cobblemon is shown
  * @param spectator where a knocked-out player watches from (TDS #25)
  * @param exit the way to the next floor
+ * @param gateA the blocks that keep the party out of the intermission room until the floor is won (a walkable tower), if any
+ * @param gateB the blocks that keep the party off the stair until everyone is ready, if any; a floor that has one is left on foot
  */
 public record FloorLayout(
         ResourceLocation structure,
         FloorAnchor entry,
         FloorAnchor presentation,
         FloorAnchor spectator,
-        FloorAnchor exit) {
+        FloorAnchor exit,
+        Optional<FloorBox> gateA,
+        Optional<FloorBox> gateB) {
+
+    /** A floor with no gates, which is every floor that is left by teleport. */
+    public FloorLayout(ResourceLocation structure, FloorAnchor entry, FloorAnchor presentation, FloorAnchor spectator, FloorAnchor exit) {
+        this(structure, entry, presentation, spectator, exit, Optional.empty(), Optional.empty());
+    }
 
     public FloorLayout {
+        Objects.requireNonNull(gateA, "gateA");
+        Objects.requireNonNull(gateB, "gateB");
         Objects.requireNonNull(structure, "structure");
         Objects.requireNonNull(entry, "entry");
         Objects.requireNonNull(presentation, "presentation");
@@ -36,7 +48,9 @@ public record FloorLayout(
                 FloorAnchor.fromJson(root, "entry"),
                 FloorAnchor.fromJson(root, "presentation"),
                 FloorAnchor.fromJson(root, "spectator"),
-                FloorAnchor.fromJson(root, "exit"));
+                FloorAnchor.fromJson(root, "exit"),
+                FloorBox.optional(root, "gate_a"),
+                FloorBox.optional(root, "gate_b"));
     }
 
     /** Every anchor with the name it is known by, for validation and for messages. */

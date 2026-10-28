@@ -81,4 +81,38 @@ class FloorLayoutTest {
         assertEquals(new BlockPos(1025, 66, 134), anchor.in(new BlockPos(1000, 64, 128)));
         assertEquals(new BlockPos(25, 2, 6), anchor.in(BlockPos.ZERO));
     }
+
+    private static final String WITH_GATES = JSON.replace("\"exit\":         {\"x\": 25, \"y\": 2, \"z\": 44, \"yaw\": 180}",
+            "\"exit\": {\"x\": 25, \"y\": 2, \"z\": 44, \"yaw\": 180},"
+                    + "\"gate_a\": {\"min\": [20, 2, 30], \"max\": [26, 7, 31]},"
+                    + "\"gate_b\": {\"min\": [40, 2, 9], \"max\": [41, 6, 13]}");
+
+    @Test
+    @DisplayName("a floor with no gates has none, and every existing layout keeps loading")
+    void noGatesByDefault() {
+        FloorLayout layout = FloorLayout.fromJson(json(JSON).getAsJsonObject("layout"));
+        assertTrue(layout.gateA().isEmpty());
+        assertTrue(layout.gateB().isEmpty());
+    }
+
+    @Test
+    @DisplayName("gate boxes are read as inclusive corners and placed from the paste origin")
+    void gatesAreBoxes() {
+        FloorLayout layout = FloorLayout.fromJson(json(WITH_GATES).getAsJsonObject("layout"));
+        FloorBox a = layout.gateA().orElseThrow();
+        assertEquals(7 * 6 * 2, a.volume());
+        assertEquals(new BlockPos(1020, 66, 530), a.minIn(new BlockPos(1000, 64, 500)));
+        assertEquals(new BlockPos(1026, 71, 531), a.maxIn(new BlockPos(1000, 64, 500)));
+        assertEquals(2 * 5 * 5, layout.gateB().orElseThrow().volume());
+    }
+
+    @Test
+    @DisplayName("a box that is upside down or has the wrong shape is refused, naming the problem")
+    void badBoxes() {
+        assertThrows(IllegalArgumentException.class, () -> new FloorBox(5, 0, 0, 4, 1, 1));
+        String bad = WITH_GATES.replace("[20, 2, 30]", "[20, 2]");
+        assertThrows(IllegalArgumentException.class, () -> FloorLayout.fromJson(json(bad).getAsJsonObject("layout")));
+        String missing = WITH_GATES.replace("\"min\": [20, 2, 30], ", "");
+        assertThrows(IllegalArgumentException.class, () -> FloorLayout.fromJson(json(missing).getAsJsonObject("layout")));
+    }
 }

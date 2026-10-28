@@ -16,6 +16,7 @@ public final class IntermissionRound {
     private final Set<UUID> ready = new HashSet<>();
     private final Map<UUID, Boolean> cashOut = new HashMap<>();
     private long countdownEndsAt = -1;
+    private long walkEndsAt = -1;
 
     public void setReady(UUID player, boolean value) {
         if (value) ready.add(player);
@@ -71,6 +72,28 @@ public final class IntermissionRound {
 
     public void beginCountdown(long now, long millis) {
         countdownEndsAt = now + millis;
+    }
+
+    /** The team is climbing to the next floor: it opens when everybody is there or when {@code millis} have passed. */
+    public void beginWalk(long now, long millis) {
+        walkEndsAt = now + millis;
+        lastAnnounced = -1;
+    }
+
+    public void cancelWalk() {
+        walkEndsAt = -1;
+    }
+
+    public boolean walking() {
+        return walkEndsAt >= 0;
+    }
+
+    public boolean walkDue(long now) {
+        return walking() && now >= walkEndsAt;
+    }
+
+    public int walkSecondsLeft(long now) {
+        return (int) Math.max(0, (walkEndsAt - now + 999) / 1000);
     }
 
     public void cancelCountdown() {

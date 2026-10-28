@@ -164,6 +164,9 @@ public final class TowerEncounters {
             ServerPlayer player = fighters.get(ordinal);
             // Where they stand now is where they go home to (P20); skipped if they are already inside.
             RunExitService.remember(server, player);
+            // Somebody who climbed here on foot (a walkable tower) is already at the door of the arena: nobody is moved who is there.
+            if (player.serverLevel() == setup.level() && com.cobbletowers.route.WalkRules.arrived(player.getX(), player.getY(), player.getZ(),
+                    arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5)) continue;
             player.teleportTo(setup.level(), arrival.getX() + 0.5 + ordinal * 2, arrival.getY(),
                     arrival.getZ() + 0.5, entry.yaw(), 0.0f);
         }

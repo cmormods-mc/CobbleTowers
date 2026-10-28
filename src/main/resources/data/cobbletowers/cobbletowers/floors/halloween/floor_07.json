@@ -2,30 +2,54 @@
   "index": 7,
   "encounter_pool": "cobbletowers:halloween_common",
   "layout": {
-    "structure": "cobbletowers:battle_tower_duskvale",
+    "structure": "cobbletowers:battle_tower_halloween",
     "entry": {
-      "x": 45,
-      "y": 100,
-      "z": 33,
-      "yaw": 0
-    },
-    "presentation": {
-      "x": 45,
-      "y": 100,
-      "z": 51,
-      "yaw": 180
-    },
-    "spectator": {
-      "x": 36,
-      "y": 100,
-      "z": 42,
+      "x": 24,
+      "y": 66,
+      "z": 48,
       "yaw": 270
     },
-    "exit": {
-      "x": 54,
-      "y": 100,
-      "z": 42,
+    "presentation": {
+      "x": 46,
+      "y": 66,
+      "z": 48,
       "yaw": 90
+    },
+    "spectator": {
+      "x": 48,
+      "y": 66,
+      "z": 84,
+      "yaw": 180
+    },
+    "exit": {
+      "x": 48,
+      "y": 66,
+      "z": 5,
+      "yaw": 0
+    },
+    "gate_a": {
+      "min": [
+        45,
+        66,
+        21
+      ],
+      "max": [
+        51,
+        71,
+        22
+      ]
+    },
+    "gate_b": {
+      "min": [
+        77,
+        66,
+        9
+      ],
+      "max": [
+        78,
+        70,
+        13
+      ]
     }
   },
   "boss_pool": "cobbletowers:halloween/late"

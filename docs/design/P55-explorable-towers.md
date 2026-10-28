@@ -1,6 +1,6 @@
 # P55: Explorable physical towers (prototype: Hollow's Eve)
 
-Status: **proposal, 2026-10-26, nothing built except the Phase A check.** Written before the code (TDS gate).
+Status: **built 2026-10-28 for Hollow's Eve (see "As built: the physical tower" at the end); the regional towers can follow the same generator.** Written before the code (TDS gate).
 Method: the CTAGE master prompt (Downloads `CobbleTowers_Master_Prompt.md`): contract, then macro, floor, room, build.
 This doc holds the contract and Phase A. Phases B to D follow one unit at a time.
 
@@ -187,3 +187,32 @@ photographed overview, gaze, settled and side views.
 
 Seen in the pictures, still to tune: hologram text is small from 7 blocks and long lines clip; descriptions crowd the vendor's
 name tag; text vertical anchor (`TEXT_HEIGHT`) is a guess that looks right. Not yet seen: a multi-player click in a real client.
+
+
+## As built: the physical tower (2026-10-28)
+
+What the plan above became, smaller where it was cheaper to be exact.
+
+* **Generator** `tools/halloween_tower/hollow_tower.py` builds the whole tower in a numpy grid, checks it, and writes `validation/schematics/hollow_tower.schem`
+  (Sponge, via `mcschematic`) and `hollow_tower.layout.json`. `validation/schem_to_structure.py` converts it to
+  `data/cobbletowers/structure/battle_tower_halloween.nbt` (97 x 114 x 97, 361,702 blocks, 1.0 MB; the same size as the old towers). Run it again after any
+  change, then the converter with `--check`, then `python validation/validate_definitions.py`.
+* **Plan of one floor** (odd floors; even floors are the mirror image, so the stair of one lands in the arrival hall of the next): arrival hall (west) with a door into the
+  arena; the arena in the middle; gate A (iron bars) in its north wall into the intermission room (vendor on a dais and the three pedestals); gate B (iron bars) from that
+  room into the stair hall (east); ten steps up, 1:1, through a hole in the slab, with wall caps round the hole above. South of the arena, behind a long glass window, a
+  gallery holds the spectator anchor. Floors are ten blocks apart (feet y = 6 + 10 (k - 1)), eight blocks clear. Floor 10 has no stair: its cycle ends by teleport.
+* **Validator** (`validate()` in the generator, `test_hollow_tower.py`, 12 mutation tests): flood fill on foot over the blocks. With both gates shut the party reaches the arena and
+  nothing else; gate A open adds the vendor's room; both open adds the next floor's arena door; no floor reaches the arena of the one below; no cobweb in the walking volume.
+  Every mutation (an open gate, a walled door, a missing step, a filled hole, a cobweb) fails with its own message.
+* **Data**: the ten `floors/halloween/floor_NN.json` name the new structure, the four anchors and two new boxes, `gate_a` and `gate_b` (`FloorBox`). `validate_definitions.py`
+  checks each box lies inside the structure and is shut as built. A floor with `gate_b` is left on foot; a floor without one (floor 10) is left by teleport as before.
+* **Runtime**:
+  * `TowerGates.openA` at the intermission (the floor is won), with `rescueFromGallery` for anybody revived on the ledge; `openB` when the countdown ends.
+  * The intermission then *walks* (`IntermissionRound.beginWalk`, `WalkRules`): the next floor begins when every fighter who is online is within 7 blocks of its entry anchor, or after 90 s.
+  * `TowerEncounters.arrive` teleports only those who are not already there.
+  * `TowerGates.closeBoth` shuts the gates again as a floor begins, for the second cycle of an ascending tower, which fights the same building again.
+  * A walkable tower has no route-map detours (`DraftService.detourFor`): the party never leaves the building.
+* **Live check** `validation/smoke/walk_tower_test.py` (real physics via `walkbot.js`): two players climb floors 1 to 10 on foot, gates shut and open as designed, nobody teleported, the stair
+  rises ten blocks, and the cycle's end starts the next cycle by teleport. Passed on the rig.
+* **Not built**: Trick or Treat rooms (the gallery is where they would go), per-viewer glow, a roof stair, the real-client look of the floors beyond the screenshots in the session
+  notes, multi-player timing with the 90 s straggler teleport.

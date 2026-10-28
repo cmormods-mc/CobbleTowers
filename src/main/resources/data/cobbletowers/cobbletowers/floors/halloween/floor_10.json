@@ -3,30 +3,42 @@
   "encounter_pool": "cobbletowers:halloween_common",
   "milestone": "champion",
   "layout": {
-    "structure": "cobbletowers:battle_tower_duskvale",
+    "structure": "cobbletowers:battle_tower_halloween",
     "entry": {
-      "x": 45,
-      "y": 141,
-      "z": 33,
-      "yaw": 0
+      "x": 72,
+      "y": 96,
+      "z": 48,
+      "yaw": 90
     },
     "presentation": {
-      "x": 45,
-      "y": 141,
-      "z": 51,
-      "yaw": 180
-    },
-    "spectator": {
-      "x": 36,
-      "y": 141,
-      "z": 42,
+      "x": 50,
+      "y": 96,
+      "z": 48,
       "yaw": 270
     },
+    "spectator": {
+      "x": 48,
+      "y": 96,
+      "z": 84,
+      "yaw": 180
+    },
     "exit": {
-      "x": 54,
-      "y": 141,
-      "z": 42,
-      "yaw": 90
+      "x": 48,
+      "y": 96,
+      "z": 5,
+      "yaw": 0
+    },
+    "gate_a": {
+      "min": [
+        45,
+        96,
+        21
+      ],
+      "max": [
+        51,
+        101,
+        22
+      ]
     }
   }
 }

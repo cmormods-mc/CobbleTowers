@@ -136,7 +136,31 @@ def check_layouts(content: dict, problems: list[str]) -> int:
             if (x, y + 1, z) in occupied:
                 problems.append(f"{where} has no headroom")
             checked += 1
+        check_gates(floor_id, layout, size, occupied, problems)
     return checked
+
+
+def check_gates(floor_id: str, layout: dict, size, occupied: set, problems: list[str]) -> None:
+    """A gate is a box of blocks that a tower clears when it opens: it must lie inside the structure and be shut (all blocks) as built."""
+    for gate_name in ("gate_a", "gate_b"):
+        gate = layout.get(gate_name)
+        if gate is None:
+            continue
+        low, high = gate.get("min"), gate.get("max")
+        where = f"{floor_id} {gate_name}"
+        if not (isinstance(low, list) and isinstance(high, list) and len(low) == 3 and len(high) == 3):
+            problems.append(f"{where} needs min and max corners, each [x, y, z]")
+            continue
+        if any(a > b for a, b in zip(low, high)):
+            problems.append(f"{where} has a min corner above its max corner: {low} {high}")
+            continue
+        if any(a < 0 for a in low) or any(b >= limit for b, limit in zip(high, size)):
+            problems.append(f"{where} {low}..{high} is outside the structure, which is {size[0]}x{size[1]}x{size[2]}")
+            continue
+        open_cells = [(x, y, z) for x in range(low[0], high[0] + 1) for y in range(low[1], high[1] + 1)
+                      for z in range(low[2], high[2] + 1) if (x, y, z) not in occupied]
+        if open_cells:
+            problems.append(f"{where} is not shut as built: {len(open_cells)} of its blocks are air, for example {open_cells[0]}")
 
 
 def check_modifiers(content: dict, problems: list[str]) -> None:

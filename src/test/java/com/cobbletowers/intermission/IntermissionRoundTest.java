@@ -112,4 +112,25 @@ class IntermissionRoundTest {
         assertFalse(round.counting(), "a changed vote cancels");
         assertEquals(-1, round.secondsLeft(0));
     }
+
+    @Test
+    @DisplayName("a walk has a deadline, shows its seconds, and is its own thing: readiness does not cancel it")
+    void walk() {
+        IntermissionRound round = new IntermissionRound();
+        assertFalse(round.walking());
+        round.beginWalk(1000, 90_000);
+        assertTrue(round.walking());
+        assertEquals(90, round.walkSecondsLeft(1000));
+        assertEquals(1, round.walkSecondsLeft(90_999));
+        assertFalse(round.walkDue(90_999));
+        assertTrue(round.walkDue(91_000));
+
+        round.setReady(A, false);
+        round.voteCashOut(B, true);
+        assertTrue(round.walking(), "the gate is already open: a changed mind does not close it");
+
+        round.cancelWalk();
+        assertFalse(round.walking());
+        assertFalse(round.walkDue(Long.MAX_VALUE));
+    }
 }

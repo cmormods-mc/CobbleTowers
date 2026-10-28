@@ -207,10 +207,12 @@ public final class DraftService {
 
     /**
      * The lane of this step whose battle is a detour to another region's building (-1 for none); {@code places} gets that building's tower id.
-     * No detour for a trial (its floors are the shared route), a tower that is not in the catalog, or when the next floor is a milestone.
+     * No detour for a trial (its floors are the shared route), a tower that is not in the catalog, a walkable tower (its floors have a stair), or when the next floor is a milestone.
      */
     static int detourFor(TowerContent content, PersistedRun run, int floor, List<String> places) {
         if (run.options().isTrial() || !content.towers().containsKey(run.towerId())) return -1;
+        // A walkable tower is climbed, not left: no lane may send the party to another building and back.
+        if (content.floorAt(run.towerId(), floor).flatMap(f -> f.layout()).map(layout -> layout.gateB().isPresent()).orElse(false)) return -1;
         if (content.milestoneAt(run.towerId(), floor + 1).isPresent() || content.floorAt(run.towerId(), floor + 1).flatMap(f -> f.layout()).isEmpty()) return -1;
         int lane = com.cobbletowers.route.RouteGraph.detourLane(run.seed(), floor);
         if (lane < 0) return -1;

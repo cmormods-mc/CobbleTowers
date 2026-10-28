@@ -35,12 +35,21 @@ class DraftArenaTest {
     private static final List<ResourceLocation> CARDS = List.of(TestRuns.id("a"), TestRuns.id("b"), TestRuns.id("c"));
 
     private static FloorLayout layout(String structure, int y) {
+        return layout(structure, y, false);
+    }
+
+    private static FloorLayout layout(String structure, int y, boolean stairGate) {
         FloorAnchor at = new FloorAnchor(1, y, 1, 0);
-        return new FloorLayout(TestRuns.id(structure), at, at, at, at);
+        var gate = Optional.of(new com.cobbletowers.definition.FloorBox(0, y, 0, 1, y + 1, 1));
+        return new FloorLayout(TestRuns.id(structure), at, at, at, at, gate, stairGate ? gate : Optional.empty());
     }
 
     /** Three catalog towers of six floors each, each in its own building; the home tower's sixth floor is a boss. */
     private static TowerContent content() {
+        return content(false);
+    }
+
+    private static TowerContent content(boolean homeIsWalkable) {
         TowerContent base = TestRuns.content();
         Map<ResourceLocation, TowerDefinition> towers = new LinkedHashMap<>();
         Map<ResourceLocation, FloorDefinition> floors = new LinkedHashMap<>();
@@ -52,7 +61,7 @@ class DraftArenaTest {
                 ResourceLocation id = TestRuns.id(tower.getPath() + "_f" + i);
                 boolean boss = tower.equals(HOME) && i == 6;
                 floors.put(id, new FloorDefinition(id, i, TestRuns.id("pool"), boss ? Optional.of(MilestoneKind.BOSS) : Optional.empty(), Optional.empty(), List.of(),
-                        Optional.of(layout("battle_tower_" + tower.getPath(), 10 * i)), Optional.empty()));
+                        Optional.of(layout("battle_tower_" + tower.getPath(), 10 * i, homeIsWalkable && tower.equals(HOME))), Optional.empty()));
                 ids.add(id);
             }
             if (tower.equals(HOME)) {
@@ -121,6 +130,16 @@ class DraftArenaTest {
         for (long seed = 1; seed <= 400; seed++) {
             // floor 5 is followed by the boss on floor 6: no detour into or out of a boss floor
             assertEquals(-1, DraftService.detourFor(content, run(seed, 5, RunModifierState.EMPTY), 5, new ArrayList<>()));
+        }
+    }
+
+    @Test
+    void aWalkableTowerIsClimbedNotLeft() {
+        TowerContent content = content(true);
+        for (long seed = 1; seed <= 400; seed++) {
+            for (int floor = 1; floor <= 4; floor++) {
+                assertEquals(-1, DraftService.detourFor(content, run(seed, floor, RunModifierState.EMPTY), floor, new ArrayList<>()), "seed " + seed + " floor " + floor);
+            }
         }
     }
 

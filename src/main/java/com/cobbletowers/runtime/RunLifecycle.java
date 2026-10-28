@@ -102,6 +102,7 @@ public final class RunLifecycle {
             return false;
         }
         try {
+            TowerRuns.get(runId).ifPresent(run -> com.cobbletowers.route.TowerGates.closeBoth(server, run));
             if (TowerEncounters.begin(server, runId).isPresent()) return true;
         } catch (RuntimeException ex) {
             TowerLog.error("Opening floor of run {} threw", runId, ex);
