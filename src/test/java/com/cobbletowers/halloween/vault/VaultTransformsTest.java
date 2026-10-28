@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class VaultTransformsTest {
 
     private static final double EPS = 1e-9;
-    private static final double[] HINGE_MODEL = {8, 12.5, 19.5};
+    private static final double[] HINGE_MODEL = {8, 12.5, 19.6};
 
     private static VaultPose lid(double deg) {
         return new VaultPose(deg, 0, 0);

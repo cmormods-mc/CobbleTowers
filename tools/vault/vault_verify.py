@@ -127,7 +127,7 @@ def main():
     dims = {
         "body_x": [float(body_lo[0]), float(body_hi[0])], "body_z": [float(body_lo[2]), float(body_hi[2])], "rim_top_y": S.RIM_TOP,
         "max_belly_radius": round(max(radial(e) for e in models["body"]["elements"] if e["name"].startswith("shell.l")), 2),
-        "lid_x": [float(lid_lo[0]), float(lid_hi[0])], "plate": [[float(v) for v in plate_lo], [float(v) for v in plate_hi]],
+        "lid_x": [float(lid_lo[0]), float(lid_hi[0])], "latch": [[float(v) for v in plate_lo], [float(v) for v in plate_hi]],
         "full_bounds": [[float(v) for v in full_lo], [float(v) for v in full_hi]],
     }
     check("full model stays inside vanilla's -16..32 and the pumpkin is centred on the block (x and z symmetric about 8)",
@@ -135,8 +135,15 @@ def main():
     check("lid sits on the rim (lid bottom y == rim top)", abs(lid_lo[1] - S.RIM_TOP) < 1e-6, f"lid min y {lid_lo[1]}")
     check("hinge axis lies on the lid's back-bottom edge (y == lid bottom, z == the lid's farthest back point: nothing of the lid is behind it)",
           abs(lid_lo[1] - S.HINGE[1]) < 1e-6 and float(lid_hi[2]) <= S.HINGE[2] + 1e-6 and S.HINGE[2] - float(lid_hi[2]) < 0.5, f"lid max z {lid_hi[2]:.2f} hinge z {S.HINGE[2]}")
-    check("plate is centred on the front (x symmetric about 8) and proud of the front lobe", abs((plate_lo[0] + plate_hi[0]) / 2 - cx) < 1e-6 and plate_lo[2] < cz - dims["max_belly_radius"],
-          f"x {plate_lo[0]}..{plate_hi[0]} front z {plate_lo[2]}")
+    check("the latch teeth are centred on the front (x symmetric about 8) and cross the seam (below and above it)",
+          abs((plate_lo[0] + plate_hi[0]) / 2 - cx) < 1e-6 and plate_lo[1] < S.RIM_TOP - 1.0 and plate_hi[1] > S.RIM_TOP + 0.5,
+          f"x {plate_lo[0]:.2f}..{plate_hi[0]:.2f} y {plate_lo[1]:.2f}..{plate_hi[1]:.2f}")
+    face_lid = [e for e in models["lid"]["elements"] if e["name"].startswith("face.")]
+    face_body = [e for e in models["body"]["elements"] if e["name"].startswith("face.")]
+    ylid = min(box_corners(e)[:, 1].min() for e in face_lid)
+    ybody = max(box_corners(e)[:, 1].max() for e in face_body)
+    check("the face is halved by the seam: lid carries the upper half (all y >= seam), body the lower half (all y <= seam)",
+          len(face_lid) > 50 and len(face_body) > 30 and ylid >= S.RIM_TOP - 0.2 and ybody <= S.RIM_TOP + 0.2, f"lid {len(face_lid)} boxes from y {ylid:.2f}, body {len(face_body)} boxes to y {ybody:.2f}")
     # candy: inside the bowl (radius), under the lid ceiling
     lid_inner = {}
     for k, (r, h) in enumerate(zip(S.LID_R, S.LID_H)):

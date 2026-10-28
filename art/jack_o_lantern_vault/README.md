@@ -1,7 +1,7 @@
 # Jack-o'-Lantern Vault
 
 The Halloween trick-or-treat reward chest for CobbleTowers: a real pumpkin split horizontally into two equal halves (the lid is the top half, hinged at the back), 8 soft lobes, an iron hoop at the seam and iron straps, a green stem,
-an iron lock plate on the front with the jack-o'-lantern carved into it (two eyes over a keyhole, three layers deep) and a real hollow full of wrapped candy. Target: **Minecraft 1.21.1, Fabric, server-side only, Java 21, Polymer
+a jack-o'-lantern face that straddles the seam and locks the halves (eyes and upper jaw on the lid, lower jaw on the body, a latch of two teeth across the seam; the face comes apart when the lid opens), a ribbed curling stem and a real hollow full of wrapped candy. Target: **Minecraft 1.21.1, Fabric, server-side only, Java 21, Polymer
 resource pack, no client mod.** It is original work for this repo, drawn from the concept art ("Jack-o'-Lantern Vault", the stone pedestal left out).
 The Mystery Box pack that came with the brief was used only to see how such packs are laid out; nothing from it is in these files.
 
@@ -45,7 +45,7 @@ that one space, so its rest transform is the identity and the union of the persi
 |---|---|---|
 | `body` | persistent display | never (the root shake of `anticipation` moves all four together) |
 | `lid` | persistent display | hinge rotation |
-| `face_plate` | persistent display | presses 0.6 unit into the body (the latch), nothing else |
+| `face_plate` | persistent display | the two latch teeth across the seam; they press 0.6 unit into the body at unlock |
 | `candy_fill` | persistent display | never (stationary candy, one merged assembly) |
 | `reveal_a/b/c` | spawned after the lid is OPEN | float, spin, scale; authored centred on (8, 8, 8) so a display spins them about their own middle |
 

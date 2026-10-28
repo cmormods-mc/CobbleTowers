@@ -28,12 +28,12 @@
   {
    "check": "atlas is used (>8%) and fits",
    "ok": true,
-   "detail": "14% of the 1024x1024 texels belong to islands"
+   "detail": "15% of the 1024x1024 texels belong to islands"
   },
   {
    "check": "full model stays inside vanilla's -16..32 and the pumpkin is centred on the block (x and z symmetric about 8)",
    "ok": true,
-   "detail": "[[-3.45, 0.0, -4.6], [19.4, 28.5, 19.9]]"
+   "detail": "[[-3.45, 0.0, -4.8], [19.3, 31.0, 20.0]]"
   },
   {
    "check": "lid sits on the rim (lid bottom y == rim top)",
@@ -43,12 +43,17 @@
   {
    "check": "hinge axis lies on the lid's back-bottom edge (y == lid bottom, z == the lid's farthest back point: nothing of the lid is behind it)",
    "ok": true,
-   "detail": "lid max z 19.50 hinge z 19.5"
+   "detail": "lid max z 19.60 hinge z 19.6"
   },
   {
-   "check": "plate is centred on the front (x symmetric about 8) and proud of the front lobe",
+   "check": "the latch teeth are centred on the front (x symmetric about 8) and cross the seam (below and above it)",
    "ok": true,
-   "detail": "x 4.15..11.85 front z -4.6"
+   "detail": "x 6.88..9.12 y 10.25..13.25"
+  },
+  {
+   "check": "the face is halved by the seam: lid carries the upper half (all y >= seam), body the lower half (all y <= seam)",
+   "ok": true,
+   "detail": "lid 114 boxes from y 12.50, body 48 boxes to y 12.50"
   },
   {
    "check": "stationary candy stays within radius 7.6 of the axis (inside the bowl and the lid hollow)",
@@ -78,7 +83,7 @@
   {
    "check": "vault_full == body + lid + face_plate + candy_fill (element count)",
    "ok": true,
-   "detail": "949 vs 949"
+   "detail": "1156 vs 1156"
   },
   {
    "check": "reveal pieces are centred at (8, 8, 8) (spin about their own middle)",
@@ -93,7 +98,7 @@
   {
    "check": "at peak overshoot the lid stays above the floor and behind the front",
    "ok": true,
-   "detail": "lowest lid point y=11.39"
+   "detail": "lowest lid point y=11.57"
   },
   {
    "check": "at rest all four persistent pieces share one transform (no per-piece offset: no double offset)",
@@ -118,22 +123,22 @@
   {
    "check": "lid transform equals root*T(h)*Rx(10)*T(-h) applied to a lid point",
    "ok": true,
-   "detail": "[ 5.         19.62318164  5.01689663] vs [ 5.         19.62318164  5.01689663]"
+   "detail": "[ 5.         19.64054646  5.01841585] vs [ 5.         19.64054646  5.01841585]"
   },
   {
    "check": "lid transform equals root*T(h)*Rx(45)*T(-h) applied to a lid point",
    "ok": true,
-   "detail": "[ 5.         26.64213562 11.72182541] vs [ 5.         26.64213562 11.72182541]"
+   "detail": "[ 5.         26.7128463  11.75111473] vs [ 5.         26.7128463  11.75111473]"
   },
   {
    "check": "lid transform equals root*T(h)*Rx(100)*T(-h) applied to a lid point",
    "ok": true,
-   "detail": "[ 5.         26.98310337 26.62318164] vs [ 5.         26.98310337 26.62318164]"
+   "detail": "[ 5.         27.08158415 26.74054646] vs [ 5.         27.08158415 26.74054646]"
   },
   {
    "check": "lid transform equals root*T(h)*Rx(118)*T(-h) applied to a lid point",
    "ok": true,
-   "detail": "[ 5.         24.07306566 30.75007339] vs [ 5.         24.07306566 30.75007339]"
+   "detail": "[ 5.         24.16136042 30.89702055] vs [ 5.         24.16136042 30.89702055]"
   },
   {
    "check": "every sequence: seconds == ticks / 20",
@@ -194,40 +199,40 @@
  "dimensions": {
   "body_x": [
    -3.45,
-   19.157432891182673
+   19.128731633755294
   ],
   "body_z": [
-   -3.1574328911826743,
-   19.9
+   -4.8,
+   20.0
   ],
   "rim_top_y": 12.5,
-  "max_belly_radius": 11.37,
+  "max_belly_radius": 11.33,
   "lid_x": [
-   -3.4,
-   19.4
+   -3.3,
+   19.3
   ],
-  "plate": [
+  "latch": [
    [
-    4.15,
-    2.25,
-    -4.6
+    6.875,
+    10.25,
+    -4.5
    ],
    [
-    11.85,
-    11.15,
-    -2.2
+    9.125,
+    13.25,
+    -3.4
    ]
   ],
   "full_bounds": [
    [
     -3.45,
     0.0,
-    -4.6
+    -4.8
    ],
    [
-    19.4,
-    28.5,
-    19.9
+    19.3,
+    31.0,
+    20.0
    ]
   ],
   "candy_pile": {
@@ -242,8 +247,8 @@
    "bottom_y": 12.5,
    "top_of_dome_y": 24.36,
    "height_without_stem": 11.86,
-   "stem_top_y": 28.5,
-   "stem_height": 4.14
+   "stem_top_y": 31.0,
+   "stem_height": 6.64
   }
  },
  "failed": []

@@ -131,7 +131,17 @@ The sections above that give old dimensions (posts, 16 x 13, stepped lid) descri
 * Checks: Python 38/38, Java green, real client re-checked in four facings (`previews/realclient/revision4_*`). Sizes: x -3.7..19.7 across, 28 tall incl. stem (halves 11 each plus cap and stem), atlas 1024 x 1024 (44 KB PNG).
 * Not re-done: animation grabs for this revision; motion still unjudged in a real client; the `.bbmodel` (now 958 cubes) still never opened in Blockbench.
 
-## 14. Deviations from the concept
+## 14. Revision 5: the face locks the halves, ribbed stem, finer shaping
+
+Corrects revision 4, which misread the request (it only lowered the face and turned the mouth into a keyhole).
+* **The face straddles the seam and locks the two halves.** The eyes and the upper jaw with two hanging teeth are on the LID piece (rows above the seam), the lower jaw is on the BODY piece, and two rising teeth (the latch, the `face_plate` piece) stand in the mouth across the seam. When the lid opens the face comes apart: the top half goes up with the lid, the bottom half stays on the body. The `unlock` press now drives the latch teeth.
+* **Deeper face**: three layers (a 1.3 deep dark hollow, a stepped bezel, a raised face 1.7 proud of the skin) and every mask row is cut into two strips, each centred on the skin at its height and tilted by the local slope (0 / 22.5 / 45 degrees about x), so the face curves with the belly and the dome. The first row on each side of the seam is flat and stops exactly at the seam.
+* **Ribbed stem**: 12 rings of 8 boards (a rib every 90 degrees), tapering from 2.8 to 1.4 radius and curling 3.2 toward +x, plus a cap and two leaf pads.
+* **Smoother lobes**: lobe amplitude 0.2 (was 0.3) and board overlap 0.15.
+* Hinge (8, 12.5, 19.6). 1157 cubes, 1024 x 1024 atlas. Python 39/39, Java green, real client re-checked in all four facings (`previews/realclient/revision5_*`).
+* **Not good enough yet**: the face reads as stacked strips from the front, the dome is still visibly faceted, the eyes are small. A hand-made Blockbench model would beat the generator here.
+
+## 15. Deviations from the concept
 
 * Face plate is larger and deeper than the concept (the carved face needs 11 cells across to read, and the depth was asked for).
 * No glow, sparks or embers in the model (item models cannot be emissive): they are the manifest's particles. The concept's candy glow is painted flat.

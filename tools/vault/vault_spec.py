@@ -16,7 +16,7 @@ radius profile (the pumpkin belly); every other stave stands 0.45 proud, which c
   candy_fill  the stationary pile of wrapped candy inside                  (never moves)
   reveal_*    one floating wrapped candy, authored centred at (8, 8, 8) so a display entity spins it about its own middle
 
-HINGE: axis parallel to x through (y = 13.5, z = 19.0), just behind the rim at the lid's farthest back point, so no part of the lid is ever behind it; two
+HINGE: axis parallel to x through (y = 12.5, z = 19.6), just behind the rim at the lid's farthest back point, so no part of the lid is ever behind it; two
 charcoal hinge leaves bridge the gap; positive rotation about +x lifts the front.
 """
 
@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 CX, CZ = 8.0, 8.0
 RIM_TOP = 12.5                                 # the seam: the pumpkin is split horizontally here into two equal halves
 LIP_R = 11.1                                   # outer radius of the iron hoop round the seam (both halves)
-HINGE_Z = 19.5                                 # the farthest back the lid reaches (the hoop, 11.1, + chord overhang)
+HINGE_Z = 19.6                                 # the farthest back the lid reaches (the hoop, 11.1, + chord overhang)
 HINGE = (8.0, RIM_TOP, HINGE_Z)                # a point on the hinge axis (x is the middle; the axis runs along x)
 LID_MAX_DEG = 115.0                            # final open angle, checked clear of the body over the whole sweep
 PIECES = ("body", "lid", "face_plate", "candy_fill", "reveal_a", "reveal_b", "reveal_c")
@@ -86,12 +86,13 @@ def phi_parts(phi):
     return m, a
 
 
-def stave(m: Model, piece, group, name, phi, r_out, y0, y1, thick, width, mat_out, mat_in, skip=(), mat_up=None, mat_down=None, mats_side=None):
+def stave(m: Model, piece, group, name, phi, r_out, y0, y1, thick, width, mat_out, mat_in, skip=(), mat_up=None, mat_down=None, mats_side=None,
+          c0=(CX, CZ)):
     """One flat board whose outer face is at radius r_out in direction phi, `thick` deep (inward), `width` wide, y0..y1 tall."""
     mq, a = phi_parts(phi)
     rc = r_out - thick / 2.0
-    cx = CX + rc * math.sin(math.radians(phi))
-    cz = CZ + rc * math.cos(math.radians(phi))
+    cx = c0[0] + rc * math.sin(math.radians(phi))
+    cz = c0[1] + rc * math.cos(math.radians(phi))
     wx, wz = (width, thick) if mq % 2 == 0 else (thick, width)
     frm = (cx - wx / 2, y0, cz - wz / 2)
     to = (cx + wx / 2, y1, cz + wz / 2)
@@ -110,7 +111,7 @@ def stave(m: Model, piece, group, name, phi, r_out, y0, y1, thick, width, mat_ou
 def ring(m: Model, piece, group, k, n, y0, y1, r_out, thick, mat_out, mat_in, r_below, r_above, lobe=0.45, mat_top=None, mat_bottom=None,
           band=False):
     """Layer k of n: 16 staves at the given outer radius; even staves (every 45 degrees) stand `lobe` proud, odd ones sit `lobe` back."""
-    chord = 2.0 * r_out * math.tan(math.radians(11.25)) + 0.3          # a little over, so the 22.5 degree turns leave no gap
+    chord = 2.0 * r_out * math.tan(math.radians(11.25)) + 0.15          # a little over, so the 22.5 degree turns leave no gap
     for i in range(16):
         phi = 22.5 * i
         bulge = (i % 2 == 0)
@@ -156,7 +157,7 @@ N_LID = 22
 LID_H = [0.5] * N_LID
 LID_R = [LIP_R if k < N_BAND else round(_upper((k + 0.5) / N_LID), 2) for k in range(N_LID)]
 LID_TOP = RIM_TOP + sum(LID_H)                               # a cap plate closes the dome
-LOBE = 0.3
+LOBE = 0.2
 
 
 def _body(m: Model):
@@ -199,70 +200,98 @@ def _body_vines(m: Model):
     stave(m, P, G, "leaf_b", 270.0, BODY_R[16] + 0.9, 9.0, 10.5, 0.3, 1.8, "leaf", "leaf", skip=("up", "down"))
 
 
-# face plate: an iron lock plate with the jack-o'-lantern carved into it --------------------------------------------------------------------------
-PLATE_MASK = [          # 11 columns x 13 rows, one cell = CELL units; '#' solid, '.' open (shows the dark backing): two angled eyes over a keyhole
-    " ######### ",
-    "###########",
-    "#..#####..#",
-    "##..###..##",
-    "###########",
-    "####...####",
-    "###.....###",
-    "###.....###",
-    "####...####",
-    "####...####",
-    "###.....###",
-    "###########",
-    " ######### ",
+# the face: carved across the seam ------------------------------------------------------------------------------------------------------------
+# The jack-o'-lantern face straddles the seam and LOCKS the halves: the eyes and upper jaw (with two hanging teeth) are on the lid, the lower
+# jaw is on the body, and two rising teeth (the latch, piece face_plate) stand in the mouth across the seam, interlocking with the upper teeth.
+# When the latch retracts and the lid lifts, the face comes apart: the top half goes up with the lid, the bottom half stays on the body.
+# Every row of the face follows the belly or the dome: its box is centred on the surface at that height and tilted by the local slope.
+FACE_MASK = [           # 13 columns x 15 rows; '#' raised face, '.' open (a deep dark hollow). The seam is between rows 8 and 9.
+    "   #######   ",
+    " ########### ",
+    "##....#....##",
+    "#.....#.....#",
+    "##....#....##",
+    "###..###..###",
+    "######.######",
+    "#..#.....#..#",
+    "#..#.....#..#",
+    "#...........#",
+    "#...........#",
+    "##.........##",
+    "#############",
+    "#############",
+    "   #######   ",
 ]
-CELL = 0.6
-PLATE_X0, PLATE_TOP = CX - 11 * CELL / 2, 10.6
-# front is -z. Layers: the dark backing (the candle inside), the iron bezel (0.3 wider than the face, so the silhouette and every hole step down
-# in two stages), the raised pumpkin face, and four rivets. Behind the backing a charcoal mount follows the belly so the plate does not float.
-PLATE_Z_FRONT, PLATE_Z_STEP, PLATE_Z_BODY, PLATE_Z_BACK = -4.6, -3.8, -3.0, -2.2
+FACE_CELL = 0.75
+NCOL = 13
+SEAM_ROW = 9
+FACE_TOP = RIM_TOP + SEAM_ROW * FACE_CELL
+FACE_X0 = CX - NCOL * FACE_CELL / 2
+LATCH_COLS = (5, 7)
 
 
-def _runs(m, rows, z0, z1, mat_north, mat_all, tag, grow=0.0):
-    h, w = len(rows), len(rows[0])
-    for r, row in enumerate(rows):
-        c = 0
-        while c < w:
-            if not row[c]:
-                c += 1
-                continue
-            c0 = c
-            while c < w and row[c]:
-                c += 1
-            y1 = PLATE_TOP - r * CELL
-            skip = ["south"]
-            if not grow:
-                if r > 0 and all(rows[r - 1][c0:c]):
-                    skip.append("up")
-                if r < h - 1 and all(rows[r + 1][c0:c]):
-                    skip.append("down")
-            m.box("face_plate", "plate", f"{tag}{r}_{c0}", (PLATE_X0 + c0 * CELL - grow, y1 - CELL - grow, z0),
-                  (PLATE_X0 + c * CELL + grow, y1 + grow, z1), mat_all, skip=tuple(skip), mats={"north": mat_north})
+def surface_r(y):
+    """Outer radius of the pumpkin skin at the front (a proud lobe) at height y, including the iron hoop either side of the seam."""
+    if RIM_TOP - 1.0 <= y < RIM_TOP + 1.0:
+        return LIP_R
+    if y < RIM_TOP:
+        return _lower(min(1.0, max(0.0, (y - BODY_Y0) / (N_BODY * LAYER_H)))) + LOBE
+    return _upper(min(1.0, (y - RIM_TOP) / (N_LID * 0.5))) + LOBE
 
 
-def _plate(m: Model):
-    rows = [[c == "#" for c in r] for r in PLATE_MASK]
-    h, w = len(rows), len(rows[0])
-    m.box("face_plate", "plate", "backing", (PLATE_X0, PLATE_TOP - h * CELL, PLATE_Z_BODY), (PLATE_X0 + w * CELL, PLATE_TOP, PLATE_Z_BACK),
-          "plate_back", skip=("south", "up", "down", "east", "west"))
-    _runs(m, rows, PLATE_Z_STEP, PLATE_Z_BODY, "charcoal_lit", "charcoal", "b", grow=0.3)          # the iron bezel
-    _runs(m, rows, PLATE_Z_FRONT, PLATE_Z_STEP, "plate_face", "plate", "f")                         # the raised pumpkin face
-    for i, (dx, dy) in enumerate(((-1, 1), (1, 1), (-1, -1), (1, -1))):                              # four rivets on the bezel corners
-        cx, cy = CX + dx * (w * CELL / 2 + 0.05), PLATE_TOP - h * CELL / 2 + dy * (h * CELL / 2 + 0.05)
-        m.box("face_plate", "plate", f"rivet{i}", (cx - 0.5, cy - 0.5, PLATE_Z_STEP - 0.5), (cx + 0.5, cy + 0.5, PLATE_Z_STEP), "charcoal_lit", skip=("south",))
-    # the mount: charcoal blocks from the backing back into the belly, one per half-unit row, so the lock sits on the pumpkin rather than hovering
-    y = PLATE_TOP - h * CELL
-    while y < PLATE_TOP - 0.01:
-        k = min(N_BODY - N_BAND - 1, max(0, int((y + 0.25 - BODY_Y0) / LAYER_H)))
-        z_in = CZ - (BODY_R[k] - 1.0)
-        if z_in < PLATE_Z_BACK - 0.05:
-            m.box("face_plate", "mount", f"m{int(round(y * 10))}", (CX - 3.0, y, z_in), (CX + 3.0, min(y + 0.6, PLATE_TOP), PLATE_Z_BACK), "charcoal",
-                  skip=("south", "up", "down", "east", "west"))
-        y += 0.6
+def _tilt(y):
+    """Quantised rotation about x that lays a board along the skin at height y (top leans in on the dome, out on the lower belly)."""
+    d = (surface_r(y + 0.4) - surface_r(y - 0.4)) / 0.8
+    a = -math.degrees(math.atan(d))
+    q = 22.5 * round(a / 22.5)
+    return max(-45.0, min(45.0, q))
+
+
+def _face_runs(m, piece, rows, depth_lo, depth_hi, mat_north, mat_all, tag, grow=0.0, row_range=None, sub=2):
+    """Boxes for the cells of `rows`; every mask row is cut into `sub` thinner strips, each centred on the skin at its own height and tilted by its
+    own slope, so the face curves with the belly and the dome instead of stepping."""
+    w = len(rows[0])
+    for r in range(*row_range):
+        row = rows[r]
+        for sr in range(sub):
+            yc = FACE_TOP - (r + (sr + 0.5) / sub) * FACE_CELL
+            rs = surface_r(yc)
+            zc = CZ - (rs + (depth_lo + depth_hi) / 2.0)
+            ang = 0.0 if abs(yc - RIM_TOP) < 1.3 else _tilt(yc)
+            c = 0
+            while c < w:
+                if not row[c]:
+                    c += 1
+                    continue
+                c0 = c
+                while c < w and row[c]:
+                    c += 1
+                x0, x1 = FACE_X0 + c0 * FACE_CELL - grow, FACE_X0 + c * FACE_CELL + grow
+                hy = FACE_CELL / (2 * sub) + 0.06 + (grow if (sr == 0 or sr == sub - 1) else 0.0)
+                ylo, yhi = yc - hy, yc + hy
+                if piece == "lid":                       # nothing of either half may cross the seam
+                    ylo = max(ylo, RIM_TOP)
+                elif piece == "body":
+                    yhi = min(yhi, RIM_TOP)
+                d = depth_hi - depth_lo
+                rot = ("x", ang, (CX, (ylo + yhi) / 2, zc)) if ang else None
+                m.box(piece, "face", f"{tag}{r}_{sr}_{c0}", (x0, ylo, zc - d / 2), (x1, yhi, zc + d / 2), mat_all, skip=("south",),
+                      mats={"north": mat_north}, rot=rot)
+
+
+def _face(m: Model):
+    rows = [[ch == "#" for ch in r] for r in FACE_MASK]
+    full = [[ch != " " for ch in r] for r in FACE_MASK]
+    for piece, rng in (("lid", (0, SEAM_ROW)), ("body", (SEAM_ROW, len(rows)))):
+        _face_runs(m, piece, full, -1.4, -0.1, "plate_back", "plate_back", "k", row_range=rng)      # the deep dark hollow behind the face
+        _face_runs(m, piece, rows, -0.1, 0.7, "plate_step", "plate", "s", grow=0.15, row_range=rng)  # the stepped bezel
+        _face_runs(m, piece, rows, 0.7, 1.7, "plate_face", "plate", "f", row_range=rng)             # the raised carved face
+    # the latch: two teeth rising from the lower jaw across the seam into the upper mouth, 1.1 deep, in the open mouth in front of the dark hollow
+    for i, col in enumerate(LATCH_COLS):
+        x0 = FACE_X0 + col * FACE_CELL
+        y_lo, y_hi = FACE_TOP - 12 * FACE_CELL, FACE_TOP - 8 * FACE_CELL
+        zc = CZ - (LIP_R + 0.85)
+        m.box("face_plate", "latch", f"tooth{i}", (x0, y_lo, zc - 0.55), (x0 + FACE_CELL, y_hi, zc + 0.55), "plate", skip=("south",), mats={"north": "plate_face"})
 
 
 # lid ----------------------------------------------------------------------------------------------------------------------------------
@@ -295,13 +324,23 @@ def _lid(m: Model):
               skip=("up", "down"))
     for i, x in enumerate((CX - 4.5, CX + 4.5)):          # the lid halves of the hinge leaves: all behind the axis' front, none beyond it
         m.box(P, "hinge", f"lid{i}", (x - 1.0, RIM_TOP, 18.0), (x + 1.0, RIM_TOP + 1.8, HINGE_Z), "charcoal_lit", skip=("down",))
-    # the stem: a small blocky green stem with a bent tip and two leaf pads
+    # the stem: ribbed, tapering and curling toward +x: rings of 8 boards (a rib every 90 degrees), 0.5 high, each ring's centre sliding along an arc
     s0 = LID_TOP + 0.8
-    m.box(P, "stem", "base", (CX - 1.6, s0, CZ - 1.6), (CX + 1.6, s0 + 2.2, CZ + 1.6), "stem")
-    m.box(P, "stem", "mid", (CX - 1.1, s0 + 2.2, CZ - 1.1), (CX + 1.1, s0 + 3.4, CZ + 1.1), "stem")
-    m.box(P, "stem", "tip", (CX - 0.4, s0 + 3.4, CZ - 1.0), (CX + 2.0, s0 + 4.2, CZ + 1.4), "stem_lit")
-    m.box(P, "stem", "leaf_a", (CX + 1.6, s0, CZ - 4.2), (CX + 4.4, s0 + 0.8, CZ - 0.8), "leaf", rot=("y", 22.5, (CX + 3.0, s0 + 0.4, CZ - 2.5)))
-    m.box(P, "stem", "leaf_b", (CX - 4.6, s0, CZ + 0.6), (CX - 1.4, s0 + 0.8, CZ + 3.6), "leaf", rot=("y", -22.5, (CX - 3.0, s0 + 0.4, CZ + 2.1)))
+    radii = [2.8, 2.3, 1.95, 1.8, 1.7, 1.65, 1.6, 1.55, 1.5, 1.45, 1.4, 1.3]
+    nst = len(radii)
+    for k, r in enumerate(radii):
+        c0 = (CX + 3.2 * (k / (nst - 1)) ** 2.2, CZ - 0.5 * (k / (nst - 1)))
+        y0 = s0 + k * 0.5
+        chord = 2.0 * r * math.tan(math.radians(22.5)) + 0.12
+        for i in range(8):
+            phi = 45.0 * i
+            bulge = i % 2 == 0
+            stave(m, P, "stem", f"r{k}_{i}", phi, r + (0.22 if bulge else -0.12), y0, y0 + 0.5, min(r * 0.9, 1.4), chord, f"stem:{'o' if bulge else 'g'}:{k}:{nst}",
+                  "stem", skip=("down",) if k else (), mat_up="stem_top" if k == nst - 1 else None, c0=c0)
+    ctip = (CX + 3.2, CZ - 0.5)
+    m.box(P, "stem", "tip", (ctip[0] - 0.9, s0 + nst * 0.5, ctip[1] - 0.9), (ctip[0] + 0.9, s0 + nst * 0.5 + 0.7, ctip[1] + 0.9), "stem_top", skip=("down",))
+    m.box(P, "stem", "leaf_a", (CX + 1.6, s0 - 0.3, CZ - 4.2), (CX + 4.4, s0 + 0.5, CZ - 0.8), "leaf", rot=("y", 22.5, (CX + 3.0, s0 + 0.1, CZ - 2.5)))
+    m.box(P, "stem", "leaf_b", (CX - 4.6, s0 - 0.3, CZ + 0.6), (CX - 1.4, s0 + 0.5, CZ + 3.6), "leaf", rot=("y", -22.5, (CX - 3.0, s0 + 0.1, CZ + 2.1)))
     # lid vines: a spiral up the dome from the second layer (never the lip band, so none bridges the seam)
     for j, k in enumerate(range(N_BAND + 1, N_BAND + 15)):
         y0, y1 = ys[k]
@@ -360,8 +399,8 @@ def _reveals(m: Model):
 def build() -> Model:
     m = Model()
     _body(m)
-    _plate(m)
     _lid(m)
+    _face(m)
     _candy_fill(m)
     _reveals(m)
     return m

@@ -18,12 +18,12 @@
    "point_units": [
     8.0,
     12.5,
-    19.5
+    19.6
    ],
    "point_root_local_blocks": [
     0.0,
     0.78125,
-    0.71875
+    0.725
    ],
    "positive_direction": "positive rotation about +x lifts the lid's FRONT edge (opens); angle = lid.rot_x_deg",
    "max_open_deg": 115.0,

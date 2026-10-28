@@ -229,15 +229,17 @@ def paint_stave(mat, face, ipos, isize):
     elif t > 0.78:
         v -= 0.12                                           # shaded bottom: the ledge below
     ao = 0.07 * (1.0 - k / max(1, n - 1))                    # the belly darkens toward the ground
-    v += -ao if name == "pumpkin" else (0.04 * k / max(1, n - 1) - 0.06)
+    v += -ao if name == "pumpkin" else (0.04 * k / max(1, n - 1) - 0.06 if name == "pumpkin_lid" else 0.0)
     if (i == 0 or i == w - 1) and w > 3:
         v -= 0.18                                           # the seam between boards
-    return ramp(PUMPKIN, v + (BAYER[i % 4][j % 4] / 16.0 - 0.5) * 0.04)
+    return ramp(STEM if name == "stem" else PUMPKIN, v + (BAYER[i % 4][j % 4] / 16.0 - 0.5) * 0.04)
 
 
 def paint(mat, P, face, ipos, isize):
-    if mat.startswith("pumpkin:") or mat.startswith("pumpkin_lid:"):
+    if mat.startswith("pumpkin:") or mat.startswith("pumpkin_lid:") or mat.startswith("stem:"):
         return paint_stave(mat, face, ipos, isize)
+    if mat == "stem_top":
+        return ramp(STEM, 0.85)
     if mat == "pumpkin_top":
         return ramp(PUMPKIN, 0.82 + (BAYER[ipos[0] % 4][ipos[1] % 4] / 16.0 - 0.5) * 0.05)
     if mat == "pumpkin_bottom":
@@ -328,12 +330,12 @@ def pack(items, width):
     return pos, y + row_h
 
 
-NO_BEVEL = ("flesh", "candy_mix", "plate_back", "lid_under")
+NO_BEVEL = ("flesh", "candy_mix", "plate_back", "lid_under", "plate", "plate_step", "plate_face")
 
 
 def bevel_edge(c, mat, k, j, w, h):
     """The one-texel outline that makes each face read as a clean tile: lit on the top/left edge, shaded on the bottom/right."""
-    if mat in NO_BEVEL or mat.startswith("pumpkin") or h < 2 or (w < 2):
+    if mat in NO_BEVEL or mat.startswith("pumpkin") or mat.startswith("stem:") or h < 2 or (w < 2):
         return c
     f = 1.0
     if j == 0 and h >= 3:
