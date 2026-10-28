@@ -1,5 +1,7 @@
 # Visual checklist: the concept art against the model
 
+**Revision 3 note:** by request the vault is now a fully organic pumpkin, so the box-specific rows below (posts, feet, strap and tier positions, footprint 16 x 13) describe the earlier box model and are deliberately departed from; what is kept from the concept: colours, charcoal rim band and straps, carved plate in the centre of the front, stem, vines, wrapped-candy fill, 115 degree lid.
+
 Source of truth: the supplied concept image "Jack-o'-Lantern Vault" (closed view left, open view right; the stone pedestal excluded). The concept
 readings below were **measured by eye on the image with a 2D overlay and are good to about +-10%**; they are in model units where the front width of
 the closed vault is 16 (the concept has no scale of its own). Model numbers are exact, read from the runtime JSONs by `tools/vault/vault_verify.py`.

@@ -1,9 +1,14 @@
 # Jack-o'-Lantern Vault
 
-The Halloween trick-or-treat reward chest for CobbleTowers: a squat pumpkin-wood chest with charcoal corner posts, a stepped lid, a green stem,
-a carved jack-o'-lantern face plate (three layers deep: backing, bezel, raised face) and a real hollow full of wrapped candy. Target: **Minecraft 1.21.1, Fabric, server-side only, Java 21, Polymer
+The Halloween trick-or-treat reward chest for CobbleTowers: a real pumpkin: an 8-lobed ribbed body, a charcoal rim band and iron straps, a domed hinged lid, a green stem,
+a carved jack-o'-lantern face plate (three layers deep) and a real hollow full of wrapped candy. Target: **Minecraft 1.21.1, Fabric, server-side only, Java 21, Polymer
 resource pack, no client mod.** It is original work for this repo, drawn from the concept art ("Jack-o'-Lantern Vault", the stone pedestal left out).
 The Mystery Box pack that came with the brief was used only to see how such packs are laid out; nothing from it is in these files.
+
+**Organic shape (revision 3).** The round body and dome are rings of 16 flat boards (staves) laid tangent to a circle every 22.5 degrees; a stave
+facing direction phi = 90 m + a is a box turned by a in {0, +-22.5, +-45} with its long side along x or z, so every ring stays inside vanilla's
+rotation limits (one axis, 22.5 steps). Rings are stacked on a belly profile (widest 10.9 at the lower third, the lid dome 10.3 down to 3.9) and every
+other board stands proud, which cuts the 8 lobes. About 530 cubes in all; the atlas is painted per board with baked ambient-occlusion shading.
 
 The model is **separate rigid pieces drawn by item displays** whose transforms the server sets. There is no GeckoLib, Model Engine, ItemsAdder or
 OptiFine feature, and the Blockbench animations in the `.bbmodel` are previews, not runtime animations.
@@ -33,7 +38,7 @@ names, because nothing else reads the `.bbmodel` back.
 ## The pieces and the coordinate contract
 
 One shared **vault space** in model units (16 per block): x east, y up, z south; the vault's **front is the north face (-z)** as in any vanilla block
-model; the floor is y = 0; the footprint is x 0..16, z 1..15, the closed vault is 16 x 13 and 18 units tall with the stem. Every piece is authored in
+model; the floor is y = 0;  the pumpkin is about 23 units (1.46 blocks) across, centred on x 8 / z 8, and 28 units (1.75 blocks) tall with the stem; the footprint leaves the one-block cell, coordinates stay inside vanilla's -16..32. Every piece is authored in
 that one space, so its rest transform is the identity and the union of the persistent pieces is the whole vault (`vault_full`).
 
 | Piece | Runtime? | Moves |
@@ -105,7 +110,7 @@ VaultService.start(id, VaultMachine.Outcome.TREAT);                    // from C
 
 ## Texture
 
-One 512 x 512 RGBA atlas, 4 texels per model unit (a texel is a quarter unit), about a quarter of it used. Every element face has its own
+One 512 x 512 RGBA atlas, 3 texels per model unit, 1 extruded border texel per island, about 40% of it used. Every element face has its own
 island with 2 extruded border texels, so mipmaps do not bleed one island into the next. The look is deliberately clean, after the supplied Mystery Box pack (flat tonal ramps, one-texel lit and shaded outlines, tiled blocks, no noise): every face island gets a lit top/left and shaded bottom/right edge, pumpkin ribs are three flat tones with grooves, charcoal is mortared blocks in three flat tones, candy is two-tone checks. Painted from world positions so seams agree across elements. Nothing is transparent. Sampling is nearest (Minecraft's default for
 item models).
 

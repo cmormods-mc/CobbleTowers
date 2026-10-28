@@ -25,8 +25,8 @@ public final class VaultTransforms {
     /** rotY(180) as a quaternion: the half turn the client gives the model, cancelled by sending it again. */
     public static final double[] FLIP_Q = {0, 1, 0, 0};
     public static final double[] CENTRE = {0, 0.5, 0};
-    /** A point on the hinge axis, root-local blocks: model (8, 9, 14) -> ((8-8)/16, 9/16, (14-8)/16). */
-    public static final double[] HINGE = {0, 9.0 / 16, 6.0 / 16};
+    /** A point on the hinge axis, root-local blocks: model (8, 13.5, 19) -> ((8-8)/16, 13.5/16, (19-8)/16). The manifest carries the same point (a test checks). */
+    public static final double[] HINGE = {0, 13.5 / 16, 11.0 / 16};
 
     private VaultTransforms() {}
 

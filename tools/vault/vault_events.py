@@ -4,7 +4,7 @@ animation file. Each event fires on a state's own tick counter (`state`, `tick` 
 indistinguishable on screen. Positions are model units in vault space (x 0..16, y up from the floor, z 0..16, front = low z) and are
 rotated with the vault's facing by the runtime. Only vanilla sound and particle ids are used, so no client mod or pack is needed."""
 
-ANCHORS = {"plate": [8.0, 5.5, 1.0], "pile": [8.0, 10.0, 8.0], "seam": [8.0, 9.2, 2.0], "above": [8.0, 14.0, 8.0], "floor": [8.0, 0.2, 8.0]}
+ANCHORS = {"plate": [8.0, 8.2, -4.6], "pile": [8.0, 14.5, 8.0], "seam": [8.0, 13.5, -1.8], "above": [8.0, 27.0, 8.0], "floor": [8.0, 0.2, 8.0]}
 
 
 def sound(state, tick, sid, vol, pitch, at, outcome="any"):

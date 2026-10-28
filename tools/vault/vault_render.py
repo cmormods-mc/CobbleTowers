@@ -37,7 +37,7 @@ def face_quad(e, f):
 
 class Pose:
     """Per-piece rigid transform: lid_deg about the hinge, plate_press (units, +z), root offset (units)."""
-    def __init__(self, lid_deg=0.0, plate=0.0, root=(0, 0, 0), hinge=(8, 11, 14)):
+    def __init__(self, lid_deg=0.0, plate=0.0, root=(0, 0, 0), hinge=(8, 13.5, 17.8)):
         self.lid, self.plate, self.root, self.hinge = lid_deg, plate, np.array(root, float), np.array(hinge, float)
 
     def apply(self, piece, pts):

@@ -13,8 +13,8 @@ import math
 import numpy as np
 from PIL import Image
 
-SCALE = 4
-PAD = 3
+SCALE = 3
+PAD = 1
 
 
 def hsh(*v):
@@ -211,7 +211,37 @@ def paint_candy_mix(P, face):
     return ramp(CANDY[k], 0.3 + 0.5 * hsh(*(math.floor(c * 2) for c in P), 9))
 
 
+def paint_stave(mat, face, ipos, isize):
+    """Pumpkin boards of the round body and lid: 'name:o|g:k:n' = bulging or recessed stave, layer k of n. Painted from the board's own
+    UV so every stave carries its own lobe shading: a lit crown, dark edges and a baked ambient-occlusion ramp (darker low on the belly, and
+    under each ledge). `pumpkin_lid` is the same on the dome, brightest toward the top."""
+    name, kind, k, n = mat.split(":")
+    k, n = int(k), int(n)
+    i, j = ipos
+    w, h = isize
+    s = (i + 0.5) / w
+    t = (j + 0.5) / h
+    lobe = 1.0 - (2 * s - 1.0) ** 2
+    bulge = kind == "o"
+    v = (0.56 if bulge else 0.28) + (0.22 if bulge else 0.10) * lobe
+    if t < 0.18:
+        v += 0.08                                           # lit top lip of each board
+    elif t > 0.78:
+        v -= 0.12                                           # shaded bottom: the ledge below
+    ao = 0.14 * (1.0 - k / max(1, n - 1))                    # the belly darkens toward the ground
+    v += -ao if name == "pumpkin" else (0.04 * k / max(1, n - 1) - 0.06)
+    if (i == 0 or i == w - 1) and w > 3:
+        v -= 0.18                                           # the seam between boards
+    return ramp(PUMPKIN, v + (BAYER[i % 4][j % 4] / 16.0 - 0.5) * 0.04)
+
+
 def paint(mat, P, face, ipos, isize):
+    if mat.startswith("pumpkin:") or mat.startswith("pumpkin_lid:"):
+        return paint_stave(mat, face, ipos, isize)
+    if mat == "pumpkin_top":
+        return ramp(PUMPKIN, 0.82 + (BAYER[ipos[0] % 4][ipos[1] % 4] / 16.0 - 0.5) * 0.05)
+    if mat == "pumpkin_bottom":
+        return ramp(PUMPKIN, 0.12)
     if mat == "pumpkin":
         return paint_pumpkin(P, face)
     if mat == "pumpkin_lit":
@@ -303,7 +333,7 @@ NO_BEVEL = ("flesh", "candy_mix", "plate_back", "lid_under")
 
 def bevel_edge(c, mat, k, j, w, h):
     """The one-texel outline that makes each face read as a clean tile: lit on the top/left edge, shaded on the bottom/right."""
-    if mat in NO_BEVEL or h < 2 or (w < 2):
+    if mat in NO_BEVEL or mat.startswith("pumpkin") or h < 2 or (w < 2):
         return c
     f = 1.0
     if j == 0 and h >= 3:

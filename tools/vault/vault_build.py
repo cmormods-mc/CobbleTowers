@@ -209,8 +209,8 @@ def previews(m, atlas, rects, size):
     opened = dict(rest, **{"lid.rot_x_deg": A.LID_OPEN})
     render = lambda ch, facing="north", az=az, el=el, px=30, size_=(700, 640), centre=(8, 8, 8), extra=None: R.render(
         m, atlas, rects, size, PERSISTENT, ContractPose(ch, facing), az=az, el=el, px=px, out=size_, centre=centre, extra=extra)
-    closed = render(rest, size_=(700, 640), centre=(8, 8.5, 8))
-    open_ = render(opened, el=el + 12, size_=(700, 740), centre=(8, 11, 8))
+    closed = render(rest, size_=(700, 720), centre=(8, 13, 8), px=19)
+    open_ = render(opened, el=el + 12, size_=(700, 800), centre=(8, 17, 12), px=19)
     closed.save(out / "closed.png")
     open_.save(out / "open.png")
     # side by side with the concept (crops of the supplied reference; the stone pedestal is excluded)
@@ -219,19 +219,19 @@ def previews(m, atlas, rects, size):
         rc = ref.crop((60, 180, 760, 740)).resize((700, 560))
         ro = ref.crop((800, 90, 1500, 740)).resize((700, 650))
         W = Image.new("RGBA", (1400, 1250), (20, 20, 24, 255))
-        W.paste(label(rc, "concept - closed"), (0, 0)); W.paste(label(closed.crop((0, 40, 700, 600)), "model - closed"), (700, 0))
-        W.paste(label(ro, "concept - open"), (0, 580)); W.paste(label(open_.crop((0, 40, 700, 690)), "model - open"), (700, 580))
+        W.paste(label(rc, "concept - closed"), (0, 0)); W.paste(label(closed.crop((0, 80, 700, 640)), "model - closed"), (700, 0))
+        W.paste(label(ro, "concept - open"), (0, 580)); W.paste(label(open_.crop((0, 60, 700, 710)), "model - open"), (700, 580))
         W.save(out / "compare_reference.png")
     # four facings through the runtime contract
     F = Image.new("RGBA", (1400, 1280), (20, 20, 24, 255))
     for i, facing in enumerate(("north", "east", "south", "west")):
-        im = render(opened if i % 2 else rest, facing, az=-23, el=24, px=22, size_=(700, 640), centre=(8, 9, 8))
+        im = render(opened if i % 2 else rest, facing, az=-23, el=24, px=14, size_=(700, 640), centre=(8, 14, 8))
         F.paste(label(im, f"facing {facing}  ({'open' if i % 2 else 'closed'})  front -> {facing}"), ((i % 2) * 700, (i // 2) * 640))
     F.save(out / "facings.png")
     # pieces sheet
     sheet = Image.new("RGBA", (1400, 700), (20, 20, 24, 255))
     for i, pc in enumerate(("body", "lid", "face_plate", "candy_fill")):
-        im = R.render(m, atlas, rects, size, (pc,), R.Pose(0), az=-23, el=26, px=26, out=(350, 350), centre=(8, 8, 8))
+        im = R.render(m, atlas, rects, size, (pc,), R.Pose(0), az=-23, el=26, px=11, out=(350, 350), centre=(8, 12, 8))
         sheet.paste(label(im, pc), (i * 350, 0))
     for i, pc in enumerate(("reveal_a", "reveal_b", "reveal_c")):
         im = R.render(m, atlas, rects, size, (pc,), R.Pose(0), az=-23, el=26, px=60, out=(350, 350), centre=(8, 8, 8))
@@ -243,7 +243,7 @@ def previews(m, atlas, rects, size):
     imgs = []
     for st, ch, since in frames:
         extra = reveal_jobs(m, since) if since is not None else None
-        im = render(ch, "north", az=-30, el=28, px=15, size_=(380, 360), centre=(8, 9, 8), extra=extra)
+        im = render(ch, "north", az=-30, el=28, px=9, size_=(380, 360), centre=(8, 15, 8), extra=extra)
         imgs.append(label(im, f"{st} lid {ch['lid.rot_x_deg']:6.1f}"))
     imgs[0].save(out / "animation_preview.gif", save_all=True, append_images=imgs[1:], duration=50, loop=0, disposal=2)
     want = [("ANTICIPATING", 2), ("UNLOCKING", 2), ("OPENING", 5), ("OPENING", 10), ("OPEN", 6), ("OPEN", 30), ("OPEN", 59), ("CLOSING", 5), ("CLOSING", 11), ("CLOSED", None)]

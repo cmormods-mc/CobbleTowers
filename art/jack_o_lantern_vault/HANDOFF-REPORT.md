@@ -116,7 +116,14 @@ Lesson kept in `animation.json` and the README: the contract is what the client 
 
 After review the face plate was rebuilt in three layers (backing, bezel, raised face) so the silhouette, eyes and mouth step down visibly, the eyes and mouth were enlarged, and the atlas was repainted at 4 texels per unit in the clean style of the supplied Mystery Box pack (flat ramps, one-texel outlines, no noise). Python 36/36 and Java 967/967 pass again; the real client was re-checked (`previews/realclient/revision2_*`).
 
-## 12. Deviations from the concept
+## 12. Revision 3: fully organic pumpkin
+
+Requested after comparing with commercial Halloween crate models (research notes: they use Model Engine, i.e. the same vanilla item-model renderer, so quality comes from modelling craft, not a different renderer). The vault is rebuilt as a round pumpkin: 16-board rings (every direction a multiple of 22.5, so vanilla-legal), a belly profile, 8 lobes, a domed lid, a rim band, iron straps, 4 feet, hinge leaves, vines that spiral, a carved face plate on the front lobe, a ring-pattern candy pile.
+Sizes: 23.4 across (x -3.7..19.7), 28.0 tall, rim top 13.5, lid dome top 23.4, stem 4.6; hinge (8, 13.5, 19); 532 cubes (body 233, lid 184, plate 55, candy 51, reveals 9); 512 x 512 atlas, 3 texels per unit.
+Checks: Python 38/38 (the clearance sweep now uses exact oriented boxes; it caught the lid's overhang sinking into the body behind the old hinge, so the hinge moved to the lid's farthest back point), Java suite green.
+The sections above that give old dimensions (posts, 16 x 13, stepped lid) describe revisions 1 and 2.
+
+## 13. Deviations from the concept
 
 * Face plate is larger and deeper than the concept (the carved face needs 11 cells across to read, and the depth was asked for).
 * No glow, sparks or embers in the model (item models cannot be emissive): they are the manifest's particles. The concept's candy glow is painted flat.

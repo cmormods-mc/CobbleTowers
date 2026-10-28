@@ -78,7 +78,7 @@ def bbmodel(model, rects, size, atlas_png_bytes, animations):
             d["rotation"] = [ang if axis == "x" else 0, ang if axis == "y" else 0, ang if axis == "z" else 0]
         elements.append(d)
         groups.setdefault(e.piece, {}).setdefault(e.group or "misc", []).append(d["uuid"])
-    pivots = {"body": [8, 0, 8], "lid": list(S.HINGE), "face_plate": [8, 6, 2.3], "candy_fill": [8, 3, 8],
+    pivots = {"body": [8, 0, 8], "lid": list(S.HINGE), "face_plate": [8, 8, -3], "candy_fill": [8, 3, 8],
               "reveal_a": [8, 8, 8], "reveal_b": [8, 8, 8], "reveal_c": [8, 8, 8]}
     outliner = []
     for p in S.PIECES:

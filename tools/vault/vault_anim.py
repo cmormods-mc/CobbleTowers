@@ -104,8 +104,8 @@ STATES = {
 REVEAL = {
     "count": 3,
     "models": ["reveal_a", "reveal_b", "reveal_c"],
-    "start_units": [[8.0, 9.5, 8.0], [6.8, 9.5, 8.6], [9.2, 9.5, 7.4]],         # inside the pile, model units
-    "rise_units": [20.0, 24.0, 22.0],
+    "start_units": [[8.0, 12.0, 8.0], [6.8, 12.0, 8.6], [9.2, 12.0, 7.4]],       # inside the pile, model units
+    "rise_units": [22.0, 26.0, 24.0],
     "rise_ticks": 24, "hold_ticks": 40, "collect_ticks": 8,
     "scale_keys": [[0, 0.3, "out_cubic"], [12, 1.25, "in_out_sine"], [24, 1.0, "linear"]],
     "spin_deg_per_tick": [18.0, -14.0, 22.0],

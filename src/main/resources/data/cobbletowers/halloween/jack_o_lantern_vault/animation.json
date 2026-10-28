@@ -17,13 +17,13 @@
    "axis": "x",
    "point_units": [
     8.0,
-    9.0,
-    14.0
+    13.5,
+    19.0
    ],
    "point_root_local_blocks": [
     0.0,
-    0.5625,
-    0.375
+    0.84375,
+    0.6875
    ],
    "positive_direction": "positive rotation about +x lifts the lid's FRONT edge (opens); angle = lid.rot_x_deg",
    "max_open_deg": 115.0,
@@ -497,24 +497,24 @@
   "start_units": [
    [
     8.0,
-    9.5,
+    12.0,
     8.0
    ],
    [
     6.8,
-    9.5,
+    12.0,
     8.6
    ],
    [
     9.2,
-    9.5,
+    12.0,
     7.4
    ]
   ],
   "rise_units": [
-   20.0,
-   24.0,
-   22.0
+   22.0,
+   26.0,
+   24.0
   ],
   "rise_ticks": 24,
   "hold_ticks": 40,
