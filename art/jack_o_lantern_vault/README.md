@@ -13,6 +13,8 @@ other board stands proud, which cuts the 8 lobes. About 960 cubes in all; the at
 The model is **separate rigid pieces drawn by item displays** whose transforms the server sets. There is no GeckoLib, Model Engine, ItemsAdder or
 OptiFine feature, and the Blockbench animations in the `.bbmodel` are previews, not runtime animations.
 
+**Rebuilding by hand in Blockbench:** see `BLOCKBENCH-TUTORIAL.md` (every number as a table, plus `blockbench_tables/*.csv`).
+
 ## What is where
 
 | File | What |
