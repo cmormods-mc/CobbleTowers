@@ -37,19 +37,18 @@ Model units, 16 per block, vault space (x east, y up, z south, front = north fac
 | Height | rim top 9.0; posts 13.0 (+0.5 cap nub); lid tiers top 14.25; stem top 18.0 (the closed vault is 1.125 blocks tall) |
 | Lid | 11 wide (x 2.5..13.5), 12 deep, 5.25 thick without the stem; stepped: skirt 3.0, tier B 1.25, raised centre 1.0; stem 3.75 |
 | Posts | 2.5 x 2.5, feet 3.5 x 3.5 x 2.25, cap 1.5 x 1.5 x 0.5 |
-| Face plate | 5.5 x 6.0 x 1.3 (0.6 carved layer on a 0.7 backing), x 5.25..10.75, in front of the rim band |
+| Face plate | 6.0 x 6.5 x 2.2 in three layers: 0.4 dark backing, a 0.6 bezel 0.25 wider than the face, a 0.8 raised face; stands 1.7 proud of the rim front (z 0.3..2.5); eyes and mouth are about 1.3 deep |
 | Candy | slab to 70% of the cavity, 12 wrapped candies 3 x 1.75 on top, mean top y 9.5 (rim 9.0), highest 10.4 |
 
 ## 3. Texture
 
-One shared atlas, **256 x 256** RGBA, 2 texels per model unit (a texel is half a unit), every element face its own island with 2 extruded border texels, 26% of the atlas used,
-nothing transparent, no overlapping islands (checked). 157 elements: body 48, lid 37, face plate 26, candy fill 37, reveal 3 x 3.
+One shared atlas, **512 x 512** RGBA, 4 texels per model unit (a texel is a quarter unit), every element face its own island with 3 extruded border texels,
+nothing transparent, no overlapping islands (checked). 182 elements (the face plate is now 51).
 
 ## 4. Runtime pieces
 
 7 models, **4 persistent display entities per vault** (body, lid, face plate, candy fill) plus **3 reveal candies** while a treat is revealed (7 at most). The persistent pieces
-move as rigid bodies: only the lid rotates, only the face plate translates, all four share one root shake. Pack cost: about 237 KB of JSON and a 17 KB PNG,
-about 31 KB zipped (plus `vault_full.json`, 113 KB, which nothing requests).
+move as rigid bodies: only the lid rotates, only the face plate translates, all four share one root shake. Pack cost: JSON plus a 512 x 512 PNG, see the pack zip (plus `vault_full.json`, 113 KB, which nothing requests).
 
 ## 5. Hinge, contract, facing
 
@@ -113,9 +112,13 @@ Every unit test I wrote and all 36 Python checks passed, because they checked my
 (a first attempt that flipped the translation too opened the lid toward the camera), and fixed the contract: send `q = Rnet R F`. The Python renderer, the Java transform, the manifest and the tests now all carry it, and the real client confirms all four facings.
 Lesson kept in `animation.json` and the README: the contract is what the client draws, not what the maths suggests.
 
-## 11. Deviations from the concept
+## 11. Revision: more depth, cleaner texture
 
-* Face plate about 10% larger than the concept (the carved face needs 11 cells to read at this grain).
+After review the face plate was rebuilt in three layers (backing, bezel, raised face) so the silhouette, eyes and mouth step down visibly, the eyes and mouth were enlarged, and the atlas was repainted at 4 texels per unit in the clean style of the supplied Mystery Box pack (flat ramps, one-texel outlines, no noise). Python 36/36 and Java 967/967 pass again; the real client was re-checked (`previews/realclient/revision2_*`).
+
+## 12. Deviations from the concept
+
+* Face plate is larger and deeper than the concept (the carved face needs 11 cells across to read, and the depth was asked for).
 * No glow, sparks or embers in the model (item models cannot be emissive): they are the manifest's particles. The concept's candy glow is painted flat.
 * Two dark straps run over the lid top as the brief asks; the closed concept shows none on top.
 * Rivet studs overhang the one-block footprint by 0.5 unit on the post sides.

@@ -61,7 +61,7 @@ if __name__ == "__main__":
         subprocess.run(["xdotool", "key", "F1"], env=ENV)
         time.sleep(0.5)
     vid = spawn(0, 100, 0, "south")
-    cam(0.5, 101.5, 3.9, 180, 14)
+    cam(0.5, 101.4, 2.6, 180, 14)
     time.sleep(2.0)
     shot("01_closed_front_south")
     cam(-1.9, 101.7, 2.6, yaw_to_face(2.4, -2.1), 17)

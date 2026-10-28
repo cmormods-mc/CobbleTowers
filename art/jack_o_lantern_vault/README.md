@@ -1,7 +1,7 @@
 # Jack-o'-Lantern Vault
 
 The Halloween trick-or-treat reward chest for CobbleTowers: a squat pumpkin-wood chest with charcoal corner posts, a stepped lid, a green stem,
-a carved jack-o'-lantern face plate and a real hollow full of wrapped candy. Target: **Minecraft 1.21.1, Fabric, server-side only, Java 21, Polymer
+a carved jack-o'-lantern face plate (three layers deep: backing, bezel, raised face) and a real hollow full of wrapped candy. Target: **Minecraft 1.21.1, Fabric, server-side only, Java 21, Polymer
 resource pack, no client mod.** It is original work for this repo, drawn from the concept art ("Jack-o'-Lantern Vault", the stone pedestal left out).
 The Mystery Box pack that came with the brief was used only to see how such packs are laid out; nothing from it is in these files.
 
@@ -13,7 +13,7 @@ OptiFine feature, and the Blockbench animations in the `.bbmodel` are previews, 
 | File | What |
 |---|---|
 | `art/jack_o_lantern_vault/jack_o_lantern_vault.bbmodel` | **Editable Blockbench source** (Java Block/Item format, one group per piece, the lid group pivots on the hinge, preview animations baked from the manifest). |
-| `art/jack_o_lantern_vault/vault.png` | The shared 256 x 256 texture atlas (copy of the runtime one). |
+| `art/jack_o_lantern_vault/vault.png` | The shared 512 x 512 texture atlas (copy of the runtime one). |
 | `src/main/resources/assets/cobbletowers/models/halloween/jack_o_lantern_vault/*.json` | Runtime models: `body`, `lid`, `face_plate`, `candy_fill`, `reveal_a`, `reveal_b`, `reveal_c`, plus `vault_full` (the whole closed vault in one model, for checking; not used at runtime). |
 | `src/main/resources/assets/cobbletowers/textures/item/halloween/jack_o_lantern_vault/vault.png` | The runtime atlas, referenced as `cobbletowers:item/halloween/jack_o_lantern_vault/vault`. |
 | `src/main/resources/data/cobbletowers/halloween/jack_o_lantern_vault/animation.json` | **Animation manifest**: coordinate contract, pieces, channels, sequences (seconds and ticks at 20 tps), state machine, reveal motion. |
@@ -105,9 +105,8 @@ VaultService.start(id, VaultMachine.Outcome.TREAT);                    // from C
 
 ## Texture
 
-One 256 x 256 RGBA atlas, 2 texels per model unit (a texel is half a unit, the grain of the concept art), 26% of it used. Every element face has its own
-island with 2 extruded border texels, so mipmaps do not bleed one island into the next. Pumpkin ribs, charcoal blocks, vines, candy checks and the
-glowing hollow are painted from world positions, so seams agree across elements. Nothing is transparent. Sampling is nearest (Minecraft's default for
+One 512 x 512 RGBA atlas, 4 texels per model unit (a texel is a quarter unit), about a quarter of it used. Every element face has its own
+island with 2 extruded border texels, so mipmaps do not bleed one island into the next. The look is deliberately clean, after the supplied Mystery Box pack (flat tonal ramps, one-texel lit and shaded outlines, tiled blocks, no noise): every face island gets a lit top/left and shaded bottom/right edge, pumpkin ribs are three flat tones with grooves, charcoal is mortared blocks in three flat tones, candy is two-tone checks. Painted from world positions so seams agree across elements. Nothing is transparent. Sampling is nearest (Minecraft's default for
 item models).
 
 ## Not verified

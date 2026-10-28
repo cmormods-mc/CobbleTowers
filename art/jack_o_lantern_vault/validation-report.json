@@ -8,7 +8,7 @@
   {
    "check": "texture is a square RGBA PNG, power of two",
    "ok": true,
-   "detail": "(256, 256)"
+   "detail": "(512, 512)"
   },
   {
    "check": "every element: bounds -16..32, non-empty, legal rotation, uv in 0..16, texture #0",
@@ -28,12 +28,12 @@
   {
    "check": "atlas is used (>25%) and fits",
    "ok": true,
-   "detail": "26% of the 256x256 texels belong to islands"
+   "detail": "26% of the 512x512 texels belong to islands"
   },
   {
    "check": "full model fits the block footprint (x 0..16, only the 0.5-unit rivet studs overhang) and stays inside -16..32",
    "ok": true,
-   "detail": "[[-0.5, 0.0, 1.0], [16.5, 18.0, 15.0]]"
+   "detail": "[[-0.5, 0.0, 0.3], [16.5, 18.0, 15.0]]"
   },
   {
    "check": "lid sits on the rim (lid bottom y == rim top)",
@@ -48,7 +48,7 @@
   {
    "check": "plate is centred on the front (x symmetric about 8) and proud of the front",
    "ok": true,
-   "detail": "x 5.25..10.75 front z 1.2"
+   "detail": "x 5.0..11.0 front z 0.3"
   },
   {
    "check": "stationary candy stays inside the cavity footprint (x 3..13, z 3..13) and under the lid ceiling (y 11)",
@@ -68,7 +68,7 @@
   {
    "check": "vault_full == body + lid + face_plate + candy_fill (element count)",
    "ok": true,
-   "detail": "148 vs 148"
+   "detail": "177 vs 177"
   },
   {
    "check": "reveal pieces are centred at (8, 8, 8) (spin about their own middle)",
@@ -198,13 +198,13 @@
   ],
   "plate": [
    [
-    5.25,
-    2.75,
-    1.2
+    5.0,
+    2.5,
+    0.3
    ],
    [
-    10.75,
-    8.75,
+    11.0,
+    9.0,
     2.5
    ]
   ],
@@ -212,7 +212,7 @@
    [
     -0.5,
     0.0,
-    1.0
+    0.3
    ],
    [
     16.5,

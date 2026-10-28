@@ -13,8 +13,8 @@ import math
 import numpy as np
 from PIL import Image
 
-SCALE = 2
-PAD = 2
+SCALE = 4
+PAD = 3
 
 
 def hsh(*v):
@@ -42,24 +42,24 @@ def ramp(colors, v, dither=0.0):
     return colors[i]
 
 
-PUMPKIN = [(112, 44, 8), (160, 64, 10), (196, 84, 12), (224, 108, 16), (244, 132, 26), (255, 160, 48)]
-PUMPKIN_LIT = [(150, 62, 10), (196, 84, 12), (224, 108, 16), (244, 132, 26), (255, 160, 48), (255, 186, 90)]
-FLESH = [(74, 30, 8), (104, 42, 10), (138, 56, 12), (170, 72, 14), (200, 92, 18)]
-FLESH_LIT = [(150, 64, 12), (190, 84, 14), (224, 108, 18), (248, 134, 28), (255, 164, 52)]
-CHAR = [(20, 20, 22), (32, 32, 35), (46, 46, 50), (62, 62, 67), (84, 84, 90), (110, 110, 116)]
-CHAR_LIT = [(38, 38, 42), (56, 56, 62), (76, 76, 84), (100, 100, 110), (130, 130, 140), (164, 164, 172)]
-VINE = [(26, 70, 18), (40, 100, 24), (62, 134, 30), (92, 168, 40), (130, 200, 62)]
-STEM = [(34, 88, 20), (52, 122, 26), (76, 156, 34), (106, 186, 48), (150, 214, 72)]
-PLATE = [(150, 56, 8), (196, 82, 12), (232, 108, 18), (255, 140, 30), (255, 166, 56), (255, 196, 100)]
-EMBER = [(12, 5, 3), (28, 11, 5), (70, 24, 8), (150, 60, 10), (240, 140, 30)]
+PUMPKIN = [(120, 46, 10), (188, 76, 12), (230, 108, 18), (255, 140, 30), (255, 172, 64)]
+PUMPKIN_LIT = [(160, 64, 10), (214, 94, 14), (244, 126, 24), (255, 156, 44), (255, 188, 92)]
+FLESH = [(84, 34, 8), (118, 48, 10), (156, 64, 12), (196, 86, 16), (226, 110, 22)]
+FLESH_LIT = [(160, 70, 12), (200, 92, 16), (232, 118, 22), (252, 142, 32), (255, 172, 60)]
+CHAR = [(22, 22, 26), (38, 38, 44), (56, 56, 64), (78, 78, 88), (106, 106, 118)]
+CHAR_LIT = [(40, 40, 46), (60, 60, 68), (84, 84, 94), (112, 112, 124), (146, 146, 158)]
+VINE = [(26, 72, 20), (44, 110, 26), (70, 146, 34), (104, 182, 46), (146, 214, 70)]
+STEM = [(34, 90, 22), (54, 124, 28), (80, 158, 36), (112, 190, 50), (156, 218, 76)]
+PLATE = [(140, 54, 8), (200, 84, 12), (240, 116, 20), (255, 146, 32), (255, 180, 72)]
+EMBER = [(10, 4, 3), (24, 9, 5), (60, 20, 8), (140, 56, 10), (240, 140, 30)]
 CANDY = {
-    "red": [(150, 20, 28), (200, 36, 44), (232, 60, 64), (250, 120, 120), (255, 232, 232)],
-    "pink": [(160, 24, 100), (206, 40, 130), (240, 70, 160), (255, 130, 195), (255, 220, 238)],
-    "purple": [(70, 24, 120), (104, 40, 164), (140, 64, 200), (178, 110, 228), (226, 190, 250)],
-    "green": [(40, 110, 24), (70, 150, 30), (110, 190, 46), (160, 226, 80), (226, 250, 190)],
-    "yellow": [(190, 140, 10), (232, 180, 20), (255, 214, 50), (255, 236, 120), (255, 250, 214)],
-    "orange": [(190, 80, 10), (230, 110, 16), (255, 150, 30), (255, 190, 80), (255, 232, 180)],
-    "blue": [(24, 64, 150), (40, 100, 196), (70, 140, 232), (130, 186, 250), (214, 236, 255)],
+    "red": [(140, 18, 26), (200, 36, 44), (236, 66, 68), (255, 140, 140), (255, 240, 240)],
+    "pink": [(150, 22, 94), (204, 40, 130), (240, 72, 162), (255, 140, 200), (255, 226, 240)],
+    "purple": [(64, 22, 112), (100, 40, 162), (140, 66, 200), (182, 116, 230), (232, 200, 252)],
+    "green": [(34, 100, 22), (66, 148, 30), (108, 190, 46), (164, 228, 84), (230, 252, 196)],
+    "yellow": [(176, 130, 8), (230, 178, 20), (255, 214, 50), (255, 238, 124), (255, 250, 220)],
+    "orange": [(180, 72, 8), (230, 108, 16), (255, 150, 30), (255, 192, 84), (255, 234, 184)],
+    "blue": [(22, 58, 142), (40, 98, 194), (72, 142, 234), (134, 190, 250), (218, 238, 255)],
 }
 MIX_ORDER = ("red", "pink", "purple", "green", "yellow", "orange", "blue")
 
@@ -73,55 +73,55 @@ def _along(P, face):
     return P[0] if face in ("north", "south", "up", "down") else P[2]
 
 
+def dith(P):
+    """A faint ordered dither on the 0.25-unit texel grid: smooths band edges without adding noise."""
+    ix, iy, iz = (int(math.floor(c * 4 + 1e-6)) for c in P)
+    return (BAYER[ix % 4][(iy + iz) % 4] / 16.0 - 0.5) * 0.05
+
+
 def paint_pumpkin(P, face, lit=False):
     x, y, z = P
     u = _along(P, face)
     pal = PUMPKIN_LIT if lit else PUMPKIN
     rib = math.floor(u / 2.0)
-    within = (u / 2.0) - rib
-    v = 0.66 + 0.06 * (hsh(rib, 7) - 0.5) * 2
-    if within < 0.18:
-        v -= 0.20                         # groove between ribs
-    elif within < 0.45:
-        v -= 0.05
-    elif within > 0.8:
-        v += 0.09
-    if face in ("up",):
-        v += 0.12
-        rib2 = math.floor(z / 2.0)
-        if ((z / 2.0) - rib2) < 0.2:
-            v -= 0.14
+    w = (u / 2.0) - rib
+    v = 0.58 + 0.04 * (math.floor(hsh(rib, 7) * 3) - 1)      # each rib one of three flat tones
+    if w < 0.125:
+        v -= 0.30                                            # groove, one texel wide pair
+    elif w < 0.25:
+        v -= 0.12
+    elif w > 0.8:
+        v += 0.10
+    elif w > 0.68:
+        v += 0.05
+    if face == "up":
+        v += 0.14
+        w2 = (z / 2.0) - math.floor(z / 2.0)
+        if w2 < 0.125:
+            v -= 0.22
     elif face == "down":
-        v -= 0.25
-    v += (tex(x, y, z) - 0.5) * 0.09 + 0.07
-    v -= max(0.0, (6.0 - y)) * 0.012     # a little darker toward the ground
-    d = (BAYER[int(math.floor(x * 2)) % 4][int(math.floor(y * 2 + z * 2)) % 4] / 16.0 - 0.5) * 0.06
-    return ramp(pal, v, d)
+        v -= 0.30
+    v -= 0.05 * max(0.0, min(1.0, (5.0 - y) / 4.0))           # a step darker near the ground
+    return ramp(pal, v + dith(P))
 
 
 def paint_flesh(P, face):
     x, y, z = P
-    v = 0.52 + (tex(x, y, z) - 0.5) * 0.3
-    v += 0.16 * math.sin(((x + z) * 1.7)) * 0.5
-    if face == "up":
-        v -= 0.05
-    # seeds: sparse pale flecks
-    if tex(x * 1.3, y, z * 0.9) > 0.985:
-        return (226, 184, 110)
-    # deeper toward the floor of the cavity
-    v -= max(0.0, (6.0 - y)) * 0.03
-    return ramp(FLESH, v)
+    v = 0.5 + (0.0 if face != "up" else -0.06)
+    if face not in ("up", "down") and (y * 2) % 4 < 0.5:
+        v -= 0.16                                            # plank lines
+    v -= 0.04 * max(0.0, (6.0 - y))
+    if tex(x * 1.3, y, z * 0.9) > 0.992:
+        return (232, 190, 118)                               # a rare seed
+    return ramp(FLESH, v + dith(P))
 
 
 def paint_flesh_lit(P, face):
-    """The lid's inside and the upper cavity: candle-lit, with faint horizontal plank lines like the concept art."""
     x, y, z = P
-    v = 0.55 + (tex(x, y, z) - 0.5) * 0.22
-    if face not in ("up", "down") and (y * 2) % 4 < 0.6:
+    v = 0.58 + (0.07 if face == "down" else 0.0)
+    if face not in ("up", "down") and (y * 2) % 4 < 0.5:
         v -= 0.2
-    if face == "down":
-        v += 0.08
-    return ramp(FLESH_LIT, v)
+    return ramp(FLESH_LIT, v + dith(P))
 
 
 def paint_charcoal(P, face, lit=False):
@@ -129,80 +129,64 @@ def paint_charcoal(P, face, lit=False):
     u = _along(P, face)
     pal = CHAR_LIT if lit else CHAR
     if face in ("up", "down"):
-        cu, cv = math.floor(x / 1.75), math.floor(z / 1.75)
-        fu, fv = (x / 1.75) - cu, (z / 1.75) - cv
+        cu, cv, fu, fv = math.floor(x / 1.5), math.floor(z / 1.5), (x / 1.5) % 1, (z / 1.5) % 1
     else:
-        cu, cv = math.floor(u / 1.75), math.floor(y / 1.5)
-        fu, fv = (u / 1.75) - cu, (y / 1.5) - cv
-    base = 0.34 + (hsh(cu, cv, 3) - 0.5) * 0.22
-    if fv > 0.78 or fu > 0.86:
-        base -= 0.20          # shadow edge (bottom/right of each block)
-    elif fv < 0.2 or fu < 0.12:
-        base += 0.16          # lit edge
+        cu, cv, fu, fv = math.floor(u / 1.5), math.floor(y / 1.5), (u / 1.5) % 1, (y / 1.5) % 1
+    base = 0.42 + 0.08 * (math.floor(hsh(cu, cv, 3) * 3) - 1)    # each block one of three flat tones
+    if fv < 0.1 or fu < 0.1:
+        base -= 0.26                                         # mortar
+    elif fv < 0.22 or fu < 0.22:
+        base += 0.16                                         # lit edge
+    elif fv > 0.88 or fu > 0.9:
+        base -= 0.1                                          # shadow edge
     if face == "up":
-        base += 0.12
-    base += (tex(x, y, z) - 0.5) * 0.12
-    return ramp(pal, base)
+        base += 0.1
+    return ramp(pal, base + dith(P))
 
 
 def paint_vine(P, face, lit=False):
     x, y, z = P
-    v = 0.45 + (tex(x, y, z) - 0.5) * 0.5 + (0.18 if lit else 0.0)
+    v = 0.5 + (0.2 if lit else 0.0) + 0.1 * (math.floor(hsh(*(math.floor(c * 2) for c in P)) * 3) - 1)
     return ramp(VINE, v)
 
 
 def paint_leaf(P, face):
     x, y, z = P
-    v = 0.55 + (tex(x, y, z) - 0.5) * 0.7
-    if abs(((x + y + z) * 2) % 4 - 2) < 0.4:
-        v -= 0.25                      # vein
+    v = 0.58 + 0.08 * (math.floor(hsh(*(math.floor(c * 2) for c in P)) * 3) - 1)
+    if abs(((x + y + z) * 2) % 4 - 2) < 0.3:
+        v -= 0.24
     return ramp(VINE, v)
 
 
 def paint_stem(P, face, lit=False):
     x, y, z = P
-    v = 0.5 + (tex(x, y, z) - 0.5) * 0.35
     u = _along(P, face)
+    v = 0.5 + (0.12 if lit else 0.0)
     if face not in ("up", "down") and (u * 2) % 2 < 0.5:
-        v -= 0.16                      # faint vertical grain
+        v -= 0.16
     if face == "up":
-        v += 0.28
-    if lit:
-        v += 0.12
-    return ramp(STEM, v)
+        v += 0.26
+    return ramp(STEM, v + dith(P))
 
 
 def paint_plate(P, face):
-    x, y, z = P
-    v = 0.62 + (tex(x, y, z) - 0.5) * 0.14
-    if face == "down":
-        v -= 0.25
-    elif face in ("east", "west"):
-        v -= 0.10
-    return ramp(PLATE, v)
+    v = 0.6 - (0.28 if face == "down" else 0.12 if face in ("east", "west") else 0.0)
+    return ramp(PLATE, v + dith(P))
+
+
+def paint_plate_step(P, face):
+    """The lower step of the face plate: a shade darker than the raised face, so the stepped bevel reads."""
+    return ramp(PLATE, 0.36 + dith(P))
 
 
 def paint_plate_face(P, face, island_pos, island_size):
-    """The front of the plate: bevelled so the cut-outs read as carved, lit from the top-left like the art."""
-    x, y, z = P
-    v = 0.52 + (tex(x, y, 0) - 0.5) * 0.12
-    i, j = island_pos
-    w, h = island_size
-    if j == 0 and h > 1:
-        v += 0.2
-    elif j == h - 1 and h > 1:
-        v -= 0.2
-    return ramp(PLATE, v)
+    return ramp(PLATE, 0.66 + dith(P))
 
 
 def paint_plate_back(P, face):
     x, y, z = P
-    v = 0.1 + (tex(x, y, z) - 0.5) * 0.1
-    # a faint ember glow low in the cut-outs: the candle inside
-    glow = max(0.0, 1.0 - abs(y - 4.5) / 3.0) * 0.18
-    if face == "north":
-        return ramp(EMBER, min(1.0, 0.06 + glow + (tex(x, y, z) - 0.5) * 0.1))
-    return ramp(EMBER, v)
+    glow = max(0.0, 1.0 - abs(y - 4.8) / 3.0) * 0.2
+    return ramp(EMBER, (0.06 + glow) if face == "north" else 0.12)
 
 
 def paint_lid_under(P, face):
@@ -216,21 +200,15 @@ def candy_stripe(kind, P, wrap=False, along=0):
     x, y, z = P
     pal = CANDY[kind]
     if wrap:
-        # twist fins: pale, creased
-        v = 0.78 + (tex(x, y, z) - 0.5) * 0.2
-        if (math.floor(y * 2) + math.floor(z * 2) + math.floor(x * 2)) % 2:
-            v -= 0.22
+        v = 0.8 - (0.22 if (math.floor(y * 2) + math.floor(z * 2) + math.floor(x * 2)) % 2 else 0.0)
         return ramp(pal, v)
     chk = (math.floor(x * 1.34) + math.floor(y * 1.34) + math.floor(z * 1.34)) % 2
-    v = 0.92 if chk else 0.46
-    v += (tex(x, y, z) - 0.5) * 0.14
-    return ramp(pal, v)
+    return ramp(pal, 0.94 if chk else 0.46)
 
 
 def paint_candy_mix(P, face):
-    x, y, z = P
-    k = MIX_ORDER[int(hsh(math.floor(x * 1.3), math.floor(y * 1.3), math.floor(z * 1.3), 5) * len(MIX_ORDER)) % len(MIX_ORDER)]
-    return ramp(CANDY[k], 0.25 + hsh(math.floor(x * 2), math.floor(y * 2), math.floor(z * 2), 9) * 0.6)
+    k = MIX_ORDER[int(hsh(*(math.floor(c * 1.3) for c in P), 5) * len(MIX_ORDER)) % len(MIX_ORDER)]
+    return ramp(CANDY[k], 0.3 + 0.5 * hsh(*(math.floor(c * 2) for c in P), 9))
 
 
 def paint(mat, P, face, ipos, isize):
@@ -258,6 +236,8 @@ def paint(mat, P, face, ipos, isize):
         return paint_stem(P, face, lit=True)
     if mat == "plate":
         return paint_plate(P, face)
+    if mat == "plate_step":
+        return paint_plate_step(P, face)
     if mat == "plate_face":
         return paint_plate_face(P, face, ipos, isize)
     if mat == "plate_back":
@@ -318,6 +298,25 @@ def pack(items, width):
     return pos, y + row_h
 
 
+NO_BEVEL = ("flesh", "candy_mix", "plate_back", "lid_under")
+
+
+def bevel_edge(c, mat, k, j, w, h):
+    """The one-texel outline that makes each face read as a clean tile: lit on the top/left edge, shaded on the bottom/right."""
+    if mat in NO_BEVEL or h < 2 or (w < 2):
+        return c
+    f = 1.0
+    if j == 0 and h >= 3:
+        f *= 1.14
+    elif j == h - 1 and h >= 3:
+        f *= 0.74
+    if w >= 4 and k == 0:
+        f *= 1.08
+    elif w >= 4 and k == w - 1:
+        f *= 0.84
+    return tuple(max(0, min(255, int(round(v * f)))) for v in c)
+
+
 def build_atlas(model, size=None):
     """Paint every face. Returns (png image, {(element index, face): (x, y, w, h)}, size)."""
     items = []
@@ -342,7 +341,8 @@ def build_atlas(model, size=None):
         for j in range(h):
             for k in range(w):
                 P = face_point(e.frm, e.to, f, (k + 0.5) / w, (j + 0.5) / h)
-                arr[y + j, x + k] = (*paint(mat, P, f, (k, j), (w, h)), 255)
+                c = paint(mat, P, f, (k, j), (w, h))
+                arr[y + j, x + k] = (*bevel_edge(c, mat, k, j, w, h), 255)
         # extrude the border texels into the padding
         for d in range(1, PAD + 1):
             arr[y - d, x:x + w] = arr[y, x:x + w]

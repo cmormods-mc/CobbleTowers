@@ -138,25 +138,30 @@ PLATE_MASK = [          # 11 columns x 12 rows, one cell = 0.5 unit; '#' orange,
     "###########",
     "#...###...#",
     "#...###...#",
+    "#...###...#",
     "##.#####.##",
-    "###########",
     "###########",
     "#..#...#..#",
     "#.........#",
-    "##..#.#..##",
+    "#...#.#...#",
     "###########",
     " ######### ",
 ]
 PLATE_X0, PLATE_TOP, CELL = 5.25, 8.75, 0.5
-PLATE_Z_FRONT, PLATE_Z_MID, PLATE_Z_BACK = 1.2, 1.8, 2.5
+# three layers in depth: the dark backing (the candle inside), a bezel layer 0.25 wider than the face (so the silhouette and every hole step
+# down in two stages) and the raised face. The plate stands 1.7 units proud of the rim front (z 2.0).
+PLATE_Z_FRONT, PLATE_Z_MID, PLATE_Z_BACK = 0.3, 1.5, 2.5
+PLATE_Z_STEP, PLATE_Z_BODY = 1.1, 2.1
 
 
-def _plate(m: Model):
-    P = "face_plate"
-    rows = [[c == "#" for c in r] for r in PLATE_MASK]
+def _erode(rows):
     h, w = len(rows), len(rows[0])
-    m.box(P, "plate", "backing", (PLATE_X0, PLATE_TOP - h * CELL, PLATE_Z_MID), (PLATE_X0 + w * CELL, PLATE_TOP, PLATE_Z_BACK), "plate_back",
-          skip=("south", "up", "down", "east", "west"))
+    return [[rows[r][c] and all(0 <= r + dr < h and 0 <= c + dc < w and rows[r + dr][c + dc] for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+             for c in range(w)] for r in range(h)]
+
+
+def _runs(m, rows, z0, z1, mat_north, tag, grow=0.0):
+    h, w = len(rows), len(rows[0])
     for r, row in enumerate(rows):
         c = 0
         while c < w:
@@ -172,8 +177,20 @@ def _plate(m: Model):
                 skip.append("up")
             if r < h - 1 and all(rows[r + 1][c0:c]):
                 skip.append("down")
-            m.box(P, "plate", f"r{r}_{c0}", (PLATE_X0 + c0 * CELL, y1 - CELL, PLATE_Z_FRONT), (PLATE_X0 + c * CELL, y1, PLATE_Z_MID), "plate",
-                  skip=tuple(skip), mats={"north": "plate_face"})
+            if grow:
+                skip = ["south"]
+            m.box("face_plate", "plate", f"{tag}{r}_{c0}", (PLATE_X0 + c0 * CELL - grow, y1 - CELL - grow, z0),
+                  (PLATE_X0 + c * CELL + grow, y1 + grow, z1), "plate", skip=tuple(skip), mats={"north": mat_north})
+
+
+def _plate(m: Model):
+    P = "face_plate"
+    rows = [[c == "#" for c in r] for r in PLATE_MASK]
+    h, w = len(rows), len(rows[0])
+    m.box(P, "plate", "backing", (PLATE_X0, PLATE_TOP - h * CELL, PLATE_Z_BODY), (PLATE_X0 + w * CELL, PLATE_TOP, PLATE_Z_BACK), "plate_back",
+          skip=("south", "up", "down", "east", "west"))
+    _runs(m, rows, PLATE_Z_STEP, PLATE_Z_BODY, "plate_step", "b", grow=0.25)     # the bezel: 0.25 wider all round, holes 0.25 narrower
+    _runs(m, rows, PLATE_Z_FRONT, PLATE_Z_STEP, "plate_face", "f")
 
 
 # lid ----------------------------------------------------------------------------------------------------------------------------------
