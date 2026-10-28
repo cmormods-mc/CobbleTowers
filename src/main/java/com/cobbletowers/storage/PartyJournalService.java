@@ -77,6 +77,8 @@ public final class PartyJournalService {
         // so the new journal records the real layout and not a half-moved one.
         TowerPartyJournalStore store = TowerPartyJournalStore.get(server);
         if (store.entryFor(player.getUUID()).isPresent()) restoreNow(server, player);
+        if (store.hasPending(player.getUUID())
+                || com.cobbletowers.battle.cobblemon.RentalStorage.hasRentalInParty(player)) return Lock.FAILED;
 
         PartyStorage.Snapshot snapshot = PartyStorage.snapshot(player);
         Plan plan = PartyArrangement.plan(snapshot.contents(), snapshot.pcSlots(), chosen);
@@ -107,14 +109,15 @@ public final class PartyJournalService {
     }
 
     /**
-     * Puts a player's collection back and deletes their journal. Idempotent; a missing Pokemon is reported and the
-     * rest restored.
+     * Puts a player's collection back. The journal is retired only after verified restoration;
+     * missing originals and refused moves retain it for recovery.
      */
     public static void restoreNow(MinecraftServer server, ServerPlayer player) {
         TowerPartyJournalStore store = TowerPartyJournalStore.get(server);
         Optional<PartyJournalEntry> found = store.entryFor(player.getUUID());
         if (found.isEmpty()) return;
         PartyJournalEntry entry = found.get();
+        if (PartyStorage.inBattle(player)) return;
 
         // Rentals first (P33): they occupy the party, and the originals cannot come back to a full one. Deleted by
         // the ids the
@@ -125,11 +128,29 @@ public final class PartyJournalService {
         }
 
         PartyStorage.Snapshot snapshot = PartyStorage.snapshot(player);
+        // Check recorded ids too: a damaged rental tag must not cause us to forget an outstanding loan.
+        if (!java.util.Collections.disjoint(snapshot.contents().values(), entry.rentals())) {
+            TowerLog.errorOnce("rental-removal-" + player.getUUID(),
+                    "Rental removal is incomplete for " + player.getUUID() + "; party journal kept for recovery");
+            return;
+        }
         Restoration restoration = PartyArrangement.restore(snapshot.contents(), snapshot.pcSlots(), entry.originals());
 
         Map<UUID, Slot> now = new HashMap<>();
         for (Map.Entry<Slot, UUID> held : snapshot.contents().entrySet()) now.put(held.getValue(), held.getKey());
-        PartyStorage.apply(player, restoration.placements(), now);
+        if (!PartyStorage.apply(player, restoration.placements(), now)) {
+            TowerLog.warn("Party restoration for {} rolled back; keeping the journal for retry", player.getUUID());
+            return;
+        }
+
+        // Store callbacks may refuse a move without throwing. Verify the actual layout before retiring the journal.
+        if (!restorationComplete(restoration, PartyStorage.snapshot(player).contents())) {
+            TowerLog.errorOnce("restore-incomplete-" + player.getUUID(),
+                    "Party restoration is incomplete for " + player.getUUID() + "; journal retained for recovery");
+            if (TOLD_FULL.add(player.getUUID())) player.sendSystemMessage(Component.literal(
+                    "Your party restoration is pending. Your tower journal has been kept; please contact an administrator if it persists."));
+            return;
+        }
 
         if (!restoration.stranded().isEmpty()) {
             // Nowhere to put them: keep the journal so a later sweep can try again once there is room.
@@ -148,12 +169,8 @@ public final class PartyJournalService {
 
         TowerLog.info("Restored {}'s Pokemon from run {} ({} moved, {} missing, {} elsewhere)", player.getUUID(),
                 entry.runId(), restoration.placements().size(), restoration.missing().size(), restoration.relocated().size());
-        if (!restoration.placements().isEmpty() || !restoration.missing().isEmpty()) {
+        if (!restoration.placements().isEmpty()) {
             player.sendSystemMessage(Component.literal("Your party was put back as it was before the tower."));
-        }
-        if (!restoration.missing().isEmpty()) {
-            player.sendSystemMessage(Component.literal(restoration.missing().size()
-                    + " Pokemon that were moved for the run could not be found and were not restored."));
         }
         if (!restoration.relocated().isEmpty()) {
             player.sendSystemMessage(Component.literal(restoration.relocated().size()
@@ -170,10 +187,26 @@ public final class PartyJournalService {
         for (PartyJournalEntry entry : store.all()) {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.player());
             if (player == null) continue;
-            if (!runIsOverFor(entry)) continue;
-            if (PartyStorage.inBattle(player)) continue;
             // One player's broken entry must not keep everyone else's Pokemon from coming back.
             try {
+                Optional<PersistedRun> run = TowerRuns.get(entry.runId());
+                Optional<PersistedRun> current = TowerRuns.forPlayer(entry.player());
+                // Old recovery work must never rearrange the party or terminate a newer run.
+                if (current.isPresent() && current.get().state().isLive()
+                        && !current.get().runId().equals(entry.runId())) continue;
+                if (rentalNeedsExit(entry, run,
+                        player.level().dimension().equals(com.cobbletowers.instance.TowerDimension.LEVEL), player.isAlive())) {
+                    com.cobbletowers.runtime.TowerPresence.leave(server, player, System.currentTimeMillis());
+                }
+                if (!runIsOverFor(entry)) continue;
+                // A parked rental run cannot safely resume once its borrowed team is returned.
+                if (!entry.rentals().isEmpty() && run.isPresent()
+                        && run.get().state() == com.cobbletowers.api.tower.RunState.RECOVERY_REQUIRED) {
+                    com.cobbletowers.runtime.RunTransitionService.apply(server, entry.runId(),
+                            com.cobbletowers.api.tower.RunEvent.RECOVERY_ABANDONED, System.currentTimeMillis());
+                }
+                com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter.endRentalBattleOf(player, entry.rentals());
+                if (PartyStorage.inBattle(player)) continue;
                 restoreNow(server, player);
             } catch (RuntimeException ex) {
                 TowerLog.errorOnce("restore-" + entry.player(), "Could not restore the Pokemon of " + entry.player(), ex);
@@ -181,10 +214,26 @@ public final class PartyJournalService {
         }
     }
 
+    static boolean restorationComplete(Restoration restoration, Map<Slot, UUID> actual) {
+        return restoration.missing().isEmpty() && restoration.placements().entrySet().stream()
+                .allMatch(move -> move.getKey().equals(actual.get(move.getValue())));
+    }
+
+    /** Unexpected death or displacement ends a rental membership, but startup has not teleported players yet. */
+    static boolean rentalNeedsExit(PartyJournalEntry entry, Optional<PersistedRun> run, boolean inTower, boolean alive) {
+        if (entry.rentals().isEmpty() || run.isEmpty() || !run.get().state().isLive()) return false;
+        if (!alive) return true;
+        return !inTower && switch (run.get().state()) {
+            case FLOOR_READY, ENCOUNTER_ACTIVE, FLOOR_RESOLVING, INTERMISSION, NEXT_FLOOR_READY -> true;
+            default -> false;
+        };
+    }
+
     /** True when the run that moved these Pokemon no longer needs them where they are. */
     static boolean runIsOverFor(PartyJournalEntry entry) {
         Optional<PersistedRun> run = TowerRuns.get(entry.runId());
-        if (run.isEmpty() || run.get().isRetired()) return true;
+        if (run.isEmpty() || run.get().isRetired()
+                || (!entry.rentals().isEmpty() && !run.get().state().isLive())) return true;
         for (PersistedParticipant participant : run.get().participants()) {
             if (participant.playerId().equals(entry.player())) {
                 return participant.state().membership() == MembershipState.VOLUNTARILY_LEFT;

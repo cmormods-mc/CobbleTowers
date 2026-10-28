@@ -162,7 +162,7 @@
 /* ---- the route between floors (P50) ---- */
 .fd .rk-battle { --k: #3b82d6; } .fd .rk-forge { --k: #e8702a; } .fd .rk-rest { --k: #3fa34d; } .fd .rk-shrine { --k: #8c5cc9; } .fd .rk-gambler { --k: #d9468f; }
 .fd .rk-vault { --k: #0e9aa7; } .fd .rk-library { --k: #c98a06; } .fd .rk-pool { --k: #2f7fd0; } .fd .rk-relic { --k: #d6264e; }
-.fd .droute { position: relative; flex: 1; min-height: calc(var(--u) * 22); margin: 0; background: var(--surf); border: calc(var(--u) * .15) solid var(--line); border-radius: calc(var(--u) * 1.4); box-shadow: 0 calc(var(--u) * .3) 0 var(--edge); overflow: hidden; }
+.fd .droute { position: relative; flex: 1; min-height: calc(var(--u) * 22); margin: 0; background: var(--surf); border: calc(var(--u) * .15) solid var(--line); border-radius: calc(var(--u) * 1.4); box-shadow: 0 calc(var(--u) * .3) 0 var(--edge); overflow-x: auto; overflow-y: hidden; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--faint) var(--surf); }
 .fd .droutein { position: absolute; left: calc(var(--u) * 6.4); right: calc(var(--u) * .6); top: 0; bottom: 0; }
 .fd .dheads { position: absolute; left: 0; right: 0; top: calc(var(--u) * .8); height: calc(var(--u) * 1.6); }
 .fd .dhead { position: absolute; transform: translateX(-50%); font: 700 calc(var(--u) * .95) Outfit; letter-spacing: .08em; text-transform: uppercase; color: var(--mut); white-space: nowrap; } .fd .dhead.now { color: var(--acc); }

@@ -1,6 +1,6 @@
 // The Frontier Desk look for the pop-ups and the last full screens (P51 slice 7): the rental draft table, the reward reveal, the vendor, the
 // scouting report, the spectator panel and the waiting page. Same requests and the same pure helpers as the native versions.
-import { useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 import { html } from '../html.js';
 import { act, closeGui } from '../bridge.js';
 import { update } from '../store.js';
@@ -18,6 +18,7 @@ import { vendorGlyph } from './vendorView.js';
 import { ATLAS } from '../gen/atlas.js';
 import { TIER_LABEL, bestTier, grantTier } from './rewardView.js';
 import { Logo } from './Logo.js';
+import { useStepScroll } from './stepScroll.js';
 
 const step = (i, by, n) => (n ? (((i + by) % n) + n) % n : 0);
 
@@ -42,6 +43,8 @@ export function DeskDraft({ draft }) {
 
 /** The reward reveal over whatever is on screen: one grant a page, in a gold-and-lapis frame that grows with how rare the best find is. */
 export function DeskReward({ reward, onClose }) {
+  const loot = useRef(null);
+  useStepScroll(loot);
   const [page, setPage] = useState(0);
   const grants = reward.grants, at0 = Math.min(page, Math.max(0, grants.length - 1));
   const grant = grants[at0];
@@ -51,9 +54,9 @@ export function DeskReward({ reward, onClose }) {
   return html`<div class="fd dover" role="dialog" aria-label="Rewards secured"><div class=${'dmodal dreward t-' + mood}>
     <span class="lbl">Rewards secured</span><h3 style="font-size:calc(var(--u) * 2.4)">Through floor ${reward.floorIndex}</h3>
     ${grant ? html`<div class=${'dgrant dt-' + tier} key=${at0}>
-      <div class="dplinth"><i class="drays"></i><span class="dring"><${GrantPicture} grant=${grant} w=${9} /></span><i class="dsp s1"></i><i class="dsp s2"></i><i class="dsp s3"></i><i class="dsp s4"></i></div>
+      <div class="dplinth"><i class="drays"></i><span class="dring"><${GrantPicture} grant=${grant} w=${7} /></span><i class="dsp s1"></i><i class="dsp s2"></i><i class="dsp s3"></i><i class="dsp s4"></i></div>
       <b>${label}</b><span>× ${grant.amount}</span>${TIER_LABEL[tier] ? html`<em class="dtier">${TIER_LABEL[tier]}</em>` : null}</div>` : html`<div class="empty">No rewards in this grant.</div>`}
-    ${grants.length > 1 ? html`<div class="dchips" role="group" aria-label="All rewards">${grants.map((g, i) => html`<button key=${i} class=${'dchip' + (i === at0 ? ' on' : '') + ' dt-' + grantTier(g)} aria-label=${'Reward ' + (i + 1) + ' of ' + grants.length} aria-pressed=${i === at0}
+    ${grants.length > 1 ? html`<div class="dchips" ref=${loot} tabIndex=${0} role="group" aria-label="All rewards">${grants.map((g, i) => html`<button key=${i} class=${'dchip' + (i === at0 ? ' on' : '') + ' dt-' + grantTier(g)} aria-label=${'Reward ' + (i + 1) + ' of ' + grants.length} aria-pressed=${i === at0}
       onClick=${() => setPage(i)}><${GrantPicture} grant=${g} w=${3.2} /></button>`)}</div>` : null}
     ${grants.length > 1 ? html`<div class="dpager"><button class="dbtn gh dsm" aria-label="Previous reward" onClick=${() => setPage(step(at0, -1, grants.length))}>‹</button><span>${at0 + 1} / ${grants.length}</span>
       <button class="dbtn gh dsm" aria-label="Next reward" onClick=${() => setPage(step(at0, 1, grants.length))}>›</button></div>` : null}

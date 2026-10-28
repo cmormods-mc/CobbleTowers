@@ -191,6 +191,9 @@ public final class RunExitService {
     }
 
     static void evacuate(MinecraftServer server, ServerPlayer player) {
+        // Last exit boundary: also covers a missing/retired run with a stale battle HUD.
+        com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter.endBattleOf(player);
+        com.cobbletowers.spectator.SpectatorPresentation.stopSpectating(player);
         TowerReturnStore store = TowerReturnStore.get(server);
         Optional<ReturnPoint> point = store.pointFor(player.getUUID());
 

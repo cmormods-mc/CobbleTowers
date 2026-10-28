@@ -18,6 +18,25 @@ import org.junit.jupiter.api.Test;
 /** The open / update / replay rules, as a timeline in milliseconds. Heartbeat 8 s, load window 6 s. */
 class PageSessionTest {
 
+    @Test
+    void revivalClearsEvenWhenHudIsStillLoading() {
+        PageSession pending = new PageSession();
+        pending.offer("SpectatorPanel", "following", true, UPDATE_OR_OPEN, true, 100, 8, 6000);
+        pending.hold("SpectatorPanel", "cleared", 200);
+        assertEquals(List.of("cleared"), pending.hello(true, 300));
+        assertEquals(List.of(), pending.hello(false, 300), "HUD clear must never replace a full-screen page");
+    }
+
+    @Test
+    void nextSpectatorSessionReplacesTheClear() {
+        PageSession pending = new PageSession();
+        pending.offer("SpectatorPanel", "following", true, UPDATE_OR_OPEN, true, 100, 8, 6000);
+        pending.hello(true, 200);
+        pending.hold("SpectatorPanel", "cleared", 300);
+        assertEquals(EMIT, pending.offer("SpectatorPanel", "next teammate", true, UPDATE_OR_OPEN, true, 400, 8, 6000));
+        assertEquals(List.of("next teammate"), pending.hello(true, 500));
+    }
+
     private static final int HEARTBEAT = 8;
     private static final long LOAD = 6_000;
 

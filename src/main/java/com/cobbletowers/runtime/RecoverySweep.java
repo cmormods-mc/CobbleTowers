@@ -59,7 +59,7 @@ public final class RecoverySweep {
     /** Asks for this cell to be swept as soon as it can honestly be looked at. */
     public static void schedule(MinecraftServer server, UUID runId, int cell) {
         if (PENDING.containsKey(cell)) return;
-        CellTickets.hold(server, cell);
+        CellTickets.holdRecovery(server, cell, runId);
         PENDING.put(cell, new Pending(runId, 0, 0));
         TowerLog.info("Cell {} of interrupted run {} will be swept once its chunks are loaded", cell, runId);
     }
@@ -68,6 +68,11 @@ public final class RecoverySweep {
         for (Map.Entry<Integer, Pending> entry : Map.copyOf(PENDING).entrySet()) {
             int cell = entry.getKey();
             Pending pending = entry.getValue();
+
+            if (com.cobbletowers.instance.InstanceAllocator.runIn(cell).filter(pending.runId()::equals).isEmpty()) {
+                finish(server, cell);
+                continue;
+            }
 
             if (!chunksLoaded(server, cell)) {
                 if (pending.waited() + 1 >= LOAD_TIMEOUT_TICKS) {
@@ -105,10 +110,15 @@ public final class RecoverySweep {
     }
 
     private static void finish(MinecraftServer server, int cell) {
-        PENDING.remove(cell);
-        // The run is parked, not running: holding its chunks after the sweep would be a ticket with
-        // nothing using it, which is exactly what TDS #27 forbids.
-        CellTickets.drop(server, cell);
+        Pending pending = PENDING.remove(cell);
+        // Release only recovery's claim. A resumed run or cell clear may now need the same chunks.
+        if (pending != null) CellTickets.dropRecovery(server, cell, pending.runId());
+    }
+
+    /** A retiring run no longer needs its pending recovery scan. Cancel before verifying released tickets. */
+    public static void cancel(MinecraftServer server, UUID runId, int cell) {
+        Pending pending = PENDING.get(cell);
+        if (pending != null && pending.runId().equals(runId)) finish(server, cell);
     }
 
     /** Whether the cell's arena chunks -- the ones the ticket covers -- are actually there. */

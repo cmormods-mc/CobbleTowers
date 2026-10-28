@@ -48,11 +48,15 @@ public final class TowerCommandGuard {
     /** True when this command must not run: it has been refused and the player told. */
     public static boolean refuse(CommandSourceStack source, String commandLine) {
         if (!(source.getEntity() instanceof ServerPlayer player)) return false;
-        if (!player.level().dimension().equals(TowerDimension.LEVEL)) return false;
-        if (player.hasPermissions(2) && (player.isCreative() || player.isSpectator())) return false;
         if (!CommandRules.isBlocked(commandLine, denied)) return false;
+        boolean inside = player.level().dimension().equals(TowerDimension.LEVEL);
+        if (!inside && !com.cobbletowers.battle.cobblemon.RentalStorage.hasRentalInParty(player,
+                com.cobbletowers.persistence.TowerPartyJournalStore.get(source.getServer()).entryFor(player.getUUID())
+                        .map(com.cobbletowers.persistence.PartyJournalEntry::rentals).orElse(java.util.List.of()))) return false;
+        if (player.hasPermissions(2) && (player.isCreative() || player.isSpectator())) return false;
         player.sendSystemMessage(Component.literal("/" + CommandRules.wordOf(commandLine)
-                + " is turned off inside the tower. /tower leave takes you home.").withStyle(ChatFormatting.RED));
+                + (inside ? " is turned off inside the tower. /tower leave takes you home."
+                        : " is turned off until your rental party has been restored.")).withStyle(ChatFormatting.RED));
         return true;
     }
 }

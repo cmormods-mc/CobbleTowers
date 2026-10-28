@@ -169,9 +169,13 @@ public final class TowerPresence {
         UUID runId = found.get().runId();
 
         DISCONNECTED_AT.remove(player.getUUID());
-        TowerEncounters.dropPlayer(server, runId, player.getUUID(), "left the run", now);
-        Optional<PersistedRun> after =
-                ParticipantService.update(server, runId, player.getUUID(), ParticipantState::left, now);
+        // Persist the irreversible membership change before callbacks can resolve the floor or throw.
+        ParticipantService.update(server, runId, player.getUUID(), ParticipantState::left, now);
+        guarded("drop the departing player", () ->
+                TowerEncounters.dropPlayer(server, runId, player.getUUID(), "left the run", now));
+        // Boss battles belong to CobbleRaids and are not in the floor adapter's battle index.
+        guarded("end the departing player's battle", () -> CobblemonBattleAdapter.endBattleOf(player));
+        Optional<PersistedRun> after = TowerRuns.get(runId);
         TowerLog.info("Player {} left run {}", player.getGameProfile().getName(), runId);
 
         if (after.isPresent() && !anybodyCouldReturn(after.get(), now)) {

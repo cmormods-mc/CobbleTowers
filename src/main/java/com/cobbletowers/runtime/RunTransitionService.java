@@ -131,6 +131,9 @@ public final class RunTransitionService {
         }
         Outcome outcome = decide(run, event, now);
         if (outcome instanceof Move move) {
+            if (event == RunEvent.RECOVERY_COMPLETED && move.next().cell().isPresent()) {
+                com.cobbletowers.instance.CellTickets.hold(server, move.next().cell().getAsInt());
+            }
             TowerRuns.save(server, move.next(), move.checkpoint());
             TowerLog.info("Run {} {} -> {} on {}{}", runId, move.from(), move.next().state(), event,
                     move.checkpoint() ? " [checkpoint " + move.key() + "]" : "");
@@ -237,17 +240,20 @@ public final class RunTransitionService {
     public static void releaseCell(MinecraftServer server, PersistedRun run, long now) {
         OptionalInt cell = run.cell();
         if (cell.isEmpty()) return;
-        // The clearing is done a slice per tick first; the exit sweep comes back to finish the release once it is clean.
-        if (!com.cobbletowers.instance.CellClearJobs.ensureClear(server, cell.getAsInt())) {
-            TowerLog.info("Run {} ended; its cell {} is being cleared in slices before it is released", run.runId(), cell.getAsInt());
-            return;
-        }
         // A cell another run now holds is not this run's to reset: only its record of it is stale.
         Optional<UUID> holder = InstanceAllocator.runIn(cell.getAsInt());
-        if (holder.isPresent() && !holder.get().equals(run.runId())) {
+        if (holder.isEmpty() || !holder.get().equals(run.runId())) {
             TowerLog.warn("Run {} names cell {}, which run {} holds; dropping the stale claim without touching it",
-                    run.runId(), cell.getAsInt(), holder.get());
+                    run.runId(), cell.getAsInt(), holder.map(UUID::toString).orElse("none"));
             TowerRuns.save(server, run.withCell(OptionalInt.empty(), now), true);
+            return;
+        }
+        // Transfer recovery's hold to cleanup before releasing it, so the chunks never lose their ticket in between.
+        com.cobbletowers.instance.CellTickets.hold(server, cell.getAsInt());
+        RecoverySweep.cancel(server, run.runId(), cell.getAsInt());
+        // Only the current tenant may schedule clearing, and the job rechecks that lease each slice.
+        if (!com.cobbletowers.instance.CellClearJobs.ensureClear(server, cell.getAsInt(), run.runId())) {
+            TowerLog.info("Run {} ended; its cell {} is being cleared in slices before it is released", run.runId(), cell.getAsInt());
             return;
         }
         com.cobbletowers.vendor.VendorNpc.despawn(server, run);

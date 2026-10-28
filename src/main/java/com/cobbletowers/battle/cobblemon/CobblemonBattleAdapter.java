@@ -135,6 +135,10 @@ public final class CobblemonBattleAdapter {
 
     private static Optional<UUID> start(ServerLevel level, ServerPlayer player, EncounterSnapshot snapshot,
                                         BlockPos where, UUID runId, int floorIndex, boolean exhibition) {
+        // Victory closes the battle before the party's recall animation releases its busy locks.
+        // Spawning first and then getting BusyError can leave a client-only send-out ghost.
+        // The existing next-opponent retry waits without creating that throwaway entity.
+        if (!exhibition && !partyReady(player)) return Optional.empty();
         PokemonEntity opponent = spawn(level, snapshot, where);
         if (opponent == null) return Optional.empty();
 
@@ -168,6 +172,15 @@ public final class CobblemonBattleAdapter {
         TowerLog.info("Floor {} battle {} started{}: {} vs {} at level {}", floorIndex, battleId,
                 exhibition ? " (Echo duel)" : "", player.getGameProfile().getName(), opponentName, snapshot.level());
         return Optional.of(battleId);
+    }
+
+    private static boolean partyReady(ServerPlayer player) {
+        if (BattleRegistry.getBattleByParticipatingPlayer(player) != null) return false;
+        for (var pokemon : com.cobblemon.mod.common.Cobblemon.INSTANCE.getStorage().getParty(player)) {
+            PokemonEntity entity = pokemon.getEntity();
+            if (entity != null && entity.isBusy()) return false;
+        }
+        return true;
     }
 
     private static void register(UUID battleId, Binding binding) {
@@ -483,19 +496,34 @@ public final class CobblemonBattleAdapter {
     public static boolean endBattleOf(ServerPlayer player) {
         try {
             PokemonBattle battle = BattleRegistry.getBattleByParticipatingPlayer(player);
-            if (battle == null || battle.getEnded()) return false;
             onServerThread(player.getServer(), () -> {
                 try {
-                    if (!battle.getEnded()) battle.end();
+                    if (battle != null) TowerBattleTermination.end(battle);
                 } catch (RuntimeException ex) {
                     TowerLog.error("Could not end the battle of " + player.getUUID(), ex);
+                } finally {
+                    if (BattleRegistry.getBattleByParticipatingPlayer(player) == null) {
+                        new com.cobblemon.mod.common.net.messages.client.battle.BattleEndPacket().sendToPlayer(player);
+                    }
                 }
             });
-            return true;
+            return battle != null;
         } catch (RuntimeException ex) {
             TowerLog.error("Could not end the battle of " + player.getUUID(), ex);
             return false;
         }
+    }
+
+    /** Only end a journal's rental battle; an unrelated battle must not be closed by stale recovery work. */
+    public static boolean endRentalBattleOf(ServerPlayer player, java.util.Collection<UUID> rentals) {
+        PokemonBattle battle = BattleRegistry.getBattleByParticipatingPlayer(player);
+        if (battle == null || rentals.isEmpty()) return false;
+        for (var actor : battle.getActors()) {
+            for (var pokemon : actor.getPokemonList()) {
+                if (rentals.contains(pokemon.getOriginalPokemon().getUuid())) return endBattleOf(player);
+            }
+        }
+        return false;
     }
 
     private static void discardOpponent(MinecraftServer server, Binding binding) {
@@ -550,7 +578,7 @@ public final class CobblemonBattleAdapter {
         onServerThread(server, () -> {
             try {
                 PokemonBattle battle = BattleRegistry.getBattle(battleId);
-                if (battle != null && !battle.getEnded()) battle.end();
+                if (battle != null) TowerBattleTermination.end(battle);
             } catch (RuntimeException ex) {
                 TowerLog.error("Could not end tower battle " + battleId, ex);
             }

@@ -38,6 +38,12 @@ public final class TowerPartyJournalStore extends TowerStore {
         return List.copyOf(entries.values());
     }
 
+    /** A readable original journal or a preserved malformed one must not be replaced by a new run. */
+    public boolean hasPending(UUID player) {
+        return entries.containsKey(player) || unreadable.stream()
+                .anyMatch(raw -> raw.hasUUID("player") && player.equals(raw.getUUID("player")));
+    }
+
     public int unreadableCount() {
         return unreadable.size();
     }

@@ -34,9 +34,10 @@ export function RouteMap({ route, choices, selected, chosen, enabled, lead, onPi
   const centers = colCenters(map.cols.length);
   const at = (col, lane) => [centers[col], nodeY(lane)];
   const you = map.lane >= 0 ? map.lane : 1;
-  return html`<div class="droute" role="group" aria-label="Choose the next stop on your route">
+  return html`<div class="droute" role="group" tabIndex=${0} aria-label="Choose the next stop on your route; scroll to view scouted floors"
+    onWheel=${(e) => { const el = e.currentTarget; if (!e.ctrlKey && el.scrollWidth > el.clientWidth && e.deltaY) { el.scrollLeft += e.deltaY; e.preventDefault(); } }}>
     <div class="dyou" style=${`top:${nodeY(you)}%`} title="Your party"><${DeskSprite} name=${lead} w=${5} /></div>
-    <div class="droutein">
+    <div class="droutein" style=${`min-width:calc(var(--u) * ${8 * (map.cols.length + 2)})`}>
     <div class="dheads">${map.cols.map((col, i) => html`<span key=${i} class=${'dhead' + (i === 0 ? ' now' : '')} style=${`left:${centers[i]}%`}>${colTitle(col, i)}</span>`)}</div>
     <svg class="dedges" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">${map.edges.map((e, i) => {
       const [x1, y1] = at(e.from, e.fromLane), [x2, y2] = at(e.to, e.toLane), mid = (x1 + x2) / 2;

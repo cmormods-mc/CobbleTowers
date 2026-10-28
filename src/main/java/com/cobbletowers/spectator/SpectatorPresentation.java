@@ -61,10 +61,13 @@ public final class SpectatorPresentation {
         }
     }
 
-    /** The revival call site: stop overriding the camera. The next floor's own entry teleport does the rest. */
+    /** Release the camera and separate a revived spectator from the player they followed. */
     public static void stopSpectating(ServerPlayer spectator) {
         if (FOLLOWING.remove(spectator.getUUID()) == null) return;
         spectator.setCamera(spectator);
+        com.cobbletowers.runtime.TowerRuns.forPlayer(spectator.getUUID()).ifPresent(run ->
+                com.cobbletowers.encounter.SpectatorRevivalLanding.separate(spectator.getServer(), run, spectator));
+        com.cobbletowers.webgui.WebGuiBridge.clearSpectatorPanel(spectator);
     }
 
     private static void follow(MinecraftServer server, PersistedRun run, ServerPlayer spectator, UUID teammateId) {
