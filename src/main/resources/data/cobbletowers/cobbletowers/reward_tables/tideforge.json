@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 8,
+  "revision": 9,
   "display_name": "Tideforge Tower Rewards",
   "growth_percent_per_floor": 8,
   "tiers": {
@@ -336,62 +336,6 @@
         "weight": 8,
         "min_floor": 7,
         "max_floor": 10
-      },
-      {
-        "item": "cobbletowers:tidewalker_helmet",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 2,
-        "min_floor": 3
-      },
-      {
-        "item": "cobbletowers:tidewalker_chestplate",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 2,
-        "min_floor": 3
-      },
-      {
-        "item": "cobbletowers:tidewalker_leggings",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 2,
-        "min_floor": 3
-      },
-      {
-        "item": "cobbletowers:tidewalker_boots",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 2,
-        "min_floor": 3
-      },
-      {
-        "item": "cobbletowers:tideforge_helmet",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 1,
-        "min_floor": 5
-      },
-      {
-        "item": "cobbletowers:tideforge_chestplate",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 1,
-        "min_floor": 5
-      },
-      {
-        "item": "cobbletowers:tideforge_leggings",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 1,
-        "min_floor": 5
-      },
-      {
-        "item": "cobbletowers:tideforge_boots",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 1,
-        "min_floor": 5
       }
     ],
     "boss_defeated": [
@@ -573,69 +517,63 @@
         "weight": 6,
         "min_floor": 7,
         "max_floor": 10
-      },
-      {
-        "item": "cobbletowers:tidewalker_helmet",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 3,
-        "min_floor": 3
-      },
-      {
-        "item": "cobbletowers:tidewalker_chestplate",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 3,
-        "min_floor": 3
-      },
-      {
-        "item": "cobbletowers:tidewalker_leggings",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 3,
-        "min_floor": 3
-      },
-      {
-        "item": "cobbletowers:tidewalker_boots",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 3,
-        "min_floor": 3
-      },
-      {
-        "item": "cobbletowers:tideforge_helmet",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 2,
-        "min_floor": 5
-      },
-      {
-        "item": "cobbletowers:tideforge_chestplate",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 2,
-        "min_floor": 5
-      },
-      {
-        "item": "cobbletowers:tideforge_leggings",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 2,
-        "min_floor": 5
-      },
-      {
-        "item": "cobbletowers:tideforge_boots",
-        "min_amount": 1,
-        "max_amount": 1,
-        "weight": 2,
-        "min_floor": 5
       }
     ]
   },
   "rolls": {
-    "floor_cleared": 2,
-    "boss_defeated": 2
+    "floor_cleared": 1,
+    "boss_defeated": 1
   },
+  "crown_armor": [
+    {
+      "item": "cobbletowers:tidewalker_helmet",
+      "min_amount": 1,
+      "max_amount": 1,
+      "weight": 3
+    },
+    {
+      "item": "cobbletowers:tidewalker_chestplate",
+      "min_amount": 1,
+      "max_amount": 1,
+      "weight": 3
+    },
+    {
+      "item": "cobbletowers:tidewalker_leggings",
+      "min_amount": 1,
+      "max_amount": 1,
+      "weight": 3
+    },
+    {
+      "item": "cobbletowers:tidewalker_boots",
+      "min_amount": 1,
+      "max_amount": 1,
+      "weight": 3
+    },
+    {
+      "item": "cobbletowers:tideforge_helmet",
+      "min_amount": 1,
+      "max_amount": 1,
+      "weight": 2
+    },
+    {
+      "item": "cobbletowers:tideforge_chestplate",
+      "min_amount": 1,
+      "max_amount": 1,
+      "weight": 2
+    },
+    {
+      "item": "cobbletowers:tideforge_leggings",
+      "min_amount": 1,
+      "max_amount": 1,
+      "weight": 2
+    },
+    {
+      "item": "cobbletowers:tideforge_boots",
+      "min_amount": 1,
+      "max_amount": 1,
+      "weight": 2
+    }
+  ],
   "milestones": {
     "boss": {
       "guaranteed": [

@@ -98,9 +98,9 @@ class EncounterDrawTest {
     void levels() {
         RulesetDefinition ruleset = ruleset();
 
-        // Party mean 50, floor 3 sits 6 below it, staraptor's own offset adds 2.
-        assertEquals(44, TowerLevelPolicy.levelFor(PARTY, 3, 0, ruleset).orElseThrow());
-        assertEquals(46, TowerLevelPolicy.levelFor(PARTY, 3, 2, ruleset).orElseThrow());
+        // The party's two highest average 53, floor 3 sits 6 below it, staraptor's own offset adds 2.
+        assertEquals(47, TowerLevelPolicy.levelFor(PARTY, 3, 0, ruleset).orElseThrow());
+        assertEquals(49, TowerLevelPolicy.levelFor(PARTY, 3, 2, ruleset).orElseThrow());
 
         // The ruleset's ceiling holds even when the party is far above it.
         assertEquals(90, TowerLevelPolicy.levelFor(List.of(100, 100, 100), 10, 5, ruleset).orElseThrow());

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 1,
+  "revision": 2,
   "display_name": "Hollow's Eve Rewards",
   "growth_percent_per_floor": 8,
   "tiers": {
@@ -521,9 +521,10 @@
     ]
   },
   "rolls": {
-    "floor_cleared": 2,
-    "boss_defeated": 2
+    "floor_cleared": 1,
+    "boss_defeated": 1
   },
+  "crown_armor": [],
   "milestones": {
     "boss": {
       "guaranteed": [

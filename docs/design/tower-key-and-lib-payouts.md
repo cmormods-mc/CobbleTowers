@@ -61,3 +61,14 @@ slots needs its own blacklist for `cobbletowers:tower_key`. Mixins are compile-c
 Free run rule: available when the stored day is anything other than today (a clock moved back still frees a run).
 
 Typed commands (2026-10-23): the screens do everything the commands did, so `/tower` subcommands other than `help`, `leave`, `accept`, `decline` and `report` (bare `/tower` opens the Hall; the `/cobbletowers` root is op-only, so players see only `/tower`) need operator level 2 (`CommandGate`, applied in `PlayCommand`). The admin trees were already op-only. Chat hints now point at the Hall.
+
+## Loot and level balance pass (2026-10-28)
+
+Prompted by a player with 22 completions, a full level-100 party and a bag of duplicate armor.
+
+* **Enemy level** is now the mean of the two highest levels among every registered Pokemon of every participant (`TowerLevelSnapshot`), not the mean of all of them, so padding the bench or the team with low-level Pokemon no longer lowers the floors. The floor offsets (-10 at floor 1, 0 at floor 6, +1 a floor after) are unchanged. `/cobbletowers runs show` now lists each online participant's registered levels.
+* **Armor** is gone from the floor-cleared and boss-defeated tiers. It comes only from the milestone bonus pools and the completion crown, and the crown now draws from a new `crown_armor` list in each reward table (`RewardTableDefinition.crownArmor`). At delivery (`ArmorDuplicates`, `RewardDelivery`) a piece the player already owns (worn, carried, ender chest, held for claim) is swapped for a missing piece of the same set; once all four are owned a duplicate stands.
+* **Rolls** per floor: floor cleared 2 to 1, boss defeated 2 to 1. A clean ten-floor run pays about 30 to 55 items instead of 47 to 78 (`ShippedRewardTablesTest`).
+* **Daily completion budget** (`DailyCompletionBudget`, `TowerDailyCompletionStore`): per trial day the first 3 completions pay the tower's table in full, the next 3 at 50 percent, the rest at 25 percent (each rolled item is kept with that probability; trials are exempt). AscensionLib's own pile and its 20-chest budget are untouched. A completion is a banked payout that includes a cycle's champion floor.
+* **Trials**: only the scored attempt pays loot; a practice run banks nothing and rolls a 10 percent chance of one rental key (`PracticeTrialReward`).
+* Untested live. Watch `masteryadmin counters` and the first week of play before changing the 3 / 3 split or the percentages.

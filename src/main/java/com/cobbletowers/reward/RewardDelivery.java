@@ -59,8 +59,20 @@ public final class RewardDelivery {
         List<PendingTowerReward> delivered = new ArrayList<>(queue.size());
         int heldBefore = store.heldFor(player.getUUID()).size();
         boolean creditedWallet = false;
+        java.util.Set<ResourceLocation> ownedArmor = null;
         for (PendingTowerReward reward : queue) {
             try {
+                if (!ArmorDuplicates.setOf(reward.item()).isEmpty()) {
+                    // Tower armor the player already has is swapped for a missing piece of its set (until the set is whole).
+                    if (ownedArmor == null) ownedArmor = ownedArmor(server, player, store);
+                    ResourceLocation chosen = ArmorDuplicates.choose(reward.item(), ownedArmor,
+                            reward.runId().getMostSignificantBits() ^ reward.grantedAt() ^ reward.item().hashCode());
+                    if (!chosen.equals(reward.item())) {
+                        reward = new PendingTowerReward(reward.runId(), reward.floorIndex(), chosen, reward.amount(), reward.grantedAt(),
+                                reward.components(), reward.label());
+                    }
+                    ownedArmor.add(reward.item());
+                }
                 if (reward.item().equals(CobbleDollars.ITEM_ID)) {
                     // A player's mastery of the tower the reward was earned in (P31) adds to their CobbleDollars.
                     int bonus = com.cobbletowers.mastery.MasteryService.perksForRun(server, player.getUUID(), reward.runId())
@@ -110,6 +122,25 @@ public final class RewardDelivery {
                     "Some rewards did not fit in your inventory. Make room, then use /tower claim.").withStyle(ChatFormatting.GOLD));
         }
         return delivered.size();
+    }
+
+    /** Every tower armor piece the player has: worn, carried, in the ender chest, or still waiting to be claimed. */
+    private static java.util.Set<ResourceLocation> ownedArmor(MinecraftServer server, ServerPlayer player, TowerPendingRewardStore store) {
+        java.util.Set<ResourceLocation> owned = new java.util.HashSet<>();
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) noteArmor(owned, inventory.getItem(i));
+        var ender = player.getEnderChestInventory();
+        for (int i = 0; i < ender.getContainerSize(); i++) noteArmor(owned, ender.getItem(i));
+        for (PendingTowerReward held : store.heldFor(player.getUUID())) {
+            if (!ArmorDuplicates.setOf(held.item()).isEmpty()) owned.add(held.item());
+        }
+        return owned;
+    }
+
+    private static void noteArmor(java.util.Set<ResourceLocation> owned, ItemStack stack) {
+        if (stack.isEmpty()) return;
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (!ArmorDuplicates.setOf(id).isEmpty()) owned.add(id);
     }
 
     /**

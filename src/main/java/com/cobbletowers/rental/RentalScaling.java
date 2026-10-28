@@ -18,7 +18,7 @@ import net.minecraft.server.level.ServerPlayer;
  * A rental draft's team grows with the run (P40). Every rental starts at level 50 and would otherwise stay there while the
  * floors climb; every {@value #FLOORS_PER_STEP} floors each rental gains {@value #LEVELS_PER_STEP} levels, up to 100. A
  * level step is also an AscensionLib milestone, so each rental earns one upgrade credit that is spent on a random affix
- * slot at once ({@link AscensionLibGrants#upgradeRentals}). Enemy levels follow the party's mean, so the climb is felt as
+ * slot at once ({@link AscensionLibGrants#upgradeRentals}). Enemy levels follow the party's two highest levels, so the climb is felt as
  * stronger affixes and stats on both sides, not as a free lead. Pure rule plus one hook.
  */
 public final class RentalScaling {
