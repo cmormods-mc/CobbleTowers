@@ -41,6 +41,9 @@ public final class RewardCatalogCheck {
                     consider(problems, table, "tiers." + kind.name().toLowerCase(), entry.item(), itemExists, namespaceLoaded);
                 }
             }
+            for (RewardTableDefinition.Entry entry : table.crownArmor()) {
+                consider(problems, table, "crown_armor", entry.item(), itemExists, namespaceLoaded);
+            }
             for (var milestone : table.milestones().entrySet()) {
                 String base = "milestones." + milestone.getKey().name().toLowerCase();
                 for (RewardTableDefinition.Guaranteed fixed : milestone.getValue().guaranteed()) {

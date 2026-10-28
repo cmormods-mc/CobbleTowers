@@ -13,9 +13,13 @@ import com.cobbletowers.persistence.LedgerEntry;
 import com.cobbletowers.persistence.PendingTowerReward;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
+import com.cobbletowers.persistence.TowerDailyCompletionStore;
 import com.cobbletowers.persistence.TowerPendingRewardStore;
 import com.cobbletowers.runtime.TowerRuns;
+import com.cobbletowers.trial.TrialClock;
+import com.cobbletowers.trial.TrialService;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +60,13 @@ public final class RewardBankService {
             if (!banks) return Optional.empty();
         }
         return content.rewardTable(tower.rewardTableId());
+    }
+
+    /** Whether one granted item reaches this player at their share of the daily budget. Seeded, so a replay keeps the same items. */
+    private static boolean kept(PersistedRun run, int position, UUID playerId, Map<UUID, Integer> percent) {
+        int share = percent.getOrDefault(playerId, 100);
+        if (share >= 100) return true;
+        return DailyCompletionBudget.keeps(lootSeed(run) * 31 + position * 7919L + playerId.getLeastSignificantBits(), share);
     }
 
     /** The ledger newly priceable: earned since the run last banked, through the floor it is on now. */
@@ -146,6 +157,8 @@ public final class RewardBankService {
         List<RewardValuation.Grant> grants = RewardValuation.value(lootSeed(run), priced, table.get(), effects,
                 DraftService.customs(run), content.towers().get(run.towerId()).ascension() ? content.towers().get(run.towerId()).floorCount() : 0,
                 id -> content.milestoneKindOf(id), com.cobbletowers.season.SeasonSpotlight.weights(run.towerId()));
+        // A daily or weekly trial pays its loot to the one scored attempt only; a practice run banks nothing from the tower's table.
+        if (PracticeTrialReward.isPractice(run.options())) grants = List.of();
         // The risk bonus is paid once, with the final payout of the tower: the run is over (completed or cashed out).
         if (run.state() == RunState.COMPLETED || run.state() == RunState.CASHED_OUT) {
             int bonus = riskBonusPercent(content, run);
@@ -165,17 +178,27 @@ public final class RewardBankService {
         if (grants.isEmpty() || participants.isEmpty()) return;
 
         TowerPendingRewardStore store = TowerPendingRewardStore.get(server);
+        // Repeat completions in a trial day pay less of the tower's own loot (a trial is already limited to one scored attempt).
+        TowerDailyCompletionStore budget = TowerDailyCompletionStore.get(server);
+        String day = TrialClock.dayKey(TrialService.today());
+        boolean budgeted = !run.options().isTrial();
+        Map<UUID, Integer> percent = new HashMap<>();
+        for (UUID playerId : participants) {
+            percent.put(playerId, budgeted ? DailyCompletionBudget.percentFor(budget.countOn(playerId, day)) : 100);
+        }
         int position = 0;
         for (RewardValuation.Grant grant : grants) {
             if (grant.perPlayer()) {
                 // A milestone's guaranteed item: everybody gets the whole amount, not a share of it.
                 for (UUID playerId : participants) {
+                    if (!kept(run, position, playerId, percent)) continue;
                     store.add(playerId, new PendingTowerReward(runId, run.floorIndex(), grant.item(), grant.amount(), now));
                 }
             } else {
                 // Rotated by floor and position so a one-item grant does not always reach the first player.
                 for (Map.Entry<UUID, Integer> share
                         : evenSplit(grant.amount(), participants, run.floorIndex() + position).entrySet()) {
+                    if (!kept(run, position, share.getKey(), percent)) continue;
                     store.add(share.getKey(),
                             new PendingTowerReward(runId, run.floorIndex(), grant.item(), share.getValue(), now));
                 }
@@ -183,6 +206,20 @@ public final class RewardBankService {
             position++;
         }
         store.checkpoint(server);
+        if (budgeted) {
+            var tower = content.towers().get(run.towerId());
+            boolean completes = tower != null && priced.stream().anyMatch(entry -> tower.contentFloor(entry.floorIndex()) == tower.floorCount());
+            for (UUID playerId : participants) {
+                int share = percent.get(playerId);
+                ServerPlayer online = server.getPlayerList().getPlayer(playerId);
+                if (online != null && share < 100 && !grants.isEmpty()) {
+                    online.sendSystemMessage(net.minecraft.network.chat.Component.literal("You have completed " + budget.countOn(playerId, day)
+                            + " tower(s) today, so this payout is reduced to about " + share + "% (it resets with the trial day)."));
+                }
+                if (completes) budget.record(playerId, day);
+            }
+            if (completes) budget.checkpoint(server);
+        }
 
         for (UUID playerId : participants) {
             ServerPlayer player = server.getPlayerList().getPlayer(playerId);

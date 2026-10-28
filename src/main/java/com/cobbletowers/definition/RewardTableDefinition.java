@@ -27,7 +27,8 @@ public record RewardTableDefinition(
         int growthPercentPerFloor,
         Map<RewardKind, List<Entry>> tiers,
         Map<MilestoneKind, MilestoneReward> milestones,
-        Map<RewardKind, Integer> rolls) implements RewardTableView {
+        Map<RewardKind, Integer> rolls,
+        List<Entry> crownArmor) implements RewardTableView {
 
     public static final int SUPPORTED_SCHEMA_VERSION = 1;
     /** Most rolls one ledger entry may make (a table asking for more is refused, not clamped). */
@@ -97,20 +98,21 @@ public record RewardTableDefinition(
     /** A table with no milestone section, which is every table written before P21. */
     public RewardTableDefinition(ResourceLocation id, int schemaVersion, int revision, String displayName,
                                  int growthPercentPerFloor, Map<RewardKind, List<Entry>> tiers) {
-        this(id, schemaVersion, revision, displayName, growthPercentPerFloor, tiers, Map.of(), Map.of());
+        this(id, schemaVersion, revision, displayName, growthPercentPerFloor, tiers, Map.of(), Map.of(), List.of());
     }
 
     /** A table that rolls once per ledger entry, which is every table written before P39. */
     public RewardTableDefinition(ResourceLocation id, int schemaVersion, int revision, String displayName,
                                  int growthPercentPerFloor, Map<RewardKind, List<Entry>> tiers,
                                  Map<MilestoneKind, MilestoneReward> milestones) {
-        this(id, schemaVersion, revision, displayName, growthPercentPerFloor, tiers, milestones, Map.of());
+        this(id, schemaVersion, revision, displayName, growthPercentPerFloor, tiers, milestones, Map.of(), List.of());
     }
 
     public RewardTableDefinition {
         Objects.requireNonNull(id, "id");
         milestones = Map.copyOf(milestones);
         rolls = Map.copyOf(rolls);
+        crownArmor = List.copyOf(crownArmor);
         for (Map.Entry<RewardKind, Integer> roll : rolls.entrySet()) {
             if (roll.getValue() < 1 || roll.getValue() > MAX_ROLLS) {
                 throw new IllegalArgumentException("rolls for " + roll.getKey() + " must be 1.." + MAX_ROLLS + ", got " + roll.getValue());
@@ -182,7 +184,8 @@ public record RewardTableDefinition(
                 TowerJson.integer(root, "growth_percent_per_floor", 0),
                 tiers,
                 readMilestones(root),
-                readRolls(root));
+                readRolls(root),
+                root.has("crown_armor") ? readEntries(root.getAsJsonArray("crown_armor")) : List.of());
     }
 
     private static Map<RewardKind, Integer> readRolls(JsonObject root) {

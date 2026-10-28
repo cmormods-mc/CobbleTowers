@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 
 /**
  * The parts of a Tower completion chest that AscensionLib rolls but this mod hands over: armor pieces and CobbleCards booster packs (tickets). The
- * items come from the tower's own reward table (its boss tier), weighted as the table weights them, so a Tideforge tower pays Tideforge pieces and
+ * items come from the tower's own reward table (its crown armor list and its boss tier), weighted as the table weights them, so a Tideforge tower pays Tideforge pieces and
  * water packs. Pure and seeded by (encounter, player), so a retry names the same items.
  */
 public final class CompletionExtras {
@@ -33,15 +33,14 @@ public final class CompletionExtras {
         var random = new Random(encounterId.getMostSignificantBits() * 31 + encounterId.getLeastSignificantBits() * 17
                 + player.getMostSignificantBits() * 13 + player.getLeastSignificantBits());
         var out = new ArrayList<ResourceLocation>();
-        draw(table, CompletionExtras::isArmor, armor, random, out);
-        draw(table, CompletionExtras::isTicket, tickets, random, out);
+        draw(table.crownArmor(), armor, random, out);
+        draw(table.entriesFor(RewardKind.BOSS_DEFEATED).stream().filter(entry -> isTicket(entry.item())).toList(), tickets, random, out);
         return out;
     }
 
-    private static void draw(RewardTableDefinition table, java.util.function.Predicate<ResourceLocation> wanted, int count, Random random,
-                             List<ResourceLocation> out) {
+    private static void draw(List<RewardTableDefinition.Entry> offered, int count, Random random, List<ResourceLocation> out) {
         var pool = new ArrayList<RewardTableDefinition.Entry>();
-        for (var entry : table.entriesFor(RewardKind.BOSS_DEFEATED)) if (wanted.test(entry.item()) && entry.weight() > 0) pool.add(entry);
+        for (var entry : offered) if (entry.weight() > 0) pool.add(entry);
         for (int i = 0; i < count && !pool.isEmpty(); i++) {
             int total = 0;
             for (var entry : pool) total += entry.weight();

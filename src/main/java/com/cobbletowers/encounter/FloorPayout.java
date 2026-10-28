@@ -5,6 +5,7 @@ import com.cobbletowers.battle.cobbleraids.TowerBossAdapter;
 import com.cobbletowers.definition.TowerContent;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.economy.AscensionLibRewards;
+import com.cobbletowers.reward.PracticeTrialReward;
 import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.persistence.PersistedRun;
@@ -40,8 +41,13 @@ final class FloorPayout {
             // A Trial pays once, on its last floor, at the rank its length implies: repeatable practice must not
             // out-earn or bypass the tower.
             if (binding.floorIndex() >= floorLimit) {
-                AscensionLibRewards.settleTrial(server, result.encounterId(), outcome,
-                        trialRank(floorLimit), members, now);
+                if (PracticeTrialReward.isPractice(run.options())) {
+                    // The one scored attempt is the only one that pays loot; a practice run can only turn up a rental key.
+                    PracticeTrialReward.grantKeys(server, result.encounterId(), members, now);
+                } else {
+                    AscensionLibRewards.settleTrial(server, result.encounterId(), outcome,
+                            trialRank(floorLimit), members, now);
+                }
             }
             return;
         }

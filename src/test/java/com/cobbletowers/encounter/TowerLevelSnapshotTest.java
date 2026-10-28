@@ -14,19 +14,33 @@ import org.junit.jupiter.api.Test;
 class TowerLevelSnapshotTest {
 
     @Test
-    @DisplayName("the level is the mean, rounded half up")
-    void roundsHalfUp() {
+    @DisplayName("the level is the mean of the two highest, rounded half up")
+    void topTwoRoundedHalfUp() {
         assertEquals(OptionalInt.of(51), TowerLevelSnapshot.of(List.of(50, 51)));
-        assertEquals(OptionalInt.of(50), TowerLevelSnapshot.of(List.of(50, 50, 51)));
+        assertEquals(OptionalInt.of(51), TowerLevelSnapshot.of(List.of(50, 51, 10)));
+        assertEquals(OptionalInt.of(75), TowerLevelSnapshot.of(List.of(10, 50, 100, 20)));
     }
 
     @Test
-    @DisplayName("every Pokemon counts once, so a full party outweighs a single strong one")
-    void flatAcrossPokemonNotPlayers() {
-        List<Integer> levels = new ArrayList<>(Collections.nCopies(6, 10));  // one player's six
-        levels.add(100);                                                  // another player's one
-        // (60 + 100) / 7 = 22.86 -- a per-player mean would have said 55.
-        assertEquals(OptionalInt.of(23), TowerLevelSnapshot.of(levels));
+    @DisplayName("low-level padding, on the bench or in the team, cannot lower the enemy")
+    void paddingDoesNotLowerIt() {
+        List<Integer> levels = new ArrayList<>(Collections.nCopies(4, 10));  // a padded bench
+        levels.add(100);
+        levels.add(100);
+        assertEquals(OptionalInt.of(100), TowerLevelSnapshot.of(levels));
+        // a strong player teamed with weak ones: the strong player's two best still set it
+        List<Integer> team = new ArrayList<>(Collections.nCopies(12, 20));
+        team.add(100);
+        team.add(98);
+        assertEquals(OptionalInt.of(99), TowerLevelSnapshot.of(team));
+    }
+
+    @Test
+    @DisplayName("a single Pokemon sets the level alone, order does not matter")
+    void singleAndOrder() {
+        assertEquals(OptionalInt.of(64), TowerLevelSnapshot.of(List.of(64)));
+        assertEquals(TowerLevelSnapshot.of(List.of(30, 90, 60)), TowerLevelSnapshot.of(List.of(90, 60, 30)));
+        assertEquals(OptionalInt.of(75), TowerLevelSnapshot.of(List.of(30, 90, 60)));
     }
 
     @Test

@@ -416,10 +416,13 @@ public final class RunsCommand {
         TowerBossAdapter.of(runId).ifPresent(boss -> source.sendSuccess(() -> Component.literal(
                 "  boss: " + boss.definition() + " at level " + boss.level()), false));
         for (PersistedParticipant participant : run.participants()) {
+            ServerPlayer online = source.getServer().getPlayerList().getPlayer(participant.playerId());
+            String levels = online == null ? "offline" : "levels " + com.cobbletowers.runtime.PartyValidation.levels(
+                    com.cobbletowers.battle.cobblemon.PartyReader.members(online), participant.registeredPokemon());
             source.sendSuccess(() -> Component.literal(String.format(Locale.ROOT,
-                    "  %s  %s/%s/%s  %d registered", participant.playerId(), participant.state().connection(),
+                    "  %s  %s/%s/%s  %d registered (%s)", participant.playerId(), participant.state().connection(),
                     participant.state().combat(), participant.state().membership(),
-                    participant.registeredPokemon().size())), false);
+                    participant.registeredPokemon().size(), levels)), false);
         }
         return 1;
     }

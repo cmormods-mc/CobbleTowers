@@ -6,7 +6,7 @@ import java.util.OptionalInt;
 
 /**
  * The level a tower opponent fights at, and the only place that decides one (TDS #45). {@link TowerLevelSnapshot}
- * owns the mean over registered parties; this turns it into the spawn level. Taken once per floor.
+ * owns the top-two mean over registered parties; this turns it into the spawn level. Taken once per floor.
  */
 public final class TowerLevelPolicy {
 

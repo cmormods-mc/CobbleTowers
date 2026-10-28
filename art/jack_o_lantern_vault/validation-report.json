@@ -1,0 +1,255 @@
+{
+ "checks": [
+  {
+   "check": "8 runtime models exist",
+   "ok": true,
+   "detail": "body,candy_fill,face_plate,lid,reveal_a,reveal_b,reveal_c,vault_full"
+  },
+  {
+   "check": "texture is a square RGBA PNG, power of two",
+   "ok": true,
+   "detail": "(1024, 1024)"
+  },
+  {
+   "check": "every element: bounds -16..32, non-empty, legal rotation, uv in 0..16, texture #0",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "no atlas texel is transparent inside an island",
+   "ok": true,
+   "detail": "0 islands"
+  },
+  {
+   "check": "no two element faces share atlas texels (no UV overlap)",
+   "ok": true,
+   "detail": "0 shared texels"
+  },
+  {
+   "check": "atlas is used (>8%) and fits",
+   "ok": true,
+   "detail": "15% of the 1024x1024 texels belong to islands"
+  },
+  {
+   "check": "full model stays inside vanilla's -16..32 and the pumpkin is centred on the block (x and z symmetric about 8)",
+   "ok": true,
+   "detail": "[[-3.45, 0.0, -4.8], [19.3, 31.0, 20.0]]"
+  },
+  {
+   "check": "lid sits on the rim (lid bottom y == rim top)",
+   "ok": true,
+   "detail": "lid min y 12.5"
+  },
+  {
+   "check": "hinge axis lies on the lid's back-bottom edge (y == lid bottom, z == the lid's farthest back point: nothing of the lid is behind it)",
+   "ok": true,
+   "detail": "lid max z 19.60 hinge z 19.6"
+  },
+  {
+   "check": "the latch teeth are centred on the front (x symmetric about 8) and cross the seam (below and above it)",
+   "ok": true,
+   "detail": "x 6.88..9.12 y 10.25..13.25"
+  },
+  {
+   "check": "the face is halved by the seam: lid carries the upper half (all y >= seam), body the lower half (all y <= seam)",
+   "ok": true,
+   "detail": "lid 114 boxes from y 12.50, body 48 boxes to y 12.50"
+  },
+  {
+   "check": "stationary candy stays within radius 7.6 of the axis (inside the bowl and the lid hollow)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "stationary candy stays under the lid's ceiling",
+   "ok": true,
+   "detail": "top 12.88 ceiling 21.00"
+  },
+  {
+   "check": "the candy slab discs stay inside the bowl wall (corners may sink into it, never through it)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "lid vines are only on the lid, body vines only below the rim band; none bridges the seam",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "round shape: every ring has 16 staves; lobes alternate +-0.45/0.4 radius every 45 degrees",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "vault_full == body + lid + face_plate + candy_fill (element count)",
+   "ok": true,
+   "detail": "1156 vs 1156"
+  },
+  {
+   "check": "reveal pieces are centred at (8, 8, 8) (spin about their own middle)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "hinge sweep 0..118 deg (1 deg steps): no lid point penetrates the body, plate or candy by more than 0.05 unit",
+   "ok": true,
+   "detail": "no penetration at any step"
+  },
+  {
+   "check": "at peak overshoot the lid stays above the floor and behind the front",
+   "ok": true,
+   "detail": "lowest lid point y=11.57"
+  },
+  {
+   "check": "at rest all four persistent pieces share one transform (no per-piece offset: no double offset)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "after the client's 180-degree display flip the model front (-z) points north/east/south/west for the four facings",
+   "ok": true,
+   "detail": "{'north': True, 'east': True, 'south': True, 'west': True}"
+  },
+  {
+   "check": "points on the hinge axis do not move for any angle, in all four facings",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "positive lid.rot_x_deg lifts the lid's front edge (and swings it toward the back)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "lid transform equals root*T(h)*Rx(10)*T(-h) applied to a lid point",
+   "ok": true,
+   "detail": "[ 5.         19.64054646  5.01841585] vs [ 5.         19.64054646  5.01841585]"
+  },
+  {
+   "check": "lid transform equals root*T(h)*Rx(45)*T(-h) applied to a lid point",
+   "ok": true,
+   "detail": "[ 5.         26.7128463  11.75111473] vs [ 5.         26.7128463  11.75111473]"
+  },
+  {
+   "check": "lid transform equals root*T(h)*Rx(100)*T(-h) applied to a lid point",
+   "ok": true,
+   "detail": "[ 5.         27.08158415 26.74054646] vs [ 5.         27.08158415 26.74054646]"
+  },
+  {
+   "check": "lid transform equals root*T(h)*Rx(118)*T(-h) applied to a lid point",
+   "ok": true,
+   "detail": "[ 5.         24.16136042 30.89702055] vs [ 5.         24.16136042 30.89702055]"
+  },
+  {
+   "check": "every sequence: seconds == ticks / 20",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "timing brief: anticipation 0.5 s, unlock 0.25 s, open 0.7 s, close 0.7 s",
+   "ok": true,
+   "detail": "{'closed_idle': 2.0, 'anticipation': 0.5, 'unlock': 0.25, 'open': 0.7, 'open_hold': 2.0, 'close': 0.7, 'reset': 0.0}"
+  },
+  {
+   "check": "sequence boundaries are continuous (end value == next start value)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "open peaks at LID_OPEN + 3 deg then settles at LID_OPEN; monotone up to the peak",
+   "ok": true,
+   "detail": "max 118.00 final 115.0"
+  },
+  {
+   "check": "close reaches 0 at tick 11, bounces <= 2 deg, rests at 0 at tick 14",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "final lid angle after open is the manifest max_open_deg",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "120 automated cycles (treat/trick alternating): first and last closed transforms identical, machine ends CLOSED",
+   "ok": true,
+   "detail": "0 mismatches; states seen ['ANTICIPATING', 'CLOSING', 'OPEN', 'OPENING', 'UNLOCKING']"
+  },
+  {
+   "check": "trick and treat share an identical pose timeline until the lid is open (29 ticks)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "no outcome-specific event fires before the lid is open",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "reset from every state (at several ticks) returns to CLOSED at rest",
+   "ok": true,
+   "detail": "0 failures"
+  },
+  {
+   "check": "reveal candy starts inside the pile and rises well above the open bowl",
+   "ok": true,
+   "detail": ""
+  }
+ ],
+ "dimensions": {
+  "body_x": [
+   -3.45,
+   19.128731633755294
+  ],
+  "body_z": [
+   -4.8,
+   20.0
+  ],
+  "rim_top_y": 12.5,
+  "max_belly_radius": 11.33,
+  "lid_x": [
+   -3.3,
+   19.3
+  ],
+  "latch": [
+   [
+    6.875,
+    10.25,
+    -4.5
+   ],
+   [
+    9.125,
+    13.25,
+    -3.4
+   ]
+  ],
+  "full_bounds": [
+   [
+    -3.45,
+    0.0,
+    -4.8
+   ],
+   [
+    19.3,
+    31.0,
+    20.0
+   ]
+  ],
+  "candy_pile": {
+   "slab_top_y": 7.86,
+   "slab_fraction_of_cavity": 0.512,
+   "mean_candy_top_y": 10.57,
+   "mean_top_fraction_of_cavity": 0.797,
+   "highest_candy_top_y": 12.88,
+   "rim_top_y": 12.5
+  },
+  "lid": {
+   "bottom_y": 12.5,
+   "top_of_dome_y": 24.36,
+   "height_without_stem": 11.86,
+   "stem_top_y": 31.0,
+   "stem_height": 6.64
+  }
+ },
+ "failed": []
+}

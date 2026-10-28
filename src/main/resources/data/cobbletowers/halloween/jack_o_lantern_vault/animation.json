@@ -1,0 +1,553 @@
+{
+ "schema": 1,
+ "id": "cobbletowers:halloween/jack_o_lantern_vault",
+ "ticks_per_second": 20,
+ "units_per_block": 16,
+ "coordinate_contract": {
+  "space": "vault space: model units, x east, y up, z south; the model FRONT is the north face (-z); the floor is y = 0",
+  "root": "the vault block's floor centre, i.e. model point (8, 0, 8); every display entity is spawned at the root with yaw 0 and transform-only facing (see composition)",
+  "display_origin": "an item display draws its model centred on the entity, so model point (8, 8, 8) sits at root + (0, 0.5, 0) blocks: the rest translation of every persistent piece is (0, 0.5, 0); its rest rotation SENT is rotY(180) = (0, 1, 0, 0) xyzw (the client's own half turn then cancels it, so the model stands in vault space: front north)",
+  "scale": [
+   1,
+   1,
+   1
+  ],
+  "display_transform": "none (the item display default, no display override in the model JSON)",
+  "hinge": {
+   "axis": "x",
+   "point_units": [
+    8.0,
+    12.5,
+    19.6
+   ],
+   "point_root_local_blocks": [
+    0.0,
+    0.78125,
+    0.725
+   ],
+   "positive_direction": "positive rotation about +x lifts the lid's FRONT edge (opens); angle = lid.rot_x_deg",
+   "max_open_deg": 115.0,
+   "peak_overshoot_deg": 118.0
+  },
+  "facing_yaw_deg": {
+   "north": 0.0,
+   "west": 90.0,
+   "south": 180.0,
+   "east": -90.0
+  },
+  "client_item_display_flip": "Minecraft's item display renderer turns the item MODEL a half circle about y inside its own frame, after the transformation: the client draws T + q (F v) with F = rotY(180). At identity the model's north face looks south (verified in a real 1.21.1 client). The flip acts on the model only, not on the translation.",
+  "composition": "Intended pose = Rnet (Tc + R v). For the lid Tc = H + R(c - H), R = rotX(lid.rot_x_deg), H = hinge (root-local blocks), c = (0, 0.5, 0); that is root x translate(H) x R x translate(-H) x rest, no second offset anywhere. Other pieces: Tc = c (+ (0, 0, press/16) for face_plate), R = identity. All get + (root.x_units/16, 0, 0) first. Rnet = rotY(facing_yaw_deg) (north 0, west 90, south 180, east -90). SENT to the client: translation T = Rnet Tc, left rotation q = Rnet R F with F = rotY(180) (so the client's own F cancels); entity yaw stays 0.",
+  "interpolation": "every tick the server sends the sampled transformation with interpolation_duration = 1 tick (one sample per tick, so rotation about the hinge follows the arc instead of cutting the chord)"
+ },
+ "pieces": {
+  "body": {
+   "model": "cobbletowers:halloween/jack_o_lantern_vault/body",
+   "rest": {
+    "translation_blocks": [
+     0,
+     0.5,
+     0
+    ],
+    "rotation_xyzw": [
+     0,
+     1,
+     0,
+     0
+    ]
+   }
+  },
+  "lid": {
+   "model": "cobbletowers:halloween/jack_o_lantern_vault/lid",
+   "rest": {
+    "translation_blocks": [
+     0,
+     0.5,
+     0
+    ],
+    "rotation_xyzw": [
+     0,
+     1,
+     0,
+     0
+    ]
+   },
+   "pivot": "hinge"
+  },
+  "face_plate": {
+   "model": "cobbletowers:halloween/jack_o_lantern_vault/face_plate",
+   "rest": {
+    "translation_blocks": [
+     0,
+     0.5,
+     0
+    ],
+    "rotation_xyzw": [
+     0,
+     1,
+     0,
+     0
+    ]
+   }
+  },
+  "candy_fill": {
+   "model": "cobbletowers:halloween/jack_o_lantern_vault/candy_fill",
+   "rest": {
+    "translation_blocks": [
+     0,
+     0.5,
+     0
+    ],
+    "rotation_xyzw": [
+     0,
+     1,
+     0,
+     0
+    ]
+   }
+  },
+  "reveal_a": {
+   "model": "cobbletowers:halloween/jack_o_lantern_vault/reveal_a",
+   "origin": "authored centred at (8, 8, 8): a display entity rotates it about its own middle"
+  },
+  "reveal_b": {
+   "model": "cobbletowers:halloween/jack_o_lantern_vault/reveal_b",
+   "origin": "as reveal_a"
+  },
+  "reveal_c": {
+   "model": "cobbletowers:halloween/jack_o_lantern_vault/reveal_c",
+   "origin": "as reveal_a"
+  },
+  "vault_full": {
+   "model": "cobbletowers:halloween/jack_o_lantern_vault/vault_full",
+   "note": "static assembled closed model (body + lid + face_plate + candy_fill); NOT used at runtime"
+  }
+ },
+ "channels": {
+  "lid.rot_x_deg": {
+   "unit": "degrees",
+   "rest": 0.0,
+   "drives": "lid hinge rotation"
+  },
+  "face_plate.press_units": {
+   "unit": "model units (1/16 block)",
+   "rest": 0.0,
+   "drives": "face_plate translation along +z (into the body)"
+  },
+  "root.x_units": {
+   "unit": "model units (1/16 block)",
+   "rest": 0.0,
+   "drives": "every persistent piece, x (in vault space, before facing)"
+  }
+ },
+ "ease": "the ease on a key shapes the segment that starts at that key: linear, in_quad, out_quad, in_cubic, out_cubic, in_out_sine",
+ "sequences": {
+  "closed_idle": {
+   "ticks": 40,
+   "seconds": 2.0,
+   "loop": true,
+   "tracks": {
+    "lid.rot_x_deg": [
+     [
+      0,
+      0.0,
+      "in_out_sine"
+     ],
+     [
+      20,
+      0.35,
+      "in_out_sine"
+     ],
+     [
+      40,
+      0.0,
+      "linear"
+     ]
+    ]
+   },
+   "note": "A barely visible breath: the lid lifts 0.35 degrees and settles. First and last frame are the closed pose."
+  },
+  "anticipation": {
+   "ticks": 10,
+   "seconds": 0.5,
+   "loop": false,
+   "tracks": {
+    "lid.rot_x_deg": [
+     [
+      0,
+      0.0,
+      "out_quad"
+     ],
+     [
+      2,
+      1.6,
+      "in_quad"
+     ],
+     [
+      4,
+      0.2,
+      "out_quad"
+     ],
+     [
+      6,
+      2.2,
+      "in_quad"
+     ],
+     [
+      8,
+      0.3,
+      "out_quad"
+     ],
+     [
+      9,
+      1.0,
+      "in_quad"
+     ],
+     [
+      10,
+      0.0,
+      "linear"
+     ]
+    ],
+    "root.x_units": [
+     [
+      0,
+      0.0,
+      "linear"
+     ],
+     [
+      1,
+      -0.2044,
+      "linear"
+     ],
+     [
+      2,
+      0.1882,
+      "linear"
+     ],
+     [
+      3,
+      -0.1714,
+      "linear"
+     ],
+     [
+      4,
+      0.1539,
+      "linear"
+     ],
+     [
+      5,
+      -0.1354,
+      "linear"
+     ],
+     [
+      6,
+      0.1158,
+      "linear"
+     ],
+     [
+      7,
+      -0.0947,
+      "linear"
+     ],
+     [
+      8,
+      0.0713,
+      "linear"
+     ],
+     [
+      9,
+      -0.0439,
+      "linear"
+     ],
+     [
+      10,
+      0.0,
+      "linear"
+     ]
+    ]
+   },
+   "note": "The whole vault trembles (root x shake) while the lid rattles. Ends exactly closed."
+  },
+  "unlock": {
+   "ticks": 5,
+   "seconds": 0.25,
+   "loop": false,
+   "tracks": {
+    "face_plate.press_units": [
+     [
+      0,
+      0.0,
+      "out_quad"
+     ],
+     [
+      2,
+      0.6,
+      "linear"
+     ],
+     [
+      3,
+      0.6,
+      "in_out_sine"
+     ],
+     [
+      5,
+      0.0,
+      "linear"
+     ]
+    ],
+    "lid.rot_x_deg": [
+     [
+      0,
+      0.0,
+      "linear"
+     ],
+     [
+      3,
+      0.0,
+      "out_quad"
+     ],
+     [
+      5,
+      1.5,
+      "linear"
+     ]
+    ]
+   },
+   "note": "The plate clicks in 0.6 unit and springs back; the latch pops the lid up 1.5 degrees."
+  },
+  "open": {
+   "ticks": 14,
+   "seconds": 0.7,
+   "loop": false,
+   "tracks": {
+    "lid.rot_x_deg": [
+     [
+      0,
+      1.5,
+      "in_out_sine"
+     ],
+     [
+      10,
+      118.0,
+      "in_out_sine"
+     ],
+     [
+      14,
+      115.0,
+      "linear"
+     ]
+    ]
+   },
+   "note": "The lid swings to the final angle, overshoots it by 3 degrees at tick 10 and settles at tick 14."
+  },
+  "open_hold": {
+   "ticks": 40,
+   "seconds": 2.0,
+   "loop": true,
+   "tracks": {
+    "lid.rot_x_deg": [
+     [
+      0,
+      115.0,
+      "in_out_sine"
+     ],
+     [
+      20,
+      115.4,
+      "in_out_sine"
+     ],
+     [
+      40,
+      115.0,
+      "linear"
+     ]
+    ]
+   },
+   "note": "The lid rests open; a 0.4 degree sway keeps it alive. Loops until close is requested."
+  },
+  "close": {
+   "ticks": 14,
+   "seconds": 0.7,
+   "loop": false,
+   "tracks": {
+    "lid.rot_x_deg": [
+     [
+      0,
+      115.0,
+      "in_quad"
+     ],
+     [
+      11,
+      0.0,
+      "out_quad"
+     ],
+     [
+      12,
+      1.8,
+      "in_quad"
+     ],
+     [
+      14,
+      0.0,
+      "linear"
+     ]
+    ],
+    "face_plate.press_units": [
+     [
+      0,
+      0.0,
+      "linear"
+     ],
+     [
+      10,
+      0.0,
+      "out_quad"
+     ],
+     [
+      12,
+      0.5,
+      "in_out_sine"
+     ],
+     [
+      14,
+      0.0,
+      "linear"
+     ]
+    ]
+   },
+   "note": "The lid falls, shuts at tick 11 with a 1.8 degree bounce, the plate clicks, all settled closed at tick 14."
+  },
+  "reset": {
+   "ticks": 0,
+   "seconds": 0.0,
+   "loop": false,
+   "snap": true,
+   "tracks": {
+    "lid.rot_x_deg": [
+     [
+      0,
+      0.0,
+      "linear"
+     ]
+    ],
+    "face_plate.press_units": [
+     [
+      0,
+      0.0,
+      "linear"
+     ]
+    ],
+    "root.x_units": [
+     [
+      0,
+      0.0,
+      "linear"
+     ]
+    ]
+   },
+   "note": "Instant: every channel to its rest value, reveal candy removed. Allowed from every state."
+  }
+ },
+ "state_machine": {
+  "states": {
+   "CLOSED": {
+    "sequence": "closed_idle",
+    "next": null,
+    "ticks": 40
+   },
+   "ANTICIPATING": {
+    "sequence": "anticipation",
+    "next": "UNLOCKING",
+    "ticks": 10
+   },
+   "UNLOCKING": {
+    "sequence": "unlock",
+    "next": "OPENING",
+    "ticks": 5
+   },
+   "OPENING": {
+    "sequence": "open",
+    "next": "OPEN",
+    "ticks": 14
+   },
+   "OPEN": {
+    "sequence": "open_hold",
+    "next": null,
+    "ticks": 40
+   },
+   "CLOSING": {
+    "sequence": "close",
+    "next": "CLOSED",
+    "ticks": 14
+   }
+  },
+  "start": "CLOSED -> ANTICIPATING (outcome treat or trick is fixed here and does not change the pose timeline)",
+  "close": "OPEN -> CLOSING (requested by the controller: the close_request event, or an API call)",
+  "reset": "any state -> CLOSED, all channels to rest, reveal candy removed (sequence 'reset')",
+  "total_ticks_closed_to_open": 29,
+  "total_ticks_open_to_closed": 14
+ },
+ "reveal": {
+  "count": 3,
+  "models": [
+   "reveal_a",
+   "reveal_b",
+   "reveal_c"
+  ],
+  "start_units": [
+   [
+    8.0,
+    11.0,
+    8.0
+   ],
+   [
+    6.8,
+    11.0,
+    8.6
+   ],
+   [
+    9.2,
+    11.0,
+    7.4
+   ]
+  ],
+  "rise_units": [
+   24.0,
+   28.0,
+   26.0
+  ],
+  "rise_ticks": 24,
+  "hold_ticks": 40,
+  "collect_ticks": 8,
+  "scale_keys": [
+   [
+    0,
+    0.3,
+    "out_cubic"
+   ],
+   [
+    12,
+    1.25,
+    "in_out_sine"
+   ],
+   [
+    24,
+    1.0,
+    "linear"
+   ]
+  ],
+  "spin_deg_per_tick": [
+   18.0,
+   -14.0,
+   22.0
+  ],
+  "stagger_ticks": [
+   0,
+   3,
+   6
+  ],
+  "bob_units": 0.6,
+  "bob_period_ticks": 40,
+  "note": "Floating reveal candy: each is its own display entity, spawned only after the lid is fully OPEN (after OPENING), so the trick and treat timelines are identical until then. Position = root + start + rise; rotation yaw spin; scale from scale_keys."
+ }
+}
