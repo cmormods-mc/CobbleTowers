@@ -1,0 +1,122 @@
+# Jack-o'-Lantern Vault: handoff report
+
+Target: Minecraft 1.21.1, Fabric (loader 0.17.2, API 0.116.6), Java 21, Polymer 0.9.19, **server-side only**: a vanilla client needs the Polymer
+resource pack and nothing else. Namespace `cobbletowers:halloween/jack_o_lantern_vault`. Built against this repo's own `build.gradle`,
+`fabric.mod.json` and the real Polymer virtual-entity jar (API read with `javap`, not from memory).
+
+Read this first: **what I tested, what I did not, and the one mistake the tests missed** are in sections 8 to 10.
+
+## 1. Files
+
+Editable source
+* `art/jack_o_lantern_vault/jack_o_lantern_vault.bbmodel`: Blockbench source (Java Block/Item format, 157 cubes, 28 groups, embedded atlas, 7 preview animations).
+* `tools/vault/vault_spec.py` (geometry), `vault_paint.py` (pixels), `vault_anim.py` (animation + state machine + transform maths), `vault_events.py`,
+  `vault_export.py`, `vault_render.py` (preview renderer), `vault_build.py` (builds everything), `vault_verify.py` (36 checks), `realclient_scene.py` (real-client driver).
+
+Runtime exports (in the jar, copied into the Polymer pack by the existing `addModAssets`)
+* `assets/cobbletowers/models/halloween/jack_o_lantern_vault/{body,lid,face_plate,candy_fill,reveal_a,reveal_b,reveal_c}.json` and `vault_full.json` (static assembled, not requested at runtime).
+* `assets/cobbletowers/textures/item/halloween/jack_o_lantern_vault/vault.png`.
+* `data/cobbletowers/halloween/jack_o_lantern_vault/animation.json` and `events.json`.
+
+Java (`com.cobbletowers.halloween.vault`): `VaultPose`, `VaultFacing`, `VaultPiece`, `VaultMath`, `VaultTransforms`, `VaultTimeline`, `VaultEvent`, `VaultMachine`,
+`VaultReveal`, `VaultManifest` (all pure, no Minecraft types) and `VaultModels`, `VaultDisplay`, `VaultService` (Polymer); `com.cobbletowers.command.VaultCommand`;
+two lines in `CobbleTowers.java` (install and command registration). Tests: `src/test/java/com/cobbletowers/halloween/vault/` (17 tests) and `src/test/resources/vault/animation_golden.json`.
+
+Previews (`art/jack_o_lantern_vault/previews/`): `closed.png`, `open.png`, `compare_reference.png` (concept vs model, closed and open), `facings.png`, `pieces.png`,
+`atlas_x3.png`, `animation_strip.png`, `animation_preview.gif` (119 frames, one per tick, with the reveal candy), and `realclient/` (screenshots from a real vanilla client).
+Docs: `README.md`, `VISUAL-CHECKLIST.md`, `validation-report.json`.
+
+## 2. Dimensions
+
+Model units, 16 per block, vault space (x east, y up, z south, front = north face, floor y = 0).
+
+| | |
+|---|---|
+| Footprint | 16 wide (x 0..16) x 13 deep over the posts (z 1.5..14.5), feet to z 1..15; the 0.5 unit rivet studs overhang x by 0.5 |
+| Shell | 12 x 11 (x 2..14, z 2.5..13.5), walls 1 thick, cavity 10 x 9 x 6 (x 3..13, z 3.5..12.5, y 3..9) |
+| Height | rim top 9.0; posts 13.0 (+0.5 cap nub); lid tiers top 14.25; stem top 18.0 (the closed vault is 1.125 blocks tall) |
+| Lid | 11 wide (x 2.5..13.5), 12 deep, 5.25 thick without the stem; stepped: skirt 3.0, tier B 1.25, raised centre 1.0; stem 3.75 |
+| Posts | 2.5 x 2.5, feet 3.5 x 3.5 x 2.25, cap 1.5 x 1.5 x 0.5 |
+| Face plate | 5.5 x 6.0 x 1.3 (0.6 carved layer on a 0.7 backing), x 5.25..10.75, in front of the rim band |
+| Candy | slab to 70% of the cavity, 12 wrapped candies 3 x 1.75 on top, mean top y 9.5 (rim 9.0), highest 10.4 |
+
+## 3. Texture
+
+One shared atlas, **256 x 256** RGBA, 2 texels per model unit (a texel is half a unit), every element face its own island with 2 extruded border texels, 26% of the atlas used,
+nothing transparent, no overlapping islands (checked). 157 elements: body 48, lid 37, face plate 26, candy fill 37, reveal 3 x 3.
+
+## 4. Runtime pieces
+
+7 models, **4 persistent display entities per vault** (body, lid, face plate, candy fill) plus **3 reveal candies** while a treat is revealed (7 at most). The persistent pieces
+move as rigid bodies: only the lid rotates, only the face plate translates, all four share one root shake. Pack cost: about 237 KB of JSON and a 17 KB PNG,
+about 31 KB zipped (plus `vault_full.json`, 113 KB, which nothing requests).
+
+## 5. Hinge, contract, facing
+
+* Hinge axis parallel to x through model (8, 9, 14) = root-local (0, 0.5625, 0.375) blocks, the back-top edge of the rim. Positive rotation about +x lifts the lid's front. Channel `lid.rot_x_deg`.
+* Rest translation (0, 0.5, 0) for every persistent piece (the display is centred on model (8, 8, 8)), scale 1, `model_transformation` NONE.
+* Lid: `Tc = H + R (c - H)`, `R = rotX(angle)`: `root x translate(H) x R x translate(-H) x rest`, no double offset (checked: at rest all four pieces share one transform).
+* Facing: `Rnet` about +y (north 0, west 90, south 180, east -90) applied after, to translation and rotation. Sent: `T = Rnet Tc`, `q = Rnet R F`, `F = rotY(180)`, because the client turns the item model a
+  half circle about its own centre axis (section 10). Entity yaw is always 0.
+* Interpolation: one sample per tick, `interpolation_duration` 1 (looping idle states every 5 ticks, duration 5). The sagitta error of the chord at the fastest tick (about 18 degrees per tick) is about 0.005 block.
+
+## 6. Durations, final angle, effect timings
+
+| Sequence | Ticks | Seconds |
+|---|---|---|
+| closed_idle (loop) | 40 | 2.0 |
+| anticipation | 10 | 0.5 |
+| unlock | 5 | 0.25 |
+| open | 14 | 0.7 |
+| open_hold (loop) | 40 | 2.0 |
+| close | 14 | 0.7 |
+| reset | 0 | instant |
+
+Closed to fully open: 29 ticks (1.45 s). **Final lid angle 115 degrees**, peak 118 (3 degrees overshoot) at open tick 10, settled at tick 14.
+
+Effects (`events.json`, state tick; vanilla sound and particle ids only): anticipation 0 `block.chest.locked` + `soul_fire_flame`, 4 `entity.evoker.prepare_summon`, 6 `flame`; unlock 2 `block.stone_button.click_on` + `smoke`;
+opening 0 `block.barrel.open`, 1 `block.wooden_trapdoor.open`, 4 `flame` x14, 10 `end_rod` x10; **at OPEN tick 0 the outcomes diverge**: treat gets `reward_trigger`, `reveal_spawn` (3 candies), `entity.player.levelup`, `happy_villager`, tick 2
+`block.amethyst_block.chime`, tick 72 `reveal_collect`, tick 80 `close_request`; trick gets `encounter_trigger`, `entity.vex.charge`, `soul_fire_flame`, tick 2 `block.sculk_shrieker.shriek`, tick 20 `close_request`;
+closing 0 `block.wooden_trapdoor.close`, 11 `block.barrel.close` + `poof`. Reward and encounter are triggers for a listener; the vault grants and spawns nothing.
+
+## 7. Wired in, not wired to anything
+
+`VaultService.install()` runs at startup and `/cobbletowers vault ...` exists, but **no tower floor spawns a vault yet and nothing listens for `reward_trigger` / `encounter_trigger`**. The Trick or Treat design (P54) still owns that.
+
+## 8. Validation that was done
+
+* `python3 tools/vault/vault_verify.py`: **36 of 36 checks** on the files on disk: 8 models, atlas shape, vanilla-legal elements and rotations (-16..32, 22.5 steps), no UV overlap, no transparent texel, plate centred, lid on the rim, hinge on the lid's back-bottom edge,
+  candy inside the cavity and inside the lid's hollow, no vine bridging the seam, `vault_full` = the four pieces, reveal pieces centred, **a hinge clearance sweep 0..118 degrees in 0.5 steps** (about 7,000 lid points against every body, plate and candy box, no penetration over 0.03 unit),
+  the contract in four facings, hinge points fixed for every angle, the lid transform against an independent matrix formula, timing (0.5 / 0.25 / 0.7 / 0.7 s), continuity at every sequence boundary, peak and settle, **120 automated cycles** (treat and trick alternating) with bit-identical first and last closed transforms,
+  trick and treat identical to tick 29, no outcome-specific event before OPEN, reset from every state at 15 ticks each, reveal start and rise.
+* Java: **967 tests, 0 failed** (3 pre-existing skips), of which 17 are new: durations, the 3 degree overshoot, guarded transitions, reset from every state and tick, trick/treat identity, **120 cycles**, hinge fixed points in four facings, front direction, the matrix formula,
+  **Java against the Python reference at every tick of every sequence and 96 transform samples** (golden table), reveal motion, all eight model JSONs, the atlas, both manifests, vanilla-only sound and particle ids, no reward event before OPEN.
+* Compiled against the real Polymer virtual-entity jar (`./gradlew build`).
+* **Real client** (vanilla 1.21.1 client, no mods, Xvfb with software GL, scratch Fabric server with CobbleTowers, Cobblemon and CobbleRaids, Polymer pack served by `polymer-autohost`): the vault spawned with `/cobbletowers vault spawn`, closed front and three-quarter, **start, anticipation, unlock, open, hold, treat reveal with the floating candy, close**, and **all four facings closed and open, with the camera in front each time**. After the fix of section 10 the face plate faces the
+  camera and the lid hinges away from it in all four. Images: `previews/realclient/`. 5 vaults spawned, 6 started (one after a reset) and 5 removed in the live server without an error in the log. Particles and sounds from the manifest fired (particles seen).
+
+## 9. Not tested
+
+* **The `.bbmodel` has never been opened in Blockbench.** It was generated and checked structurally only (every outliner child exists, every animator key is a group, the texture decodes to the atlas). If Blockbench rejects something, regenerate the model JSONs from `tools/vault` instead, they do not depend on it.
+* **Motion in a real client.** The animation grabs (`realclient_animation_grabs.png`) are screen captures at about 0.14 s, not tick-exact; I did not judge smoothness or the interpolation feel at 20 TPS, nor measure the overshoot on screen.
+* Sound was not heard (no audio device), only the events' presence in the manifest and the particles on screen.
+* A client **without** the pack (the vault is then hidden by `requirePack`), a second player watching, a chunk unloading and reloading mid-animation, a server restart with vaults placed (they are not saved), and TPS with many vaults.
+* The 120-cycle test ran on the state machine and the pose maths (Python and Java); the live server ran 6 cycles, not 100.
+* No wiring to the tower: no reward was granted and no encounter was started.
+* The AscensionLib, SnobblemonRaids and SpookySurge repos were not touched by this work.
+
+## 10. The mistake the tests missed, and the fix
+
+My first coordinate contract assumed an item display at yaw 0 draws its model unrotated. **It does not**: Minecraft's item display renderer turns the item model a half circle about y inside its own frame, so at identity the model's north face looks south.
+Every unit test I wrote and all 36 Python checks passed, because they checked my assumption against itself. The first real-client run showed a vault with **no face plate** (the plate has no back faces) in all four facings and the lid hinged on the wrong side
+(`previews/realclient/before_fix_plate_missing_wrong_facing.png`). I measured the flip with a bare `item_display` (plate seen from the south, not from the north), derived that the half turn acts on the model vector only, not on the translation
+(a first attempt that flipped the translation too opened the lid toward the camera), and fixed the contract: send `q = Rnet R F`. The Python renderer, the Java transform, the manifest and the tests now all carry it, and the real client confirms all four facings.
+Lesson kept in `animation.json` and the README: the contract is what the client draws, not what the maths suggests.
+
+## 11. Deviations from the concept
+
+* Face plate about 10% larger than the concept (the carved face needs 11 cells to read at this grain).
+* No glow, sparks or embers in the model (item models cannot be emissive): they are the manifest's particles. The concept's candy glow is painted flat.
+* Two dark straps run over the lid top as the brief asks; the closed concept shows none on top.
+* Rivet studs overhang the one-block footprint by 0.5 unit on the post sides.
+* The atlas, the vines and the candy are original pixel work generated for this repo, matched to the concept by eye, not traced. The supplied Mystery Box pack was only looked at as an example of how paper + custom-model-data packs are laid out (it hardcodes `custom_model_data` 2000001); nothing from it is used.
