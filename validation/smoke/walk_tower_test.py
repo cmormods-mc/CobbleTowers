@@ -129,6 +129,16 @@ def walk(walkers: list[Walker], origin: tuple[int, int, int], points: list[tuple
     return problems
 
 
+def win_floor(rcon: Rcon, floor: int) -> bool:
+    """The operator win, repeated: a floor with extra opponents (a modifier) starts the next wave when one is won, so one command is not enough."""
+    time.sleep(3)   # let the floor's battles start before they are ended
+    for _ in range(8):
+        rcon.command(f"cobbletowers runs winfloor {A}")
+        if wait_state(rcon, "INTERMISSION", seconds=6, floor=floor):
+            return True
+    return False
+
+
 def route_to_vendor(floor: int) -> list[tuple[float, float]]:
     """Own-frame waypoints from the arena door, across the arena, through gate A and into the vendor's room."""
     return [(mx(floor, x), z) for x, z in ((32, 34), (48, 28), (48, 12))]
@@ -213,8 +223,7 @@ def main() -> None:
                 check(f"{at}: gate A is shut while the floor is fought", gate_state(rcon, origin, lay["gate_a"], "minecraft:iron_bars"))
                 if "gate_b" in lay:
                     check(f"{at}: gate B is shut too", gate_state(rcon, origin, lay["gate_b"], "minecraft:iron_bars"))
-                rcon.command(f"cobbletowers runs winfloor {A}")   # the operator win: the real path from the battle's end on
-                if not wait_state(rcon, "INTERMISSION", seconds=30, floor=floor):
+                if not win_floor(rcon, floor):
                     raise RuntimeError(f"{at} never reached its intermission: " + run_line(rcon))
                 check(f"{at}: winning it opens gate A", gate_state(rcon, origin, lay["gate_a"], "minecraft:air"))
                 vendor = lay["exit"]
