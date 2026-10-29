@@ -32,6 +32,9 @@ from pathlib import Path
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import interiors  # noqa: E402
+
 SIZE_X, SIZE_Y, SIZE_Z = 97, 121, 97
 FLOORS = 10
 BASE_FEET = 6
@@ -313,13 +316,9 @@ def decorate(t: Tower, floor: int, f: int, top: int) -> None:
     ground = f - 1
     accent = (ORANGE, PURPLE, ORANGE)[(floor - 1) // 4 % 3]
     decorate_arena(t, floor, f, top, accent, ground)
-    # intermission room: a purple floor, a lit dais for the vendor, hanging lights over the pedestals in front of the doors
-    t.fill(ARENA_X[0], ARENA_X[1], ground, ground, INTER_Z[0], INTER_Z[1], PURPLE)
-    t.fill(VENDOR[0] - 3, VENDOR[0] + 3, ground, ground, VENDOR[1] - 3, VENDOR[1] + 3, TERRA)
-    t.fill(VENDOR[0] - 1, VENDOR[0] + 1, ground, ground, VENDOR[1] - 1, VENDOR[1] + 1, accent)
-    for x in range(26, 72, 8):
-        t.set(x, f + CLEAR, 25, LANTERN)
-        t.set(x, f + CLEAR, 32, LANTERN)
+    # intermission room: the gothic dressing lives in interiors.py
+    interiors.decorate_inter(t, f, top, accent, {"x0": ROOMS_X[0], "x1": ROOMS_X[1], "z0": INTER_Z[0], "z1": INTER_Z[1],
+                                                  "centers": CHAMBER_CENTERS, "door_half": DOOR_HALF, "vendor": VENDOR})
     for c in CHAMBER_CENTERS:
         t.set(c, top, PEDESTAL_Z, SOUL)
         # the door frame: a lintel and two jambs of crying obsidian (the lintel is what lights up)
@@ -332,20 +331,12 @@ def decorate(t: Tower, floor: int, f: int, top: int) -> None:
         for z in (9, 13, 17):
             t.set(c, f + CLEAR, z, LANTERN)
     # the corridor behind the chambers
-    t.fill(ARENA_X[0], ARENA_X[1], ground, ground, CORRIDOR_Z[0], CORRIDOR_Z[1], DARK)
-    for x in range(24, 74, 8):
-        t.set(x, f + CLEAR, 3, LANTERN)
-    # halls: a dark runner and a lantern line
-    for hall in (ARRIVAL, STAIR_HALL):
-        t.fill(hall[0], hall[1], ground, ground, 2, 72, DARK)
-        t.fill(hall[0] + 5, hall[0] + 10, ground, ground, 2, 72, PURPLE)
-        for z in range(6, 70, 8):
-            t.set(hall[0] + 7, f + CLEAR, z, LANTERN)
-            t.set(hall[0] + 8, f + CLEAR, z, LANTERN)
-    # gallery
-    t.fill(2, 94, ground, ground, GALLERY_Z[0], GALLERY_Z[1], DARK)
-    for x in range(8, 90, 10):
-        t.set(x, f + CLEAR, 84, LANTERN)
+    interiors.decorate_corridor(t, f, top, accent, ARENA_X[0], ARENA_X[1], CORRIDOR_Z[0], CORRIDOR_Z[1], ground, list(CHAMBER_CENTERS))
+    # halls: ribbed naves with a runner, lit pilasters and hanging lamps
+    interiors.decorate_hall(t, f, top, accent, ARRIVAL, True, 2, 72, ground)
+    interiors.decorate_hall(t, f, top, accent, STAIR_HALL, False, 2, 72, ground)
+    # gallery: a long hall behind the arena window
+    interiors.decorate_gallery(t, f, top, accent, 2, 94, GALLERY_Z[0], GALLERY_Z[1], ground, (44, 52), (24, 72))
     # webs above head height only (feet + 3 and up), in corners of the arena, the vendor's room and the gallery
     for x, z in ((20, 37), (76, 37), (20, 72), (76, 72), (20, 23), (76, 23), (2, 75), (94, 75), (2, 94), (94, 94)):
         t.set(x, top, z, COBWEB)

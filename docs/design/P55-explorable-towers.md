@@ -261,3 +261,15 @@ An event tower (one with a window) may offer a fourth kind of stop, `TRICK_OR_TR
   New channels `face_plate.y_units` and `root.y_units`; hinge (8, 15.65, 17.8); anticipation 13, unlock 8, open 22, close 19 ticks; lid peaks at 116 over a 112 rest. The old generators in `tools/vault/` (`vault_build.py` etc.) are superseded and would overwrite this art.
 * **Live**: `walk_tower_test.py` takes the Trick or Treat lane whenever the floor offers one, opens the vault and checks what follows from the server log; `runs winfloor` while a mimic is under way
   beats it (operator tool).
+
+
+## As built: gothic interiors, pass 1 (2026-10-29)
+
+`tools/halloween_tower/interiors.py` dresses the intermission room, both halls, the corridor and the gallery (the arena kept its own dressing). Piers and ribs on a six-block rhythm, lit lancet windows
+(violet to amber glass over froglights), a jack-o'-lantern in every pier at eye height, pumpkin-face banners, inlaid floors (purple spine, orange spurs, crying obsidian edges), weathered walls, hanging
+lamps, webs above head height, benches in the gallery with the spectator aisle clear. It adds dressing only; `hollow_tower.py` still owns walls, gates and zones, and its validator still passes.
+
+* **See it without a client**: `python tools/halloween_tower/view.py <out_dir> <floor> name:x,y,z,yaw,pitch ...` (floor-local coordinates) is a voxel ray caster over the real 1.21.1 textures with the game's
+  own block-light propagation and the default Moody gamma, so a room is as bright as it will be in play. Pictures of this pass: `docs/handoff/interiors/hollow-interiors-pass1.jpg`.
+* **Still bare or untouched**: the eight stop rooms (`rooms.py`), chamber doorways and door frames, the arena's side walls (kept), the stair, outer-wall windows (they show the void), a real-client look.
+* **Not seen in the game yet**: the renderer approximates stairs, slabs and lanterns as boxes and has no ambient occlusion.

@@ -106,10 +106,13 @@ class HollowTowerTest(unittest.TestCase):
             self.assertEqual(ht.STAIR_BLOCK, self.t.at(86, f + i - 1, 5 + i))
 
     def test_nothing_unknown_in_the_palette(self):
-        known = {v for v in vars(ht).values() if isinstance(v, str) and v.startswith("minecraft:")}
-        # a mirrored floor flips the facing of an east or west block
-        known |= {v.replace("east", "west") for v in known} | {v.replace("west", "east") for v in known}
-        self.assertEqual(set(), set(self.t.palette) - known)
+        import interiors
+        # every block is a constant of the generator or of the interiors, or a stair, slab or jack-o'-lantern those modules build by helper
+        def base(v):
+            return v.split("[")[0]
+        known = {base(v) for mod in (ht, interiors) for v in vars(mod).values() if isinstance(v, str) and v.startswith("minecraft:")}
+        known |= {"minecraft:polished_blackstone_brick_stairs", "minecraft:polished_blackstone_brick_slab", "minecraft:jack_o_lantern"}
+        self.assertEqual(set(), {base(v) for v in self.t.palette} - known)
 
 
 class RoomsInChambersTest(unittest.TestCase):
