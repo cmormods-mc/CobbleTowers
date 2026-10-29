@@ -159,9 +159,13 @@ def route_to_arena(next_floor: int) -> list[tuple[float, float]]:
     return [(mx(next_floor, x), z) for x, z in ((10, 24), (10, 48), (21.5, 48))]
 
 
-def chosen_lane(rcon: Rcon) -> int:
-    """The lane the vote settled on, from the run report."""
-    found = re.search(r"route: lane (\d)", show(rcon))
+def chosen_lane(rcon: Rcon, floor: int) -> int:
+    """The lane the vote settled on, from the run report; -1 when this floor's draft is not a route draft (a relic at a boss floor, an event)."""
+    report = show(rcon)
+    drafts = [line for line in report.splitlines() if f"draft at floor {floor}" in line]
+    if not drafts or "(ROUTE" not in drafts[0]:
+        return -1
+    found = re.search(r"route: lane (\d)", report)
     return int(found.group(1)) if found else -1
 
 
@@ -253,8 +257,8 @@ def main() -> None:
                 for _ in range(2):
                     play(rcon, A, "pick 1")
                     play(rcon, B, "pick 1")
-                lane = chosen_lane(rcon)
-                if floor in (5, 10) or lane < 0:
+                lane = chosen_lane(rcon, floor)
+                if lane < 0:
                     # a relic draft has no lanes: the middle door is opened for the team when it sets out
                     lane = -1
                 else:
