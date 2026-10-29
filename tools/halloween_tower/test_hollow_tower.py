@@ -45,14 +45,36 @@ class HollowTowerTest(unittest.TestCase):
         self.t.grid[ax:bx + 1, ay:by + 1, az:bz + 1] = 0
         self.assertIn("vendor's room is reachable with gate A closed", self.complaints())
 
+    def test_an_open_route_door_is_caught(self):
+        d = ht.layout(3)["doors"][1]["open"]
+        (ax, ay, az), (bx, by, bz) = d["min"], d["max"]
+        self.t.grid[ax:bx + 1, ay:by + 1, az:bz + 1] = 0
+        self.assertIn("chamber 1 is reachable with its door shut", self.complaints())
+
     def test_an_open_gate_b_is_caught(self):
-        g = ht.layout(4)["gate_b"]
-        (ax, ay, az), (bx, by, bz) = g["min"], g["max"]
-        self.t.grid[ax:bx + 1, ay:by + 1, az:bz + 1] = 0
-        g_a = ht.layout(4)["gate_a"]
-        (ax, ay, az), (bx, by, bz) = g_a["min"], g_a["max"]
-        self.t.grid[ax:bx + 1, ay:by + 1, az:bz + 1] = 0
-        self.assertTrue(ht.validate(self.t))
+        for name in ("gate_b",):
+            g = ht.layout(4)[name]
+            (ax, ay, az), (bx, by, bz) = g["min"], g["max"]
+            self.t.grid[ax:bx + 1, ay:by + 1, az:bz + 1] = 0
+        self.assertIn("with gate B shut", self.complaints())
+
+    def test_a_sealed_chamber_is_caught(self):
+        f = ht.feet(5)
+        self.t.mirror = False
+        # wall off the back doorway of the left chamber: the corridor is then not reachable through its door
+        self.t.fill(35, 37, f, f + 3, 5, 5, ht.PLAIN_WALL)
+        self.assertIn("the corridor is not reachable through door 0", self.complaints())
+
+    def test_the_doors_run_west_to_east_with_a_pedestal_each(self):
+        for floor in range(1, 11):
+            doors = ht.layout(floor)["doors"]
+            self.assertEqual(3, len(doors))
+            xs = [d["pedestal"]["x"] for d in doors]
+            self.assertEqual(sorted(xs), xs)
+            self.assertEqual([36, 48, 60], xs)
+            for d in doors:
+                self.assertEqual((d["open"]["min"][0] + d["open"]["max"][0]) // 2, d["pedestal"]["x"], "a pedestal stands right in front of its door")
+                self.assertTrue(ht.standable(self.t, d["pedestal"]["x"], d["pedestal"]["y"], d["pedestal"]["z"]))
 
     def test_a_walled_door_is_caught(self):
         f = ht.feet(2)
@@ -84,10 +106,46 @@ class HollowTowerTest(unittest.TestCase):
             self.assertEqual(ht.STAIR_BLOCK, self.t.at(86, f + i - 1, 5 + i))
 
     def test_nothing_unknown_in_the_palette(self):
-        known = {ht.AIR, ht.PLAIN_WALL, ht.OUTER, ht.SLAB, ht.TRIM, ht.DARK, ht.PURPLE, ht.TERRA, ht.ORANGE, ht.GLASS, ht.LANTERN,
-                 ht.BARS, ht.WALL_CAP, ht.STAIR_BLOCK, ht.CHISELED, ht.AMETHYST, ht.SHROOM, ht.COBWEB, ht.SOUL,
-                 ht.GLOW_EAST, ht.GLOW_WEST, ht.GLOW_SOUTH, ht.GLOW_EAST.replace('east', 'west'), ht.GLOW_WEST.replace('west', 'east')}
+        known = {v for v in vars(ht).values() if isinstance(v, str) and v.startswith("minecraft:")}
+        # a mirrored floor flips the facing of an east or west block
+        known |= {v.replace("east", "west") for v in known} | {v.replace("west", "east") for v in known}
         self.assertEqual(set(), set(self.t.palette) - known)
+
+
+class RoomsInChambersTest(unittest.TestCase):
+    """Every room, in every chamber of a mirrored and an unmirrored floor, still lets the party through from the door to the corridor."""
+
+    def place(self, t, floor, door_index, room):
+        import rooms
+        lay = ht.layout(floor)
+        door = lay["doors"][door_index]
+        cx = (door["open"]["min"][0] + door["open"]["max"][0]) // 2
+        f = ht.feet(floor)
+        x0, z0 = cx - 5, door["open"]["min"][2] - rooms.D
+        t.grid[x0:x0 + rooms.W, f:f + 8, z0:z0 + rooms.D] = 0                       # the dresser clears the chamber first
+        for x in range(rooms.W):
+            for y in range(rooms.H):
+                for z in range(rooms.D):
+                    block = int(room.grid[x, y, z])
+                    if block:
+                        t.grid[x0 + x, f - 1 + y, z0 + z] = t.block_id(room.palette[block])
+
+    def test_every_room_in_every_chamber(self):
+        sys.path.insert(0, str(Path(__file__).parent))
+        import rooms
+        for floor in (2, 3):
+            for kind in rooms.ROOMS:
+                t = ht.build()
+                for i in range(3):
+                    self.place(t, floor, i, rooms.build(kind))
+                lay = ht.layout(floor)
+                entry = ht.cell_of(lay, "entry")
+                corridor = (ht.mx(floor, 48), ht.feet(floor), 3)
+                for i, door in enumerate(lay["doors"]):
+                    through = ht.reach(t, entry, [lay["gate_a"], door["open"]])
+                    self.assertIn(corridor, through, f"floor {floor}, {kind} behind door {i}: the corridor is not reachable")
+                    self.assertTrue(all(c in ht.reach(t, entry, [lay["gate_a"], door["open"], lay["gate_b"]]) for c in [ht.cell_of(ht.layout(floor + 1), "entry")]),
+                                    f"floor {floor}, {kind} behind door {i}: the next floor is not reachable")
 
 
 if __name__ == "__main__":

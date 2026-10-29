@@ -133,4 +133,33 @@ class PedestalRulesTest {
         List<PedestalRules.Slot> slots = List.of(new PedestalRules.Slot(0, 0, 0), new PedestalRules.Slot(-2, 0, 0));
         assertEquals(Optional.of(0), PedestalRules.gazedAt(4, 1, 0, -1, 0, 0, slots));
     }
+
+    private static final java.util.List<PedestalRules.Slot> DOORS = java.util.List.of(
+            new PedestalRules.Slot(36.5, 6, 27.5), new PedestalRules.Slot(48.5, 6, 27.5), new PedestalRules.Slot(60.5, 6, 27.5));
+
+    @Test
+    void aRouteDraftPutsEachCardInFrontOfItsLanesDoor() {
+        var slots = PedestalRules.atDoors(java.util.List.of(2, 0, 1), DOORS, 3).orElseThrow();
+        assertEquals(DOORS.get(2), slots.get(0));
+        assertEquals(DOORS.get(0), slots.get(1));
+        assertEquals(DOORS.get(1), slots.get(2));
+        var two = PedestalRules.atDoors(java.util.List.of(0, 2), DOORS, 2).orElseThrow();
+        assertEquals(java.util.List.of(DOORS.get(0), DOORS.get(2)), two);
+    }
+
+    @Test
+    void aDraftWithNoLanesSpreadsOverTheDoors() {
+        assertEquals(java.util.List.of(DOORS.get(1)), PedestalRules.atDoors(java.util.List.of(), DOORS, 1).orElseThrow());
+        assertEquals(java.util.List.of(DOORS.get(0), DOORS.get(2)), PedestalRules.atDoors(java.util.List.of(), DOORS, 2).orElseThrow());
+        assertEquals(DOORS, PedestalRules.atDoors(java.util.List.of(), DOORS, 3).orElseThrow());
+    }
+
+    @Test
+    void impossibleLanesFallBackToTheRow() {
+        assertTrue(PedestalRules.atDoors(java.util.List.of(0, 0), DOORS, 2).isEmpty(), "two cards on one door");
+        assertTrue(PedestalRules.atDoors(java.util.List.of(0, 3), DOORS, 2).isEmpty(), "a lane with no door");
+        assertTrue(PedestalRules.atDoors(java.util.List.of(0), DOORS, 2).isEmpty(), "lanes and cards disagree");
+        assertTrue(PedestalRules.atDoors(java.util.List.of(), DOORS, 4).isEmpty(), "more cards than doors");
+        assertTrue(PedestalRules.atDoors(java.util.List.of(), java.util.List.of(), 1).isEmpty(), "no doors at all");
+    }
 }

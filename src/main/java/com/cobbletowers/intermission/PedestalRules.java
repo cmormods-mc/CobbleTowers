@@ -174,6 +174,29 @@ public final class PedestalRules {
     }
 
     /**
+     * Pedestals in front of the doors of a walkable tower. A route draft puts card {@code i} in front of door {@code lanes[i]}; any other draft
+     * (a relic, an event room) spreads its cards over the doors, the middle one for a single card and the two outer ones for a pair.
+     * @param lanes the lane each card rides on, empty for a draft with no lanes
+     * @param doors the places in front of the doors, left to right
+     * @return empty when the doors cannot take that many cards
+     */
+    public static Optional<List<Slot>> atDoors(List<Integer> lanes, List<Slot> doors, int count) {
+        if (count < 1 || count > doors.size()) return Optional.empty();
+        List<Slot> slots = new ArrayList<>(count);
+        if (!lanes.isEmpty()) {
+            if (lanes.size() != count) return Optional.empty();
+            for (int lane : lanes) {
+                if (lane < 0 || lane >= doors.size() || slots.contains(doors.get(lane))) return Optional.empty();
+                slots.add(doors.get(lane));
+            }
+            return Optional.of(slots);
+        }
+        int[] pick = count == 1 ? new int[] {doors.size() / 2} : count == 2 ? new int[] {0, doors.size() - 1} : null;
+        for (int i = 0; i < count; i++) slots.add(doors.get(pick == null ? i : pick[i]));
+        return Optional.of(slots);
+    }
+
+    /**
      * The pedestal the ray from {@code eye} along {@code look} meets first inside {@link #GAZE_RANGE}, or empty. Slab
      * test against each pedestal's upright box.
      */

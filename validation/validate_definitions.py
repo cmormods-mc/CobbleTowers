@@ -137,7 +137,46 @@ def check_layouts(content: dict, problems: list[str]) -> int:
                 problems.append(f"{where} has no headroom")
             checked += 1
         check_gates(floor_id, layout, size, occupied, problems)
+        check_doors(floor_id, layout, size, occupied, supporting, problems)
     return checked
+
+
+def check_doors(floor_id: str, layout: dict, size, occupied: set, supporting: set, problems: list[str]) -> None:
+    """Each route door is a shut gate of bars with a lintel above it and a pedestal spot in front of it; at most three, left to right."""
+    doors = layout.get("doors")
+    if doors is None:
+        return
+    if not isinstance(doors, list) or len(doors) > 3:
+        problems.append(f"{floor_id} doors must be a list of at most three")
+        return
+    for i, door in enumerate(doors):
+        where = f"{floor_id} door {i}"
+        for part in ("open", "frame"):
+            box = door.get(part)
+            if box is None:
+                problems.append(f"{where} has no {part} box")
+                continue
+            low, high = box.get("min"), box.get("max")
+            if not (isinstance(low, list) and isinstance(high, list) and len(low) == 3 and len(high) == 3) or any(a > b for a, b in zip(low, high)):
+                problems.append(f"{where} {part} is not a box")
+                continue
+            if any(a < 0 for a in low) or any(b >= limit for b, limit in zip(high, size)):
+                problems.append(f"{where} {part} is outside the structure")
+                continue
+            missing = [(x, y, z) for x in range(low[0], high[0] + 1) for y in range(low[1], high[1] + 1)
+                       for z in range(low[2], high[2] + 1) if (x, y, z) not in occupied]
+            if missing:
+                problems.append(f"{where} {part} is not solid as built: {len(missing)} of its blocks are air, for example {missing[0]}")
+        pedestal = door.get("pedestal")
+        if pedestal is None:
+            problems.append(f"{where} has no pedestal anchor")
+            continue
+        x, y, z = pedestal.get("x", 0), pedestal.get("y", 0), pedestal.get("z", 0)
+        if (x, y - 1, z) not in supporting or (x, y, z) in occupied or (x, y + 1, z) in occupied:
+            problems.append(f"{where} pedestal ({x},{y},{z}) is not somewhere to stand")
+    xs = [d.get("pedestal", {}).get("x", 0) for d in doors]
+    if xs != sorted(xs):
+        problems.append(f"{floor_id} doors are not listed left to right (west to east): pedestal x {xs}")
 
 
 def check_gates(floor_id: str, layout: dict, size, occupied: set, problems: list[str]) -> None:

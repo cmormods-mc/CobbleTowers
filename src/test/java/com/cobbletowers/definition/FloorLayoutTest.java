@@ -115,4 +115,35 @@ class FloorLayoutTest {
         String missing = WITH_GATES.replace("\"min\": [20, 2, 30], ", "");
         assertThrows(IllegalArgumentException.class, () -> FloorLayout.fromJson(json(missing).getAsJsonObject("layout")));
     }
+
+    private static String doorJson(int x) {
+        return "{\"open\": {\"min\": [" + (x - 2) + ", 6, 21], \"max\": [" + (x + 2) + ", 11, 22]},"
+                + " \"frame\": {\"min\": [" + (x - 3) + ", 12, 21], \"max\": [" + (x + 3) + ", 13, 22]},"
+                + " \"pedestal\": {\"x\": " + x + ", \"y\": 6, \"z\": 27}}";
+    }
+
+    @Test
+    @DisplayName("route doors are read in order, each with its bars, its frame and the pedestal in front of it")
+    void doors() {
+        String with = JSON.replace("\"exit\":         {\"x\": 25, \"y\": 2, \"z\": 44, \"yaw\": 180}",
+                "\"exit\": {\"x\": 25, \"y\": 2, \"z\": 44, \"yaw\": 180}, \"doors\": [" + doorJson(36) + "," + doorJson(48) + "," + doorJson(60) + "]");
+        FloorLayout layout = FloorLayout.fromJson(json(with).getAsJsonObject("layout"));
+        assertEquals(3, layout.doors().size());
+        assertEquals(36, layout.doors().get(0).pedestal().x());
+        assertEquals(60, layout.doors().get(2).pedestal().x());
+        assertEquals(5 * 6 * 2, layout.doors().get(1).open().volume());
+        assertEquals(7 * 2 * 2, layout.doors().get(1).frame().volume());
+        assertTrue(FloorLayout.fromJson(json(JSON).getAsJsonObject("layout")).doors().isEmpty(), "no doors by default");
+    }
+
+    @Test
+    @DisplayName("more than three doors, or a door missing a part, is refused")
+    void badDoors() {
+        String four = JSON.replace("\"exit\":         {\"x\": 25, \"y\": 2, \"z\": 44, \"yaw\": 180}",
+                "\"exit\": {\"x\": 25, \"y\": 2, \"z\": 44, \"yaw\": 180}, \"doors\": [" + doorJson(10) + "," + doorJson(20) + "," + doorJson(30) + "," + doorJson(40) + "]");
+        assertThrows(IllegalArgumentException.class, () -> FloorLayout.fromJson(json(four).getAsJsonObject("layout")));
+        String noFrame = JSON.replace("\"exit\":         {\"x\": 25, \"y\": 2, \"z\": 44, \"yaw\": 180}",
+                "\"exit\": {\"x\": 25, \"y\": 2, \"z\": 44, \"yaw\": 180}, \"doors\": [{\"open\": {\"min\": [0,0,0], \"max\": [1,1,1]}, \"pedestal\": {\"x\": 1, \"y\": 1, \"z\": 1}}]");
+        assertThrows(IllegalArgumentException.class, () -> FloorLayout.fromJson(json(noFrame).getAsJsonObject("layout")));
+    }
 }

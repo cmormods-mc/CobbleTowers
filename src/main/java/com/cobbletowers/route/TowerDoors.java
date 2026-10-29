@@ -1,0 +1,139 @@
+package com.cobbletowers.route;
+
+import com.cobbletowers.TowerLog;
+import com.cobbletowers.definition.FloorBox;
+import com.cobbletowers.definition.FloorDoor;
+import com.cobbletowers.definition.FloorLayout;
+import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.instance.CellPreparer;
+import com.cobbletowers.instance.TowerDimension;
+import com.cobbletowers.persistence.PersistedRun;
+import java.util.List;
+import java.util.Optional;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+
+/**
+ * The three route doors of a walkable tower (P55): when the party's vote settles, the door of the chosen lane lights up (its lintel turns to
+ * shroomlight) and opens (its bars are cleared). When a floor begins every door is shut and dark again. The state is the blocks themselves, so
+ * a restart cannot disagree with it. Server thread only.
+ */
+public final class TowerDoors {
+
+    static final BlockState SHUT = Blocks.IRON_BARS.defaultBlockState();
+    static final BlockState LIT = Blocks.SHROOMLIGHT.defaultBlockState();
+    static final BlockState DARK = Blocks.CRYING_OBSIDIAN.defaultBlockState();
+
+    private TowerDoors() {}
+
+    /** The door a lane leads to: lanes and doors are both counted left to right. Empty when the floor has no such door. */
+    public static Optional<FloorDoor> doorOf(FloorLayout layout, int lane) {
+        List<FloorDoor> doors = layout.doors();
+        return lane >= 0 && lane < doors.size() ? Optional.of(doors.get(lane)) : Optional.empty();
+    }
+
+    /**
+     * The route settled on {@code lane}: its door lights up and opens. Never throws: a tower that fails to open a door must not stop the vote.
+     * @return the blocks changed
+     */
+    public static int chosen(MinecraftServer server, PersistedRun run, int lane) {
+        try {
+            return chosenUnguarded(server, run, lane);
+        } catch (RuntimeException ex) {
+            TowerLog.error("Run {}: opening the door of lane {} failed", run.runId(), lane, ex);
+            return 0;
+        }
+    }
+
+    private static int chosenUnguarded(MinecraftServer server, PersistedRun run, int lane) {
+        Located at = locate(server, run);
+        if (at == null) return 0;
+        Optional<FloorDoor> door = doorOf(at.layout, lane);
+        if (door.isEmpty()) return 0;
+        int changed = paint(at.level, door.get().frame(), at.origin, LIT, null)
+                + paint(at.level, door.get().open(), at.origin, Blocks.AIR.defaultBlockState(), null);
+        if (changed > 0) {
+            BlockPos centre = door.get().open().minIn(at.origin).offset(2, 2, 1);
+            at.level.playSound(null, centre, SoundEvents.IRON_DOOR_OPEN, SoundSource.BLOCKS, 1.4f, 0.8f);
+            at.level.playSound(null, centre, SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.8f, 1.6f);
+            TowerLog.info("Run {}: door {} of floor {} lit and opened", run.runId(), lane, run.floorIndex());
+        }
+        return changed;
+    }
+
+    /**
+     * Makes sure the party can get through: a floor whose draft had no route lanes (a relic at a boss floor, say) never chose a door, so the middle
+     * one is lit and opened as the team sets out for the stair. A floor with a door already open is left alone.
+     * @return the blocks changed
+     */
+    public static int ensureOpen(MinecraftServer server, PersistedRun run) {
+        try {
+            Located at = locate(server, run);
+            if (at == null) return 0;
+            for (FloorDoor door : at.layout.doors()) {
+                FloorBox box = door.open();
+                BlockPos centre = box.minIn(at.origin).offset((box.maxX() - box.minX()) / 2, (box.maxY() - box.minY()) / 2, 0);
+                if (at.level.isLoaded(centre) && at.level.getBlockState(centre).isAir()) return 0;
+            }
+            return chosenUnguarded(server, run, at.layout.doors().size() / 2);
+        } catch (RuntimeException ex) {
+            TowerLog.error("Run {}: opening a default door failed", run.runId(), ex);
+            return 0;
+        }
+    }
+
+    /**
+     * Shuts and darkens every door of the run's current floor, as the floor begins. A door with a player in it is left open, and logged: bars
+     * would trap them.
+     * @return the blocks changed
+     */
+    public static int resetAll(MinecraftServer server, PersistedRun run) {
+        Located at = locate(server, run);
+        if (at == null) return 0;
+        int changed = 0;
+        for (FloorDoor door : at.layout.doors()) {
+            changed += paint(at.level, door.frame(), at.origin, DARK, null);
+            BlockPos min = door.open().minIn(at.origin);
+            BlockPos max = door.open().maxIn(at.origin);
+            if (!at.level.getEntitiesOfClass(ServerPlayer.class, new AABB(min.getX(), min.getY(), min.getZ(), max.getX() + 1, max.getY() + 1, max.getZ() + 1)).isEmpty()) {
+                TowerLog.warn("Run {}: a door of floor {} was left open because a player stands in it", run.runId(), run.floorIndex());
+                continue;
+            }
+            changed += paint(at.level, door.open(), at.origin, SHUT, state -> state.isAir());
+        }
+        if (changed > 0) TowerLog.info("Run {}: the doors of floor {} were shut and darkened again ({} blocks)", run.runId(), run.floorIndex(), changed);
+        return changed;
+    }
+
+    private record Located(ServerLevel level, FloorLayout layout, BlockPos origin) {}
+
+    private static Located locate(MinecraftServer server, PersistedRun run) {
+        ServerLevel level = TowerDimension.level(server);
+        if (level == null || run.cell().isEmpty()) return null;
+        Optional<FloorLayout> layout = FloorLayouts.layoutOf(TowerDefinitionRegistry.content(), run, run.floorIndex());
+        if (layout.isEmpty() || layout.get().doors().isEmpty()) return null;
+        Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), layout.get());
+        return origin.map(o -> new Located(level, layout.get(), o)).orElse(null);
+    }
+
+    /** Sets every loaded block of {@code box} to {@code state}, only where {@code onlyWhere} (when given) accepts the block there. */
+    private static int paint(ServerLevel level, FloorBox box, BlockPos origin, BlockState state, java.util.function.Predicate<BlockState> onlyWhere) {
+        int changed = 0;
+        for (BlockPos pos : BlockPos.betweenClosed(box.minIn(origin), box.maxIn(origin))) {
+            if (!level.isLoaded(pos)) continue;
+            BlockState now = level.getBlockState(pos);
+            if (now == state || (onlyWhere != null && !onlyWhere.test(now))) continue;
+            level.setBlock(pos, state, Block.UPDATE_ALL);
+            changed++;
+        }
+        return changed;
+    }
+}

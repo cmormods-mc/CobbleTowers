@@ -259,6 +259,7 @@ public final class IntermissionService {
         var current = com.cobbletowers.route.FloorLayouts.layoutOf(content, run, run.floorIndex());
         var next = com.cobbletowers.route.FloorLayouts.layoutOf(content, run, run.floorIndex() + 1);
         if (current.isEmpty() || !com.cobbletowers.route.WalkRules.onFoot(current.get(), next)) return false;
+        com.cobbletowers.route.TowerDoors.ensureOpen(server, run);
         com.cobbletowers.route.TowerGates.openB(server, run);
         round.beginWalk(now, com.cobbletowers.route.WalkRules.WALK_MILLIS);
         broadcast(server, run, "The gate to the stair is open. Climb to the next floor: the fight starts when the whole team is at the arena door.", false);

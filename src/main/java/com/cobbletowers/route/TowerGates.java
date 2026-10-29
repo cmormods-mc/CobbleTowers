@@ -97,7 +97,7 @@ public final class TowerGates {
             }
         }
         if (placed > 0) TowerLog.info("Run {}: the gates of floor {} were shut again ({} blocks)", run.runId(), run.floorIndex(), placed);
-        return placed;
+        return placed + TowerDoors.resetAll(server, run);
     }
 
     /**

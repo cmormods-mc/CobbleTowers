@@ -152,6 +152,18 @@ public final class PedestalService {
         return tower != null && tower.pedestalVotes();
     }
 
+    /** The slots in front of the floor's doors, when it has doors (a walkable tower); empty otherwise. */
+    private static Optional<List<PedestalRules.Slot>> atDoors(PersistedRun run, com.cobbletowers.definition.FloorLayout layout, BlockPos origin, int count) {
+        if (layout.doors().isEmpty()) return Optional.empty();
+        List<PedestalRules.Slot> doors = new ArrayList<>();
+        for (var door : layout.doors()) {
+            BlockPos at = door.pedestal().in(origin);
+            doors.add(new PedestalRules.Slot(at.getX() + 0.5, at.getY(), at.getZ() + 0.5));
+        }
+        List<Integer> lanes = run.modifiers().draft().filter(draft -> draft.route()).map(draft -> draft.lanes()).orElse(List.of());
+        return PedestalRules.atDoors(lanes, doors, count);
+    }
+
     /** Puts the pedestals up or brings them in step with the draft. Idempotent; safe to call at any time. */
     public static void sync(MinecraftServer server, PersistedRun run) {
         if (!enabled(run)) return;
@@ -169,12 +181,15 @@ public final class PedestalService {
         }
         Optional<BlockPos> origin = CellPreparer.originFor(server, run.cell().getAsInt(), layout.get());
         if (origin.isEmpty()) return;
+        // A walkable tower: the chambers behind the doors are dressed for the stops the lanes lead to.
+        com.cobbletowers.route.RoomDresser.dress(server, run, layout.get(), origin.get());
 
         BlockPos vendor = layout.get().exit().in(origin.get());
         BlockPos toward = layout.get().spectator().in(origin.get());
         int count = draft.cards().size();
-        List<PedestalRules.Slot> slots = PedestalRules.layout(vendor.getX() + 0.5, vendor.getZ() + 0.5,
-                toward.getX() + 0.5, toward.getZ() + 0.5, vendor.getY(), count);
+        List<PedestalRules.Slot> slots = atDoors(run, layout.get(), origin.get(), count)
+                .orElseGet(() -> PedestalRules.layout(vendor.getX() + 0.5, vendor.getZ() + 0.5,
+                        toward.getX() + 0.5, toward.getZ() + 0.5, vendor.getY(), count));
         boolean settled = draft.state() == 2;
         int voters = Math.max(1, DraftService.voters(run).size());
         Placed before = PLACED.get(run.runId());
@@ -281,6 +296,7 @@ public final class PedestalService {
 
     /** Takes the run's pedestals down. Safe to call at any time and more than once. */
     public static void despawn(MinecraftServer server, PersistedRun run) {
+        com.cobbletowers.route.RoomDresser.forget(run.runId());
         PLACED.remove(run.runId());
         LAST_VOTE.remove(run.runId());
         PedestalAnim.cancel(run.runId());

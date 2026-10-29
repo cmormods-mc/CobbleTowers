@@ -30,7 +30,7 @@ sys.path.insert(0, str(HERE))
 from rcon import Rcon  # noqa: E402
 from run_durability_test import Result, Server, clear_tower, install_jar, reset_tower_world, read_password, server_port  # noqa: E402
 from floor_encounter_test import give_party  # noqa: E402
-from intermission_test import play, run_line, wait_state, UUID_RE  # noqa: E402
+from intermission_test import play, run_line, wait_state, show, UUID_RE  # noqa: E402
 
 TOWER = "cobbletowers:halloween"
 STAMP = int(time.time()) % 100000
@@ -140,18 +140,29 @@ def win_floor(rcon: Rcon, floor: int) -> bool:
 
 
 def route_to_vendor(floor: int) -> list[tuple[float, float]]:
-    """Own-frame waypoints from the arena door, across the arena, through gate A and into the vendor's room."""
-    return [(mx(floor, x), z) for x, z in ((32, 34), (48, 28), (48, 12))]
+    """From the arena door, across the arena clear of the braziers, through gate A and into the intermission room, in the floor's own frame."""
+    return [(mx(floor, x), z) for x, z in ((30, 45), (46, 43), (48, 38), (48, 31))]
+
+
+def route_through_door(door_x: int, floor: int) -> list[tuple[float, float]]:
+    """From in front of a door through it, its chamber and its back doorway into the corridor and on east to gate B."""
+    return [(door_x, 26), (door_x, 12), (door_x, 7), (door_x, 3), (mx(floor, 66), 3)]
 
 
 def route_to_stair(floor: int) -> list[tuple[float, float]]:
-    """From the vendor's room through gate B, round to the north end of the stair hall, and up the stair to the floor above."""
-    return [(mx(floor, x), z) for x, z in ((72, 11), (82, 11), (86, 4), (86, 16.5))]
+    """Along the corridor, through gate B, to the north end of the stair hall and up the stair to the floor above."""
+    return [(mx(floor, x), z) for x, z in ((82, 3), (86, 4), (86, 16.5))]
 
 
 def route_to_arena(next_floor: int) -> list[tuple[float, float]]:
     """Own-frame waypoints of the floor above: from the top of the stair down the arrival hall to just inside the arena door."""
     return [(mx(next_floor, x), z) for x, z in ((10, 24), (10, 48), (21.5, 48))]
+
+
+def chosen_lane(rcon: Rcon) -> int:
+    """The lane the vote settled on, from the run report."""
+    found = re.search(r"route: lane (\d)", show(rcon))
+    return int(found.group(1)) if found else -1
 
 
 def main() -> None:
@@ -231,13 +242,28 @@ def main() -> None:
                                     f"if entity @e[type=minecraft:villager,tag=cobbletowers_vendor,distance=..3]")
                 check(f"{at}: the vendor stands in the room behind gate A", "passed" in near.lower(), near[:80])
 
-                # the real walk through gate A to the vendor's room (the team is where the fight left it, at the arena door)
+                doors = lay["doors"]
+                check(f"{at}: all three doors are shut and dark while the floor is fought",
+                      all(gate_state(rcon, origin, d["open"], "minecraft:iron_bars") and gate_state(rcon, origin, d["frame"], "minecraft:crying_obsidian")
+                          for d in doors))
+                # the real walk through gate A to the intermission room (the team is where the fight left it, at the arena door)
                 problems = walk(list(by_name.values()), origin, route_to_vendor(floor))
-                check(f"{at}: both players walk through gate A to the vendor's room", not problems, "; ".join(problems)[:200])
-
+                check(f"{at}: both players walk through gate A into the intermission room", not problems, "; ".join(problems)[:200])
+                pedestals = rcon.command(f"{IN_TOWER} if entity @e[tag=cobbletowers_pedestal_hitbox]")
                 for _ in range(2):
                     play(rcon, A, "pick 1")
                     play(rcon, B, "pick 1")
+                lane = chosen_lane(rcon)
+                if floor in (5, 10) or lane < 0:
+                    # a relic draft has no lanes: the middle door is opened for the team when it sets out
+                    lane = -1
+                else:
+                    check(f"{at}: the door of the chosen lane lights up", gate_state(rcon, origin, doors[lane]["frame"], "minecraft:shroomlight"))
+                    check(f"{at}: and opens", gate_state(rcon, origin, doors[lane]["open"], "minecraft:air"))
+                    others = [d for i, d in enumerate(doors) if i != lane]
+                    check(f"{at}: the other two doors stay shut and dark",
+                          all(gate_state(rcon, origin, d["open"], "minecraft:iron_bars") and gate_state(rcon, origin, d["frame"], "minecraft:crying_obsidian")
+                              for d in others))
                 play(rcon, A, "ready")
                 play(rcon, B, "ready")
 
@@ -253,8 +279,10 @@ def main() -> None:
                     check("and by teleport, to the entry anchor of floor 1",
                           abs(here[0] - (origin[0] + entry1["x"] + 0.5)) < 0.05 and abs(here[1] - (origin[1] + entry1["y"])) < 0.05,
                           f"at {here}")
-                    check("and the gates of floor 1, left open by the first cycle, are shut again",
-                          gate_state(rcon, origin, layout_of(1)["gate_a"], "minecraft:iron_bars")
+                    check("and the doors and gates of floor 1, left open by the first cycle, are shut again",
+                          all(gate_state(rcon, origin, d["open"], "minecraft:iron_bars") and gate_state(rcon, origin, d["frame"], "minecraft:crying_obsidian")
+                              for d in layout_of(1)["doors"])
+                          and gate_state(rcon, origin, layout_of(1)["gate_a"], "minecraft:iron_bars")
                           and gate_state(rcon, origin, layout_of(1)["gate_b"], "minecraft:iron_bars"))
                     break
 
@@ -262,9 +290,15 @@ def main() -> None:
                 check(f"{at}: everyone ready opens gate B after the countdown", opened)
                 line = run_line(rcon)
                 check(f"{at}: the next floor waits for the climb", "INTERMISSION" in line and f"floor {floor}" in line, line[-120:])
+                if lane < 0:
+                    lane = next((i for i, d in enumerate(doors) if gate_state(rcon, origin, d["open"], "minecraft:air")), -1)
+                    check(f"{at}: a floor with no route lanes opens a door of its own", lane >= 0)
+                    lane = max(lane, 1)
 
-                problems = walk(list(by_name.values()), origin, route_to_stair(floor), seconds=30)
-                check(f"{at}: both players climb the stair on foot to the next floor", not problems, "; ".join(problems)[:240])
+                # through the chosen door, along the corridor and up the stair, then down the arrival hall to the next arena
+                door_x = doors[lane]["pedestal"]["x"]
+                problems = walk(list(by_name.values()), origin, route_through_door(door_x, floor) + route_to_stair(floor), seconds=30)
+                check(f"{at}: both players walk through the chosen door, its chamber and the corridor and climb the stair", not problems, "; ".join(problems)[:240])
                 gained = [position(rcon, n)[1] - origin[1] for n in (A, B)]
                 want = layout_of(floor + 1)["entry"]["y"]
                 check(f"{at}: the stair rises ten blocks", all(abs(y - want) < 0.6 for y in gained), f"y {gained}, wanted {want}")

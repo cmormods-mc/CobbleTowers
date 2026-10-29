@@ -336,6 +336,8 @@ public final class DraftService {
 
         if (draft.route()) {
             next = next.withRouteStep(draft.floorIndex(), draft.lanes().get(result.cardIndex()), draft.kinds().get(result.cardIndex()));
+            // A walkable tower: the door of the chosen lane lights up and opens.
+            com.cobbletowers.route.TowerDoors.chosen(server, run, draft.lanes().get(result.cardIndex()));
             String arena = draft.arenas().get(result.cardIndex());
             if (!arena.isEmpty()) {
                 ResourceLocation place = ResourceLocation.tryParse(arena);

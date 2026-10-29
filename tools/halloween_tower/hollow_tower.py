@@ -36,20 +36,30 @@ SIZE_X, SIZE_Y, SIZE_Z = 97, 121, 97
 FLOORS = 10
 BASE_FEET = 6
 PITCH = 10
-FURNITURE = 1       # a one-block pumpkin on the floor can be stood on; nothing taller may be
+FURNITURE = 3       # a pumpkin, a step of the dais or a rock outcrop can be stood on, three blocks up at most; nothing taller may be
 CLEAR = 8           # feet .. feet + 7 is open air; feet + 8 and feet + 9 are the slab
 MID_X = 48
 
 # ---- the zones (unmirrored x) ------------------------------------------------------------------------------------------------
 ARRIVAL = (2, 17)
 STAIR_HALL = (79, 94)
-ARENA_X = (20, 76)
-ARENA_Z = (23, 72)
-INTER_Z = (2, 20)
+ROOMS_X = (20, 76)
+ARENA_X = ROOMS_X
+ARENA_Z = (37, 72)
+GATE_A_Z = (35, 36)         # arena | intermission room wall
+INTER_Z = (23, 34)
+DOOR_WALL_Z = (21, 22)      # intermission room | the three route chambers
+CHAMBER_Z = (6, 20)
+CORRIDOR_Z = (2, 4)         # behind the chambers; leads east to gate B and the stair hall
 GALLERY_Z = (75, 94)
 DOOR_Z = (46, 50)           # arrival hall -> arena, in the wall x 18..19
-GATE_A_X = (45, 51)         # inter | arena wall z 21..22
-GATE_B_Z = (9, 13)          # inter -> stair hall, in the wall x 77..78
+GATE_A_X = (45, 51)
+GATE_B_Z = (2, 4)           # corridor -> stair hall, in the wall x 77..78
+CHAMBER_CENTERS = (36, 48, 60)   # one door, one chamber and one pedestal each, in unmirrored x
+CHAMBER_HALF = 5            # a chamber is 11 wide
+DOOR_HALF = 2               # a door is 5 wide, 6 high
+PEDESTAL_Z = 27             # the pedestals stand here, in front of their doors
+VENDOR = (27, 31)
 STAIR_X = (85, 87)
 STAIR_Z0 = 6                # step i (1..10) is at z = 5 + i
 HOLE_Z = (10, 15)
@@ -78,6 +88,16 @@ GLOW_EAST = "minecraft:jack_o_lantern[facing=east]"      # faces into the room f
 GLOW_WEST = "minecraft:jack_o_lantern[facing=west]"
 GLOW_SOUTH = "minecraft:jack_o_lantern[facing=south]"
 SOUL = "minecraft:soul_lantern[hanging=true]"
+BLACKSTONE = "minecraft:blackstone"
+TUFF = "minecraft:tuff"
+COBBLED_DEEPSLATE = "minecraft:cobbled_deepslate"
+ORANGE_GLASS = "minecraft:orange_stained_glass"
+PURPLE_WOOL = "minecraft:purple_wool"
+BLACK_WOOL = "minecraft:black_wool"
+CHAIN = "minecraft:chain[axis=y]"
+PUMPKIN = "minecraft:pumpkin"
+GLOW_NORTH = "minecraft:jack_o_lantern[facing=north]"
+STAIR_UP_EAST = "minecraft:polished_blackstone_brick_stairs[facing=east,half=bottom,shape=straight]"
 
 # blocks a player can walk through; anything else blocks (iron bars, walls, glass, stairs and slabs included)
 PASSABLE = {AIR, COBWEB, SOUL}
@@ -159,17 +179,23 @@ def build_floor(t: Tower, floor: int) -> None:
     # partitions
     t.fill(18, 19, f, top, 2, 72, PLAIN_WALL)                 # arrival hall | rooms
     t.fill(77, 78, f, top, 2, 72, PLAIN_WALL)                 # rooms | stair hall
-    t.fill(20, 76, f, top, 21, 22, PLAIN_WALL)                # inter | arena
+    t.fill(20, 76, f, top, GATE_A_Z[0], GATE_A_Z[1], PLAIN_WALL)   # arena | intermission room
     t.fill(2, 94, f, top, 73, 74, PLAIN_WALL)                 # rooms | gallery
-    # the gallery looks into the arena through a long window
-    t.fill(24, 72, f + 2, f + 5, 73, 74, GLASS)
+    t.fill(24, 72, f + 2, f + 5, 73, 74, GLASS)               # the gallery looks into the arena through a long window
+    # behind the intermission room: the door wall, three chambers (the rest is solid) and the corridor behind them
+    t.fill(20, 76, f, top, DOOR_WALL_Z[0], DOOR_WALL_Z[1], PLAIN_WALL)
+    t.fill(20, 76, f, top, CHAMBER_Z[0] - 1, CHAMBER_Z[1], PLAIN_WALL)
+    for c in CHAMBER_CENTERS:
+        t.air(c - CHAMBER_HALF, c + CHAMBER_HALF, f, top, CHAMBER_Z[0], CHAMBER_Z[1])
+        t.air(c - 1, c + 1, f, f + 3, CHAMBER_Z[0] - 1, CHAMBER_Z[0] - 1)           # the chamber's back doorway into the corridor
+        t.air(c - DOOR_HALF, c + DOOR_HALF, f, f + 5, DOOR_WALL_Z[0], DOOR_WALL_Z[1])
+        t.fill(c - DOOR_HALF, c + DOOR_HALF, f, f + 5, DOOR_WALL_Z[0], DOOR_WALL_Z[1], BARS)   # the door, shut
     # arrival door and the two gates
     t.air(18, 19, f, f + 5, DOOR_Z[0], DOOR_Z[1])
-    t.air(77, 78, f, f + 4, GATE_B_Z[0], GATE_B_Z[1])
-    t.air(GATE_A_X[0], GATE_A_X[1], f, f + 5, 21, 22)
-    # lintels over the openings are the wall above them, already there; close the gates
-    t.fill(GATE_A_X[0], GATE_A_X[1], f, f + 5, 21, 22, BARS)
-    t.fill(77, 78, f, f + 4, GATE_B_Z[0], GATE_B_Z[1], BARS)
+    t.air(GATE_A_X[0], GATE_A_X[1], f, f + 5, GATE_A_Z[0], GATE_A_Z[1])
+    t.fill(GATE_A_X[0], GATE_A_X[1], f, f + 5, GATE_A_Z[0], GATE_A_Z[1], BARS)
+    t.air(77, 78, f, f + 3, GATE_B_Z[0], GATE_B_Z[1])
+    t.fill(77, 78, f, f + 3, GATE_B_Z[0], GATE_B_Z[1], BARS)
     # windows in the outer walls of both halls and the gallery
     for z in range(8, 70, 8):
         t.fill(0, 1, f + 2, f + 5, z, z + 2, GLASS)
@@ -180,44 +206,135 @@ def build_floor(t: Tower, floor: int) -> None:
     decorate(t, floor, f, top)
 
 
+def noise(x: int, z: int, salt: int = 0) -> int:
+    """A stable, scattered number from a position: the same tower every build, no random module."""
+    return ((x * 73856093) ^ (z * 19349663) ^ (salt * 83492791)) % 1000
+
+
+def decorate_arena(t: Tower, floor: int, f: int, top: int, accent: str, ground: int) -> None:
+    """The battle hall, after a gothic dungeon hall: a patterned disc in the floor, flame braziers with grinning bases, tall glowing window slits,
+    banners, a coffered ceiling of lit lines, rock outcrops in the corners and a stepped dais with a great pumpkin at the far end."""
+    import math
+    cx, cz = 50, 48
+    # paving, then the disc: crying-obsidian rim, a purple ring, dark ground with eight orange spokes, and a pumpkin face in the middle
+    for x in range(ARENA_X[0], ARENA_X[1] + 1):
+        for z in range(ARENA_Z[0], ARENA_Z[1] + 1):
+            n = noise(x, z)
+            block = SLAB if n < 330 else BLACKSTONE if n < 560 else PLAIN_WALL
+            dx, dz = x - cx, z - cz
+            r = math.hypot(dx, dz)
+            if r <= 12.5:
+                spoke = abs((math.atan2(dz, dx) / (math.pi / 4)) - round(math.atan2(dz, dx) / (math.pi / 4))) < 0.14
+                if r >= 11.0:
+                    block = TRIM
+                elif r >= 9.0:
+                    block = PURPLE
+                elif r >= 4.8:
+                    block = accent if spoke else DARK
+                else:
+                    block = accent
+            t.set(x, ground, z, block)
+    # the face, seen from the arrival side (its top is the far side, east): two eyes and a jagged mouth in black
+    for ex, ez in ((cx + 2, cz - 2), (cx + 2, cz + 2), (cx + 1, cz - 2), (cx + 1, cz + 2)):
+        t.set(ex, ground, ez, DARK)
+    for mz in range(-3, 4):
+        t.set(cx - 2 - (abs(mz) % 2), ground, cz + mz, DARK)
+    # four braziers, each a three-block base with a grinning pumpkin on every side and a flame of orange glass round a glowing core
+    for bx, bz in ((38, 40), (62, 40), (38, 58), (62, 58)):
+        t.fill(bx - 1, bx + 1, f, f + 2, bz - 1, bz + 1, PLAIN_WALL)
+        t.fill(bx - 1, bx + 1, f + 3, f + 3, bz - 1, bz + 1, CHISELED)
+        t.set(bx, f + 1, bz - 1, GLOW_NORTH)
+        t.set(bx, f + 1, bz + 1, GLOW_SOUTH)
+        t.set(bx - 1, f + 1, bz, GLOW_WEST)
+        t.set(bx + 1, f + 1, bz, GLOW_EAST)
+        t.fill(bx - 1, bx + 1, f + 4, f + 4, bz - 1, bz + 1, ORANGE_GLASS)
+        t.fill(bx, bx, f + 4, f + 5, bz, bz, SHROOM)
+        t.fill(bx - 1, bx + 1, f + 5, f + 5, bz, bz, ORANGE_GLASS)
+        t.fill(bx, bx, f + 5, f + 5, bz - 1, bz + 1, ORANGE_GLASS)
+        t.fill(bx, bx, f + 5, f + 5, bz, bz, SHROOM)
+        t.fill(bx, bx, f + 6, f + 6, bz, bz, ORANGE_GLASS)
+    # window slits, lit from inside the thick walls: the north wall, the west wall (clear of the door) and the east wall
+    for x in (26, 34, 62, 70):
+        t.fill(x, x, f + 1, f + 5, GATE_A_Z[1], GATE_A_Z[1], ORANGE_GLASS)
+        t.fill(x, x, f + 1, f + 5, GATE_A_Z[0], GATE_A_Z[0], SHROOM)
+    for z in (40, 56, 62, 68):
+        t.fill(19, 19, f + 1, f + 5, z, z, ORANGE_GLASS)
+        t.fill(18, 18, f + 1, f + 5, z, z, SHROOM)
+        t.fill(77, 77, f + 1, f + 5, z, z, ORANGE_GLASS)
+        t.fill(78, 78, f + 1, f + 5, z, z, SHROOM)
+    # banners on the north wall between the slits: purple cloth with an orange diamond, ending in a point
+    for c in (30, 40, 56, 66):
+        t.fill(c - 1, c + 1, f + 3, f + 7, ARENA_Z[0], ARENA_Z[0], PURPLE_WOOL)
+        t.set(c, f + 2, ARENA_Z[0], PURPLE_WOOL)
+        t.set(c, f + 5, ARENA_Z[0], ORANGE)
+        t.fill(c - 1, c + 1, f + 4, f + 4, ARENA_Z[0], ARENA_Z[0], ORANGE)
+        t.set(c, f + 3, ARENA_Z[0], ORANGE)
+    # the coffered ceiling: lines of shroomlight in the slab, with a chain and a soul lantern at the crossings
+    for x in (24, 36, 48, 60, 72):
+        t.fill(x, x, f + CLEAR, f + CLEAR, ARENA_Z[0], ARENA_Z[1], SHROOM)
+    for z in (41, 53, 65):
+        t.fill(ARENA_X[0], ARENA_X[1], f + CLEAR, f + CLEAR, z, z, SHROOM)
+    for x in (36, 60):
+        for z in (41, 65):
+            t.fill(x, x, top - 1, top, z, z, CHAIN)
+            t.set(x, top - 2, z, SOUL)
+    # pumpkins on the floor at the side walls, between the outcrops and clear of the door (z 44..52)
+    for z in (54, 60):
+        t.set(ARENA_X[0], f, z, GLOW_EAST)
+        t.set(ARENA_X[1], f, z, GLOW_WEST)
+    # rock outcrops in the four corners, clear of the door and of the route to the gate
+    for (x0, x1, z0, z1, sx, sz) in ((20, 28, 37, 43, 20, 37), (68, 76, 37, 43, 76, 37), (20, 28, 66, 72, 20, 72), (68, 76, 66, 72, 76, 72)):
+        for x in range(x0, x1 + 1):
+            for z in range(z0, z1 + 1):
+                d = math.hypot(x - sx, z - sz)
+                h = int(3.6 - d * 0.5 + (noise(x, z, 7) % 160) / 100.0)
+                if h <= 0:
+                    continue
+                for y in range(f, f + min(h, 3)):
+                    n = noise(x, z, y)
+                    t.set(x, y, z, TUFF if n < 380 else COBBLED_DEEPSLATE if n < 720 else BLACKSTONE)
+    # the dais at the far end: two steps and a great pumpkin looking back at the door
+    t.fill(68, 76, f, f, 41, 68, PLAIN_WALL)
+    t.fill(67, 67, f, f, 41, 68, STAIR_UP_EAST)
+    t.fill(72, 76, f + 1, f + 1, 45, 64, SLAB)
+    t.fill(71, 71, f + 1, f + 1, 45, 64, STAIR_UP_EAST)
+    t.fill(74, 76, f + 2, f + 4, 47, 49, PUMPKIN)
+    for z in (47, 49):
+        t.set(73, f + 4, z, GLOW_WEST)           # eyes
+    for z in (47, 48, 49):
+        t.set(73, f + 2, z, GLOW_WEST)           # mouth
+    t.set(73, f + 3, 48, PUMPKIN)
+    t.set(73, f + 3, 47, PUMPKIN)
+    t.set(73, f + 3, 49, PUMPKIN)
+    t.set(73, f + 4, 48, PUMPKIN)
+
+
 def decorate(t: Tower, floor: int, f: int, top: int) -> None:
     ground = f - 1
     accent = (ORANGE, PURPLE, ORANGE)[(floor - 1) // 4 % 3]
-    # arena floor: a chequer with a purple ring and an orange centre mark
-    for x in range(ARENA_X[0], ARENA_X[1] + 1):
-        for z in range(ARENA_Z[0], ARENA_Z[1] + 1):
-            t.set(x, ground, z, DARK if (x + z) % 2 == 0 else SLAB)
-    t.fill(ARENA_X[0], ARENA_X[1], ground, ground, ARENA_Z[0], ARENA_Z[0], TRIM)
-    t.fill(ARENA_X[0], ARENA_X[1], ground, ground, ARENA_Z[1], ARENA_Z[1], TRIM)
-    t.fill(ARENA_X[0], ARENA_X[0], ground, ground, ARENA_Z[0], ARENA_Z[1], TRIM)
-    t.fill(ARENA_X[1], ARENA_X[1], ground, ground, ARENA_Z[0], ARENA_Z[1], TRIM)
-    t.fill(43, 53, ground, ground, 43, 53, TERRA)
-    t.fill(46, 50, ground, ground, 46, 50, accent)
-    # pillars with lit caps
-    for px in (26, 38, 58, 70):
-        for pz in (29, 43, 53, 67):
-            if 40 <= px <= 56 and 43 <= pz <= 53:
-                continue
-            t.fill(px, px + 1, f, top - 1, pz, pz + 1, PLAIN_WALL)
-            t.fill(px, px + 1, top, top, pz, pz + 1, TRIM)
-            t.set(px, f, pz, CHISELED)
-    # ceiling lights, every 8 blocks, embedded in the slab so they never block a walk
-    for x in range(24, 74, 8):
-        for z in range(27, 72, 8):
-            t.set(x, f + CLEAR, z, LANTERN)
-    # grinning pumpkins on the floor along the arena's side walls, clear of the door (z 44..52) and the corners
-    for z in (27, 33, 39, 57, 63, 69):
-        t.set(ARENA_X[0], f, z, GLOW_EAST)
-        t.set(ARENA_X[1], f, z, GLOW_WEST)
-    # inter room: a purple carpet-like floor and a lit dais where the vendor stands
+    decorate_arena(t, floor, f, top, accent, ground)
+    # intermission room: a purple floor, a lit dais for the vendor, hanging lights over the pedestals in front of the doors
     t.fill(ARENA_X[0], ARENA_X[1], ground, ground, INTER_Z[0], INTER_Z[1], PURPLE)
-    t.fill(44, 52, ground, ground, 2, 8, TERRA)
-    t.fill(46, 50, ground, ground, 3, 7, accent)
+    t.fill(VENDOR[0] - 3, VENDOR[0] + 3, ground, ground, VENDOR[1] - 3, VENDOR[1] + 3, TERRA)
+    t.fill(VENDOR[0] - 1, VENDOR[0] + 1, ground, ground, VENDOR[1] - 1, VENDOR[1] + 1, accent)
     for x in range(26, 72, 8):
-        t.set(x, f + CLEAR, 12, LANTERN)
-        t.set(x, f + CLEAR, 5, LANTERN)
-    for x in list(range(24, 40, 6)) + list(range(58, 74, 6)):
-        t.set(x, f, 3, GLOW_SOUTH)
+        t.set(x, f + CLEAR, 25, LANTERN)
+        t.set(x, f + CLEAR, 32, LANTERN)
+    for c in CHAMBER_CENTERS:
+        t.set(c, top, PEDESTAL_Z, SOUL)
+        # the door frame: a lintel and two jambs of crying obsidian (the lintel is what lights up)
+        t.fill(c - DOOR_HALF - 1, c + DOOR_HALF + 1, f + 6, f + 7, DOOR_WALL_Z[0], DOOR_WALL_Z[1], TRIM)
+        t.fill(c - DOOR_HALF - 1, c - DOOR_HALF - 1, f, f + 5, DOOR_WALL_Z[0], DOOR_WALL_Z[1], TRIM)
+        t.fill(c + DOOR_HALF + 1, c + DOOR_HALF + 1, f, f + 5, DOOR_WALL_Z[0], DOOR_WALL_Z[1], TRIM)
+        # the chamber behind it
+        t.fill(c - CHAMBER_HALF, c + CHAMBER_HALF, ground, ground, CHAMBER_Z[0], CHAMBER_Z[1], DARK)
+        t.fill(c - 1, c + 1, ground, ground, CHAMBER_Z[0], CHAMBER_Z[1], PURPLE)
+        for z in (9, 13, 17):
+            t.set(c, f + CLEAR, z, LANTERN)
+    # the corridor behind the chambers
+    t.fill(ARENA_X[0], ARENA_X[1], ground, ground, CORRIDOR_Z[0], CORRIDOR_Z[1], DARK)
+    for x in range(24, 74, 8):
+        t.set(x, f + CLEAR, 3, LANTERN)
     # halls: a dark runner and a lantern line
     for hall in (ARRIVAL, STAIR_HALL):
         t.fill(hall[0], hall[1], ground, ground, 2, 72, DARK)
@@ -229,13 +346,10 @@ def decorate(t: Tower, floor: int, f: int, top: int) -> None:
     t.fill(2, 94, ground, ground, GALLERY_Z[0], GALLERY_Z[1], DARK)
     for x in range(8, 90, 10):
         t.set(x, f + CLEAR, 84, LANTERN)
-    # webs above head height only (feet + 3 and up), in corners of the arena and the gallery
-    for x, z in ((20, 23), (76, 23), (20, 72), (76, 72), (2, 75), (94, 75), (2, 94), (94, 94)):
+    # webs above head height only (feet + 3 and up), in corners of the arena, the vendor's room and the gallery
+    for x, z in ((20, 37), (76, 37), (20, 72), (76, 72), (20, 23), (76, 23), (2, 75), (94, 75), (2, 94), (94, 94)):
         t.set(x, top, z, COBWEB)
         t.set(x, top - 1, z, COBWEB)
-    # hanging soul lanterns above the pedestals' row
-    for x in (44, 48, 52):
-        t.set(x, top, 11, SOUL)
 
 
 # ---- stairs ------------------------------------------------------------------------------------------------------------------
@@ -326,17 +440,26 @@ def layout(floor: int) -> dict:
     def anchor(x: int, z: int, yaw: int) -> dict:
         return {"x": mx(floor, x), "y": f, "z": z, "yaw": yaw}
 
-    east_facing = 270 if not mirrored(floor) else 90         # looking from the arrival side into the arena
-    west_facing = 90 if not mirrored(floor) else 270
+    into_arena = 270 if not mirrored(floor) else 90         # looking from the arrival side into the arena
+    back = 90 if not mirrored(floor) else 270
+    # the doors in physical west-to-east order, which is left to right for somebody facing them: lane 0 is the left door on every floor
+    doors = []
+    for c in sorted(CHAMBER_CENTERS, key=lambda c: mx(floor, c)):
+        doors.append({
+            "open": box(floor, c - DOOR_HALF, c + DOOR_HALF, f, f + 5, DOOR_WALL_Z[0], DOOR_WALL_Z[1]),
+            "frame": box(floor, c - DOOR_HALF - 1, c + DOOR_HALF + 1, f + 6, f + 7, DOOR_WALL_Z[0], DOOR_WALL_Z[1]),
+            "pedestal": anchor(c, PEDESTAL_Z, 0),
+        })
     out = {
-        "entry": anchor(24, 48, east_facing),
-        "presentation": anchor(46, 48, west_facing),
+        "entry": anchor(24, 48, into_arena),
+        "presentation": anchor(46, 48, back),
         "spectator": anchor(MID_X, 84, 180),
-        "exit": anchor(MID_X, 5, 0),
-        "gate_a": box(floor, GATE_A_X[0], GATE_A_X[1], f, f + 5, 21, 22),
+        "exit": anchor(VENDOR[0], VENDOR[1], 90 if not mirrored(floor) else 270),
+        "gate_a": box(floor, GATE_A_X[0], GATE_A_X[1], f, f + 5, GATE_A_Z[0], GATE_A_Z[1]),
+        "doors": doors,
     }
     if floor < FLOORS:
-        out["gate_b"] = box(floor, 77, 78, f, f + 4, GATE_B_Z[0], GATE_B_Z[1])
+        out["gate_b"] = box(floor, 77, 78, f, f + 3, GATE_B_Z[0], GATE_B_Z[1])
     return out
 
 
@@ -359,17 +482,16 @@ def standable(t: Tower, x: int, y: int, z: int) -> bool:
         and 0 <= y - 1 and t.at(x, y - 1, z) not in TALL
 
 
-def reach(t: Tower, start: tuple[int, int, int], gates_open: set[int], gates: dict[int, list[dict]]) -> set[tuple[int, int, int]]:
-    """Flood fill on foot: four-way steps of at most one block up or two down, with headroom. Open gates are carved first."""
-    opened = []
-    for floor in gates_open:
-        for box_ in gates.get(floor, []):
-            (ax, ay, az), (bx, by, bz) = box_["min"], box_["max"]
-            for x in range(ax, bx + 1):
-                for y in range(ay, by + 1):
-                    for z in range(az, bz + 1):
-                        opened.append((x, y, z, int(t.grid[x, y, z])))
-                        t.grid[x, y, z] = 0
+def reach(t: Tower, start: tuple[int, int, int], opened: list[dict]) -> set[tuple[int, int, int]]:
+    """Flood fill on foot: four-way steps of at most one block up or two down, with headroom. The boxes in {opened} are carved first."""
+    carved = []
+    for box_ in opened:
+        (ax, ay, az), (bx, by, bz) = box_["min"], box_["max"]
+        for x in range(ax, bx + 1):
+            for y in range(ay, by + 1):
+                for z in range(az, bz + 1):
+                    carved.append((x, y, z, int(t.grid[x, y, z])))
+                    t.grid[x, y, z] = 0
     seen = {start}
     queue = deque([start])
     while queue:
@@ -386,15 +508,18 @@ def reach(t: Tower, start: tuple[int, int, int], gates_open: set[int], gates: di
                 seen.add((nx, ny, nz))
                 queue.append((nx, ny, nz))
                 break
-    for x, y, z, old in opened:
+    for x, y, z, old in carved:
         t.grid[x, y, z] = old
     return seen
 
 
+def cell_of(lay: dict, name: str) -> tuple[int, int, int]:
+    a = lay[name]
+    return a["x"], a["y"], a["z"]
+
+
 def validate(t: Tower) -> list[str]:
     problems: list[str] = []
-    gates = {k: [box_ for name, box_ in layout(k).items() if name.startswith("gate")] for k in range(1, FLOORS + 1)}
-    cobweb_below = []
     for floor in range(1, FLOORS + 1):
         lay = layout(floor)
         f = feet(floor)
@@ -402,49 +527,61 @@ def validate(t: Tower) -> list[str]:
             a = lay[name]
             if not standable(t, a["x"], a["y"], a["z"]):
                 problems.append(f"floor {floor}: the {name} anchor {a} is not standable")
+        for i, door in enumerate(lay["doors"]):
+            p = door["pedestal"]
+            if not standable(t, p["x"], p["y"], p["z"]):
+                problems.append(f"floor {floor}: the pedestal in front of door {i} {p} is not standable")
         # nothing is a cobweb inside the head-height volume of the walk
-        for x in range(SIZE_X):
-            for z in range(SIZE_Z):
-                for y in range(f, f + 3):
-                    if t.at(x, y, z) == COBWEB:
-                        cobweb_below.append((floor, x, y, z))
-    if cobweb_below:
-        problems.append(f"cobwebs inside the walking volume: {cobweb_below[:4]}")
+        webs = [(x, y, z) for x in range(SIZE_X) for z in range(SIZE_Z) for y in range(f, f + 3) if t.at(x, y, z) == COBWEB]
+        if webs:
+            problems.append(f"floor {floor}: cobwebs inside the walking volume: {webs[:4]}")
 
     for floor in range(1, FLOORS + 1):
         lay = layout(floor)
-        entry = (lay["entry"]["x"], lay["entry"]["y"], lay["entry"]["z"])
         f = feet(floor)
-        closed = reach(t, entry, set(), gates)
-        inter = (lay["exit"]["x"], lay["exit"]["y"], lay["exit"]["z"])
-        pres = (lay["presentation"]["x"], lay["presentation"]["y"], lay["presentation"]["z"])
+        entry, vendor, pres = cell_of(lay, "entry"), cell_of(lay, "exit"), cell_of(lay, "presentation")
+        gate_a = lay["gate_a"]
+        doors = [d["open"] for d in lay["doors"]]
+        chamber = [(mx(floor, c), f, 13) for c in sorted(CHAMBER_CENTERS, key=lambda c: mx(floor, c))]
+        corridor = (mx(floor, 48), f, 3)
+
+        closed = reach(t, entry, [])
         if pres not in closed:
             problems.append(f"floor {floor}: the opponent's spot is not reachable from the entry on foot")
-        if inter in closed:
+        if vendor in closed:
             problems.append(f"floor {floor}: the vendor's room is reachable with gate A closed")
-        opened_a = reach(t, entry, {floor}, {floor: [gates[floor][0]]}) if gates[floor] else closed
-        if inter not in opened_a:
+        after_a = reach(t, entry, [gate_a])
+        if vendor not in after_a:
             problems.append(f"floor {floor}: the vendor's room is not reachable with gate A open")
-        if floor < FLOORS:
-            nxt = layout(floor + 1)
-            landing = (nxt["entry"]["x"], nxt["entry"]["y"], nxt["entry"]["z"])
-            if landing in opened_a:
-                problems.append(f"floor {floor}: the next floor is reachable with gate B closed")
-            both = reach(t, entry, {floor}, {floor: gates[floor]})
-            if landing not in both:
-                problems.append(f"floor {floor}: the next floor's entry is not reachable with both gates open")
-            # every reachable cell of the open walk stays inside this floor's slab band or the next floor's
-            ys = {c[1] for c in both}
-            if min(ys) < f - PITCH or max(ys) > f + PITCH + FURNITURE:
-                problems.append(f"floor {floor}: the walk leaves its floors, y {min(ys)}..{max(ys)}")
-            if floor > 1:
-                below = layout(floor - 1)["entry"]
-                if (below["x"], below["y"], below["z"]) in both:
-                    problems.append(f"floor {floor}: the arena of the floor below is reachable on foot")
-        if floor == FLOORS:
-            both = reach(t, entry, {floor}, {floor: gates[floor]})
-            if max(c[1] for c in both) > f + FURNITURE:
-                problems.append("floor 10 has a way up that was not designed")
+        for i, spot in enumerate(chamber):
+            if spot in after_a:
+                problems.append(f"floor {floor}: chamber {i} is reachable with its door shut")
+        if corridor in after_a:
+            problems.append(f"floor {floor}: the corridor is reachable with every door shut")
+        for i, door in enumerate(doors):
+            through = reach(t, entry, [gate_a, door])
+            if chamber[i] not in through:
+                problems.append(f"floor {floor}: chamber {i} is not reachable with its door open")
+            if corridor not in through:
+                problems.append(f"floor {floor}: the corridor is not reachable through door {i}")
+            if floor < FLOORS:
+                landing = cell_of(layout(floor + 1), "entry")
+                if landing in through:
+                    problems.append(f"floor {floor}: the next floor is reachable through door {i} with gate B shut")
+                both = reach(t, entry, [gate_a, door, lay["gate_b"]])
+                if landing not in both:
+                    problems.append(f"floor {floor}: the next floor's entry is not reachable through door {i} and gate B")
+                ys = {c[1] for c in both}
+                if min(ys) < f - PITCH or max(ys) > f + PITCH + FURNITURE:
+                    problems.append(f"floor {floor}: the walk leaves its floors, y {min(ys)}..{max(ys)}")
+                if floor > 1:
+                    below = cell_of(layout(floor - 1), "entry")
+                    if below in both:
+                        problems.append(f"floor {floor}: the arena of the floor below is reachable on foot")
+            else:
+                everything = reach(t, entry, [gate_a] + doors)
+                if max(c[1] for c in everything) > f + FURNITURE:
+                    problems.append("floor 10 has a way up that was not designed")
     return problems
 
 
