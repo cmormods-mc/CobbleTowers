@@ -36,6 +36,7 @@ SIZE_X, SIZE_Y, SIZE_Z = 97, 121, 97
 FLOORS = 10
 BASE_FEET = 6
 PITCH = 10
+FURNITURE = 1       # a one-block pumpkin on the floor can be stood on; nothing taller may be
 CLEAR = 8           # feet .. feet + 7 is open air; feet + 8 and feet + 9 are the slab
 MID_X = 48
 
@@ -73,7 +74,9 @@ CHISELED = "minecraft:chiseled_polished_blackstone"
 AMETHYST = "minecraft:amethyst_block"
 SHROOM = "minecraft:shroomlight"
 COBWEB = "minecraft:cobweb"
-PUMPKIN = "minecraft:carved_pumpkin[facing=south]"
+GLOW_EAST = "minecraft:jack_o_lantern[facing=east]"      # faces into the room from the west wall; mirrored floors flip it
+GLOW_WEST = "minecraft:jack_o_lantern[facing=west]"
+GLOW_SOUTH = "minecraft:jack_o_lantern[facing=south]"
 SOUL = "minecraft:soul_lantern[hanging=true]"
 
 # blocks a player can walk through; anything else blocks (iron bars, walls, glass, stairs and slabs included)
@@ -202,6 +205,10 @@ def decorate(t: Tower, floor: int, f: int, top: int) -> None:
     for x in range(24, 74, 8):
         for z in range(27, 72, 8):
             t.set(x, f + CLEAR, z, LANTERN)
+    # grinning pumpkins on the floor along the arena's side walls, clear of the door (z 44..52) and the corners
+    for z in (27, 33, 39, 57, 63, 69):
+        t.set(ARENA_X[0], f, z, GLOW_EAST)
+        t.set(ARENA_X[1], f, z, GLOW_WEST)
     # inter room: a purple carpet-like floor and a lit dais where the vendor stands
     t.fill(ARENA_X[0], ARENA_X[1], ground, ground, INTER_Z[0], INTER_Z[1], PURPLE)
     t.fill(44, 52, ground, ground, 2, 8, TERRA)
@@ -209,6 +216,8 @@ def decorate(t: Tower, floor: int, f: int, top: int) -> None:
     for x in range(26, 72, 8):
         t.set(x, f + CLEAR, 12, LANTERN)
         t.set(x, f + CLEAR, 5, LANTERN)
+    for x in list(range(24, 40, 6)) + list(range(58, 74, 6)):
+        t.set(x, f, 3, GLOW_SOUTH)
     # halls: a dark runner and a lantern line
     for hall in (ARRIVAL, STAIR_HALL):
         t.fill(hall[0], hall[1], ground, ground, 2, 72, DARK)
@@ -426,7 +435,7 @@ def validate(t: Tower) -> list[str]:
                 problems.append(f"floor {floor}: the next floor's entry is not reachable with both gates open")
             # every reachable cell of the open walk stays inside this floor's slab band or the next floor's
             ys = {c[1] for c in both}
-            if min(ys) < f - PITCH or max(ys) > f + PITCH:
+            if min(ys) < f - PITCH or max(ys) > f + PITCH + FURNITURE:
                 problems.append(f"floor {floor}: the walk leaves its floors, y {min(ys)}..{max(ys)}")
             if floor > 1:
                 below = layout(floor - 1)["entry"]
@@ -434,7 +443,7 @@ def validate(t: Tower) -> list[str]:
                     problems.append(f"floor {floor}: the arena of the floor below is reachable on foot")
         if floor == FLOORS:
             both = reach(t, entry, {floor}, {floor: gates[floor]})
-            if max(c[1] for c in both) > f:
+            if max(c[1] for c in both) > f + FURNITURE:
                 problems.append("floor 10 has a way up that was not designed")
     return problems
 

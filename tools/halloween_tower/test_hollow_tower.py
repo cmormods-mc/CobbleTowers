@@ -85,7 +85,8 @@ class HollowTowerTest(unittest.TestCase):
 
     def test_nothing_unknown_in_the_palette(self):
         known = {ht.AIR, ht.PLAIN_WALL, ht.OUTER, ht.SLAB, ht.TRIM, ht.DARK, ht.PURPLE, ht.TERRA, ht.ORANGE, ht.GLASS, ht.LANTERN,
-                 ht.BARS, ht.WALL_CAP, ht.STAIR_BLOCK, ht.CHISELED, ht.AMETHYST, ht.SHROOM, ht.COBWEB, ht.SOUL}
+                 ht.BARS, ht.WALL_CAP, ht.STAIR_BLOCK, ht.CHISELED, ht.AMETHYST, ht.SHROOM, ht.COBWEB, ht.SOUL,
+                 ht.GLOW_EAST, ht.GLOW_WEST, ht.GLOW_SOUTH, ht.GLOW_EAST.replace('east', 'west'), ht.GLOW_WEST.replace('west', 'east')}
         self.assertEqual(set(), set(self.t.palette) - known)
 
 
