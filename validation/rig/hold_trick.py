@@ -37,10 +37,19 @@ with Rcon("127.0.0.1", 25575, "walktest") as r:
             r.command(f"cobbletowers runs winfloor {a}")
             if w.wait_for(lambda: last_run(r, "INTERMISSION") != "", 6):
                 break
-        run = re.search(w.UUID_RE, last_run(r, "INTERMISSION")).group(1)
+        run = None
         # the route draft opens a moment after the intermission begins
-        w.log_has(srv, rf"Run {run} opened a draft at floor 1: .*? stops \[", 20)
-        card = w.trick_card(srv, run, 1)
+        # abandoned runs stay listed, so the run is read from the newest route draft in the log rather than from the list
+        pattern = r"Run ([0-9a-f-]{36}) opened a draft at floor 1: .*? stops \[([A-Z_, ]+)\]"
+        deadline = time.time() + 25
+        found = []
+        while time.time() < deadline:
+            found = re.findall(pattern, (srv / "logs" / "latest.log").read_text(encoding="utf-8", errors="replace"))
+            if len(found) > attempt - 1:
+                break
+            time.sleep(0.5)
+        run, kinds = (found[-1][0], [k.strip() for k in found[-1][1].split(",")]) if found else (None, [])
+        card = kinds.index("TRICK_OR_TREAT") + 1 if "TRICK_OR_TREAT" in kinds else 0
         print("attempt", attempt, "card", card, flush=True)
         if card:
             for rnd in range(2):
@@ -58,6 +67,7 @@ with Rcon("127.0.0.1", 25575, "walktest") as r:
             print("OUTCOME", outcome, "LANE", lane, flush=True)
             print("CHAMBER", origin[0] + centre, origin[1] + d["pedestal"]["y"], origin[2] + d["open"]["min"][2], flush=True)
             time.sleep(6000)
-        r.command(f"cobbletowers runs abandon {run}")
+        if run:
+            r.command(f"cobbletowers runs abandon {run}")
         for x in ws:
             x.process.kill()
