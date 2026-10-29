@@ -216,3 +216,22 @@ What the plan above became, smaller where it was cheaper to be exact.
   rises ten blocks, and the cycle's end starts the next cycle by teleport. Passed on the rig.
 * **Not built**: Trick or Treat rooms (the gallery is where they would go), per-viewer glow, a roof stair, the real-client look of the floors beyond the screenshots in the session
   notes, multi-player timing with the 90 s straggler teleport.
+
+
+## As built, v2: doors, stop rooms and the exterior (2026-10-29)
+
+The first plan above (arena, gate A, a vendor room, gate B) became the shape of the route map.
+
+* **One floor** is: the gothic battle hall; gate A; the intermission room with the vendor and the three pedestals; a wall with **three doors**, one per route lane (west to east); a separate
+  chamber behind each door, dressed for the kind of stop that lane holds (`rooms.py`: battle, rest, shrine, gambler, forge, library, vault, pool; the data is the eight
+  `structure/room_*.nbt`, dressed at runtime by `RoomDresser`); a corridor joining the three chambers; gate B; the stair hall and the stair to the floor above.
+* **Doors** (`FloorDoor`: `open` box, `frame` box, `pedestal` anchor). All three are iron bars while the floor is fought. The pedestals sit in front of the doors; when the vote settles
+  (`PedestalRules.atDoors`, `TowerDoors`) the door of the winning lane opens and its frame lights (shroomlight). A floor whose draft has no lanes (a relic or event draft)
+  opens a door of its own. The validator (`validate()`) proves the party reaches the next floor's entry through each door and gate B, and nothing earlier.
+* **Exterior** `tools/halloween_tower/exterior.py` dresses the building from the reference (gothic cathedral-castle): a floating rocky island with a stepped base, a path and stair
+  to the gatehouse (rose window), four round corner towers (a floating crystal over one), a hipped roof with a central spire, glowing pointed windows in the skin, crystal spikes and dead trees.
+  **It never writes inside the building** (only the outer skin and above the roof); the generator re-runs the walk validator on the dressed canvas, and the canvas is then cropped
+  to its blocks, because the structure converter anchors on the lowest block. The anchors in the floor JSON are moved by that offset: `python tools/halloween_tower/apply_layout.py`.
+* **Structure**: `battle_tower_halloween.nbt` is now 136 x 215 x 137 (700,330 blocks, 2.0 MB). It fits a cell (256 interior) and the dimension (384 tall, floor at y 64).
+* **Order to regenerate**: `hollow_tower.py --loot-tables <blocks dir>` (builds, validates, writes schem + layout), `apply_layout.py`, `schem_to_structure.py` then `--check`,
+  `validate_definitions.py` (about two minutes: it reads the structure to check 216 anchors), `preview.py out.png [yaw]` for a quick picture without a client.

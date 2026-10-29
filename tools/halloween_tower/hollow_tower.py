@@ -615,25 +615,37 @@ def write_schem(t: Tower, path: Path) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="build and validate only")
+    parser.add_argument("--no-exterior", action="store_true", help="the bare building, with no island, towers or roof (for the validator tests)")
     parser.add_argument("--out", type=Path, default=Path("validation/schematics"))
     parser.add_argument("--loot-tables", type=Path, help="data/minecraft/loot_table/blocks from a 1.21.1 jar, to check every block id")
     args = parser.parse_args()
     t = build()
     problems = validate(t)
-    problems += [f"unknown block id {name}" for name in palette_check(t, args.loot_tables)]
-    solid = int(np.count_nonzero(t.grid))
-    print(f"hollow tower: {SIZE_X}x{SIZE_Y}x{SIZE_Z}, {solid} blocks, {len(t.palette)} block states")
+    final, offset = t, (0, 0, 0)
+    if not args.no_exterior:
+        sys.path.insert(0, str(Path(__file__).parent))
+        import exterior
+        final = exterior.assemble(t)
+        exterior.dress(final)
+        # the finished canvas must still hold the same walkable building
+        problems += [f"after the exterior: {p}" for p in validate(exterior.building_view(final))]
+        final, offset = exterior.crop(final)
+    problems += [f"unknown block id {name}" for name in palette_check(final, args.loot_tables)]
+    solid = int(np.count_nonzero(final.grid))
+    print(f"hollow tower: {final.grid.shape[0]}x{final.grid.shape[1]}x{final.grid.shape[2]}, {solid} blocks, {len(final.palette)} block states")
     for p in problems:
         print("FAIL", p)
     if problems:
         return 1
-    print("validation: PASS (every floor walkable entry -> arena -> gate A -> vendor -> gate B -> next floor, nothing earlier)")
+    print("validation: PASS (every floor walkable entry -> arena -> gate A -> doors -> chambers -> corridor -> gate B -> next floor, nothing earlier)")
     if args.check:
         return 0
-    count = write_schem(t, args.out / "hollow_tower.schem")
+    count = write_schem(final, args.out / "hollow_tower.schem")
     layout_json = {str(k): layout(k) for k in range(1, FLOORS + 1)}
+    if not args.no_exterior:
+        layout_json = {k: exterior.shift(v, offset) for k, v in layout_json.items()}
     (args.out / "hollow_tower.layout.json").write_text(json.dumps(layout_json, indent=2) + "\n")
-    print(f"wrote {args.out / 'hollow_tower.schem'} ({count} blocks) and hollow_tower.layout.json")
+    print(f"wrote {args.out / 'hollow_tower.schem'} ({count} blocks) and hollow_tower.layout.json (offset {offset})")
     return 0
 
 

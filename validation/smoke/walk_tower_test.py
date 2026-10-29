@@ -39,10 +39,18 @@ B = f"TWb{STAMP}"
 IN_TOWER = "execute in cobbletowers:tower"
 FLOORS_DIR = HERE.parent.parent / "src" / "main" / "resources" / "data" / "cobbletowers" / "cobbletowers" / "floors" / "halloween"
 SIZE_X = 97
+# the waypoints below are in the building's own frame; the structure is the building inside its island, so every anchor in the data is moved by this
+BUILDING_ENTRY = (24, 48)   # floor 1's entry in the bare building (x, z)
 
 
 def layout_of(floor: int) -> dict:
     return json.loads((FLOORS_DIR / f"floor_{floor:02d}.json").read_text())["layout"]
+
+
+def offset() -> tuple[int, int]:
+    """Where the building sits inside the structure (x, z), read from floor 1's entry anchor."""
+    entry = layout_of(1)["entry"]
+    return entry["x"] - BUILDING_ENTRY[0], entry["z"] - BUILDING_ENTRY[1]
 
 
 def mirrored(floor: int) -> bool:
@@ -118,7 +126,7 @@ def walk(walkers: list[Walker], origin: tuple[int, int, int], points: list[tuple
     problems: list[str] = []
     for x, z in points:
         for w in walkers:
-            w.go(origin[0] + x + 0.5, origin[2] + z + 0.5, seconds)
+            w.go(origin[0] + offset()[0] + x + 0.5, origin[2] + offset()[1] + z + 0.5, seconds)
         deadline = time.time() + seconds + 10
         while time.time() < deadline and not all(w.answered() for w in walkers):
             time.sleep(0.25)
@@ -300,7 +308,7 @@ def main() -> None:
                     check(f"{at}: a floor with no route lanes opens a door of its own", lane >= 0)
 
                 # through the chosen door, along the corridor and up the stair, then down the arrival hall to the next arena
-                door_x = doors[lane]["pedestal"]["x"]
+                door_x = doors[lane]["pedestal"]["x"] - offset()[0]
                 problems = walk(list(by_name.values()), origin, route_through_door(door_x, floor) + route_to_stair(floor), seconds=30)
                 check(f"{at}: both players walk through the chosen door, its chamber and the corridor and climb the stair", not problems, "; ".join(problems)[:240])
                 gained = [position(rcon, n)[1] - origin[1] for n in (A, B)]
@@ -314,7 +322,7 @@ def main() -> None:
                 # nobody was moved: they stand where they stopped, three blocks from the anchor, not on it
                 nxt = layout_of(floor + 1)["entry"]
                 spots = [position(rcon, n) for n in (A, B)]
-                stayed = all(abs(s[0] - (origin[0] + mx(floor + 1, 21.5) + 0.5)) < 2.0 for s in spots)
+                stayed = all(abs(s[0] - (origin[0] + offset()[0] + mx(floor + 1, 21.5) + 0.5)) < 2.0 for s in spots)
                 check(f"floor {floor + 1}: begins where the team stands, nobody is teleported", stayed, f"at {spots}, anchor {nxt}")
         print()
     finally:
