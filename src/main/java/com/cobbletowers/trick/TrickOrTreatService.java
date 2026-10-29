@@ -218,8 +218,7 @@ public final class TrickOrTreatService {
         Fight fight = FIGHTS.get(runId);
         if (fight == null) return Optional.empty();
         for (UUID playerId : new ArrayList<>(fight.waiting)) {
-            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
-            if (player != null) CobblemonBattleAdapter.endBattleOf(player);
+            CobblemonBattleAdapter.endPlayer(server, runId, playerId);   // the battle and its opponent, and the adapter's record of it
             resolve(server, runId, playerId, true);
         }
         return Optional.of("The mimic was beaten by the operator.");
