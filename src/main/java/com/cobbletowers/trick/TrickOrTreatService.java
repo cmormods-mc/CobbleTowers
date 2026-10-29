@@ -141,6 +141,7 @@ public final class TrickOrTreatService {
             }
         }
         creditEach(server, run, purse);
+        TowerLog.info("Run {} treat on floor {}: {} CobbleDollars each{}", run.runId(), active.floor(), purse, relicLine);
         for (PersistedParticipant participant : run.participants()) {
             ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
             if (player == null) continue;
@@ -181,6 +182,8 @@ public final class TrickOrTreatService {
                         + (relic.isPresent() ? "a relic and " : "") + TrickRules.LOSS_CUT_PERCENT + "% of the final loot. Beat it to win them back."));
             }
         }
+        TowerLog.info("Run {} mimic on floor {}: {} fighter(s), relic taken {}, loot cut now {}%", run.runId(), floor, fight.waiting.size(),
+                relic.map(ResourceLocation::toString).orElse("none"), TrickRules.cutPercent(run.ledger()));
         if (fight.waiting.isEmpty()) {
             // Nobody could be sent into a fight (no opponent to draw, everyone offline): the vault shuts and the price is given back.
             TowerLog.warn("Run {}: the mimic of floor {} could not be summoned; the price is returned", run.runId(), floor);
@@ -190,15 +193,36 @@ public final class TrickOrTreatService {
 
     /** One fighter's mimic battle ended (called by {@link EchoDuels} for the mimic marker). */
     public static void onMimicResolved(MinecraftServer server, CobblemonBattleAdapter.Binding binding, boolean playerWon) {
-        Fight fight = FIGHTS.get(binding.runId());
+        resolve(server, binding.runId(), binding.playerId(), playerWon);
+    }
+
+    private static void resolve(MinecraftServer server, UUID runId, UUID playerId, boolean playerWon) {
+        Fight fight = FIGHTS.get(runId);
         if (fight == null) return;
-        fight.waiting.remove(binding.playerId());
+        fight.waiting.remove(playerId);
         if (!playerWon) fight.anyLost = true;
-        ServerPlayer player = server.getPlayerList().getPlayer(binding.playerId());
+        ServerPlayer player = server.getPlayerList().getPlayer(playerId);
         if (player != null) {
             player.sendSystemMessage(Component.literal(playerWon ? "You beat the mimic." : "The mimic wins this round."));
         }
-        if (fight.waiting.isEmpty()) settle(server, binding.runId(), fight, !fight.anyLost);
+        if (fight.waiting.isEmpty()) settle(server, runId, fight, !fight.anyLost);
+    }
+
+    /** Whether a mimic fight is under way for this run. */
+    public static boolean fighting(UUID runId) {
+        return FIGHTS.containsKey(runId);
+    }
+
+    /** Operator tool ({@code runs winfloor} while a mimic is being fought): ends each fighter's battle and counts it as won. @return a line, or empty with no fight */
+    public static Optional<String> operatorWin(MinecraftServer server, UUID runId) {
+        Fight fight = FIGHTS.get(runId);
+        if (fight == null) return Optional.empty();
+        for (UUID playerId : new ArrayList<>(fight.waiting)) {
+            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+            if (player != null) CobblemonBattleAdapter.endBattleOf(player);
+            resolve(server, runId, playerId, true);
+        }
+        return Optional.of("The mimic was beaten by the operator.");
     }
 
     /** Every fighter has finished: a win everywhere gives the price back and pays half a treat; any loss leaves it taken. */

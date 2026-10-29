@@ -30,7 +30,7 @@ public final class RouteMap {
 
     /** The stops that have gameplay today; a live run draws only from these. */
     public static final Set<Stop> PLAYABLE = EnumSet.of(Stop.START, Stop.BATTLE, Stop.REST, Stop.SHRINE, Stop.FORGE, Stop.LIBRARY,
-            Stop.VAULT, Stop.POOL, Stop.BOSS);
+            Stop.VAULT, Stop.POOL, Stop.TRICK_OR_TREAT, Stop.BOSS);
 
     public record Node(int row, int lane, Stop stop) {}
 
@@ -136,7 +136,7 @@ public final class RouteMap {
             case SHRINE, FORGE, LIBRARY -> 8;
             case VAULT, POOL -> row >= 2 ? 6 : 0;
             case MERCHANT -> row >= 2 ? 10 : 0;
-            case TRICK_OR_TREAT -> eventTower ? 5 : 0;
+            case TRICK_OR_TREAT -> eventTower && row >= 2 ? 14 : 0;
             case START, BOSS -> 0;
         };
     }

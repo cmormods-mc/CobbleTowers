@@ -285,8 +285,8 @@ public final class DraftService {
         // Checkpointed, because TDS #145 lists intermission among the forced checkpoints and a draft
         // lost to a crash would come back as three different cards.
         TowerRuns.save(server, run.withModifiers(run.modifiers().withDraft(draft), now), true);
-        TowerLog.info("Run {} opened a{} draft at floor {}: {}", runId, lockIn ? " LOCK-IN" : "",
-                run.floorIndex(), cards);
+        TowerLog.info("Run {} opened a{} draft at floor {}: {}{}", runId, lockIn ? " LOCK-IN" : "",
+                run.floorIndex(), cards, draft.route() ? " stops " + draft.kinds() : "");
         return Optional.of(draft);
     }
 

@@ -206,6 +206,11 @@ public final class RunsCommand {
             source.sendFailure(Component.literal(target.getGameProfile().getName() + " is not in a tower run."));
             return 0;
         }
+        Optional<String> mimic = com.cobbletowers.trick.TrickOrTreatService.operatorWin(source.getServer(), run.get().runId());
+        if (mimic.isPresent()) {
+            source.sendSuccess(() -> Component.literal(mimic.get()).withStyle(ChatFormatting.GOLD), true);
+            return 1;
+        }
         Optional<String> done = com.cobbletowers.encounter.TowerEncounters.winFloor(source.getServer(), run.get().runId());
         if (done.isEmpty()) {
             source.sendFailure(Component.literal("That run has no floor under way."));

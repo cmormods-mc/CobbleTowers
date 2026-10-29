@@ -235,3 +235,24 @@ The first plan above (arena, gate A, a vendor room, gate B) became the shape of 
 * **Structure**: `battle_tower_halloween.nbt` is now 136 x 215 x 137 (700,330 blocks, 2.0 MB). It fits a cell (256 interior) and the dimension (384 tall, floor at y 64).
 * **Order to regenerate**: `hollow_tower.py --loot-tables <blocks dir>` (builds, validates, writes schem + layout), `apply_layout.py`, `schem_to_structure.py` then `--check`,
   `validate_definitions.py` (about two minutes: it reads the structure to check 216 anchors), `preview.py out.png [yaw]` for a quick picture without a client.
+
+
+## As built: the Trick or Treat vault (2026-10-29)
+
+An event tower (one with a window) may offer a fourth kind of stop, `TRICK_OR_TREAT`, on any lane (`RouteGraph.Rules.trickOrTreat`, weight 12 beside the others). Its chamber is `room_trick_or_treat`
+(a brick dais against the east wall, off the aisle the party walks to the corridor), and the Jack-o'-Lantern Vault (`halloween/vault`) is raised on the dais when the party opens it.
+
+* **The vote warns first.** After the route vote the party votes again, as for any room: *Open it* or *Leave it shut*. The option's text (pedestal and card) is
+  "Jack-o'-Lantern Vault: open it (even odds: a treat, or a mimic. Lose to the mimic and you lose a relic and 5% of the final loot)" (`IntermissionEvents.Option.TRICK_OPEN`).
+* **The coin** is `TrickRules.roll(runSeed, floor)`: 50/50, seeded, so leaving and returning, or replaying a run code, finds the same thing.
+* **Treat**: the party is healed, each player is paid `vaultPurse(floor)` CobbleDollars, and one treat in five also carries a relic (when there is room for one).
+* **Trick**: a mimic. Each fighter faces one opponent from the floor's own pool at their own level, as an exhibition (a cloned, healed party), so no Pokemon is lost, only what the vault staked.
+  * **The price is taken first and returned on a win.** A relic (if the run holds one, chosen by the seed) is removed, and a `TRICK_LOST` ledger mark is written. `RewardBankService.bank`
+    cuts every grant it banks by `TrickRules.cutPercent(ledger)`: 5% per net loss, rounded by the seed so the expected loss is exactly the cut (a one-item grant survives 95 times in 100).
+    If every fighter wins, the relic is given back and a `TRICK_WON_BACK` mark undoes the cut, and each player is paid half a purse. Because the cost comes first, a restart, a disconnect or an abandoned
+    fight can only ever cost the party, never pay it.
+  * The fight is the Echo Duel machinery with a marker in place of the Echo (`EchoDuels.MIMIC`); the run cannot ready up while it is on.
+* **Not built**: the catchable rare encounter (a treat that is a catchable Haunted Pokemon), a disguised mimic skin, opening the chest by clicking it in the room instead of by vote, and a mimic
+  fight that survives a server restart (the price stays taken).
+* **Live**: `walk_tower_test.py` takes the Trick or Treat lane whenever the floor offers one, opens the vault and checks what follows from the server log; `runs winfloor` while a mimic is under way
+  beats it (operator tool).

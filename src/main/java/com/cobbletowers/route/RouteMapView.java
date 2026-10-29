@@ -62,6 +62,7 @@ public final class RouteMapView {
             case LIBRARY -> Kind.LIBRARY;
             case VAULT -> Kind.VAULT;
             case POOL -> Kind.POOL;
+            case TRICK_OR_TREAT -> Kind.TRICK_OR_TREAT;
             default -> Kind.BATTLE;
         };
     }

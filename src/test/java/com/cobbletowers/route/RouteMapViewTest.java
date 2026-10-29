@@ -48,10 +48,15 @@ class RouteMapViewTest {
     }
 
     @Test
+    void trickOrTreatIsItsOwnKindOfStop() {
+        assertEquals(Kind.TRICK_OR_TREAT, RouteMapView.kindOf(Stop.TRICK_OR_TREAT));
+        assertTrue(RouteMap.PLAYABLE.contains(Stop.TRICK_OR_TREAT));
+    }
+
+    @Test
     void stopsWithoutARoomYetReadAsABattle() {
         assertEquals(Kind.BATTLE, RouteMapView.kindOf(Stop.ELITE));
         assertEquals(Kind.BATTLE, RouteMapView.kindOf(Stop.MERCHANT));
-        assertEquals(Kind.BATTLE, RouteMapView.kindOf(Stop.TRICK_OR_TREAT));
         assertEquals(Kind.BATTLE, RouteMapView.kindOf(null));
         assertEquals(Kind.FORGE, RouteMapView.kindOf(Stop.FORGE));
         assertEquals(Kind.REST, RouteMapView.kindOf(Stop.REST));

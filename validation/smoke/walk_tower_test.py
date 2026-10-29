@@ -167,6 +167,29 @@ def route_to_arena(next_floor: int) -> list[tuple[float, float]]:
     return [(mx(next_floor, x), z) for x, z in ((10, 24), (10, 48), (21.5, 48))]
 
 
+def trick_card(server_dir: Path, run: str, floor: int) -> int:
+    """The 1-based card of a Trick or Treat stop in this floor's route draft, from the server log; 0 when the floor offers none."""
+    text = (server_dir / "logs" / "latest.log").read_text(encoding="utf-8", errors="replace")
+    found = re.findall(rf"Run {run} opened a draft at floor {floor}: .*? stops \[([A-Z_, ]+)\]", text)
+    if not found:
+        return 0
+    kinds = [k.strip() for k in found[-1].split(",")]
+    return kinds.index("TRICK_OR_TREAT") + 1 if "TRICK_OR_TREAT" in kinds else 0
+
+
+def log_has(server_dir: Path, pattern: str, seconds: float = 10) -> str:
+    """The first server log line matching {pattern}, waiting up to {seconds}; empty when none came."""
+    deadline = time.time() + seconds
+    while True:
+        text = (server_dir / "logs" / "latest.log").read_text(encoding="utf-8", errors="replace")
+        found = re.findall(pattern, text)
+        if found:
+            return found[-1] if isinstance(found[-1], str) else found[-1][0]
+        if time.time() > deadline:
+            return ""
+        time.sleep(0.5)
+
+
 def chosen_lane(rcon: Rcon, floor: int) -> int:
     """The lane the vote settled on, from the run report; -1 when this floor's draft is not a route draft (a relic at a boss floor, an event)."""
     report = show(rcon)
@@ -262,10 +285,25 @@ def main() -> None:
                 problems = walk(list(by_name.values()), origin, route_to_vendor(floor))
                 check(f"{at}: both players walk through gate A into the intermission room", not problems, "; ".join(problems)[:200])
                 pedestals = rcon.command(f"{IN_TOWER} if entity @e[tag=cobbletowers_pedestal_hitbox]")
-                for _ in range(2):
-                    play(rcon, A, "pick 1")
-                    play(rcon, B, "pick 1")
+                trick = trick_card(server_dir, run, floor)
+                for round_ in range(2):
+                    card = trick if (round_ == 0 and trick) else 1
+                    play(rcon, A, f"pick {card}")
+                    play(rcon, B, f"pick {card}")
                 time.sleep(2)
+                if trick:
+                    # a Trick or Treat stop: the second pick opened the vault (card 1 is "open it"); what it held is read from the log
+                    outcome = log_has(server_dir, rf"Run {run} opened the Jack-o'-Lantern Vault of floor {floor}: (TREAT|TRICK)")
+                    check(f"{at}: a Trick or Treat stop opens its vault ({outcome or 'no outcome'})", bool(outcome))
+                    if outcome == "TREAT":
+                        check(f"{at}: a treat pays", bool(log_has(server_dir, rf"Run {run} treat on floor {floor}: ", 15)))
+                    elif outcome == "TRICK":
+                        taken = log_has(server_dir, rf"Run {run} mimic on floor {floor}: (.*)", 15)
+                        check(f"{at}: a trick raises a mimic and takes its price first", bool(taken), taken)
+                        time.sleep(2)
+                        rcon.command(f"cobbletowers runs winfloor {A}")
+                        back = log_has(server_dir, rf"Run {run} beat the mimic of floor {floor}: (.*)", 20)
+                        check(f"{at}: beating the mimic returns the price and pays half a treat", bool(back), back)
                 lit = [i for i, d in enumerate(doors) if gate_state(rcon, origin, d["open"], "minecraft:air")]
                 if len(lit) == 1:
                     lane = lit[0]
