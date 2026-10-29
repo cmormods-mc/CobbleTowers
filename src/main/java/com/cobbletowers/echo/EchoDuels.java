@@ -20,6 +20,9 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class EchoDuels {
 
+    /** Stands in for the Echo when the opponent is a Trick or Treat mimic: its result goes to the vault, not to an Echo's record. */
+    public static final UUID MIMIC = new UUID(0x7121CC0FFEEL, 0x7121CC0FFEEL);
+
     private static final Map<UUID, Map<UUID, UUID>> PENDING = new HashMap<>();
 
     static {
@@ -29,7 +32,7 @@ public final class EchoDuels {
     private EchoDuels() {}
 
     /** Records that {@code player} is duelling {@code echo}. */
-    static void begin(UUID runId, UUID player, UUID echo) {
+    public static void begin(UUID runId, UUID player, UUID echo) {
         PENDING.computeIfAbsent(runId, id -> new LinkedHashMap<>()).put(player, echo);
     }
 
@@ -53,6 +56,10 @@ public final class EchoDuels {
         Map<UUID, UUID> pending = PENDING.get(binding.runId());
         UUID echoId = pending == null ? null : pending.remove(binding.playerId());
         if (pending != null && pending.isEmpty()) PENDING.remove(binding.runId());
+        if (MIMIC.equals(echoId)) {
+            com.cobbletowers.trick.TrickOrTreatService.onMimicResolved(server, binding, playerWon);
+            return;
+        }
         ServerPlayer player = server.getPlayerList().getPlayer(binding.playerId());
         TowerEchoStore echoes = TowerEchoStore.get(server);
         if (echoId != null) echoes.recordResult(echoId, !playerWon);

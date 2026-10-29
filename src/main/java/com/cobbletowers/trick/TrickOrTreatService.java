@@ -1,0 +1,264 @@
+package com.cobbletowers.trick;
+
+import com.cobbletowers.CobbleTowers;
+import com.cobbletowers.ServerState;
+import com.cobbletowers.TowerLog;
+import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.definition.VendorEffect;
+import com.cobbletowers.echo.EchoDuels;
+import com.cobbletowers.encounter.TowerEncounters;
+import com.cobbletowers.halloween.vault.VaultEvent;
+import com.cobbletowers.halloween.vault.VaultFacing;
+import com.cobbletowers.halloween.vault.VaultMachine;
+import com.cobbletowers.halloween.vault.VaultService;
+import com.cobbletowers.intermission.IntermissionEvents;
+import com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter;
+import com.cobbletowers.persistence.LedgerEntry;
+import com.cobbletowers.persistence.PersistedParticipant;
+import com.cobbletowers.persistence.PersistedRun;
+import com.cobbletowers.persistence.RunModifierState;
+import com.cobbletowers.persistence.TowerWalletStore;
+import com.cobbletowers.route.TowerDoors;
+import com.cobbletowers.runtime.TowerRuns;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+
+/**
+ * The Trick or Treat vault of an event tower (P54, P55). The party votes to open the vault in its room; the coin ({@link TrickRules#roll}) is read from the
+ * run seed, the Jack-o'-Lantern Vault is raised on its dais and opens as that outcome, and the vault's own events do the rest:
+ * <ul>
+ *   <li>a <b>treat</b> heals the party and pays each player a purse, now and then with a relic;</li>
+ *   <li>a <b>trick</b> is a mimic: each fighter faces one opponent from the floor's own pool as an exhibition. The cost of losing is taken <i>first</i>
+ *       (a relic if the run holds one, and a ledger mark that cuts 5% of the loot banked from then on) and given back if every fighter wins, so a
+ *       restart, a disconnect or an abandoned fight can only ever cost the party, never pay it.</li>
+ * </ul>
+ * Everything but the vault's pictures is on the server thread. The state kept here is in memory only and is forgotten with the intermission.
+ */
+public final class TrickOrTreatService {
+
+    static final ResourceLocation VAULT_ID = CobbleTowers.id("halloween/jack_o_lantern_vault");
+
+    /** One opened vault: which run and floor it belongs to, what it holds, and the server that raised it. */
+    private record Active(MinecraftServer server, UUID runId, int floor, UUID vault, TrickRules.Result result) {}
+
+    /** A mimic fight in progress: who has not finished, whether anyone lost, and what the loss already took. */
+    private static final class Fight {
+        final int floor;
+        final Set<UUID> waiting = new HashSet<>();
+        final Optional<ResourceLocation> relicTaken;
+        boolean anyLost;
+
+        Fight(int floor, Optional<ResourceLocation> relicTaken) {
+            this.floor = floor;
+            this.relicTaken = relicTaken;
+        }
+    }
+
+    private static final Map<UUID, Active> BY_VAULT = new HashMap<>();
+    private static final Map<UUID, Active> BY_RUN = new HashMap<>();
+    private static final Map<UUID, Fight> FIGHTS = new HashMap<>();
+    private static boolean installed;
+
+    private TrickOrTreatService() {}
+
+    public static synchronized void install() {
+        if (installed) return;
+        installed = true;
+        VaultService.addListener(TrickOrTreatService::onVaultEvent);
+        ServerState.onStop(TrickOrTreatService::clear);
+    }
+
+    // ---- opening ---------------------------------------------------------------------------------
+
+    /** The party voted to open the vault of this floor. Idempotent per run. Never throws: a vault that cannot be raised must not stop the vote. */
+    public static void open(MinecraftServer server, PersistedRun run, int floorIndex) {
+        try {
+            openUnguarded(server, run, floorIndex);
+        } catch (RuntimeException ex) {
+            TowerLog.error("Run {}: opening the Trick or Treat vault failed", run.runId(), ex);
+        }
+    }
+
+    private static void openUnguarded(MinecraftServer server, PersistedRun run, int floorIndex) {
+        if (BY_RUN.containsKey(run.runId())) return;
+        TrickRules.Result result = TrickRules.roll(run.seed(), floorIndex);
+        Optional<TowerDoors.RoomSpot> spot = TowerDoors.roomSpot(server, run, run.modifiers().lastLane());
+        if (spot.isEmpty()) {
+            // No built room to show it in: still settle the coin, so the vote is never a silent nothing.
+            TowerLog.warn("Run {}: no room for the Trick or Treat vault of floor {}; settling {} without it", run.runId(), floorIndex, result);
+            Active bare = new Active(server, run.runId(), floorIndex, new UUID(0, 0), result);
+            if (result == TrickRules.Result.TREAT) treat(bare); else mimic(bare, null);
+            return;
+        }
+        UUID vault = VaultService.spawn(spot.get().level(), spot.get().vault(), VaultFacing.WEST);
+        Active active = new Active(server, run.runId(), floorIndex, vault, result);
+        BY_VAULT.put(vault, active);
+        BY_RUN.put(run.runId(), active);
+        VaultService.start(vault, result == TrickRules.Result.TREAT ? VaultMachine.Outcome.TREAT : VaultMachine.Outcome.TRICK);
+        TowerLog.info("Run {} opened the Jack-o'-Lantern Vault of floor {}: {}", run.runId(), floorIndex, result);
+    }
+
+    private static void onVaultEvent(UUID vault, VaultEvent event) {
+        Active active = BY_VAULT.get(vault);
+        if (active == null) return;
+        try {
+            switch (event.type()) {
+                case "reward_trigger" -> treat(active);
+                case "encounter_trigger" -> mimic(active, vault);
+                default -> { }
+            }
+        } catch (RuntimeException ex) {
+            TowerLog.error("Run {}: the Trick or Treat vault event {} failed", active.runId(), event.type(), ex);
+        }
+    }
+
+    // ---- a treat ---------------------------------------------------------------------------------
+
+    private static void treat(Active active) {
+        MinecraftServer server = active.server();
+        Optional<PersistedRun> found = TowerRuns.get(active.runId());
+        if (found.isEmpty()) return;
+        PersistedRun run = found.get();
+        int purse = IntermissionEvents.vaultPurse(active.floor());
+        String relicLine = "";
+        // the run is saved first: a crash between the two leaves a free relic, never a paid-for nothing
+        if (TrickRules.treatHasRelic(run.seed(), active.floor())) {
+            var relic = IntermissionEvents.treatRelic(TowerDefinitionRegistry.content(), run, active.floor());
+            if (relic.isPresent()) {
+                RunModifierState next = run.modifiers().withRelic(relic.get().id(), active.floor() + 1);
+                TowerRuns.save(server, run.withModifiers(next, System.currentTimeMillis()), true);
+                relicLine = " and " + relic.get().displayName();
+            }
+        }
+        creditEach(server, run, purse);
+        for (PersistedParticipant participant : run.participants()) {
+            ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+            if (player == null) continue;
+            com.cobbletowers.economy.VendorServices.apply(VendorEffect.FULL_HEAL, player);
+            player.sendSystemMessage(Component.literal("A treat! The vault pays " + purse + " CobbleDollars" + relicLine + " and the party is healed."));
+        }
+    }
+
+    // ---- a trick ---------------------------------------------------------------------------------
+
+    private static void mimic(Active active, UUID vault) {
+        MinecraftServer server = active.server();
+        Optional<PersistedRun> found = TowerRuns.get(active.runId());
+        if (found.isEmpty() || FIGHTS.containsKey(active.runId())) return;
+        PersistedRun run = found.get();
+        int floor = active.floor();
+        // The price is taken before the fight and given back on a win.
+        Optional<ResourceLocation> relic = TrickRules.relicLost(run.modifiers().relics(), run.seed(), floor);
+        RunModifierState held = run.modifiers();
+        RunModifierState state = relic.isPresent() ? held.withoutRelic(relic.get()) : held;
+        long now = System.currentTimeMillis();
+        run = run.withModifiers(state, now).withEarned(LedgerEntry.trickLost(floor, VAULT_ID, now), now);
+        TowerRuns.save(server, run, true);
+
+        Fight fight = new Fight(floor, relic);
+        FIGHTS.put(run.runId(), fight);
+        Optional<TowerDoors.RoomSpot> spot = TowerDoors.roomSpot(server, run, run.modifiers().lastLane());
+        int ordinal = 0;
+        for (PersistedParticipant participant : run.participants()) {
+            if (!participant.state().canFight()) continue;
+            ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+            if (player == null) continue;
+            var where = spot.map(TowerDoors.RoomSpot::front).orElse(player.blockPosition());
+            if (TowerEncounters.startMimicDuel(server, run, player, ordinal++, where)) {
+                EchoDuels.begin(run.runId(), player.getUUID(), EchoDuels.MIMIC);
+                fight.waiting.add(player.getUUID());
+                player.sendSystemMessage(Component.literal("A MIMIC! The vault was a trap, and it has already taken "
+                        + (relic.isPresent() ? "a relic and " : "") + TrickRules.LOSS_CUT_PERCENT + "% of the final loot. Beat it to win them back."));
+            }
+        }
+        if (fight.waiting.isEmpty()) {
+            // Nobody could be sent into a fight (no opponent to draw, everyone offline): the vault shuts and the price is given back.
+            TowerLog.warn("Run {}: the mimic of floor {} could not be summoned; the price is returned", run.runId(), floor);
+            settle(server, run.runId(), fight, true);
+        }
+    }
+
+    /** One fighter's mimic battle ended (called by {@link EchoDuels} for the mimic marker). */
+    public static void onMimicResolved(MinecraftServer server, CobblemonBattleAdapter.Binding binding, boolean playerWon) {
+        Fight fight = FIGHTS.get(binding.runId());
+        if (fight == null) return;
+        fight.waiting.remove(binding.playerId());
+        if (!playerWon) fight.anyLost = true;
+        ServerPlayer player = server.getPlayerList().getPlayer(binding.playerId());
+        if (player != null) {
+            player.sendSystemMessage(Component.literal(playerWon ? "You beat the mimic." : "The mimic wins this round."));
+        }
+        if (fight.waiting.isEmpty()) settle(server, binding.runId(), fight, !fight.anyLost);
+    }
+
+    /** Every fighter has finished: a win everywhere gives the price back and pays half a treat; any loss leaves it taken. */
+    private static void settle(MinecraftServer server, UUID runId, Fight fight, boolean won) {
+        FIGHTS.remove(runId);
+        Optional<PersistedRun> found = TowerRuns.get(runId);
+        if (found.isEmpty()) return;
+        PersistedRun run = found.get();
+        if (!won) {
+            TowerLog.info("Run {} lost the mimic of floor {}: relic {} taken, loot cut stays", runId, fight.floor, fight.relicTaken.orElse(null));
+            notify(server, run, "The mimic keeps its winnings" + (fight.relicTaken.isPresent() ? ": a relic" : "") + " and 5% of the final loot.");
+            return;
+        }
+        long now = System.currentTimeMillis();
+        RunModifierState state = run.modifiers();
+        if (fight.relicTaken.isPresent() && state.hasRelicRoom() && !state.relics().contains(fight.relicTaken.get())) {
+            state = state.withRelic(fight.relicTaken.get(), fight.floor + 1);
+        }
+        run = run.withModifiers(state, now).withEarned(LedgerEntry.trickWonBack(fight.floor, VAULT_ID, now), now);
+        TowerRuns.save(server, run, true);
+        int half = IntermissionEvents.vaultPurse(fight.floor) / 2;
+        creditEach(server, run, half);
+        TowerLog.info("Run {} beat the mimic of floor {}: the price is returned and each player is paid {}", runId, fight.floor, half);
+        notify(server, run, "The mimic is beaten! You keep what it took, and the vault pays " + half + " CobbleDollars each.");
+    }
+
+    // ---- housekeeping ----------------------------------------------------------------------------
+
+    private static void creditEach(MinecraftServer server, PersistedRun run, int amount) {
+        if (amount <= 0) return;
+        TowerWalletStore wallets = TowerWalletStore.get(server);
+        for (PersistedParticipant participant : run.participants()) wallets.credit(participant.playerId(), amount);
+        wallets.checkpoint(server);
+    }
+
+    private static void notify(MinecraftServer server, PersistedRun run, String line) {
+        for (PersistedParticipant participant : run.participants()) {
+            ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
+            if (player != null) player.sendSystemMessage(Component.literal(line));
+        }
+    }
+
+    /** The intermission is over: the vault is taken down and nothing about it is kept. A fight still running is left to the battle's own cancel. */
+    public static void forget(UUID runId) {
+        Active active = BY_RUN.remove(runId);
+        if (active != null) {
+            BY_VAULT.remove(active.vault());
+            VaultService.remove(active.vault());
+        }
+        FIGHTS.remove(runId);
+    }
+
+    public static void clear() {
+        BY_VAULT.clear();
+        BY_RUN.clear();
+        FIGHTS.clear();
+    }
+
+    /** For tests and the operator: the runs with an open vault. */
+    public static List<UUID> openRuns() {
+        return new ArrayList<>(BY_RUN.keySet());
+    }
+}

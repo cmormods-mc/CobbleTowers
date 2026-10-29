@@ -35,6 +35,10 @@ public final class RoomDresser {
     public static final int ROOM_WIDTH = 11;
     public static final int ROOM_HEIGHT = 8;
     public static final int ROOM_DEPTH = 15;
+    /** The Trick or Treat room's dais: one block high, {@value #VAULT_EAST} blocks east of the aisle's centre and {@value #VAULT_BACK} in from the back wall. */
+    public static final int DAIS_HEIGHT = 1;
+    public static final int VAULT_EAST = 3;
+    public static final int VAULT_BACK = 5;
 
     private static final Map<UUID, List<String>> DRESSED = new HashMap<>();
 
@@ -112,5 +116,6 @@ public final class RoomDresser {
     /** The run's intermission is over: the next one dresses afresh. */
     public static void forget(UUID runId) {
         DRESSED.remove(runId);
+        com.cobbletowers.trick.TrickOrTreatService.forget(runId);
     }
 }

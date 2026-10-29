@@ -336,6 +336,23 @@ public final class TowerEncounters {
     }
 
     /**
+     * Starts a Trick or Treat mimic: one opponent drawn from this floor's own pool, at this player's level, fought as an exhibition (a cloned, healed
+     * party), so nothing in the party is lost, only what the vault staked.
+     * @param where where the mimic stands, in front of the vault
+     * @return whether the battle started
+     */
+    public static boolean startMimicDuel(MinecraftServer server, PersistedRun run, ServerPlayer player, int ordinal, BlockPos where) {
+        Optional<FloorSetup> resolved = FloorSetup.resolve(server, run, false);
+        if (resolved.isEmpty()) return false;
+        FloorSetup setup = resolved.get();
+        Optional<EncounterSnapshot> drawn = EncounterDraw.draw(setup.pool(), run.seed(), run.floorIndex(), 40 + ordinal,
+                levelsOf(run, List.of(player)), setup.ruleset(), DraftService.effects(run).levelOffset(), setup.theme());
+        if (drawn.isEmpty()) return false;
+        return AscensionLibScouting.armed(List.of(player.getUUID()), null,
+                () -> CobblemonBattleAdapter.startExhibition(setup.level(), player, drawn.get(), where, run.runId(), run.floorIndex())).isPresent();
+    }
+
+    /**
      * Starts the next opponent of a multi-opponent floor. Content is re-resolved each time so a datapack reload
      * cannot leave it stale.
      * @return false leaves the player cleared

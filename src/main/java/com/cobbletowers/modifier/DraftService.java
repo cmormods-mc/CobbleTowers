@@ -159,8 +159,10 @@ public final class DraftService {
 
     /** What a run's weekly rule and trial change about the stops of its route. */
     public static com.cobbletowers.route.RouteGraph.Rules routeRules(PersistedRun run) {
+        var tower = TowerDefinitionRegistry.content().towers().get(run.towerId());
         return new com.cobbletowers.route.RouteGraph.Rules(com.cobbletowers.trial.TrialRules.hasRule(run, "no_healing_rooms"),
-                com.cobbletowers.trial.TrialRules.hasRule(run, "relics_every_second_floor"), com.cobbletowers.trial.TrialRules.roomBias(run));
+                com.cobbletowers.trial.TrialRules.hasRule(run, "relics_every_second_floor"), com.cobbletowers.trial.TrialRules.roomBias(run),
+                tower != null && tower.window().isPresent());   // an event tower may have the Trick or Treat vault
     }
 
     /**
@@ -413,6 +415,11 @@ public final class DraftService {
         TowerRuns.save(server, run.withModifiers(base.withDraft(resolved), now), true);
         TowerLog.info("Run {} event choice {} at floor {}{}: {}", runId, won, resolved.floorIndex(),
                 tie ? " on a seed tie-break" : "", outcome.map(com.cobbletowers.intermission.IntermissionEvents.Outcome::message).orElse("unknown option"));
+        if (com.cobbletowers.intermission.IntermissionEvents.Option.fromCard(won)
+                .filter(option -> option == com.cobbletowers.intermission.IntermissionEvents.Option.TRICK_OPEN).isPresent()) {
+            com.cobbletowers.trick.TrickOrTreatService.open(server, run.withModifiers(base.withDraft(resolved), now), resolved.floorIndex());
+            return resolved;
+        }
         if (outcome.isPresent() && outcome.get().duel()) {
             com.cobbletowers.echo.EchoService.beginDuel(server, run.withModifiers(base.withDraft(resolved), now),
                     resolved.floorIndex());

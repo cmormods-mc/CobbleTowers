@@ -38,8 +38,22 @@ class RouteGraphTest {
     void everyKindShowsUpAndBattleIsCommon() {
         Map<Kind, Integer> counts = new HashMap<>();
         for (int floor = 1; floor <= 3000; floor++) for (Kind k : RouteGraph.kindsAt(5, floor, Rules.NONE)) counts.merge(k, 1, Integer::sum);
-        for (Kind k : Kind.values()) assertTrue(counts.getOrDefault(k, 0) > 100, k + " appears: " + counts);
+        for (Kind k : Kind.values()) {
+            if (k == Kind.TRICK_OR_TREAT) continue;   // only an event tower's route offers it, tested below
+            assertTrue(counts.getOrDefault(k, 0) > 100, k + " appears: " + counts);
+        }
         assertTrue(counts.get(Kind.BATTLE) > counts.get(Kind.POOL), counts.toString());
+    }
+
+    @Test
+    void theTrickOrTreatVaultIsOnlyOfferedWhereTheRulesSayAnEventTower() {
+        Rules event = new Rules(false, false, Optional.empty(), true);
+        Map<Kind, Integer> counts = new HashMap<>();
+        for (int floor = 1; floor <= 3000; floor++) {
+            assertFalse(RouteGraph.kindsAt(5, floor, Rules.NONE).contains(Kind.TRICK_OR_TREAT), "an ordinary tower never has it");
+            for (Kind k : RouteGraph.kindsAt(5, floor, event)) counts.merge(k, 1, Integer::sum);
+        }
+        assertTrue(counts.getOrDefault(Kind.TRICK_OR_TREAT, 0) > 100, "an event tower has it: " + counts);
     }
 
     @Test

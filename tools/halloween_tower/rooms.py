@@ -246,9 +246,30 @@ def pool(r: Room) -> None:
         hang(r, 5, z, SOUL, 2)
 
 
+def trick_or_treat(r: Room) -> None:
+    """The Jack-o'-Lantern Vault's room: a brick dais at the east wall, off the aisle (the vault stands on it, facing west), candles round it, a row of
+    carved pumpkins down the west wall, orange and purple pennants, soul lights overhead. The vault itself is drawn at run time."""
+    base(r, BLACKSTONE)
+    r.fill(7, 9, 1, 1, 4, 6, BRICKS)
+    r.fill(7, 9, 0, 0, 3, 7, TRIM)
+    r.set(7, 1, 3, CANDLE)
+    r.set(7, 1, 7, CANDLE)
+    r.set(9, 1, 3, CANDLE)
+    r.set(9, 1, 7, CANDLE)
+    for z in (2, 5, 8, 11):
+        r.set(1, 1, z, JACK)
+        r.set(1, 2, z, JACK)
+    for z in (2, 6, 10):
+        r.fill(0, 0, 3, 6, z, z + 1, ORANGE_WOOL)
+        r.fill(10, 10, 3, 6, z, z + 1, PURPLE_WOOL)
+    for z in (3, 7, 11):
+        hang(r, 5, z, SOUL, 2)
+    r.fill(10, 10, 2, 5, 4, 6, SHROOM)     # the glow behind the vault
+
+
 ROOMS = {
     "battle": battle, "rest": rest, "shrine": shrine, "gambler": gambler,
-    "forge": forge, "library": library, "vault": vault, "pool": pool,
+    "forge": forge, "library": library, "vault": vault, "pool": pool, "trick_or_treat": trick_or_treat,
 }
 
 

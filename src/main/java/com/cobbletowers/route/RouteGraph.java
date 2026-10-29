@@ -33,7 +33,9 @@ public final class RouteGraph {
     /** What a stop is. */
     public enum Kind {
         BATTLE(null), REST(Room.REST), SHRINE(Room.SHRINE), GAMBLER(Room.GAMBLER), FORGE(Room.FORGE),
-        LIBRARY(Room.LIBRARY), VAULT(Room.VAULT), POOL(Room.POOL);
+        LIBRARY(Room.LIBRARY), VAULT(Room.VAULT), POOL(Room.POOL),
+        /** The Jack-o'-Lantern Vault of an event tower: even odds of a treat or a mimic (P55). Only offered where {@link Rules#trickOrTreat} says so. */
+        TRICK_OR_TREAT(Room.TRICK_OR_TREAT);
 
         private final Room room;
 
@@ -63,9 +65,14 @@ public final class RouteGraph {
      * @param noRest Rest stops are taken away
      * @param relicFloors every second floor offers only relic rooms (Shrine, Forge, Library)
      * @param bias the room a rotating trial leans toward (lower case), if any
+     * @param trickOrTreat the Trick or Treat vault may be a stop (an event tower)
      */
-    public record Rules(boolean noRest, boolean relicFloors, Optional<String> bias) {
-        public static final Rules NONE = new Rules(false, false, Optional.empty());
+    public record Rules(boolean noRest, boolean relicFloors, Optional<String> bias, boolean trickOrTreat) {
+        public static final Rules NONE = new Rules(false, false, Optional.empty(), false);
+
+        public Rules(boolean noRest, boolean relicFloors, Optional<String> bias) {
+            this(noRest, relicFloors, bias, false);
+        }
     }
 
     /** Whether a path can run from a stop in {@code from} to a stop in {@code to}; a run with no stop yet can start anywhere. */
@@ -86,6 +93,7 @@ public final class RouteGraph {
         List<Kind> pool = new ArrayList<>();
         for (Kind kind : Kind.values()) {
             if (kind == Kind.REST && rules.noRest()) continue;
+            if (kind == Kind.TRICK_OR_TREAT && !rules.trickOrTreat()) continue;
             if (relicOnly && kind != Kind.SHRINE && kind != Kind.FORGE && kind != Kind.LIBRARY) continue;
             pool.add(kind);
         }

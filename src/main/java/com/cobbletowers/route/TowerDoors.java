@@ -113,6 +113,23 @@ public final class TowerDoors {
         return changed;
     }
 
+    /** Where the chamber behind a door keeps its vault: on the dais by the east wall, the mimic fighting in the aisle in front of it. */
+    public record RoomSpot(ServerLevel level, BlockPos vault, BlockPos front) {}
+
+    /** The vault spot of the chamber behind the door of {@code lane} (the middle door when the lane is unknown), if the floor has doors and is built. */
+    public static Optional<RoomSpot> roomSpot(MinecraftServer server, PersistedRun run, int lane) {
+        Located at = locate(server, run);
+        if (at == null) return Optional.empty();
+        List<FloorDoor> doors = at.layout.doors();
+        FloorDoor door = doors.get(lane >= 0 && lane < doors.size() ? lane : doors.size() / 2);
+        int centre = (door.open().minX() + door.open().maxX()) / 2;
+        int feet = door.pedestal().y();
+        int back = door.open().minZ() - RoomDresser.ROOM_DEPTH;
+        // the dais is against the east wall, off the aisle the party walks to the corridor; the mimic fights in the aisle in front of it
+        BlockPos vault = at.origin.offset(centre + RoomDresser.VAULT_EAST, feet + RoomDresser.DAIS_HEIGHT, back + RoomDresser.VAULT_BACK);
+        return Optional.of(new RoomSpot(at.level, vault, at.origin.offset(centre, feet, back + RoomDresser.VAULT_BACK)));
+    }
+
     private record Located(ServerLevel level, FloorLayout layout, BlockPos origin) {}
 
     private static Located locate(MinecraftServer server, PersistedRun run) {

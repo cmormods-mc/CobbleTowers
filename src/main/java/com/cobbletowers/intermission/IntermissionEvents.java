@@ -45,6 +45,8 @@ public final class IntermissionEvents {
         VAULT,
         /** P45: swap a held relic for another. */
         POOL,
+        /** P55: the Jack-o'-Lantern Vault of an event tower: even odds of a treat or a mimic, and a lost mimic costs a relic and part of the loot. */
+        TRICK_OR_TREAT,
         /** Offered only at a regional milestone, and only when there is an Echo to meet (P35). */
         ECHO_DUEL
     }
@@ -64,6 +66,8 @@ public final class IntermissionEvents {
         VAULT_LEAVE(Room.VAULT, "vault_leave", "Vault: leave it sealed"),
         POOL_DIVE(Room.POOL, "pool_dive", "Mystic Pool: dive, and swap a relic for a different one"),
         POOL_STAY(Room.POOL, "pool_stay", "Mystic Pool: stay dry"),
+        TRICK_OPEN(Room.TRICK_OR_TREAT, "trick_open", "Jack-o'-Lantern Vault: open it (even odds: a treat, or a mimic. Lose to the mimic and you lose a relic and 5% of the final loot)"),
+        TRICK_LEAVE(Room.TRICK_OR_TREAT, "trick_leave", "Jack-o'-Lantern Vault: leave it shut"),
         ECHO_FIGHT(Room.ECHO_DUEL, "echo_fight", "Echo Duel: face a champion's team (a safe exhibition, 100 CobbleDollars if you win)"),
         ECHO_DECLINE(Room.ECHO_DUEL, "echo_decline", "Echo Duel: decline");
 
@@ -111,7 +115,8 @@ public final class IntermissionEvents {
 
     /** How likely each ordinary room is among the eligible ones (relative weights, untuned). */
     static final Map<Room, Integer> WEIGHTS = new EnumMap<>(Map.of(
-            Room.REST, 30, Room.SHRINE, 15, Room.GAMBLER, 15, Room.FORGE, 15, Room.LIBRARY, 10, Room.VAULT, 10, Room.POOL, 10));
+            Room.REST, 30, Room.SHRINE, 15, Room.GAMBLER, 15, Room.FORGE, 15, Room.LIBRARY, 10, Room.VAULT, 10, Room.POOL, 10,
+            Room.TRICK_OR_TREAT, 12));
     /** The relic tags a Forge may give: the ones that change a fight. */
     static final Set<String> FORGE_TAGS = Set.of("offense", "tempo", "sustain", "boss");
 
@@ -205,7 +210,7 @@ public final class IntermissionEvents {
         List<Room> eligible = new ArrayList<>();
         int total = 0;
         for (Room room : Room.values()) {
-            if (room == Room.ECHO_DUEL || (room == Room.REST && noRest)) continue;
+            if (room == Room.ECHO_DUEL || room == Room.TRICK_OR_TREAT || (room == Room.REST && noRest)) continue;
             if (relicFloor && room != Room.SHRINE && room != Room.FORGE && room != Room.LIBRARY) continue;
             if (eligible(content, run, floorIndex, room, balance)) {
                 eligible.add(room);
@@ -242,6 +247,8 @@ public final class IntermissionEvents {
             case LIBRARY -> state.hasRelicRoom() && !libraryChoices(content, state).isEmpty();
             case VAULT -> !curseChoices(content, run, floorIndex).isEmpty();
             case POOL -> !state.relics().isEmpty() && !relicChoices(content, state).isEmpty();
+            // only ever a route stop of an event tower: the route draw decides where, so any run that reaches it may open it
+            case TRICK_OR_TREAT -> true;
             case ECHO_DUEL -> false;
         };
     }
@@ -345,6 +352,10 @@ public final class IntermissionEvents {
             case ECHO_FIGHT -> {
                 return new Outcome(state, false, "The Echo Duel begins.", true);
             }
+            case TRICK_OPEN -> {
+                // the coin is read and acted on by TrickOrTreatService, which owns the vault and the fight; this is the line a pure caller sees
+                return new Outcome(state, false, "The vault creaks open...");
+            }
             case REST_HEAL -> {
                 return new Outcome(state, true, "The party rests and is fully healed.");
             }
@@ -352,6 +363,14 @@ public final class IntermissionEvents {
                 return new Outcome(state, false, "You press on.");
             }
         }
+    }
+
+    /** The relic a treat carries: any the run could take now, chosen by the seed; empty when there is none or no room for one. */
+    public static Optional<ModifierDefinition> treatRelic(TowerContent content, PersistedRun run, int floorIndex) {
+        RunModifierState state = run.modifiers();
+        List<ModifierDefinition> relics = relicChoices(content, state);
+        if (relics.isEmpty() || !state.hasRelicRoom()) return Optional.empty();
+        return Optional.of(relics.get((int) Math.floorMod(seedOf(run, floorIndex) >> 7, relics.size())));
     }
 
     /** Relics the run could take now, in the pool's stable order. */

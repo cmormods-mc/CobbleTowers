@@ -81,6 +81,8 @@ public final class RewardValuation {
         List<Grant> grants = new ArrayList<>();
         int n = 0;
         for (LedgerEntry entry : priced) {
+            // a mimic's mark is not loot and must not move the ordinal of the entries after it
+            if (entry.kind() == LedgerEntry.Kind.TRICK_LOST || entry.kind() == LedgerEntry.Kind.TRICK_WON_BACK) continue;
             n++;
             if (entry.kind() == LedgerEntry.Kind.MILESTONE_CLEARED) {
                 addMilestone(grants, runSeed, entry, n, table, effects, customs, cycleLength, milestoneKinds, weightPercent);
@@ -145,7 +147,7 @@ public final class RewardValuation {
             case OPPONENT_DEFEATED -> Optional.of(RewardKind.OPPONENT_DEFEATED);
             case BOSS_DEFEATED -> Optional.of(RewardKind.BOSS_DEFEATED);
             case FLOOR_CLEARED -> Optional.of(RewardKind.FLOOR_CLEARED);
-            case POOL_FORFEITED -> Optional.empty();
+            case POOL_FORFEITED, TRICK_LOST, TRICK_WON_BACK -> Optional.empty();
         };
     }
 }

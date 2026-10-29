@@ -27,7 +27,11 @@ public record LedgerEntry(Kind kind, int floorIndex, ResourceLocation what, UUID
          * The run was lost, so everything above it is void. Marked rather than deleted, so P9 reads "grant nothing"
          * and an operator can still see what was earned.
          */
-        POOL_FORFEITED
+        POOL_FORFEITED,
+        /** A Trick or Treat mimic was lost: the loot banked from now on is cut (P55). Never priced; counted by {@code TrickRules.cutPercent}. */
+        TRICK_LOST,
+        /** The party then beat that mimic after all, so the loss is undone. */
+        TRICK_WON_BACK
     }
 
     public LedgerEntry {
@@ -43,6 +47,15 @@ public record LedgerEntry(Kind kind, int floorIndex, ResourceLocation what, UUID
     /** Everything earned so far is void. Appended once, when the run is lost. */
     public static LedgerEntry forfeited(int floorIndex, ResourceLocation towerId, long at) {
         return new LedgerEntry(Kind.POOL_FORFEITED, floorIndex, towerId, null, at);
+    }
+
+    /** A lost mimic belongs to the run. */
+    public static LedgerEntry trickLost(int floorIndex, ResourceLocation vaultId, long at) {
+        return new LedgerEntry(Kind.TRICK_LOST, floorIndex, vaultId, null, at);
+    }
+
+    public static LedgerEntry trickWonBack(int floorIndex, ResourceLocation vaultId, long at) {
+        return new LedgerEntry(Kind.TRICK_WON_BACK, floorIndex, vaultId, null, at);
     }
 
     public static LedgerEntry opponentDefeated(int floorIndex, ResourceLocation species, UUID player, long at) {

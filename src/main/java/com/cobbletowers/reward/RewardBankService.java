@@ -171,6 +171,17 @@ public final class RewardBankService {
             }
         }
         List<UUID> participants = currentParticipants(run);
+        // A mimic lost in a Trick or Treat vault takes its share of everything banked from then on (P55).
+        int trickCut = com.cobbletowers.trick.TrickRules.cutPercent(run.ledger());
+        if (trickCut > 0 && !grants.isEmpty()) {
+            grants = com.cobbletowers.trick.TrickRules.apply(grants, trickCut, lootSeed(run));
+            TowerLog.info("Run {} payout is cut {}% by lost mimic(s)", runId, trickCut);
+            for (UUID playerId : participants) {
+                ServerPlayer online = server.getPlayerList().getPlayer(playerId);
+                if (online != null) online.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                        "The mimic's grin costs you: this payout is " + trickCut + "% smaller."));
+            }
+        }
 
         TowerRuns.save(server, run.banked(run.floorIndex(), key, now), true);
         TowerLog.info("Run {} banked its rewards through floor {}: {}", runId, run.floorIndex(), grants);

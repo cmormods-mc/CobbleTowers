@@ -257,9 +257,22 @@ class IntermissionEventsTest {
             IntermissionEvents.roomFor(content, run, 1, false, id -> 10_000).ifPresent(room -> seen.merge(room, 1, Integer::sum));
         }
         for (Room room : Room.values()) {
-            if (room == Room.ECHO_DUEL || room == Room.SHRINE) continue;   // the shrine needs relic room and a relic to give: covered above
+            if (room == Room.ECHO_DUEL || room == Room.SHRINE || room == Room.TRICK_OR_TREAT) continue;   // the shrine needs relic room and a relic to give: covered above; the vault is only ever a route stop of an event tower
             assertTrue(seen.getOrDefault(room, 0) > 0, room + " never came up: " + seen);
         }
         assertTrue(seen.getOrDefault(Room.REST, 0) > seen.getOrDefault(Room.LIBRARY, 0), "Rest is the most common room: " + seen);
+    }
+
+    @Test
+    @DisplayName("the Trick or Treat vault is never the random room of an intermission, and its option says what losing costs before anyone opens it")
+    void trickOrTreatIsRouteOnlyAndWarnsFirst() {
+        TowerContent content = content(tagged("blade", "offense"));
+        for (long seed = 0; seed < 2000; seed++) {
+            assertTrue(IntermissionEvents.roomFor(content, run(seed, 1, RunModifierState.EMPTY), 1, false, id -> 10_000)
+                    .filter(room -> room == Room.TRICK_OR_TREAT).isEmpty());
+        }
+        String label = IntermissionEvents.labelAt(IntermissionEvents.Option.TRICK_OPEN, 3);
+        assertTrue(label.contains("mimic") && label.contains("relic") && label.contains("5%"), label);
+        assertEquals(2, IntermissionEvents.cardsOf(Room.TRICK_OR_TREAT).size());
     }
 }
