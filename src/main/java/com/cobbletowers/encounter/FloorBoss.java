@@ -13,6 +13,7 @@ import com.cobbletowers.definition.TowerDefinitionRegistry;
 import com.cobbletowers.modifier.DraftService;
 import com.cobbletowers.persistence.LedgerEntry;
 import com.cobbletowers.persistence.PersistedRun;
+import com.cobbletowers.persistence.PersistedParticipant;
 import com.cobbletowers.runtime.ParticipantService;
 import com.cobbletowers.runtime.RunTransitionService;
 import com.cobbletowers.runtime.TowerRuns;
@@ -41,10 +42,9 @@ final class FloorBoss {
         PersistedRun run = setup.run();
 
         List<ServerPlayer> standing = new ArrayList<>();
-        for (Map.Entry<UUID, TowerEncounters.Status> entry : round.byPlayer().entrySet()) {
-            if (entry.getValue() == TowerEncounters.Status.OUT) continue;
-            ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
-            if (player != null) standing.add(player);
+        for (UUID playerId : standingParticipants(run.participants(), round.byPlayer())) {
+            ServerPlayer player = server.getPlayerList().getPlayer(playerId);
+            if (player != null && player.serverLevel() == setup.level()) standing.add(player);
         }
         if (standing.isEmpty()) return false;
 
@@ -78,6 +78,17 @@ final class FloorBoss {
                 new TowerEncounters.Round(round.runId(), round.floorIndex(), TowerEncounters.Phase.BOSS, round.byPlayer(), round.waves(),
                         round.startedAt()));
         return true;
+    }
+
+    static List<UUID> standingParticipants(List<PersistedParticipant> participants,
+                                           Map<UUID, TowerEncounters.Status> outcomes) {
+        // Round outcomes outlive individual departures. A CLEARED result does not keep a player in the run.
+        return participants.stream()
+                .filter(participant -> participant.state().canFight())
+                .filter(participant -> outcomes.containsKey(participant.playerId())
+                        && outcomes.get(participant.playerId()) != TowerEncounters.Status.OUT)
+                .map(PersistedParticipant::playerId)
+                .toList();
     }
 
     /** The definition a milestone floor is meant to finish with, if this is one. */
