@@ -12,4 +12,5 @@ Commits here carry no attribution lines; commit and push once tested; no PRs unl
 * Trick or Treat rooms (the gallery is where they would go), the vault is still not wired to anything, per-player run history.
 * Untested live on a real server with real players: balance numbers, the 90 s straggler teleport with a slow player.
 
-* 2026-10-29: Hollow's Eve exterior built (`tools/halloween_tower/exterior.py`, `apply_layout.py`, `preview.py`); structure is 136x215x137, anchors shifted by the crop offset; live climb 137/137 and real-client exterior shots taken. Open: the island is small against the 121-tall building (corner drums hang below it), upper roof and spire not yet viewed in the client, event votes not yet in the rooms, Trick or Treat rooms, real-player balance.
+* 2026-10-29: Hollow's Eve exterior built (`tools/halloween_tower/exterior.py`, `apply_layout.py`, `preview.py`); structure is 136x215x137, anchors shifted by the crop offset; live climb 137/137 and real-client exterior shots taken. Island widened to a rounded square with a brick plinth (structure now 164x215x163, climb 137/137 again, roof and corner towers seen in the client). Open: event votes not yet in the rooms, Trick or Treat rooms, real-player balance.
+* Rig recipe and scripts: `docs/handoff/rig-recipe.md`, `validation/rig/`.
