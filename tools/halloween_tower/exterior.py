@@ -14,7 +14,7 @@ import math
 
 import numpy as np
 
-M = 24                  # room round the building on every side (x and z)
+M = 34                  # room round the building on every side (x and z)
 D = 14                  # room under it for the island's underside
 EXTRA = 80              # room above the roof for spires
 GATE_DEPTH = 12         # the gatehouse in front of the south wall
@@ -135,14 +135,15 @@ def shift(layout: dict, offset: tuple[int, int, int] = (M, D, M)) -> dict:
 # ---- the island ------------------------------------------------------------------------------------------------------------------
 
 def island(c: Canvas) -> None:
+    """A rounded-square rock under the building, wide enough to carry the corner towers, with a ragged edge and a hanging underside."""
     cx = cz = M + 48
-    radius = 60.0
+    reach = 76.0
     for x in range(c.size[0]):
         for z in range(c.size[2]):
             dx, dz = x - cx, z - cz
             ang = math.atan2(dz, dx)
-            edge = radius * (1.0 + 0.10 * math.sin(ang * 5 + 1.3) + 0.06 * math.sin(ang * 11) + (noise(x // 4, z // 4, 3) % 100) / 1500.0)
-            r = math.hypot(dx, dz)
+            edge = 1.0 + 0.05 * math.sin(ang * 5 + 1.3) + 0.03 * math.sin(ang * 11) + (noise(x // 4, z // 4, 3) % 100) / 2500.0
+            r = ((abs(dx) / reach) ** 4 + (abs(dz) / reach) ** 4) ** 0.25
             if r >= edge:
                 continue
             t = r / edge
@@ -156,6 +157,22 @@ def island(c: Canvas) -> None:
                 else:
                     block = TUFF if n < 300 else COBBLED if n < 650 else BLACKSTONE if n < 900 else TRIM
                 c.set(x, y, z, block)
+
+
+def plinth(c: Canvas) -> None:
+    """Two broad steps of brick round the foot of the walls, as in the reference; left open in front of the gatehouse where the grand stair climbs."""
+    cx = M + 48
+    for x in range(M - 9, M + BX + 9):
+        for z in range(M - 9, M + BZ + 9):
+            if in_building(x, z) or c.at(x, D, z) == AIR:
+                continue
+            ring = max(M - x, x - (M + BX - 1), M - z, z - (M + BZ - 1))     # blocks out from the wall
+            if z >= M + BZ and abs(x - cx) <= 14:
+                continue
+            if ring <= 4:
+                c.fill(x, x, D + 1, D + 2, z, z, BRICK if (x + z) % 7 else POLISHED)
+            elif ring <= 8:
+                c.set(x, D + 1, z, BRICK if (x + z) % 7 else POLISHED)
 
 
 def path_and_stair(c: Canvas) -> None:
@@ -411,8 +428,8 @@ def spire(c: Canvas, roof: int) -> None:
 def spikes(c: Canvas) -> None:
     """Giant leaning crystals of lit glass round the island."""
     cx = cz = M + 48
-    for k, (ang, dist, height, lean) in enumerate(((20, 52, 28, 0.35), (70, 51, 22, -0.3), (118, 53, 30, 0.3), (160, 50, 20, 0.35), (205, 52, 26, -0.35),
-                                                    (250, 51, 24, 0.3), (295, 53, 29, -0.3), (340, 50, 21, 0.35), (45, 55, 16, 0.4), (225, 55, 17, -0.4))):
+    for k, (ang, dist, height, lean) in enumerate(((20, 66, 28, 0.2), (70, 64, 22, -0.1), (118, 67, 30, 0.2), (160, 65, 20, 0.2), (205, 66, 26, -0.1),
+                                                    (250, 64, 24, 0.2), (295, 67, 29, -0.1), (340, 65, 21, 0.2), (45, 72, 16, 0.3), (225, 72, 17, -0.1))):
         a = math.radians(ang)
         bx = cx + math.cos(a) * dist
         bz = cz + math.sin(a) * dist
@@ -452,7 +469,7 @@ def floating(c: Canvas) -> None:
 def trees_and_pumpkins(c: Canvas) -> None:
     """A few dead white trees and pumpkin patches on the ground round the stair."""
     cx = cz = M + 48
-    for k, (ang, dist) in enumerate(((10, 54), (95, 53), (140, 56), (185, 54), (255, 55), (330, 54))):
+    for k, (ang, dist) in enumerate(((10, 62), (95, 60), (140, 63), (185, 61), (255, 62), (330, 61))):
         a = math.radians(ang)
         tx, tz = round(cx + math.cos(a) * dist), round(cz + math.sin(a) * dist)
         if in_building(tx, tz) or c.at(tx, D, tz) == AIR:
@@ -476,6 +493,7 @@ def trees_and_pumpkins(c: Canvas) -> None:
 
 def dress(c: Canvas) -> None:
     island(c)
+    plinth(c)
     path_and_stair(c)
     apex = roof(c)
     skin(c)
