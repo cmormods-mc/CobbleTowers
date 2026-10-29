@@ -257,17 +257,18 @@ def main() -> None:
                 for _ in range(2):
                     play(rcon, A, "pick 1")
                     play(rcon, B, "pick 1")
-                lane = chosen_lane(rcon, floor)
-                if lane < 0:
-                    # a relic draft has no lanes: the middle door is opened for the team when it sets out
-                    lane = -1
-                else:
-                    check(f"{at}: the door of the chosen lane lights up", gate_state(rcon, origin, doors[lane]["frame"], "minecraft:shroomlight"))
-                    check(f"{at}: and opens", gate_state(rcon, origin, doors[lane]["open"], "minecraft:air"))
+                time.sleep(2)
+                lit = [i for i, d in enumerate(doors) if gate_state(rcon, origin, d["open"], "minecraft:air")]
+                if len(lit) == 1:
+                    lane = lit[0]
+                    check(f"{at}: the door of the chosen route lights up", gate_state(rcon, origin, doors[lane]["frame"], "minecraft:shroomlight"))
                     others = [d for i, d in enumerate(doors) if i != lane]
-                    check(f"{at}: the other two doors stay shut and dark",
+                    check(f"{at}: it is the only one that opens, and the other two stay shut and dark",
                           all(gate_state(rcon, origin, d["open"], "minecraft:iron_bars") and gate_state(rcon, origin, d["frame"], "minecraft:crying_obsidian")
                               for d in others))
+                else:
+                    lane = -1   # a draft with no lanes (a relic, a lock-in): the middle door is opened for the team when it sets out
+                    check(f"{at}: no door opens before the vote has a route", not lit, f"open doors {lit}")
                 play(rcon, A, "ready")
                 play(rcon, B, "ready")
 
@@ -297,7 +298,6 @@ def main() -> None:
                 if lane < 0:
                     lane = next((i for i, d in enumerate(doors) if gate_state(rcon, origin, d["open"], "minecraft:air")), -1)
                     check(f"{at}: a floor with no route lanes opens a door of its own", lane >= 0)
-                    lane = max(lane, 1)
 
                 # through the chosen door, along the corridor and up the stair, then down the arrival hall to the next arena
                 door_x = doors[lane]["pedestal"]["x"]
