@@ -7,4 +7,5 @@ server-controlled, no client mod. Start with `art/jack_o_lantern_vault/README.md
 * Regenerate: `python3 tools/vault/vault_build.py`; check: `python3 tools/vault/vault_verify.py` (36 checks).
 * Runtime: `com.cobbletowers.halloween.vault` (`VaultService.spawn / start / close / reset / remove`, listeners for `reward_trigger` and `encounter_trigger`);
   operator command `/cobbletowers vault ...`.
-* Not wired to a tower floor yet: nothing spawns a vault and nothing listens for the reward or the encounter (P54 Trick or Treat owns that).
+
+* 2026-10-29: art replaced by the Hallowbound Reliquary v3.1 (`tools/vault/import_reliquary.py`); the generators above are superseded. The vault is wired to Trick or Treat (`com.cobbletowers.trick`) and opens by clicking it (a vote).

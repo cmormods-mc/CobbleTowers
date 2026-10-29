@@ -252,7 +252,12 @@ An event tower (one with a window) may offer a fourth kind of stop, `TRICK_OR_TR
     If every fighter wins, the relic is given back and a `TRICK_WON_BACK` mark undoes the cut, and each player is paid half a purse. Because the cost comes first, a restart, a disconnect or an abandoned
     fight can only ever cost the party, never pay it.
   * The fight is the Echo Duel machinery with a marker in place of the Echo (`EchoDuels.MIMIC`); the run cannot ready up while it is on.
-* **Not built**: the catchable rare encounter (a treat that is a catchable Haunted Pokemon), a disguised mimic skin, opening the chest by clicking it in the room instead of by vote, and a mimic
+* **Not built**: the catchable rare encounter (a treat that is a catchable Haunted Pokemon), a disguised mimic skin, and a mimic
   fight that survives a server restart (the price stays taken).
+* **Click to open** (2026-10-29): while the open vote is on, `TrickOrTreatService.tend` (called from `PedestalService.sync`) raises the vault shut on its dais with a Polymer `InteractionElement`
+  click box (virtual, never saved). A main-hand click casts that player's vote for the *Open it* card through `IntermissionService.pick`, so the majority still decides and one player cannot
+  commit the party to a mimic; the pedestals still work. The vote opens the vault already standing there. Unit tests only so far; not yet clicked on the rig.
+* **Art** (2026-10-29): the vault is the Hallowbound Reliquary v3.1, brought in by `tools/vault/import_reliquary.py <extracted folder>` (rescales its pixel UVs to 0..16, writes models, texture, manifest, golden table).
+  New channels `face_plate.y_units` and `root.y_units`; hinge (8, 15.65, 17.8); anticipation 13, unlock 8, open 22, close 19 ticks; lid peaks at 116 over a 112 rest. The old generators in `tools/vault/` (`vault_build.py` etc.) are superseded and would overwrite this art.
 * **Live**: `walk_tower_test.py` takes the Trick or Treat lane whenever the floor offers one, opens the vault and checks what follows from the server log; `runs winfloor` while a mimic is under way
   beats it (operator tool).

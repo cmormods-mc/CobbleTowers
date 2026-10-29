@@ -11,7 +11,8 @@ import java.util.Map;
 /** The animation sequences from animation.json: keyframe tracks in server ticks, sampled per tick. Pure; no Minecraft types. */
 public final class VaultTimeline {
 
-    public static final String LID = "lid.rot_x_deg", PLATE = "face_plate.press_units", ROOT_X = "root.x_units";
+    public static final String LID = "lid.rot_x_deg", PLATE = "face_plate.press_units", PLATE_Y = "face_plate.y_units", ROOT_X = "root.x_units",
+            ROOT_Y = "root.y_units";
 
     /** A key: {@code ease} shapes the segment that starts at this key. */
     public record Key(double tick, double value, String ease) {}
@@ -52,7 +53,7 @@ public final class VaultTimeline {
     public VaultPose sample(String name, int tick) {
         Sequence s = sequence(name);
         double t = s.loop() ? tick % s.ticks() : Math.min(tick, s.ticks());
-        return new VaultPose(track(s, LID, t), track(s, PLATE, t), track(s, ROOT_X, t));
+        return new VaultPose(track(s, LID, t), track(s, PLATE, t), track(s, ROOT_X, t), track(s, PLATE_Y, t), track(s, ROOT_Y, t));
     }
 
     private static double track(Sequence s, String channel, double tick) {

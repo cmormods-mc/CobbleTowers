@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class VaultTransformsTest {
 
     private static final double EPS = 1e-9;
-    private static final double[] HINGE_MODEL = {8, 12.5, 19.6};
+    private static final double[] HINGE_MODEL = {8, 15.65, 17.8};
 
     private static VaultPose lid(double deg) {
         return new VaultPose(deg, 0, 0);
@@ -71,7 +71,7 @@ class VaultTransformsTest {
 
     @Test
     void positiveAngleLiftsTheFrontAndSwingsItBack() {
-        double[] front = {8, 12.5, 0};
+        double[] front = {8, 15.65, 0};
         double[] a = VaultTransforms.worldPoint(VaultPiece.LID, VaultPose.REST, VaultFacing.NORTH, front);
         double[] b = VaultTransforms.worldPoint(VaultPiece.LID, lid(30), VaultFacing.NORTH, front);
         assertTrue(b[1] > a[1] && b[2] > a[2]);
@@ -117,6 +117,8 @@ class VaultTransformsTest {
                 assertEquals(want.get("lid.rot_x_deg").getAsDouble(), got.lidDeg(), 2e-6, seq.getKey() + "@" + tick);
                 assertEquals(want.get("face_plate.press_units").getAsDouble(), got.plateUnits(), 2e-6, seq.getKey() + "@" + tick);
                 assertEquals(want.get("root.x_units").getAsDouble(), got.rootXUnits(), 2e-6, seq.getKey() + "@" + tick);
+                assertEquals(want.get("face_plate.y_units").getAsDouble(), got.plateYUnits(), 2e-6, seq.getKey() + "@" + tick);
+                assertEquals(want.get("root.y_units").getAsDouble(), got.rootYUnits(), 2e-6, seq.getKey() + "@" + tick);
                 samples++;
             }
         }
@@ -124,7 +126,8 @@ class VaultTransformsTest {
             JsonObject o = e.getAsJsonObject();
             VaultFacing facing = VaultFacing.parse(o.get("facing").getAsString());
             VaultPiece piece = VaultPiece.valueOf(o.get("piece").getAsString().toUpperCase(java.util.Locale.ROOT));
-            VaultPose pose = new VaultPose(o.get("lid").getAsDouble(), o.get("press").getAsDouble(), o.get("root_x").getAsDouble());
+            VaultPose pose = new VaultPose(o.get("lid").getAsDouble(), o.get("press").getAsDouble(), o.get("root_x").getAsDouble(),
+                    o.get("plate_y").getAsDouble(), o.get("root_y").getAsDouble());
             VaultTransforms.Xform x = VaultTransforms.piece(piece, pose, facing);
             for (int i = 0; i < 3; i++) assertEquals(o.getAsJsonArray("t").get(i).getAsDouble(), x.t()[i], 2e-6, "t " + facing + piece + pose);
             // a quaternion and its negative are the same rotation: compare up to sign
@@ -141,9 +144,9 @@ class VaultTransformsTest {
     void revealCandyStartsInsideThePileAndRisesAboveTheOpenLid() {
         VaultReveal reveal = new VaultReveal(VaultManifest.load().animation());
         VaultReveal.State first = reveal.state(0, 0);
-        assertTrue(first.blocks()[1] * 16 < 12.5 && Math.abs(first.blocks()[0]) < 5.0 / 16 && Math.abs(first.blocks()[2]) < 5.0 / 16);
+        assertTrue(first.blocks()[1] * 16 < 15.65 && Math.abs(first.blocks()[0]) < 5.0 / 16 && Math.abs(first.blocks()[2]) < 5.0 / 16);
         assertTrue(reveal.state(0, 40).blocks()[1] * 16 > 20);
         assertEquals(null, reveal.state(2, 2), "the third candy waits for its stagger");
-        assertEquals(0.3, first.scale(), 1e-9);
+        assertEquals(0.0, first.scale(), 1e-9);
     }
 }

@@ -67,6 +67,10 @@ public final class TrickOrTreatService {
     private static final Map<UUID, Active> BY_VAULT = new HashMap<>();
     private static final Map<UUID, Active> BY_RUN = new HashMap<>();
     private static final Map<UUID, Fight> FIGHTS = new HashMap<>();
+    /** The closed vault standing in a room while its party votes, by run; clicking it casts the vote to open it. */
+    private static final Map<UUID, UUID> SHOWN = new HashMap<>();
+    /** Runs whose room has no vault spot (not built), so the closed vault is not retried every second. */
+    private static final Set<UUID> NO_SPOT = new HashSet<>();
     private static boolean installed;
 
     private TrickOrTreatService() {}
@@ -76,6 +80,51 @@ public final class TrickOrTreatService {
         installed = true;
         VaultService.addListener(TrickOrTreatService::onVaultEvent);
         ServerState.onStop(TrickOrTreatService::clear);
+    }
+
+    // ---- showing it shut, and the click ----------------------------------------------------------
+
+    /**
+     * Called each second while a run is at an intermission: when the open vote is on, raises the closed vault in its room so the party can click it.
+     * Idempotent, and never throws (a vault that cannot be raised leaves the pedestals to vote with).
+     */
+    public static void tend(MinecraftServer server, PersistedRun run) {
+        try {
+            UUID runId = run.runId();
+            if (SHOWN.containsKey(runId) || BY_RUN.containsKey(runId) || NO_SPOT.contains(runId)) return;
+            if (openCard(run) < 0) return;
+            Optional<TowerDoors.RoomSpot> spot = TowerDoors.roomSpot(server, run, run.modifiers().lastLane());
+            if (spot.isEmpty()) {
+                NO_SPOT.add(runId);
+                return;
+            }
+            UUID vault = VaultService.spawn(spot.get().level(), spot.get().vault(), VaultFacing.WEST, player -> click(server, runId, player));
+            SHOWN.put(runId, vault);
+        } catch (RuntimeException ex) {
+            TowerLog.error("Run {}: showing the Trick or Treat vault failed", run.runId(), ex);
+        }
+    }
+
+    /** The index of the "open it" card in the run's open vote, or -1 when that vote is not on. */
+    static int openCard(PersistedRun run) {
+        return run.modifiers().draft().filter(draft -> !draft.resolved()).map(draft -> draft.cards().indexOf(IntermissionEvents.Option.TRICK_OPEN.cardId())).orElse(-1);
+    }
+
+    /** A click on the shut vault is that player's vote to open it: the majority still decides, so one player cannot commit the party to a mimic. */
+    private static void click(MinecraftServer server, UUID runId, ServerPlayer player) {
+        Optional<PersistedRun> mine = TowerRuns.forPlayer(player.getUUID());
+        String message;
+        if (mine.isEmpty() || !mine.get().runId().equals(runId)) {
+            message = "This vault belongs to another team.";
+        } else if (BY_RUN.containsKey(runId)) {
+            message = "The vault is already open.";
+        } else if (openCard(mine.get()) < 0) {
+            message = "The vault stays shut.";
+        } else {
+            message = com.cobbletowers.intermission.IntermissionService.pick(server, player, openCard(mine.get()));
+            if ("Vote recorded.".equals(message)) message = "You voted to open the vault.";
+        }
+        if (!message.isEmpty()) player.displayClientMessage(Component.literal(message), true);
     }
 
     // ---- opening ---------------------------------------------------------------------------------
@@ -100,7 +149,8 @@ public final class TrickOrTreatService {
             if (result == TrickRules.Result.TREAT) treat(bare); else mimic(bare, null);
             return;
         }
-        UUID vault = VaultService.spawn(spot.get().level(), spot.get().vault(), VaultFacing.WEST);
+        UUID shown = SHOWN.remove(run.runId());
+        UUID vault = shown != null && VaultService.state(shown) != null ? shown : VaultService.spawn(spot.get().level(), spot.get().vault(), VaultFacing.WEST);
         Active active = new Active(server, run.runId(), floorIndex, vault, result);
         BY_VAULT.put(vault, active);
         BY_RUN.put(run.runId(), active);
@@ -271,10 +321,15 @@ public final class TrickOrTreatService {
             BY_VAULT.remove(active.vault());
             VaultService.remove(active.vault());
         }
+        UUID shown = SHOWN.remove(runId);
+        if (shown != null) VaultService.remove(shown);
+        NO_SPOT.remove(runId);
         FIGHTS.remove(runId);
     }
 
     public static void clear() {
+        SHOWN.clear();
+        NO_SPOT.clear();
         BY_VAULT.clear();
         BY_RUN.clear();
         FIGHTS.clear();

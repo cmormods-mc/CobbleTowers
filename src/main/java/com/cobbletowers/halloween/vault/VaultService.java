@@ -62,9 +62,14 @@ public final class VaultService {
 
     /** Spawns a vault whose root (the floor centre of its footprint) is the middle of the block at {@code floor}, at that block's bottom edge. */
     public static UUID spawn(ServerLevel level, BlockPos floor, VaultFacing facing) {
+        return spawn(level, floor, facing, null);
+    }
+
+    /** As {@link #spawn(ServerLevel, BlockPos, VaultFacing)}, with a click box: {@code onClick} runs on the server thread for a main-hand click. */
+    public static UUID spawn(ServerLevel level, BlockPos floor, VaultFacing facing, java.util.function.Consumer<net.minecraft.server.level.ServerPlayer> onClick) {
         UUID id = UUID.randomUUID();
         Vec3 root = new Vec3(floor.getX() + 0.5, floor.getY(), floor.getZ() + 0.5);
-        VAULTS.put(id, new Vault(id, level.dimension(), root, facing, new VaultDisplay(level, root, facing), manifest.newMachine()));
+        VAULTS.put(id, new Vault(id, level.dimension(), root, facing, new VaultDisplay(level, root, facing, onClick), manifest.newMachine()));
         return id;
     }
 

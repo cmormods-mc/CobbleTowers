@@ -38,23 +38,23 @@ class VaultMachineTest {
     void stateDurationsAreTheManifestOnes() {
         Map<VaultMachine.State, Integer> count = new EnumMap<>(VaultMachine.State.class);
         for (VaultMachine.Frame f : cycle(machine(), VaultMachine.Outcome.TREAT, 60)) count.merge(f.state(), 1, Integer::sum);
-        assertEquals(10, count.get(VaultMachine.State.ANTICIPATING));   // 0.5 s
-        assertEquals(5, count.get(VaultMachine.State.UNLOCKING));       // 0.25 s
-        assertEquals(14, count.get(VaultMachine.State.OPENING));        // 0.7 s
+        assertEquals(13, count.get(VaultMachine.State.ANTICIPATING));   // 0.65 s
+        assertEquals(8, count.get(VaultMachine.State.UNLOCKING));       // 0.4 s
+        assertEquals(22, count.get(VaultMachine.State.OPENING));        // 1.1 s
         assertEquals(60, count.get(VaultMachine.State.OPEN));
-        assertEquals(14, count.get(VaultMachine.State.CLOSING));        // 0.7 s
+        assertEquals(19, count.get(VaultMachine.State.CLOSING));        // 0.95 s
     }
 
     @Test
-    void lidPeaksThreeDegreesOverAndSettlesAtTheFinalAngle() {
+    void lidPeaksFourDegreesOverAndSettlesAtTheFinalAngle() {
         double peak = 0, last = 0;
         for (VaultMachine.Frame f : cycle(machine(), VaultMachine.Outcome.TREAT, 40)) {
             peak = Math.max(peak, f.pose().lidDeg());
             if (f.state() == VaultMachine.State.OPEN && f.stateTick() == 0) last = f.pose().lidDeg();
         }
         double max = MANIFEST.animation().getAsJsonObject("coordinate_contract").getAsJsonObject("hinge").get("max_open_deg").getAsDouble();
-        assertEquals(115.0, max, 1e-9);
-        assertEquals(max + 3.0, peak, 1e-9);
+        assertEquals(112.0, max, 1e-9);
+        assertEquals(max + 4.0, peak, 1e-9);
         assertEquals(max, last, 1e-9);
     }
 
@@ -86,6 +86,8 @@ class VaultMachineTest {
                 assertEquals(0.0, f.pose().lidDeg(), 1e-12, target + "+" + extra);
                 assertEquals(0.0, f.pose().plateUnits(), 1e-12);
                 assertEquals(0.0, f.pose().rootXUnits(), 1e-12);
+                assertEquals(0.0, f.pose().plateYUnits(), 1e-12);
+                assertEquals(0.0, f.pose().rootYUnits(), 1e-12);
                 assertEquals(null, m.outcome());
             }
         }
@@ -103,7 +105,7 @@ class VaultMachineTest {
             assertEquals(a.events(), b.events(), "events before OPEN must not depend on the outcome");
             compared++;
         }
-        assertEquals(10 + 5 + 14, compared);
+        assertEquals(13 + 8 + 22, compared);
         VaultMachine.Frame firstTreat = treat.get(compared), firstTrick = trick.get(compared);
         assertTrue(firstTreat.events().stream().anyMatch(e -> e.type().equals("reward_trigger")));
         assertTrue(firstTrick.events().stream().anyMatch(e -> e.type().equals("encounter_trigger")));

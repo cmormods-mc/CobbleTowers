@@ -25,8 +25,8 @@ public final class VaultTransforms {
     /** rotY(180) as a quaternion: the half turn the client gives the model, cancelled by sending it again. */
     public static final double[] FLIP_Q = {0, 1, 0, 0};
     public static final double[] CENTRE = {0, 0.5, 0};
-    /** A point on the hinge axis, root-local blocks: model (8, 12.5, 19.6) -> ((8-8)/16, 12.5/16, (19.6-8)/16). The manifest carries the same point (a test checks). */
-    public static final double[] HINGE = {0, 12.5 / 16, 11.6 / 16};
+    /** A point on the hinge axis, root-local blocks: model (8, 15.65, 17.8) -> ((8-8)/16, 15.65/16, (17.8-8)/16). The manifest carries the same point (a test checks). */
+    public static final double[] HINGE = {0, 15.65 / 16, 9.8 / 16};
 
     private VaultTransforms() {}
 
@@ -40,11 +40,11 @@ public final class VaultTransforms {
                 q = qAxis('x', pose.lidDeg());
                 t = add(HINGE, rotate(q, sub(CENTRE, HINGE)));
             }
-            case FACE_PLATE -> t = add(CENTRE, new double[] {0, 0, pose.plateUnits() / 16});
+            case FACE_PLATE -> t = add(CENTRE, new double[] {0, pose.plateYUnits() / 16, pose.plateUnits() / 16});
             case BODY, CANDY_FILL -> t = CENTRE.clone();
             default -> throw new IllegalArgumentException(piece + " is not a persistent piece");
         }
-        t = add(t, new double[] {pose.rootXUnits() / 16, 0, 0});
+        t = add(t, new double[] {pose.rootXUnits() / 16, pose.rootYUnits() / 16, 0});
         double[] qf = qAxis('y', facing.yawDeg);
         return new Xform(rotate(qf, t), qMul(qMul(qf, q), FLIP_Q));
     }

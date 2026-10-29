@@ -17,17 +17,17 @@
    "axis": "x",
    "point_units": [
     8.0,
-    12.5,
-    19.6
+    15.65,
+    17.8
    ],
    "point_root_local_blocks": [
     0.0,
-    0.78125,
-    0.725
+    0.978125,
+    0.6125
    ],
    "positive_direction": "positive rotation about +x lifts the lid's FRONT edge (opens); angle = lid.rot_x_deg",
-   "max_open_deg": 115.0,
-   "peak_overshoot_deg": 118.0
+   "max_open_deg": 112.0,
+   "peak_overshoot_deg": 116.0
   },
   "facing_yaw_deg": {
    "north": 0.0,
@@ -133,77 +133,81 @@
    "rest": 0.0,
    "drives": "face_plate translation along +z (into the body)"
   },
+  "face_plate.y_units": {
+   "unit": "model units (1/16 block)",
+   "rest": 0.0,
+   "drives": "face_plate translation along y (the latch drops)"
+  },
   "root.x_units": {
    "unit": "model units (1/16 block)",
    "rest": 0.0,
    "drives": "every persistent piece, x (in vault space, before facing)"
+  },
+  "root.y_units": {
+   "unit": "model units (1/16 block)",
+   "rest": 0.0,
+   "drives": "every persistent piece, y"
   }
  },
- "ease": "the ease on a key shapes the segment that starts at that key: linear, in_quad, out_quad, in_cubic, out_cubic, in_out_sine",
+ "ease": "every key is linear (the reliquary's clips are linear Blockbench keys); other eases stay valid for the reveal block",
  "sequences": {
   "closed_idle": {
-   "ticks": 40,
-   "seconds": 2.0,
+   "ticks": 60,
+   "seconds": 3.0,
    "loop": true,
    "tracks": {
     "lid.rot_x_deg": [
      [
       0,
       0.0,
-      "in_out_sine"
+      "linear"
      ],
      [
-      20,
-      0.35,
-      "in_out_sine"
+      30.0,
+      0.22,
+      "linear"
      ],
      [
-      40,
+      60,
       0.0,
       "linear"
      ]
     ]
-   },
-   "note": "A barely visible breath: the lid lifts 0.35 degrees and settles. First and last frame are the closed pose."
+   }
   },
   "anticipation": {
-   "ticks": 10,
-   "seconds": 0.5,
+   "ticks": 13,
+   "seconds": 0.65,
    "loop": false,
    "tracks": {
     "lid.rot_x_deg": [
      [
       0,
       0.0,
-      "out_quad"
+      "linear"
      ],
      [
-      2,
-      1.6,
-      "in_quad"
+      3.0,
+      1.5,
+      "linear"
      ],
      [
-      4,
-      0.2,
-      "out_quad"
+      5.0,
+      0.0,
+      "linear"
      ],
      [
-      6,
-      2.2,
-      "in_quad"
+      8.0,
+      2.5,
+      "linear"
      ],
      [
-      8,
-      0.3,
-      "out_quad"
+      10.0,
+      0.0,
+      "linear"
      ],
      [
-      9,
-      1.0,
-      "in_quad"
-     ],
-     [
-      10,
+      13.0,
       0.0,
       "linear"
      ]
@@ -215,179 +219,312 @@
       "linear"
      ],
      [
-      1,
-      -0.2044,
+      2.0,
+      -0.15,
       "linear"
      ],
      [
-      2,
-      0.1882,
+      4.0,
+      0.18,
       "linear"
      ],
      [
-      3,
-      -0.1714,
+      6.0,
+      -0.22,
       "linear"
      ],
      [
-      4,
-      0.1539,
+      8.0,
+      0.2,
       "linear"
      ],
      [
-      5,
-      -0.1354,
+      10.0,
+      -0.1,
       "linear"
      ],
      [
-      6,
-      0.1158,
-      "linear"
-     ],
-     [
-      7,
-      -0.0947,
-      "linear"
-     ],
-     [
-      8,
-      0.0713,
-      "linear"
-     ],
-     [
-      9,
-      -0.0439,
-      "linear"
-     ],
-     [
-      10,
-      0.0,
-      "linear"
-     ]
-    ]
-   },
-   "note": "The whole vault trembles (root x shake) while the lid rattles. Ends exactly closed."
-  },
-  "unlock": {
-   "ticks": 5,
-   "seconds": 0.25,
-   "loop": false,
-   "tracks": {
-    "face_plate.press_units": [
-     [
-      0,
-      0.0,
-      "out_quad"
-     ],
-     [
-      2,
-      0.6,
-      "linear"
-     ],
-     [
-      3,
-      0.6,
-      "in_out_sine"
-     ],
-     [
-      5,
+      13.0,
       0.0,
       "linear"
      ]
     ],
-    "lid.rot_x_deg": [
+    "root.y_units": [
      [
       0,
       0.0,
       "linear"
      ],
      [
-      3,
+      2.0,
       0.0,
-      "out_quad"
+      "linear"
      ],
      [
-      5,
-      1.5,
+      4.0,
+      0.0,
+      "linear"
+     ],
+     [
+      6.0,
+      0.06,
+      "linear"
+     ],
+     [
+      8.0,
+      0.0,
+      "linear"
+     ],
+     [
+      10.0,
+      0.0,
+      "linear"
+     ],
+     [
+      13.0,
+      0.0,
       "linear"
      ]
     ]
-   },
-   "note": "The plate clicks in 0.6 unit and springs back; the latch pops the lid up 1.5 degrees."
+   }
   },
-  "open": {
-   "ticks": 14,
-   "seconds": 0.7,
+  "unlock": {
+   "ticks": 8,
+   "seconds": 0.4,
    "loop": false,
    "tracks": {
     "lid.rot_x_deg": [
      [
       0,
-      1.5,
-      "in_out_sine"
+      0.0,
+      "linear"
      ],
      [
-      10,
-      118.0,
-      "in_out_sine"
+      4.4,
+      0.0,
+      "linear"
      ],
      [
-      14,
-      115.0,
+      8.0,
+      2.0,
+      "linear"
+     ]
+    ],
+    "face_plate.press_units": [
+     [
+      0,
+      0.0,
+      "linear"
+     ],
+     [
+      2.4,
+      0.45,
+      "linear"
+     ],
+     [
+      5.0,
+      0.0,
+      "linear"
+     ],
+     [
+      8.0,
+      0.0,
+      "linear"
+     ]
+    ],
+    "face_plate.y_units": [
+     [
+      0,
+      0.0,
+      "linear"
+     ],
+     [
+      2.4,
+      0.0,
+      "linear"
+     ],
+     [
+      5.0,
+      -0.55,
+      "linear"
+     ],
+     [
+      8.0,
+      -0.55,
       "linear"
      ]
     ]
-   },
-   "note": "The lid swings to the final angle, overshoots it by 3 degrees at tick 10 and settles at tick 14."
+   }
+  },
+  "open": {
+   "ticks": 22,
+   "seconds": 1.1,
+   "loop": false,
+   "tracks": {
+    "lid.rot_x_deg": [
+     [
+      0,
+      2.0,
+      "linear"
+     ],
+     [
+      2.0,
+      3.0,
+      "linear"
+     ],
+     [
+      4.0,
+      9.0,
+      "linear"
+     ],
+     [
+      7.0,
+      32.0,
+      "linear"
+     ],
+     [
+      10.0,
+      73.0,
+      "linear"
+     ],
+     [
+      13.0,
+      106.0,
+      "linear"
+     ],
+     [
+      16.0,
+      116.0,
+      "linear"
+     ],
+     [
+      19.0,
+      111.0,
+      "linear"
+     ],
+     [
+      22.0,
+      112.0,
+      "linear"
+     ]
+    ],
+    "face_plate.press_units": [
+     [
+      0,
+      0.0,
+      "linear"
+     ],
+     [
+      22.0,
+      0.0,
+      "linear"
+     ]
+    ],
+    "face_plate.y_units": [
+     [
+      0,
+      -0.55,
+      "linear"
+     ],
+     [
+      22.0,
+      -0.55,
+      "linear"
+     ]
+    ]
+   }
   },
   "open_hold": {
-   "ticks": 40,
-   "seconds": 2.0,
+   "ticks": 60,
+   "seconds": 3.0,
    "loop": true,
    "tracks": {
     "lid.rot_x_deg": [
      [
       0,
-      115.0,
-      "in_out_sine"
+      112.0,
+      "linear"
      ],
      [
-      20,
-      115.4,
-      "in_out_sine"
+      30.0,
+      112.45,
+      "linear"
      ],
      [
-      40,
-      115.0,
+      60,
+      112.0,
+      "linear"
+     ]
+    ],
+    "face_plate.press_units": [
+     [
+      0,
+      0.0,
+      "linear"
+     ],
+     [
+      60,
+      0.0,
+      "linear"
+     ]
+    ],
+    "face_plate.y_units": [
+     [
+      0,
+      -0.55,
+      "linear"
+     ],
+     [
+      60,
+      -0.55,
       "linear"
      ]
     ]
-   },
-   "note": "The lid rests open; a 0.4 degree sway keeps it alive. Loops until close is requested."
+   }
   },
   "close": {
-   "ticks": 14,
-   "seconds": 0.7,
+   "ticks": 19,
+   "seconds": 0.95,
    "loop": false,
    "tracks": {
     "lid.rot_x_deg": [
      [
       0,
-      115.0,
-      "in_quad"
+      112.0,
+      "linear"
      ],
      [
-      11,
+      3.0,
+      108.0,
+      "linear"
+     ],
+     [
+      6.0,
+      90.0,
+      "linear"
+     ],
+     [
+      10.0,
+      47.0,
+      "linear"
+     ],
+     [
+      14.0,
       0.0,
-      "out_quad"
+      "linear"
      ],
      [
-      12,
-      1.8,
-      "in_quad"
+      15.6,
+      3.0,
+      "linear"
      ],
      [
-      14,
+      17.6,
+      0.0,
+      "linear"
+     ],
+     [
+      19.0,
       0.0,
       "linear"
      ]
@@ -399,29 +536,49 @@
       "linear"
      ],
      [
-      10,
+      15.0,
       0.0,
-      "out_quad"
+      "linear"
      ],
      [
-      12,
-      0.5,
-      "in_out_sine"
+      17.4,
+      0.2,
+      "linear"
      ],
      [
-      14,
+      19.0,
+      0.0,
+      "linear"
+     ]
+    ],
+    "face_plate.y_units": [
+     [
+      0,
+      -0.55,
+      "linear"
+     ],
+     [
+      15.0,
+      -0.55,
+      "linear"
+     ],
+     [
+      17.4,
+      0.0,
+      "linear"
+     ],
+     [
+      19.0,
       0.0,
       "linear"
      ]
     ]
-   },
-   "note": "The lid falls, shuts at tick 11 with a 1.8 degree bounce, the plate clicks, all settled closed at tick 14."
+   }
   },
   "reset": {
-   "ticks": 0,
-   "seconds": 0.0,
+   "ticks": 1,
+   "seconds": 0.05,
    "loop": false,
-   "snap": true,
    "tracks": {
     "lid.rot_x_deg": [
      [
@@ -431,6 +588,13 @@
      ]
     ],
     "face_plate.press_units": [
+     [
+      0,
+      0.0,
+      "linear"
+     ]
+    ],
+    "face_plate.y_units": [
      [
       0,
       0.0,
@@ -443,9 +607,15 @@
       0.0,
       "linear"
      ]
+    ],
+    "root.y_units": [
+     [
+      0,
+      0.0,
+      "linear"
+     ]
     ]
-   },
-   "note": "Instant: every channel to its rest value, reveal candy removed. Allowed from every state."
+   }
   }
  },
  "state_machine": {
@@ -453,39 +623,39 @@
    "CLOSED": {
     "sequence": "closed_idle",
     "next": null,
-    "ticks": 40
+    "ticks": 60
    },
    "ANTICIPATING": {
     "sequence": "anticipation",
     "next": "UNLOCKING",
-    "ticks": 10
+    "ticks": 13
    },
    "UNLOCKING": {
     "sequence": "unlock",
     "next": "OPENING",
-    "ticks": 5
+    "ticks": 8
    },
    "OPENING": {
     "sequence": "open",
     "next": "OPEN",
-    "ticks": 14
+    "ticks": 22
    },
    "OPEN": {
     "sequence": "open_hold",
     "next": null,
-    "ticks": 40
+    "ticks": 60
    },
    "CLOSING": {
     "sequence": "close",
     "next": "CLOSED",
-    "ticks": 14
+    "ticks": 19
    }
   },
   "start": "CLOSED -> ANTICIPATING (outcome treat or trick is fixed here and does not change the pose timeline)",
   "close": "OPEN -> CLOSING (requested by the controller: the close_request event, or an API call)",
   "reset": "any state -> CLOSED, all channels to rest, reveal candy removed (sequence 'reset')",
-  "total_ticks_closed_to_open": 29,
-  "total_ticks_open_to_closed": 14
+  "total_ticks_closed_to_open": 43,
+  "total_ticks_open_to_closed": 19
  },
  "reveal": {
   "count": 3,
@@ -496,58 +666,58 @@
   ],
   "start_units": [
    [
+    12.0,
     8.0,
-    11.0,
     8.0
    ],
    [
-    6.8,
-    11.0,
-    8.6
+    8.0,
+    8.0,
+    8.0
    ],
    [
-    9.2,
-    11.0,
-    7.4
+    4.0,
+    8.0,
+    8.0
    ]
   ],
   "rise_units": [
-   24.0,
-   28.0,
-   26.0
+   13.0,
+   14.0,
+   15.0
   ],
-  "rise_ticks": 24,
+  "rise_ticks": 14,
   "hold_ticks": 40,
   "collect_ticks": 8,
   "scale_keys": [
    [
     0,
-    0.3,
-    "out_cubic"
+    0.0,
+    "linear"
    ],
    [
-    12,
-    1.25,
-    "in_out_sine"
+    5,
+    1.15,
+    "linear"
    ],
    [
-    24,
+    8,
     1.0,
     "linear"
    ]
   ],
   "spin_deg_per_tick": [
-   18.0,
-   -14.0,
-   22.0
+   -6.0,
+   -6.0,
+   -6.0
   ],
   "stagger_ticks": [
    0,
-   3,
-   6
+   2,
+   5
   ],
-  "bob_units": 0.6,
-  "bob_period_ticks": 40,
-  "note": "Floating reveal candy: each is its own display entity, spawned only after the lid is fully OPEN (after OPENING), so the trick and treat timelines are identical until then. Position = root + start + rise; rotation yaw spin; scale from scale_keys."
+  "bob_units": 0.4,
+  "bob_period_ticks": 60,
+  "note": "Floating reveal candy from the reliquary's reward_reveal and open_hold clips: each is its own display entity, spawned only after the lid is fully OPEN. Position = root + start + rise; rotation yaw spin; scale from scale_keys (0 to 1.15 to 1)."
  }
 }

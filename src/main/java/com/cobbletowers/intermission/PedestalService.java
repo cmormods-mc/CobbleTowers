@@ -183,6 +183,7 @@ public final class PedestalService {
         if (origin.isEmpty()) return;
         // A walkable tower: the chambers behind the doors are dressed for the stops the lanes lead to.
         com.cobbletowers.route.RoomDresser.dress(server, run, layout.get(), origin.get());
+        com.cobbletowers.trick.TrickOrTreatService.tend(server, run);
 
         BlockPos vendor = layout.get().exit().in(origin.get());
         BlockPos toward = layout.get().spectator().in(origin.get());

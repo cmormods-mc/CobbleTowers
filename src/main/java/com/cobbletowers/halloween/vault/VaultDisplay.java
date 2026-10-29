@@ -3,13 +3,18 @@ package com.cobbletowers.halloween.vault;
 import eu.pb4.polymer.resourcepack.api.PolymerResourcePackUtils;
 import eu.pb4.polymer.virtualentity.api.ElementHolder;
 import eu.pb4.polymer.virtualentity.api.attachment.ChunkAttachment;
+import eu.pb4.polymer.virtualentity.api.elements.InteractionElement;
 import eu.pb4.polymer.virtualentity.api.elements.ItemDisplayElement;
+import eu.pb4.polymer.virtualentity.api.elements.VirtualElement;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
@@ -42,8 +47,21 @@ final class VaultDisplay {
     private final VaultFacing facing;
     private boolean destroyed;
 
-    VaultDisplay(ServerLevel level, Vec3 root, VaultFacing facing) {
+    /** The click box: wide enough for the chest, tall enough for the open lid. */
+    private static final float CLICK_WIDTH = 1.7f, CLICK_HEIGHT = 1.6f;
+
+    VaultDisplay(ServerLevel level, Vec3 root, VaultFacing facing, Consumer<ServerPlayer> onClick) {
         this.facing = facing;
+        if (onClick != null) {
+            InteractionElement hit = new InteractionElement(new VirtualElement.InteractionHandler() {
+                @Override
+                public void interact(ServerPlayer player, InteractionHand hand) {
+                    if (hand == InteractionHand.MAIN_HAND) onClick.accept(player);   // both hands fire for one click
+                }
+            });
+            hit.setSize(CLICK_WIDTH, CLICK_HEIGHT);
+            holder.addElement(hit);
+        }
         for (VaultPiece piece : VaultPiece.values()) {
             if (!piece.persistent) continue;
             ItemDisplayElement element = new ItemDisplayElement(VaultModels.stack(piece));
