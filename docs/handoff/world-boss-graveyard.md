@@ -24,3 +24,11 @@ a pyramid roof, a broad stair, orange flame pillars, tombstones and candles in p
   ring and the fence all read well. Two fixes came out of it: brown podzol and coarse dirt clashed with the purple-red palette (now mycelium and crimson nylium only), and the flame pillar's glass was lopsided.
   Not fixed: the trees read as heavy dark silhouettes; vanilla night is very dark (use a dimension type with `ambient_light`).
 * **Not photographed after the fixes**: the owner's desktop was in use, so no further screen captures were taken. The rig server is still the place to look: join `127.0.0.1:25570` with a vanilla 1.21.1 client (offline mode).
+
+## Real-client look after the fixes (2026-10-30)
+
+* `python validation/graveyard_look.py --rig L:/claude-cobbleraids-work/gy-rig --java <jdk21> --out <dir> [--origin 2560,0]` boots the scratch rig, pastes the build, joins a spectator client and photographs ten views at night and at dusk (the window goes to `--origin`, the top-left of the monitor to use, in physical pixels).
+* Seen: the soil is purple-red everywhere, the stained-glass windows, green porch, flame pillars, plaza ring, lamp posts and fence all read well, at night (dark but readable) and at dusk (best).
+* Found and fixed: the layer under the turf was plain dirt and showed brown on the hill steps in front of the church; it is netherrack now (30,359 blocks, nothing else changed).
+* Still open: the trees are heavy black masses (one view stands inside a trunk); vanilla night is dark (an `ambient_light` dimension would help); the church interior is sealed; arena scan and 40-duel sizing.
+
