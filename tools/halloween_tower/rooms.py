@@ -22,6 +22,9 @@ from pathlib import Path
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import interiors as I  # noqa: E402
+
 W, H, D = 11, 9, 15
 AIR = "minecraft:air"
 
@@ -97,14 +100,18 @@ class Room:
         self.fill(W - 1 - x1, W - 1 - x0, y0, y1, z0, z1, block)
 
 
-def base(r: Room, floor_side: str = BLACKSTONE) -> None:
-    """The ground of every room: dark paving, a purple aisle runner with a lit line either side, and a few hanging lights."""
-    r.fill(0, 10, 0, 0, 0, 14, DARK)
-    r.fill(1, 3, 0, 0, 0, 14, floor_side)
-    r.fill(7, 9, 0, 0, 0, 14, floor_side)
-    r.fill(4, 6, 0, 0, 0, 14, PURPLE)
-    r.fill(3, 3, 0, 0, 1, 13, SHROOM)
-    r.fill(7, 7, 0, 0, 1, 13, SHROOM)
+def base(r: Room, a: str = I.POLISHED, b: str = I.TILES, salt: int = 1) -> None:
+    """The ground of every room: a checker of two stones, a purple runner on the aisle with obsidian edges and a gilded stud every fourth block."""
+    for x in range(W):
+        for z in range(D):
+            block = a if ((x // 3) + (z // 3)) % 2 == 0 else b
+            if I.noise(x, z, salt) < 60:
+                block = I.CRACKED
+            r.set(x, 0, z, block)
+    for z in range(D):
+        r.fill(4, 6, 0, 0, z, z, PURPLE)
+        for x in (3, 7):
+            r.set(x, 0, z, TRIM if z % 4 else GILDED)
 
 
 def hang(r: Room, x: int, z: int, light: str = SOUL, drop: int = 2) -> None:
@@ -113,125 +120,179 @@ def hang(r: Room, x: int, z: int, light: str = SOUL, drop: int = 2) -> None:
     r.set(x, 8 - drop, z, light)
 
 
+def vault_over(r: Room, zs=(3, 7, 11), lamps=(1, 5, 9, 13), lamp: str = SOUL, drop: int = 2) -> None:
+    """Ribs across the room with a pilaster and a lit pumpkin at each end, lamps hanging in the bays between them, webs high in the corners."""
+    for z in zs:
+        I.nave_rib(r, z, 0, W - 1, 1, 8)
+        r.set(0, 3, z, I.jack("east"))
+        r.set(W - 1, 3, z, I.jack("west"))
+    for z in lamps:
+        hang(r, 5, z, lamp, drop)
+    for x, z in ((0, 0), (W - 1, 0), (0, D - 1), (W - 1, D - 1)):
+        r.set(x, 8, z, "minecraft:cobweb")
+        r.set(x, 7, z, "minecraft:cobweb")
+
+
+def knight(r: Room, x: int, z: int, facing: str) -> None:
+    """A guard of stone and iron with a lit pumpkin for a head, looking at the aisle."""
+    r.set(x, 1, z, I.BRICKS)
+    r.set(x, 2, z, IRON_BARS)
+    r.set(x, 3, z, IRON_BARS)
+    r.set(x, 4, z, I.jack(facing))
+
+
 def battle(r: Room) -> None:
-    """A gauntlet: rows of pillars with lit caps, orange pennants on the walls, a glowing line down the aisle."""
-    base(r)
-    for z in (3, 7, 11):
-        r.mirror_x(1, 1, 1, 6, z, z, BRICKS)
-        r.mirror_x(1, 1, 7, 7, z, z, TRIM)
-        r.mirror_x(2, 2, 1, 1, z, z, JACK)
-    for z in (2, 6, 10):
-        r.mirror_x(0, 0, 3, 6, z, z + 1, ORANGE_WOOL)
-        r.mirror_x(0, 0, 2, 2, z, z + 1, PURPLE_WOOL)
-    for z in (3, 7, 11):
-        hang(r, 5, z, SOUL, 2)
+    """A guard of honour: pumpkin-headed knights down both walls between ribs, orange pennants above them, an orange line in the floor."""
+    base(r, BLACKSTONE, I.TILES, 2)
+    for z in range(D):
+        for x in (3, 7):
+            r.set(x, 0, z, ORANGE if z % 2 == 0 else TRIM)
+    vault_over(r)
+    for z in (1, 5, 9, 13):
+        knight(r, 1, z, "east")
+        knight(r, 9, z, "west")
+    for z in (5, 9):
+        for x in (0, 10):
+            r.fill(x, x, 5, 7, z - 1, z + 1, ORANGE_WOOL)
+            r.set(x, 5, z, PURPLE_WOOL)
+            r.set(x, 4, z, PURPLE_WOOL)
 
 
 def rest(r: Room) -> None:
-    """A campfire corner without the campfire: bedrolls, hay, a soup cauldron, candles and warm lanterns."""
-    base(r, SPRUCE)
-    for z in (2, 6, 10):
+    """A haunted inn's corner: bedrolls with a candle by each pillow on one side, a hearth of black stone with a glowing fire and a soup pot on the other."""
+    base(r, SPRUCE, "minecraft:dark_oak_planks", 3)
+    vault_over(r, lamp=LANTERN, drop=1)
+    for z in (1, 5, 9):
         r.fill(1, 2, 1, 1, z, z + 1, RED_WOOL)
         r.fill(1, 1, 1, 1, z, z + 1, WHITE_WOOL)
-    r.mirror_x(0, 0, 1, 3, 12, 13, HAY)
-    r.mirror_x(1, 1, 1, 1, 12, 13, HAY)
-    r.set(1, 2, 12, CANDLE)
-    r.set(9, 2, 12, CANDLE)
-    r.fill(8, 9, 1, 1, 2, 3, HAY)
-    r.set(8, 2, 2, CAULDRON)
-    r.set(9, 2, 3, CANDLE)
-    r.fill(8, 8, 1, 1, 6, 6, MAGMA)
-    r.set(8, 2, 6, CAULDRON)
-    for z in (3, 7, 11):
-        hang(r, 5, z, LANTERN, 1)
+        r.set(3, 1, z, SPRUCE)
+        r.set(3, 2, z, CANDLE)
+    r.fill(9, 10, 1, 6, 5, 9, BLACKSTONE)                   # the hearth: a stone mass with a mouth, a mantel and a chimney
+    r.fill(9, 9, 1, 3, 6, 8, AIR)
+    r.fill(9, 9, 1, 1, 6, 8, MAGMA)
+    r.fill(9, 9, 2, 3, 6, 8, "minecraft:orange_stained_glass")
+    r.set(9, 2, 7, SHROOM)
+    r.fill(9, 9, 4, 4, 5, 9, I.CHISELED)
+    r.fill(8, 8, 4, 4, 5, 9, I.BRICKS)
+    r.set(8, 5, 7, I.jack("west"))
+    r.set(8, 1, 5, CAULDRON)
+    r.set(8, 1, 9, CAULDRON)
+    r.mirror_x(0, 0, 1, 2, 12, 13, HAY)
+    r.set(1, 1, 13, HAY)
+    r.set(8, 1, 12, HAY)
+    r.set(8, 2, 12, CANDLE)
 
 
 def shrine(r: Room) -> None:
-    """An altar on each side of the aisle: crying obsidian and amethyst, soul lanterns, purple light through glass."""
-    base(r)
-    for z in (4, 10):
-        r.mirror_x(1, 2, 1, 1, z, z + 1, OBSIDIAN)
-        r.mirror_x(1, 2, 2, 2, z, z + 1, TRIM)
-        r.mirror_x(1, 1, 3, 3, z, z, AMETHYST)
-        r.mirror_x(1, 1, 4, 4, z, z, CLUSTER)
-    for z in (2, 7, 12):
-        r.mirror_x(0, 0, 2, 5, z, z + 1, GLASS)
+    """An altar of obsidian and amethyst on each side under a tall lit window of violet and amber glass, soul lanterns in the bays."""
+    base(r, I.POLISHED, I.TILES, 4)
+    vault_over(r, lamp=SOUL, drop=2)
+    for z in (5, 9):
+        for x0, x1, inner in ((1, 2, 2), (8, 9, 8)):
+            r.fill(x0, x1, 1, 1, z - 1, z + 1, OBSIDIAN)
+            r.fill(x0, x1, 2, 2, z - 1, z + 1, TRIM)
+            r.set(x1 if x0 == 1 else x0, 3, z, AMETHYST)
+            r.set(x1 if x0 == 1 else x0, 4, z, CLUSTER)
+            r.set(inner, 3, z - 1, CANDLE)
+            r.set(inner, 3, z + 1, CANDLE)
+        I.lancet_x(r, 1, 5, z, -1, 0, 4)
+        I.lancet_x(r, 9, 5, z, 1, 0, 4)
     r.fill(4, 6, 1, 1, 7, 7, CARPET_PURPLE)
-    for z in (3, 7, 11):
-        hang(r, 5, z, SOUL, 2)
 
 
 def gambler(r: Room) -> None:
-    """A wheel in the floor: twenty-four orange and black sectors round a pumpkin, with great dice at the sides."""
-    base(r)
+    """A wheel in the floor of orange and black sectors round a glowing pumpkin, a chandelier over it, gaming tables and great dice at the sides."""
+    base(r, BLACKSTONE, I.TILES, 5)
     cx, cz = 5, 7
     for x in range(W):
         for z in range(D):
-            dx, dz = x - cx, z - cz
-            rr = math.hypot(dx, dz)
-            if rr <= 4.6 and not (4 <= x <= 6 and False):
-                sector = int((math.atan2(dz, dx) + math.pi) / (2 * math.pi) * 12) % 2
+            rr = math.hypot(x - cx, z - cz)
+            if rr <= 4.6:
+                sector = int((math.atan2(z - cz, x - cx) + math.pi) / (2 * math.pi) * 12) % 2
                 r.set(x, 0, z, ORANGE if sector == 0 else DARK)
             if rr <= 1.5:
                 r.set(x, 0, z, SHROOM)
-    for dz0, dx0 in ((2, 1), (10, 8)):
+    vault_over(r, zs=(4, 10), lamps=(1, 13), lamp=SOUL, drop=1)
+    hang(r, 5, 7, LANTERN, 2)
+    for z0 in (1, 11):                                       # gaming tables: black stone, felt, candles
+        r.fill(1, 2, 1, 1, z0, z0 + 1, DARK)
+        r.fill(1, 2, 2, 2, z0, z0 + 1, PURPLE_WOOL)
+        r.set(1, 3, z0, CANDLE)
+        r.set(2, 3, z0 + 1, CANDLE)
+    for dz0, dx0 in ((6, 8), (6, 1)):                        # the great dice
         r.fill(dx0, dx0 + 1, 1, 2, dz0, dz0 + 1, WHITE)
         r.set(dx0, 2, dz0, DARK)
         r.set(dx0 + 1, 2, dz0 + 1, DARK)
-    for z in (3, 7, 11):
-        hang(r, 5, z, SOUL, 1)
-    r.mirror_x(0, 0, 3, 5, 6, 8, ORANGE_WOOL)
+    for x in (0, 10):
+        r.fill(x, x, 3, 6, 5, 9, ORANGE_WOOL)
+        r.fill(x, x, 3, 3, 5, 9, PURPLE_WOOL)
 
 
 def forge(r: Room) -> None:
-    """Anvils, a grindstone, a smithing table and a pot of lava, on red nether brick and magma, with iron piled in the corners."""
-    base(r, NETHER_BRICKS)
-    r.set(1, 1, 3, ANVIL_E)
-    r.set(1, 1, 6, ANVIL_E)
-    r.set(1, 1, 9, ANVIL_E)
+    """A hot smithy: anvils and a grindstone on red brick, a glowing pit under a hood of black stone, lava pots, racks of bars on the walls."""
+    base(r, NETHER_BRICKS, I.POLISHED, 6)
+    vault_over(r, lamp=LANTERN, drop=2)
+    for z in (3, 6, 9):
+        r.set(1, 1, z, ANVIL_E)
     r.set(2, 1, 12, SMITHING)
-    r.set(8, 1, 3, GRINDSTONE)
-    r.set(8, 1, 6, LAVA_CAULDRON)
-    r.set(9, 1, 9, LAVA_CAULDRON)
-    r.mirror_x(1, 2, 1, 2, 0, 1, IRON_BLOCK)
+    r.set(1, 1, 1, GRINDSTONE)
     r.fill(7, 9, 0, 0, 5, 7, MAGMA)
-    r.fill(1, 2, 0, 0, 5, 7, MAGMA)
-    for z in (3, 7, 11):
-        hang(r, 5, z, LANTERN, 2)
-    r.mirror_x(0, 0, 3, 6, 2, 12, IRON_BARS)
+    r.fill(8, 9, 1, 1, 4, 8, BLACKSTONE)
+    r.fill(8, 9, 2, 2, 5, 7, "minecraft:orange_stained_glass")
+    r.set(8, 2, 6, SHROOM)
+    r.fill(8, 9, 3, 3, 4, 8, I.CHISELED)
+    r.fill(9, 9, 4, 8, 5, 7, BLACKSTONE)
+    r.set(8, 1, 10, LAVA_CAULDRON)
+    r.set(9, 1, 11, LAVA_CAULDRON)
+    r.set(8, 1, 2, LAVA_CAULDRON)
+    r.mirror_x(1, 2, 1, 2, 0, 0, IRON_BLOCK)
+    for z in (1, 5, 9, 13):
+        r.fill(0, 0, 3, 6, z - 1, z + 1, IRON_BARS)
 
 
 def library(r: Room) -> None:
-    """Bookshelves three high along both walls, candles on the lecterns' place, purple carpet and hanging soul lights."""
-    base(r)
-    for z in range(1, 14):
-        if z in (7,):
-            continue
-        r.mirror_x(1, 2, 1, 3, z, z, BOOKSHELF)
-    r.mirror_x(1, 1, 4, 4, 2, 12, BOOKSHELF)
-    for z in (3, 11):
-        r.mirror_x(1, 1, 5, 5, z, z, CANDLE)
-    r.mirror_x(3, 3, 1, 1, 2, 12, CARPET_PURPLE)
-    for z in (3, 7, 11):
-        hang(r, 5, z, SOUL, 2)
+    """Seven-high bookcases on both walls, low shelves, ladders and a reading desk with a candle in two bays, soul lanterns over the aisle."""
+    base(r, I.POLISHED, I.TILES, 7)
+    vault_over(r, lamp=SOUL, drop=2)
+    for x in (0, 10):
+        for z in range(1, 14):
+            if z not in (3, 7, 11):
+                r.fill(x, x, 1, 7, z, z, BOOKSHELF)
+    for z in (2, 4, 6, 8, 10, 12):
+        r.fill(1, 1, 1, 2, z, z, BOOKSHELF)
+        r.fill(9, 9, 1, 2, z, z, BOOKSHELF)
+    for z in (5, 9):
+        r.set(2, 1, z, "minecraft:spruce_slab[type=top]")
+        r.set(2, 2, z, CANDLE)
+        r.set(8, 1, z, "minecraft:spruce_slab[type=top]")
+        r.set(8, 2, z, CANDLE)
+        r.fill(1, 1, 1, 6, z, z, "minecraft:ladder[facing=east]")
+        r.fill(9, 9, 1, 6, z, z, "minecraft:ladder[facing=west]")
 
 
 def vault(r: Room) -> None:
-    """Gold: stacked blocks behind bars on each side, gilded blackstone in the floor, a lodestone on a plinth."""
-    base(r, GILDED)
-    r.mirror_x(1, 2, 1, 1, 2, 12, GOLD)
-    r.mirror_x(1, 2, 2, 2, 4, 10, GOLD)
-    r.mirror_x(1, 1, 3, 3, 6, 8, GOLD)
-    r.mirror_x(3, 3, 1, 3, 2, 12, IRON_BARS)
-    r.mirror_x(1, 1, 4, 4, 7, 7, LODESTONE)
-    for z in (3, 7, 11):
-        hang(r, 5, z, SOUL, 1)
-    r.mirror_x(0, 0, 4, 6, 4, 10, SHROOM)
+    """Gold behind bars down both walls, a gilded floor, lodestones high on the gold and amber light on the wall above."""
+    base(r, GILDED, I.POLISHED, 8)
+    vault_over(r, lamp=SOUL, drop=1)
+    for x0, x1 in ((1, 2), (8, 9)):
+        r.fill(x0, x1, 1, 1, 1, 13, GOLD)
+        r.fill(x0, x1, 2, 2, 2, 12, GOLD)
+        r.fill(x0, x1, 3, 3, 4, 10, GOLD)
+    for x in (3, 7):
+        r.fill(x, x, 1, 3, 1, 13, IRON_BARS)
+    for x in (1, 9):
+        r.set(x, 4, 7, LODESTONE)
+        for z in (2, 12):
+            r.set(x, 3, z, CANDLE)
+    for z in (1, 5, 9, 13):
+        for x in (0, 10):
+            r.fill(x, x, 5, 7, z, z, I.FROG_AMBER)
 
 
 def pool(r: Room) -> None:
-    """Two basins of prismarine and still water, lit from beneath, either side of a dry aisle."""
-    base(r, PRISMARINE)
+    """Two basins of prismarine and still water, lit from beneath, lily pads on the surface, a dark pillar with a sea lantern in each, cold light above."""
+    base(r, PRISMARINE, "minecraft:dark_prismarine", 9)
+    vault_over(r, lamp=SOUL, drop=2)
     for x0, x1 in ((1, 3), (7, 9)):
         r.fill(x0, x1, 0, 0, 3, 11, PRISMARINE)
         r.fill(x0, x1, 1, 1, 3, 3, PRISMARINE)
@@ -240,31 +301,28 @@ def pool(r: Room) -> None:
         r.fill(x1, x1, 1, 1, 3, 11, PRISMARINE)
         r.fill(x0 + 1 if x0 == 1 else x0, x1 - 1 if x1 == 9 else x1, 1, 1, 4, 10, WATER)
         r.fill(x0 + 1, x1 - 1, 0, 0, 4, 10, SEA_LANTERN)
-    # the aisle side of each basin is a low wall (a block high), so the water stays in
     r.mirror_x(3, 3, 1, 1, 3, 11, PRISMARINE)
-    for z in (3, 7, 11):
-        hang(r, 5, z, SOUL, 2)
+    for x, z in ((2, 5), (2, 9), (8, 5), (8, 9)):
+        r.set(x, 2, z, "minecraft:lily_pad")
 
 
 def trick_or_treat(r: Room) -> None:
-    """The Jack-o'-Lantern Vault's room: a brick dais at the east wall, off the aisle (the vault stands on it, facing west), candles round it, a row of
-    carved pumpkins down the west wall, orange and purple pennants, soul lights overhead. The vault itself is drawn at run time."""
-    base(r, BLACKSTONE)
-    r.fill(7, 9, 1, 1, 4, 6, BRICKS)
+    """The Jack-o'-Lantern Vault's room: a brick dais at the east wall, off the aisle (the vault stands on it, facing west), candles round it, a lit window
+    of violet and amber glass above and behind it, a column of carved pumpkins down the west wall, pennants, soul lights overhead. The vault is drawn at run time."""
+    base(r, BLACKSTONE, I.TILES, 10)
+    vault_over(r, lamp=SOUL, drop=2)
+    r.fill(7, 9, 1, 1, 4, 6, BRICKS)                         # the dais, exactly where RoomDresser puts the vault
     r.fill(7, 9, 0, 0, 3, 7, TRIM)
-    r.set(7, 1, 3, CANDLE)
-    r.set(7, 1, 7, CANDLE)
-    r.set(9, 1, 3, CANDLE)
-    r.set(9, 1, 7, CANDLE)
-    for z in (2, 5, 8, 11):
+    for x, z in ((7, 3), (7, 7), (9, 3), (9, 7)):
+        r.set(x, 1, z, CANDLE)
+    for z in (2, 5, 8, 12):
         r.set(1, 1, z, JACK)
         r.set(1, 2, z, JACK)
-    for z in (2, 6, 10):
-        r.fill(0, 0, 3, 6, z, z + 1, ORANGE_WOOL)
-        r.fill(10, 10, 3, 6, z, z + 1, PURPLE_WOOL)
-    for z in (3, 7, 11):
-        hang(r, 5, z, SOUL, 2)
-    r.fill(10, 10, 2, 5, 4, 6, SHROOM)     # the glow behind the vault
+    I.lancet_x(r, 9, 4, 5, 1, 1, 4)                          # above the chest, glass at x 9 and the lamp at x 10
+    r.fill(10, 10, 1, 3, 4, 6, SHROOM)                       # and a glow low behind the vault
+    for z in (5, 9):
+        r.fill(0, 0, 4, 7, z - 1, z + 1, ORANGE_WOOL)
+        r.set(0, 4, z, PURPLE_WOOL)
 
 
 ROOMS = {

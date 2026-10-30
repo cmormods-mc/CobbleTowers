@@ -363,7 +363,45 @@ class Scene:
         return Image.fromarray((img.reshape(h, w, 3) * 255).astype(np.uint8))
 
 
+def room_scene(kind: str) -> "Scene":
+    """One stop room set inside a stone chamber shell (walls, the tower's slab above, a back doorway and the door), the way the tower holds it."""
+    import rooms as R
+    room = R.build(kind)
+    w, d, h = R.W, R.D, R.H
+    pal = ["minecraft:air", H.PLAIN_WALL, H.SLAB, H.BARS]
+    grid = np.zeros((w + 2, h + 3, d + 2), dtype=np.uint16)
+    grid[:, :, :] = 1
+    grid[1:w + 1, 1:h + 1, 1:d + 1] = 0                                   # the chamber: room x 0..10 is grid x 1..11, room y 1..8 is grid y 1..8
+    grid[:, h + 1:h + 3, :] = 2
+    grid[5:8, 1:5, 0] = 0                                                  # the back doorway, three wide, four high
+    grid[4:7 + 1, 1:7, d + 1] = 3                                          # the door, bars
+    index = {n: i for i, n in enumerate(pal)}
+    for name in room.palette[1:]:
+        index[name] = len(pal)
+        pal.append(name)
+    sub = room.grid[:, 0:h, :]
+    for rid, name in enumerate(room.palette):
+        if rid == 0:
+            continue
+        mask = sub == rid
+        xs, ys, zs = np.nonzero(mask)
+        grid[xs + 1, ys, zs + 1] = index[name]                              # room y 0 is the ground row: grid y 0
+    return Scene(grid, pal)
+
+
 def main() -> int:
+    if len(sys.argv) >= 3 and sys.argv[1] == "--rooms":
+        out = Path(sys.argv[2])
+        out.mkdir(parents=True, exist_ok=True)
+        import rooms as R
+        kinds = sys.argv[3:] or list(R.ROOMS)
+        views = {"a": (5, 13, 180, 5), "b": (5, 2, 0, 5), "c": (3, 7, -90, 3), "d": (7, 7, 90, 3)}
+        for kind in kinds:
+            scene = room_scene(kind)
+            for tag, (x, z, yaw, pitch) in views.items():
+                scene.render((x + 1.5, 1 + 1.62, z + 1.5), yaw, pitch, 640, 360).save(out / f"{kind}_{tag}.png")
+            print("rendered", kind)
+        return 0
     if len(sys.argv) < 4:
         print(__doc__)
         return 2

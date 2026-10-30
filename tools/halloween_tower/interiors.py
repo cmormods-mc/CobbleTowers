@@ -103,14 +103,16 @@ def lancet(t, xc: int, y0: int, z: int, behind: int, half_w: int) -> None:
             _pane(t, xc + dx, y0 + 4 + r, z, 4 + r, True, behind)
 
 
-def lancet_x(t, x: int, y0: int, zc: int, behind: int, half_w: int) -> None:
-    """The same window in a wall that runs along z: glass at plane x, the lamp at x + behind."""
+def lancet_x(t, x: int, y0: int, zc: int, behind: int, half_w: int, rows: int = 5) -> None:
+    """The same window in a wall that runs along z: glass at plane x, the lamp at x + behind. `rows` is the height of the straight part;
+    a low window skips the bottom of the gradient so it still ends in amber."""
+    lift = max(0, 5 - rows)
     for dz in range(-half_w, half_w + 1):
-        for r in range(5):
-            _pane(t, x, y0 + r, zc + dz, r, False, behind)
+        for r in range(rows):
+            _pane(t, x, y0 + r, zc + dz, r + lift, False, behind)
     for r in range(1, half_w + 1):
         for dz in range(-(half_w - r), half_w - r + 1):
-            _pane(t, x, y0 + 4 + r, zc + dz, 4 + r, False, behind)
+            _pane(t, x, y0 + rows - 1 + r, zc + dz, rows - 1 + r + lift, False, behind)
 
 
 def weather(t, x0: int, x1: int, y0: int, y1: int, z0: int, z1: int, salt: int) -> None:
@@ -192,6 +194,13 @@ def decorate_inter(t, f: int, top: int, accent: str, c: dict) -> None:
         if not 45 <= x <= 51:                              # gate A takes the middle of the south wall
             pier(t, x, Z1, f, top, "north")
 
+    # -- a canopy over every door: a beam of obsidian and brick between its two piers, with a soul lantern under each end
+    for cx in centers:
+        t.fill(cx - 2, cx + 2, f + 6, f + 6, Z0, Z0, TRIM)
+        t.fill(cx - 2, cx + 2, f + 7, f + 7, Z0, Z0, BRICKS)
+        t.set(cx - 2, f + 5, Z0, SOUL)
+        t.set(cx + 2, f + 5, Z0, SOUL)
+
     # -- the door wall: a lit lancet in every gap between the door frames (the frames and doors are the caller's)
     for xc, hw in ((24, 1), (29, 1), (42, 0), (54, 0), (67, 1), (72, 1)):
         lancet(t, xc, f + 1, north, -1, hw)
@@ -256,7 +265,7 @@ def nave_rib(t, z: int, x0: int, x1: int, f: int, top: int, across_z: bool = Fal
         else:
             t.fill(a, a, y0, y1, z, z, block)
 
-    for k in range((x1 - x0 + 1) // 2):
+    for k in range((x1 - x0) // 2 + 1):
         half_steps = min(6 + k, 13)
         level, odd = f + half_steps // 2, half_steps % 2
         for a in (x0 + k, x1 - k):
@@ -379,3 +388,24 @@ def decorate_gallery(t, f: int, top: int, accent: str, x0: int, x1: int, z0: int
     for x, z in ((x0, z0), (x1, z0), (x0, z1), (x1, z1), (window[0], z0), (window[1], z0)):
         t.set(x, top, z, "minecraft:cobweb")
         t.set(x, top - 1, z, "minecraft:cobweb")
+
+
+# ---- the arena's walls ---------------------------------------------------------------------------------------------------------------
+
+def decorate_arena_walls(t, f: int, top: int) -> None:
+    """Piers with a lit pumpkin under the arena's glowing ceiling lines, on the north and south walls and the west wall where the wall is free
+    (the corner outcrops, the dais and the gate keep their place)."""
+    def free(x: int, z: int) -> bool:
+        return all(t.free(x, y, z) for y in range(f, f + 3))
+
+    for x in (24, 36, 60, 72):
+        if free(x, 37):
+            pier(t, x, 37, f, top, "south")
+        if free(x, 72):
+            pier(t, x, 72, f, top, "north")
+    for z in (41, 53, 65):
+        if free(20, z):
+            pier(t, 20, z, f, top, "east")
+    for x, z in ((20, 37), (76, 37), (20, 72), (76, 72)):
+        if t.free(x, top, z):
+            t.set(x, top, z, "minecraft:cobweb")

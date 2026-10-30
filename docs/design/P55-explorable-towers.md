@@ -273,3 +273,13 @@ lamps, webs above head height, benches in the gallery with the spectator aisle c
   own block-light propagation and the default Moody gamma, so a room is as bright as it will be in play. Pictures of this pass: `docs/handoff/interiors/hollow-interiors-pass1.jpg`.
 * **Still bare or untouched**: the eight stop rooms (`rooms.py`), chamber doorways and door frames, the arena's side walls (kept), the stair, outer-wall windows (they show the void), a real-client look.
 * **Not seen in the game yet**: the renderer approximates stairs, slabs and lanterns as boxes and has no ambient occlusion.
+
+### Pass 2 (2026-10-29)
+
+* **Stop rooms** (`rooms.py`, all nine, same 11 x 9 x 15 shape and the same open aisle): a checker floor with a purple runner and obsidian edges instead of the glaring shroomlight strips, ribs with a lit pumpkin on every pilaster
+  (`vault_over`), hanging lamps in the bays, and a character each. Battle: pumpkin-headed knights. Rest: bedrolls with candles and a stone hearth. Shrine: obsidian and amethyst altars under lit lancets. Gambler: the floor wheel, a chandelier,
+  gaming tables. Forge: a hooded glowing pit, anvils, lava pots. Library: seven-high shelves, ladders, desks. Vault: gold behind bars, amber panels. Pool: basins with lily pads. Trick or Treat: the dais exactly where `RoomDresser`
+  puts the vault, a lit window above and behind it. Pictures: `docs/handoff/interiors/hollow-rooms-pass2.jpg`.
+* **Door canopies**: a crying-obsidian and brick beam over each door between its two piers, a soul lantern under each end (`interiors.decorate_inter`).
+* **Arena**: the old one-block slits became lit lancets, and piers with lit pumpkins stand under the glowing ceiling lines where the wall is free (`decorate_arena_walls`). Pictures: `hollow-arena-doors-pass2.jpg`.
+* **Checks**: generator tests, `rooms.py --check`, both validators and the 1006 Java tests pass. Not seen in a real client.

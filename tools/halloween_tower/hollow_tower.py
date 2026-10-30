@@ -160,6 +160,10 @@ class Tower:
     def at(self, x: int, y: int, z: int) -> str:
         return self.palette[int(self.grid[x, y, z])]
 
+    def free(self, x: int, y: int, z: int) -> bool:
+        """Whether the cell is still air, in the floor-local (mirrored when the floor is) coordinates the writes use."""
+        return self.at(SIZE_X - 1 - x if self.mirror else x, y, z) == AIR
+
 
 # ---- one floor ---------------------------------------------------------------------------------------------------------------
 
@@ -256,15 +260,12 @@ def decorate_arena(t: Tower, floor: int, f: int, top: int, accent: str, ground: 
         t.fill(bx, bx, f + 5, f + 5, bz - 1, bz + 1, ORANGE_GLASS)
         t.fill(bx, bx, f + 5, f + 5, bz, bz, SHROOM)
         t.fill(bx, bx, f + 6, f + 6, bz, bz, ORANGE_GLASS)
-    # window slits, lit from inside the thick walls: the north wall, the west wall (clear of the door) and the east wall
+    # tall lit lancets in the thick walls: the north wall (their lamps show in the intermission room), the west wall (clear of the door) and the east wall
     for x in (26, 34, 62, 70):
-        t.fill(x, x, f + 1, f + 5, GATE_A_Z[1], GATE_A_Z[1], ORANGE_GLASS)
-        t.fill(x, x, f + 1, f + 5, GATE_A_Z[0], GATE_A_Z[0], SHROOM)
+        interiors.lancet(t, x, f + 1, GATE_A_Z[1], -1, 0)
     for z in (40, 56, 62, 68):
-        t.fill(19, 19, f + 1, f + 5, z, z, ORANGE_GLASS)
-        t.fill(18, 18, f + 1, f + 5, z, z, SHROOM)
-        t.fill(77, 77, f + 1, f + 5, z, z, ORANGE_GLASS)
-        t.fill(78, 78, f + 1, f + 5, z, z, SHROOM)
+        interiors.lancet_x(t, 19, f + 1, z, -1, 0)
+        interiors.lancet_x(t, 77, f + 1, z, 1, 0)
     # banners on the north wall between the slits: purple cloth with an orange diamond, ending in a point
     for c in (30, 40, 56, 66):
         t.fill(c - 1, c + 1, f + 3, f + 7, ARENA_Z[0], ARENA_Z[0], PURPLE_WOOL)
@@ -316,6 +317,7 @@ def decorate(t: Tower, floor: int, f: int, top: int) -> None:
     ground = f - 1
     accent = (ORANGE, PURPLE, ORANGE)[(floor - 1) // 4 % 3]
     decorate_arena(t, floor, f, top, accent, ground)
+    interiors.decorate_arena_walls(t, f, top)
     # intermission room: the gothic dressing lives in interiors.py
     interiors.decorate_inter(t, f, top, accent, {"x0": ROOMS_X[0], "x1": ROOMS_X[1], "z0": INTER_Z[0], "z1": INTER_Z[1],
                                                   "centers": CHAMBER_CENTERS, "door_half": DOOR_HALF, "vendor": VENDOR})
