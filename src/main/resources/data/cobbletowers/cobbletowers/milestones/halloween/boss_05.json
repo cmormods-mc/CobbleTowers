@@ -1,6 +1,6 @@
 {
   "floor": 5,
   "kind": "boss",
-  "raid_definition": "cobbleraids:decidueye",
+  "raid_definition": "cobbleraids:halloween_mimikyu",
   "banks_rewards": true
 }

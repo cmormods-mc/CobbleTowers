@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 1,
+  "revision": 2,
   "entries": [
     {
       "definition": "cobbleraids:decidueye",
@@ -15,7 +15,35 @@
       "weight": 80
     },
     {
-      "definition": "cobbleraids:marshadow",
+      "definition": "cobbleraids:halloween_eevee",
+      "weight": 90
+    },
+    {
+      "definition": "cobbleraids:halloween_rowlet",
+      "weight": 90
+    },
+    {
+      "definition": "cobbleraids:halloween_phantump",
+      "weight": 90
+    },
+    {
+      "definition": "cobbleraids:halloween_phantump_shiny",
+      "weight": 25
+    },
+    {
+      "definition": "cobbleraids:halloween_togepi",
+      "weight": 90
+    },
+    {
+      "definition": "cobbleraids:halloween_togepi_shiny",
+      "weight": 25
+    },
+    {
+      "definition": "cobbleraids:halloween_mimikyu",
+      "weight": 90
+    },
+    {
+      "definition": "cobbleraids:halloween_marshadow",
       "weight": 100,
       "level_offset": 1
     }

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 1,
+  "revision": 2,
   "entries": [
     {
       "definition": "cobbleraids:dragapult",
@@ -20,6 +20,16 @@
     {
       "definition": "cobbleraids:darkrai",
       "weight": 80,
+      "level_offset": 3
+    },
+    {
+      "definition": "cobbleraids:halloween_mew",
+      "weight": 100,
+      "level_offset": 3
+    },
+    {
+      "definition": "cobbleraids:halloween_marshadow",
+      "weight": 90,
       "level_offset": 3
     }
   ]
