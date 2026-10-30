@@ -20,8 +20,8 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The trick-or-treat door of a Halloween route doorway (P57): the 5 x 6 opening is walled and a 1 x 2 gap in the middle holds the Hallowbound door,
- * drawn as Polymer displays. Shut, the gap is two layers of barrier (collision, invisible); open, it is air. The doorway keys the door, the blocks are
+ * The trick-or-treat door of a Halloween route doorway (P57): the 5 x 6 opening is walled and a 3 x 5 gap in the middle holds the Hallowbound Grand door (a 1 x 2 gap and the standard door in a smaller opening),
+ * drawn as Polymer displays. Shut, the gap is barrier (collision, invisible); open, it is air. The doorway keys the door, the blocks are
  * the state, and the display is rebuilt with the doorway. Server thread only.
  */
 public final class TrickDoors {
@@ -79,11 +79,14 @@ public final class TrickDoors {
             boolean inGap = isGap(box, min, feet) || isGap(box, min, feet.above());
             if (!open || !inGap) return false;   // an open gap is air, so only a player in the wall itself is trapped
         }
+        // The Grand door frame (pillars, crown, header) is part of its model, so the jambs and header are invisible barrier and the model shows;
+        // the standard door sits in a plain brick wall.
+        BlockState surround = DoorGeometry.grand(box) ? GAP_SHUT : WALL;
         for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
             if (!level.isLoaded(pos)) continue;
-            level.setBlock(pos, isGap(box, min, pos) ? (open ? GAP_OPEN : GAP_SHUT) : WALL, Block.UPDATE_ALL);
+            level.setBlock(pos, isGap(box, min, pos) ? (open ? GAP_OPEN : GAP_SHUT) : surround, Block.UPDATE_ALL);
         }
-        DoorDisplay display = new DoorDisplay(level, new Vec3(min.getX() + DoorGeometry.gapX(box) - box.minX(), min.getY(), min.getZ()), FRONT_TURNS, open);
+        DoorDisplay display = new DoorDisplay(level, new Vec3(min.getX() + DoorGeometry.gapX(box) - box.minX(), min.getY(), min.getZ()), FRONT_TURNS, open, DoorGeometry.grand(box));
         DOORS.put(min.immutable(), new Door(runId, display, box, open));
         TowerLog.info("Run {}: trick-or-treat door installed at {} ({})", runId, min.toShortString(), open ? "open" : "shut");
         return true;

@@ -49,3 +49,7 @@ rebounds. The art and motion come from the owner's separate project `L:\Codex\Co
   with its sign. **Not yet judged**: the art close up and head-on, the swing as a sequence (the first frames were taken edge-on), the facing (sign toward the hall), the route-stop path (door
   starts shut, opens on the vote: no seed gives a TRICK_OR_TREAT lane on demand), a player standing in the gap when the floor starts.
 * Capture lesson: a run whose window sat behind the owner's terminal photographed the terminal; `capture_window.ps1` and `capture_burst.ps1` now refuse unless the client is the foreground window.
+
+## Grand door (2026-10-30)
+
+The owner meant the **Grand 5 x 7** door (`hallowbound-grand-door-1.1.0.zip`), not the 1 x 2. A route opening (5 wide, 6 high) now gets it: the clear gap is 3 x 5 (`DoorGeometry.grand`), six displays (frame, frame glow, left, left glow, right, right glow, `DoorPose.grand`, models under `models/halloween/grand_door/`, 2048 atlas). The jambs and header are invisible **barrier**, not brick, so the frame model shows (brick hid it); the crown is a 7th row above the opening and is display only. A smaller opening keeps the 1 x 2 door in a brick wall. Looked at on the real client: shut, open, frame, sign facing (`trick-door-grand2`).
