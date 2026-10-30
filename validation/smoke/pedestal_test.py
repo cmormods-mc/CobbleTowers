@@ -154,8 +154,9 @@ def main() -> None:
             if not wait_state(rcon, "INTERMISSION", seconds=20, floor=1):
                 raise RuntimeError("never reached the intermission: " + run_line(rcon))
 
-            boxes = wait_count(rcon, "@e[tag=cobbletowers_pedestal_hitbox]", 3)
-            results.append(Result("three click boxes stand", boxes == 3, str(boxes)))
+            # One card per stop the branching map offers from here: two or three (P56), never fewer than two
+            boxes = wait_count(rcon, "@e[tag=cobbletowers_pedestal_hitbox]", 3, seconds=20)
+            results.append(Result("a click box stands for each stop on offer (two or three)", boxes in (2, 3), str(boxes)))
             # per card: 3 text pieces (name, payout, details), 4 stand parts, 1 gem
             time.sleep(4)   # the cards grow out of the floor one after another
             for part, each in (("text", 3), ("stand", 7), ("gem", 1)):
@@ -167,13 +168,13 @@ def main() -> None:
             results.append(Result("a pedestal is tagged with its run",
                                   run in data(rcon, card(0, "hitbox"), "Tags"), data(rcon, card(0, "hitbox"), "Tags")))
 
-            # Where they stand: next to the vendor, on the same floor (also proves the vendor is in the hall).
+            # Where they stand: in the hall in front of the route doors, on the vendor's level; the vendor keeps the room behind gate A.
             vendor_at = position(rcon, VENDOR)
             box_at = position(rcon, card(1, "hitbox"))
             near = (vendor_at is not None and box_at is not None
-                    and math.dist((vendor_at[0], vendor_at[2]), (box_at[0], box_at[2])) < 6.0
+                    and math.dist((vendor_at[0], vendor_at[2]), (box_at[0], box_at[2])) < 45.0
                     and abs(vendor_at[1] - box_at[1]) < 1.5)
-            results.append(Result("the middle pedestal stands within 6 blocks of the vendor", near, f"{vendor_at} {box_at}"))
+            results.append(Result("the middle pedestal stands on the vendor's level, within 45 blocks", near, f"{vendor_at} {box_at}"))
 
             text0 = data(rcon, card(0, "text"), "text")
             results.append(Result("the hologram offers a right-click", "Right-click" in text0, text0[:200]))
@@ -209,11 +210,11 @@ def main() -> None:
                                   "CHOSEN" in text0 or waiting(text0), text0[:200]))
 
             # --- the pedestals leave with the intermission ------------------------------------------
-            for _ in range(2):
-                play(rcon, A, "pick 1")
-                play(rcon, B, "pick 1")
-            play(rcon, A, "ready")
-            play(rcon, B, "ready")
+            # The tower is walked now, so the operator closes the intermission instead of two players walking the stair.
+            rcon.command(f"cobbletowers runs advance {run} intermission_complete")
+            rcon.command(f"cobbletowers runs advance {run} next_floor_confirmed")
+            if wait_state(rcon, "FLOOR_READY", seconds=40, floor=2):
+                rcon.command(f"cobbletowers runs encounter {run}")
             opened = wait_state(rcon, "ENCOUNTER_ACTIVE", seconds=60, floor=2)
             results.append(Result("floor 2 opens", opened, run_line(rcon)))
             left = wait_count(rcon, "@e[tag=cobbletowers_pedestal]", 0)
