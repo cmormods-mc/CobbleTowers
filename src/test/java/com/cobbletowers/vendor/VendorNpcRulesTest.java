@@ -48,6 +48,13 @@ class VendorNpcRulesTest {
     }
 
     @Test
+    void onlyTheHalloweenTowerHasTheGoblinWitch() {
+        assertTrue(VendorNpcRules.isGoblinWitch(com.cobbletowers.CobbleTowers.id("halloween")));
+        assertTrue(!VendorNpcRules.isGoblinWitch(com.cobbletowers.CobbleTowers.id("neutral")));
+        assertTrue(!VendorNpcRules.witchGreeting(1).isEmpty());
+    }
+
+    @Test
     void yawFacesTheTarget() {
         assertEquals(0f, VendorNpcRules.yawToward(0, 0, 0, 5), 0.01f);     // south
         assertEquals(180f, Math.abs(VendorNpcRules.yawToward(0, 0, 0, -5)), 0.01f); // north

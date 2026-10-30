@@ -13,7 +13,25 @@ public final class VendorNpcRules {
 
     public enum Access { ALLOWED, NOT_IN_THIS_RUN, CLOSED }
 
+    /** The goblin witch's name tag. */
+    public static final String WITCH_NAME = "Grizelda the Goblin Merchant";
+
+    /** Towers whose vendor is the goblin witch merchant instead of the cleric. */
+    private static final java.util.Set<net.minecraft.resources.ResourceLocation> WITCH_TOWERS = java.util.Set.of(com.cobbletowers.CobbleTowers.id("halloween"));
+
     private VendorNpcRules() {}
+
+    public static boolean isGoblinWitch(net.minecraft.resources.ResourceLocation tower) {
+        return WITCH_TOWERS.contains(tower);
+    }
+
+    /**
+     * What the goblin witch says when a party opens her stall on {@code floor} (1-based): one short line in her voice.
+     * TODO(human): write her patter. Vary it by how deep the party is, e.g. a floor band for the early, middle and boss floors.
+     */
+    public static String witchGreeting(int floor) {
+        return "Heh heh heh... what'll it be, dearie?";
+    }
 
     public static String runTag(UUID runId) {
         return RUN_PREFIX + runId;

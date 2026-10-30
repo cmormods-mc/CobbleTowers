@@ -22,6 +22,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Witch;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.npc.VillagerProfession;
 
@@ -45,8 +51,14 @@ public final class VendorNpc {
         ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
             if (!level.dimension().equals(TowerDimension.LEVEL)) return;
             if (!entity.getTags().contains(VendorNpcRules.VENDOR_TAG)) return;
-            if (!isLive(entity)) entity.discard();
+            if (!isLive(entity)) {
+                entity.discard();
+                return;
+            }
+            // the goblin's model rides the witch, on a fresh spawn and after a restart alike
+            if (entity instanceof Witch witch) GoblinDisplay.attach(witch);
         });
+        GoblinDisplay.bootstrap();
     }
 
     private static Optional<UUID> runOf(Entity entity) {
@@ -69,6 +81,10 @@ public final class VendorNpc {
             player.displayClientMessage(Component.literal(VendorNpcRules.describe(access)), true);
             return;
         }
+        if (vendor instanceof Witch) {
+            player.serverLevel().playSound(null, vendor.blockPosition(), SoundEvents.WITCH_CELEBRATE, SoundSource.NEUTRAL, 1f, 1f);
+            player.sendSystemMessage(Component.literal(VendorNpcRules.WITCH_NAME + ": " + VendorNpcRules.witchGreeting(playerRun.map(PersistedRun::floorIndex).orElse(0) + 1)));
+        }
         String message = IntermissionService.vendor(player.server, player);
         if (!message.isEmpty()) player.displayClientMessage(Component.literal(message), true);
     }
@@ -90,28 +106,48 @@ public final class VendorNpc {
         BlockPos spot = layout.get().exit().in(origin);
         BlockPos entry = layout.get().entry().in(origin);
 
-        Villager vendor = new Villager(EntityType.VILLAGER, level);
-        vendor.setVillagerData(vendor.getVillagerData().setProfession(VillagerProfession.CLERIC));
+        // The Halloween tower's vendor is a goblin witch (vanilla Witch: green skin, hooked nose); every other tower keeps the cleric.
+        boolean witch = VendorNpcRules.isGoblinWitch(run.towerId());
+        Mob vendor;
+        if (witch) {
+            // A Witch is a Monster, which Peaceful difficulty removes: this one is a shopkeeper and stays.
+            vendor = new Witch(EntityType.WITCH, level) {
+                @Override
+                public boolean shouldDespawnInPeaceful() {
+                    return false;
+                }
+            };
+        } else {
+            Villager cleric = new Villager(EntityType.VILLAGER, level);
+            cleric.setVillagerData(cleric.getVillagerData().setProfession(VillagerProfession.CLERIC));
+            vendor = cleric;
+        }
+        // a LivingEntity recomputes its invisibility from its effects every tick, so setInvisible alone is undone at once
+        if (witch) vendor.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, MobEffectInstance.INFINITE_DURATION, 0, false, false, false));
         vendor.setNoAi(true);
         vendor.setInvulnerable(true);
         vendor.setSilent(true);
         vendor.setPersistenceRequired();
-        vendor.setCustomName(Component.literal("Tower Vendor"));
+        vendor.setCustomName(Component.literal(witch ? VendorNpcRules.WITCH_NAME : "Tower Vendor"));
         vendor.setCustomNameVisible(true);
         vendor.addTag(VendorNpcRules.VENDOR_TAG);
         vendor.addTag(VendorNpcRules.runTag(run.runId()));
-        vendor.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5,
-                VendorNpcRules.yawToward(spot.getX(), spot.getZ(), entry.getX(), entry.getZ()), 0f);
+        float yaw = VendorNpcRules.yawToward(spot.getX(), spot.getZ(), entry.getX(), entry.getZ());
+        vendor.moveTo(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5, yaw, 0f);
         if (!level.addFreshEntity(vendor)) {
             TowerLog.warn("Run {}: the vendor could not be spawned at {}", run.runId(), spot);
             return false;
         }
+        // the goblin merchant stands behind her stall, facing the way she does
+        if (witch) MerchantBooth.raise(level, run.runId(), spot, net.minecraft.core.Direction.fromYRot(yaw));
         return true;
     }
 
     /** Removes the run's vendor, if it has one. Safe to call at any time and more than once. */
     public static void despawn(MinecraftServer server, PersistedRun run) {
         for (Entity vendor : vendorsOf(server, run)) vendor.discard();
+        ServerLevel level = TowerDimension.level(server);
+        if (level != null) MerchantBooth.takeDown(level, run.runId());
     }
 
     /** How many vendors the run has standing; a test seam, and the reason {@link #spawn} is idempotent. */
