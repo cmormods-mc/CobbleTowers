@@ -59,9 +59,9 @@ public final class Watching {
         RunExitService.remember(server, watcher);
         Watch previous = WATCHES.get(watcher.getUUID());
         GameType mode = previous != null ? previous.previousMode() : watcher.gameMode.getGameModeForPlayer();
+        SpectatorModeService.enter(watcher);
         WATCHES.put(watcher.getUUID(), new Watch(run.get().runId(), target.getUUID(), mode));
 
-        watcher.setGameMode(GameType.SPECTATOR);
         watcher.teleportTo(target.serverLevel(), target.getX(), target.getY(), target.getZ(), target.getYRot(), target.getXRot());
         watcher.setCamera(target);
         com.cobbletowers.network.TowerNetworking.sendSpectatorPanel(watcher, SpectatorPresentation.panelFor(run.get(), target));
@@ -89,13 +89,19 @@ public final class Watching {
                 WATCHES.remove(watcherId);
                 continue;
             }
+            if (!watcher.level().dimension().equals(TowerDimension.LEVEL)) {
+                end(server, watcherId, "You left the tower spectator view.");
+                continue;
+            }
             if (TowerRuns.forPlayer(watcherId).isPresent()) {
                 // They joined a run of their own while watching (a lobby start moved them in): the watch is over, but
                 // this is not the end of
                 // anything that should send them home.
                 WATCHES.remove(watcherId);
                 watcher.setCamera(watcher);
-                watcher.setGameMode(watch.previousMode());
+                if (!SpectatorPresentation.isFollowing(watcherId) && !SpectatorModeService.restore(watcher)) {
+                    watcher.setGameMode(watch.previousMode());
+                }
                 continue;
             }
             ServerPlayer target = server.getPlayerList().getPlayer(watch.targetId());
@@ -115,10 +121,11 @@ public final class Watching {
      */
     public static void restoreMode(ServerPlayer player) {
         Watch watch = WATCHES.remove(player.getUUID());
+        if (watch != null) player.setCamera(player);
+        boolean restored = SpectatorModeService.restore(player);
         if (watch != null) {
-            player.setCamera(player);
-            player.setGameMode(watch.previousMode());
-        } else if (player.isSpectator() && !player.hasPermissions(2)) {
+            if (!restored) player.setGameMode(watch.previousMode());
+        } else if (!restored && player.isSpectator() && !player.hasPermissions(2)) {
             // A watcher whose server restarted mid-watch: the spectator mode outlived the watch.
             player.setGameMode(GameType.SURVIVAL);
         }

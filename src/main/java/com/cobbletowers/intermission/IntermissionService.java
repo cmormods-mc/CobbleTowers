@@ -70,7 +70,7 @@ public final class IntermissionService {
             com.cobbletowers.vendor.VendorNpc.spawn(server, run);
             PedestalService.sync(server, run);
             if (com.cobbletowers.modifier.DraftService.customs(run).healsEachIntermission()) {
-                for (PersistedParticipant participant : run.participants()) {
+                for (PersistedParticipant participant : members(run)) {
                     ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
                     if (player == null) continue;
                     com.cobbletowers.economy.VendorServices.apply(com.cobbletowers.definition.VendorEffect.FULL_HEAL, player);
@@ -220,7 +220,7 @@ public final class IntermissionService {
         if (!round.countdownDue(now)) {
             int left = round.secondsLeft(now);
             if (!round.announce(left)) return;
-            for (PersistedParticipant participant : found.get().participants()) {
+            for (PersistedParticipant participant : members(found.get())) {
                 ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
                 if (player != null) player.displayClientMessage(Component.literal("Next floor in " + left + "..."), true);
             }
@@ -253,8 +253,13 @@ public final class IntermissionService {
         return TowerRuns.forPlayer(player.getUUID()).filter(run -> run.state() == RunState.INTERMISSION);
     }
 
+    /** Spectators remain part of the team; players who left must receive no more run UI or healing. */
+    static List<PersistedParticipant> members(PersistedRun run) {
+        return run.participants().stream().filter(participant -> participant.state().isInRun()).toList();
+    }
+
     private static void notifyAll(MinecraftServer server, PersistedRun run, String message) {
-        for (PersistedParticipant participant : run.participants()) {
+        for (PersistedParticipant participant : members(run)) {
             ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
             if (player != null) player.sendSystemMessage(Component.literal(message));
         }
@@ -272,7 +277,7 @@ public final class IntermissionService {
     }
 
     private static void broadcast(MinecraftServer server, PersistedRun run, String message, boolean open) {
-        for (PersistedParticipant participant : run.participants()) {
+        for (PersistedParticipant participant : members(run)) {
             ServerPlayer player = server.getPlayerList().getPlayer(participant.playerId());
             if (player == null) continue;
             if (!message.isEmpty()) player.sendSystemMessage(Component.literal(message));
@@ -282,6 +287,7 @@ public final class IntermissionService {
     }
 
     private static void send(MinecraftServer server, PersistedRun run, ServerPlayer viewer, String message, boolean open) {
+        if (members(run).stream().noneMatch(participant -> participant.playerId().equals(viewer.getUUID()))) return;
         // A screen that opens by itself (a floor cleared) must show even if the player's page looks open from its pings.
         if (open) com.cobbletowers.webgui.WebGuiBridge.userAsked(viewer);
         TowerNetworking.sendIntermissionState(viewer, payloadOf(server, run, viewer, message, open));
@@ -293,7 +299,7 @@ public final class IntermissionService {
         IntermissionStatePayload.Draft draft = draftOf(run, viewer.getUUID());
 
         List<IntermissionStatePayload.Member> members = new ArrayList<>();
-        for (PersistedParticipant participant : run.participants()) {
+        for (PersistedParticipant participant : members(run)) {
             ServerPlayer other = server.getPlayerList().getPlayer(participant.playerId());
             String name = other == null ? participant.playerId().toString().substring(0, 8)
                     : other.getGameProfile().getName();

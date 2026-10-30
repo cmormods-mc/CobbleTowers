@@ -67,6 +67,7 @@ public final class CobblemonBattleAdapter {
     /** The running server, so a result never depends on a participant still being online to find it. */
     private static volatile MinecraftServer runningServer;
     private static boolean installed;
+    private static java.util.function.Predicate<ServerPlayer> sharedBattleDeparture = player -> false;
 
     /** Marks an entity this adapter spawned as a tower opponent, so a stray one can be told from anything else. */
     static final String OPPONENT_TAG = "cobbletowers_opponent";
@@ -77,8 +78,16 @@ public final class CobblemonBattleAdapter {
     /** Opponents to discard once they can be found, with the ticks left to try. Server thread only. */
     private static final Map<UUID, Integer> PENDING_DISCARDS = new HashMap<>();
     private static final int PENDING_DISCARD_TICKS = 100;
+    /** IDs only: wait until native battle cleanup releases the exact deployed party entity. */
+    private record PendingRecall(UUID player, UUID pokemon, UUID entity, UUID battle, long expiresAt) {}
+    private static final Map<UUID, PendingRecall> PENDING_RECALLS = new HashMap<>();
 
     private CobblemonBattleAdapter() {}
+
+    /** The shared battle's owner withdraws one actor; this adapter terminates standalone fights. */
+    public static void setSharedBattleDeparture(java.util.function.Predicate<ServerPlayer> departure) {
+        sharedBattleDeparture = java.util.Objects.requireNonNull(departure);
+    }
 
     /** What happens when a floor's battle ends. Implemented by the encounter, called by this. */
     public interface Listener {
@@ -104,6 +113,7 @@ public final class CobblemonBattleAdapter {
             // An exception out of a tick callback ends the server: every step is contained.
             try {
                 retryPendingDiscards(server);
+                retryCompletedPartyRecalls(server);
                 probeQuietBattles(System.currentTimeMillis());
                 pollTicks++;
                 if (pollTicks % TURN_POLL_TICKS == 0) pollTurns(System.currentTimeMillis());
@@ -401,7 +411,48 @@ public final class CobblemonBattleAdapter {
         }
         if (BattleOutcome.isTie(winnerIds)) healAfterTie(server, binding);
         discardOpponent(server, binding);
+        if (!binding.exhibition()) queueCompletedPartyRecalls(event.getBattle(), binding.playerId());
         listener.onResolved(server, binding, playerWon);
+    }
+
+    private static void queueCompletedPartyRecalls(PokemonBattle battle, UUID playerId) {
+        var actor = battle.getActor(playerId);
+        if (actor == null) return;
+        for (var fought : actor.getPokemonList()) {
+            Pokemon pokemon = fought.getOriginalPokemon();
+            PokemonEntity entity = pokemon.getEntity();
+            if (entity == null) continue;
+            PENDING_RECALLS.put(entity.getUUID(), new PendingRecall(playerId, pokemon.getUuid(),
+                    entity.getUUID(), battle.getBattleId(), System.currentTimeMillis() + 10_000));
+        }
+    }
+
+    /** End-of-tick work: recalling in BATTLE_VICTORY would run inside native battle/entity iteration. */
+    private static void retryCompletedPartyRecalls(MinecraftServer server) {
+        for (PendingRecall pending : List.copyOf(PENDING_RECALLS.values())) {
+            try {
+                ServerPlayer player = server.getPlayerList().getPlayer(pending.player());
+                if (player == null || !player.level().dimension().equals(com.cobbletowers.instance.TowerDimension.LEVEL)
+                        || System.currentTimeMillis() >= pending.expiresAt()) {
+                    PENDING_RECALLS.remove(pending.entity(), pending);
+                    continue;
+                }
+                Pokemon pokemon = null;
+                for (Pokemon held : Cobblemon.INSTANCE.getStorage().getParty(player)) {
+                    if (held.getUuid().equals(pending.pokemon())) { pokemon = held; break; }
+                }
+                PokemonEntity entity = pokemon == null ? null : pokemon.getEntity();
+                PokemonBattle current = BattleRegistry.getBattleByParticipatingPlayer(player);
+                var action = CompletedPartyRecall.action(pending.battle(), current == null ? null : current.getBattleId(),
+                        pending.entity(), entity == null ? null : entity.getUUID(),
+                        entity == null ? null : entity.getBattleId(), entity != null && entity.isBusy());
+                if (action == CompletedPartyRecall.Action.WAIT) continue;
+                if (action == CompletedPartyRecall.Action.RECALL) pokemon.recall();
+                PENDING_RECALLS.remove(pending.entity(), pending);
+            } catch (RuntimeException ex) {
+                TowerLog.errorOnce("completed-party-recall-" + pending.entity(), "Could not recall a completed tower battle's Pokemon", ex);
+            }
+        }
     }
 
     /** A tie leaves the whole party fainted; the player gets it back whole for what comes next. */
@@ -492,13 +543,15 @@ public final class CobblemonBattleAdapter {
         return inBattle(player);
     }
 
-    /** Ends whatever battle a player is in, including one CobbleRaids started. @return true if one was ended */
+    /** Leaves a shared battle through its owner, or ends a standalone battle. */
     public static boolean endBattleOf(ServerPlayer player) {
         try {
             PokemonBattle battle = BattleRegistry.getBattleByParticipatingPlayer(player);
             onServerThread(player.getServer(), () -> {
                 try {
-                    if (battle != null) TowerBattleTermination.end(battle);
+                    BattleDeparturePolicy.depart(() -> sharedBattleDeparture.test(player), () -> {
+                        if (battle != null) TowerBattleTermination.end(battle);
+                    });
                 } catch (RuntimeException ex) {
                     TowerLog.error("Could not end the battle of " + player.getUUID(), ex);
                 } finally {
@@ -626,6 +679,7 @@ public final class CobblemonBattleAdapter {
         for (Binding binding : List.copyOf(BY_BATTLE.values())) discardOpponent(server, binding);
         INDEX.clear();
         PENDING_DISCARDS.clear();
+        PENDING_RECALLS.clear();
         sweepTicks = 0;
         pollTicks = 0;
         runningServer = null;

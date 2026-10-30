@@ -193,7 +193,7 @@ public final class RentalPartyService {
         List<UUID> stale = held.stream().filter(id -> !live.contains(id)).toList();
         if (stale.isEmpty()) return 0;
         com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter.endRentalBattleOf(player, stale);
-        if (PartyStorage.inBattle(player)) return 0;
+        if (!PartyJournalService.mayRestoreParty(player)) return 0;
         int removed = RentalStorage.removeAll(player, stale::contains);
         if (removed > 0) TowerLog.warn("Swept {} stray rental Pokemon from {}", removed, player.getUUID());
         return removed;

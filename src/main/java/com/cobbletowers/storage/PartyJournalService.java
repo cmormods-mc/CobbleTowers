@@ -117,7 +117,7 @@ public final class PartyJournalService {
         Optional<PartyJournalEntry> found = store.entryFor(player.getUUID());
         if (found.isEmpty()) return;
         PartyJournalEntry entry = found.get();
-        if (PartyStorage.inBattle(player)) return;
+        if (!mayRestoreParty(player)) return;
 
         // Rentals first (P33): they occupy the party, and the originals cannot come back to a full one. Deleted by
         // the ids the
@@ -206,12 +206,22 @@ public final class PartyJournalService {
                             com.cobbletowers.api.tower.RunEvent.RECOVERY_ABANDONED, System.currentTimeMillis());
                 }
                 com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter.endRentalBattleOf(player, entry.rentals());
-                if (PartyStorage.inBattle(player)) continue;
+                if (!mayRestoreParty(player)) continue;
                 restoreNow(server, player);
             } catch (RuntimeException ex) {
                 TowerLog.errorOnce("restore-" + entry.player(), "Could not restore the Pokemon of " + entry.player(), ex);
             }
         }
+    }
+
+    /**
+     * A withdrawn owned-boss actor is frozen and fights on clones. Collection placement may be
+     * restored, while Cobblemon retains the actor's battle lock until the shared fight finishes.
+     * Active or unrelated battles continue to prohibit storage changes.
+     */
+    public static boolean mayRestoreParty(ServerPlayer player) {
+        return !PartyStorage.inBattle(player)
+                || com.cobbletowers.battle.cobbleraids.TowerBossAdapter.hasWithdrawnParticipant(player);
     }
 
     static boolean restorationComplete(Restoration restoration, Map<Slot, UUID> actual) {

@@ -126,7 +126,8 @@ public final class TowerPresence {
         boolean resumes = TowerEncounters.of(run.runId())
                 .filter(round -> round.phase() == TowerEncounters.Phase.BOSS
                         && round.byPlayer().get(playerId) != TowerEncounters.Status.OUT)
-                .isPresent() && CobblemonBattleAdapter.inLiveBattle(player);
+                .isPresent() && CobblemonBattleAdapter.inLiveBattle(player)
+                && !com.cobbletowers.battle.cobbleraids.TowerBossAdapter.hasWithdrawnParticipant(player);
         boolean spectate = floorInProgress && !resumes;
         ParticipantService.update(server, run.runId(), playerId,
                 state -> spectate ? state.reconnected().spectating() : state.reconnected(), now);
@@ -136,6 +137,7 @@ public final class TowerPresence {
             return;
         }
         if (!floorInProgress) {
+            com.cobbletowers.spectator.SpectatorPresentation.stopSpectating(player);
             TowerLog.info("Player {} rejoined run {}{}, which is between floors",
                     player.getGameProfile().getName(), run.runId(), late ? " after their window closed" : "");
             return;
@@ -171,17 +173,16 @@ public final class TowerPresence {
         DISCONNECTED_AT.remove(player.getUUID());
         // Persist the irreversible membership change before callbacks can resolve the floor or throw.
         ParticipantService.update(server, runId, player.getUUID(), ParticipantState::left, now);
+        // Settle the last membership before boss-withdrawal callbacks can report a party wipe.
+        TowerRuns.get(runId).filter(run -> !anybodyCouldReturn(run, now)).ifPresent(run -> {
+            TowerLog.info("Run {} has nobody left in it; ending it", runId);
+            RunTransitionService.apply(server, runId, RunEvent.ABANDON_REQUESTED, now);
+        });
         guarded("drop the departing player", () ->
                 TowerEncounters.dropPlayer(server, runId, player.getUUID(), "left the run", now));
         // Boss battles belong to CobbleRaids and are not in the floor adapter's battle index.
         guarded("end the departing player's battle", () -> CobblemonBattleAdapter.endBattleOf(player));
-        Optional<PersistedRun> after = TowerRuns.get(runId);
         TowerLog.info("Player {} left run {}", player.getGameProfile().getName(), runId);
-
-        if (after.isPresent() && !anybodyCouldReturn(after.get(), now)) {
-            TowerLog.info("Run {} has nobody left in it; ending it", runId);
-            RunTransitionService.apply(server, runId, RunEvent.ABANDON_REQUESTED, now);
-        }
         return true;
     }
 

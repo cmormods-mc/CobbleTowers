@@ -63,6 +63,16 @@ public final class SpectatorPresentation {
 
     /** Release the camera and separate a revived spectator from the player they followed. */
     public static void stopSpectating(ServerPlayer spectator) {
+        releaseCamera(spectator);
+        SpectatorModeService.restore(spectator);
+    }
+
+    /** The exit restores mode after teleporting home, including legacy outside-watcher recovery. */
+    public static void stopSpectatingForExit(ServerPlayer spectator) {
+        releaseCamera(spectator);
+    }
+
+    private static void releaseCamera(ServerPlayer spectator) {
         if (FOLLOWING.remove(spectator.getUUID()) == null) return;
         spectator.setCamera(spectator);
         com.cobbletowers.runtime.TowerRuns.forPlayer(spectator.getUUID()).ifPresent(run ->
@@ -73,10 +83,13 @@ public final class SpectatorPresentation {
     private static void follow(MinecraftServer server, PersistedRun run, ServerPlayer spectator, UUID teammateId) {
         ServerPlayer teammate = server.getPlayerList().getPlayer(teammateId);
         if (teammate == null) return;
+        SpectatorModeService.enter(spectator);
         FOLLOWING.put(spectator.getUUID(), teammateId);
         spectator.setCamera(teammate);
         TowerNetworking.sendSpectatorPanel(spectator, panelFor(run, teammate));
     }
+
+    static boolean isFollowing(UUID player) { return FOLLOWING.containsKey(player); }
 
     private static List<UUID> activeTeammates(PersistedRun run, UUID exceptPlayerId) {
         List<UUID> ids = new ArrayList<>();
