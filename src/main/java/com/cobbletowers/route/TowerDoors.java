@@ -148,7 +148,7 @@ public final class TowerDoors {
         Located at = locate(server, run);
         if (at == null) return Optional.empty();
         List<FloorDoor> doors = at.layout.doors();
-        FloorDoor door = doors.get(lane >= 0 && lane < doors.size() ? lane : doors.size() / 2);
+        FloorDoor door = doors.get(RoomDresser.doorOfLane(lane, doors.size()));
         int centre = (door.open().minX() + door.open().maxX()) / 2;
         int feet = door.pedestal().y();
         int back = door.open().minZ() - RoomDresser.ROOM_DEPTH;

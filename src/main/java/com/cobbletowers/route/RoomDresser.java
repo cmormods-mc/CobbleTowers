@@ -70,6 +70,11 @@ public final class RoomDresser {
         return out;
     }
 
+    /** The door a lane leads through (the middle one when the lane is unknown): the same pick the vault spot makes. */
+    public static int doorOfLane(int lane, int doors) {
+        return lane >= 0 && lane < doors ? lane : doors / 2;
+    }
+
     /** Dresses the chambers for the run's open route draft; does nothing for a floor without doors; a draft without lanes dresses every chamber as a battle. Never throws. */
     public static void dress(MinecraftServer server, PersistedRun run, FloorLayout layout, BlockPos origin) {
         try {
@@ -88,6 +93,14 @@ public final class RoomDresser {
         List<String> wanted = kindsByDoor(draft.map(PersistedDraft::lanes).orElse(List.of()), draft.map(PersistedDraft::kinds).orElse(List.of()),
                 layout.doors().size());
         List<String> have = DRESSED.getOrDefault(run.runId(), List.of());
+        // The vault's own vote is a draft with no lanes: its room stays the Trick or Treat room, not a bare battle gauntlet with the vault floating in it.
+        if (draft.isEmpty() && com.cobbletowers.trick.TrickOrTreatService.holdsRoom(run)) {
+            wanted = new ArrayList<>();
+            for (int door = 0; door < layout.doors().size(); door++) {
+                wanted.add(door < have.size() && !have.get(door).isEmpty() ? have.get(door) : RouteGraph.Kind.BATTLE.name());
+            }
+            wanted.set(doorOfLane(run.modifiers().lastLane(), wanted.size()), RouteGraph.Kind.TRICK_OR_TREAT.name());
+        }
         List<String> now = new ArrayList<>(wanted);
         for (int door = 0; door < wanted.size(); door++) {
             if (door < have.size() && have.get(door).equals(wanted.get(door))) continue;

@@ -106,6 +106,12 @@ public final class TrickOrTreatService {
         }
     }
 
+    /** Whether the run's Trick or Treat room must keep its dais: the vault is shown, open or fighting, or its open vote is on. */
+    public static boolean holdsRoom(PersistedRun run) {
+        UUID id = run.runId();
+        return SHOWN.containsKey(id) || BY_RUN.containsKey(id) || FIGHTS.containsKey(id) || openCard(run) >= 0;
+    }
+
     /** The index of the "open it" card in the run's open vote, or -1 when that vote is not on. */
     static int openCard(PersistedRun run) {
         return run.modifiers().draft().filter(draft -> !draft.resolved()).map(draft -> draft.cards().indexOf(IntermissionEvents.Option.TRICK_OPEN.cardId())).orElse(-1);
