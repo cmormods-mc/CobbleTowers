@@ -8,6 +8,7 @@ public class Win {
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c);
   [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr h, int x, int y, int w, int ht, bool repaint);
   public struct RECT { public int Left, Top, Right, Bottom; }
@@ -20,6 +21,9 @@ if ($p -and $p.MainWindowHandle -eq 0) { $p.Refresh() }
 if (-not $p) { Write-Error "no client window"; exit 1 }
 [Win]::ShowWindow($p.MainWindowHandle, 9) | Out-Null
 [Win]::SetForegroundWindow($p.MainWindowHandle) | Out-Null
+Start-Sleep -Milliseconds 400
+# never photograph anything but the test client: if another window is in front, the screen holds somebody else's content
+if ([Win]::GetForegroundWindow() -ne $p.MainWindowHandle) { Write-Error "the client window is not in front; nothing was captured"; exit 3 }
 $r = New-Object Win+RECT
 [Win]::GetWindowRect($p.MainWindowHandle, [ref]$r) | Out-Null
 $w = $r.Right - $r.Left; $h = $r.Bottom - $r.Top

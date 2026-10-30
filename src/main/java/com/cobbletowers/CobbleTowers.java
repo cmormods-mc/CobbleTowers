@@ -57,6 +57,7 @@ public final class CobbleTowers implements ModInitializer {
                 RunsCommand.register(dispatcher);
                 com.cobbletowers.command.ArmorCommand.register(dispatcher);
                 com.cobbletowers.command.VaultCommand.register(dispatcher);
+                com.cobbletowers.command.TrickDoorCommand.register(dispatcher);
                 PlayCommand.register(dispatcher);
                 com.cobbletowers.command.MasteryCommand.registerAdmin(dispatcher);
                 com.cobbletowers.command.TrialCommand.registerAdmin(dispatcher);
@@ -127,6 +128,7 @@ public final class CobbleTowers implements ModInitializer {
         com.cobbletowers.armor.ArmorSetItems.register();
         com.cobbletowers.armor.worn.WornModelService.install();
         com.cobbletowers.halloween.vault.VaultService.install();
+        com.cobbletowers.halloween.door.TrickDoors.bootstrap();
         com.cobbletowers.trick.TrickOrTreatService.install();
         com.cobbletowers.season.SeasonTrimItems.register();
         com.cobbletowers.economy.TowerKeys.install();

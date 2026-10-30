@@ -5,6 +5,7 @@ import com.cobbletowers.ServerState;
 import com.cobbletowers.TowerLog;
 import com.cobbletowers.definition.FloorDoor;
 import com.cobbletowers.definition.FloorLayout;
+import com.cobbletowers.halloween.door.TrickDoors;
 import com.cobbletowers.instance.TowerDimension;
 import com.cobbletowers.persistence.PersistedDraft;
 import com.cobbletowers.persistence.PersistedRun;
@@ -90,7 +91,17 @@ public final class RoomDresser {
         List<String> now = new ArrayList<>(wanted);
         for (int door = 0; door < wanted.size(); door++) {
             if (door < have.size() && have.get(door).equals(wanted.get(door))) continue;
-            if (!place(server, level, layout.doors().get(door), origin, wanted.get(door))) now.set(door, "");   // not dressed: try again next time
+            FloorDoor doorway = layout.doors().get(door);
+            if (!place(server, level, doorway, origin, wanted.get(door))) {
+                now.set(door, "");   // not dressed: try again next time
+                continue;
+            }
+            // A Trick or Treat lane gets the Hallowbound door in a wall; any other lane has plain bars (P57).
+            if (RouteGraph.Kind.parse(wanted.get(door)) == RouteGraph.Kind.TRICK_OR_TREAT) {
+                if (!TrickDoors.install(level, run.runId(), doorway, origin, false)) now.set(door, "");
+            } else {
+                TrickDoors.uninstall(level, doorway, origin);
+            }
         }
         DRESSED.put(run.runId(), now);
     }

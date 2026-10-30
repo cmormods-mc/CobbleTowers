@@ -91,6 +91,7 @@ public final class TrickOrTreatService {
     public static void tend(MinecraftServer server, PersistedRun run) {
         try {
             UUID runId = run.runId();
+            if (openCard(run) >= 0) TowerDoors.standTrickDoor(server, run, run.modifiers().lastLane());   // the Hallowbound door on this room too (P57)
             if (SHOWN.containsKey(runId) || BY_RUN.containsKey(runId) || NO_SPOT.contains(runId)) return;
             if (openCard(run) < 0) return;
             Optional<TowerDoors.RoomSpot> spot = TowerDoors.roomSpot(server, run, run.modifiers().lastLane());

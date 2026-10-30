@@ -5,6 +5,7 @@ import com.cobbletowers.definition.FloorBox;
 import com.cobbletowers.definition.FloorDoor;
 import com.cobbletowers.definition.FloorLayout;
 import com.cobbletowers.definition.TowerDefinitionRegistry;
+import com.cobbletowers.halloween.door.TrickDoors;
 import com.cobbletowers.instance.CellPreparer;
 import com.cobbletowers.instance.TowerDimension;
 import com.cobbletowers.persistence.PersistedRun;
@@ -58,8 +59,13 @@ public final class TowerDoors {
         if (at == null) return 0;
         Optional<FloorDoor> door = doorOf(at.layout, lane);
         if (door.isEmpty()) return 0;
-        int changed = paint(at.level, door.get().frame(), at.origin, LIT, null)
-                + paint(at.level, door.get().open(), at.origin, Blocks.AIR.defaultBlockState(), null);
+        int changed = paint(at.level, door.get().frame(), at.origin, LIT, null);
+        if (TrickDoors.isTrick(door.get(), at.origin)) {   // a Trick or Treat doorway: the wall stays and the door swings (P57)
+            if (!TrickDoors.isOpen(door.get(), at.origin) && TrickDoors.open(at.level, door.get(), at.origin)) changed++;
+            TowerLog.info("Run {}: trick-or-treat door {} of floor {} lit and opened", run.runId(), lane, run.floorIndex());
+            return changed;
+        }
+        changed += paint(at.level, door.get().open(), at.origin, Blocks.AIR.defaultBlockState(), null);
         if (changed > 0) {
             BlockPos centre = door.get().open().minIn(at.origin).offset(2, 2, 1);
             at.level.playSound(null, centre, SoundEvents.IRON_DOOR_OPEN, SoundSource.BLOCKS, 1.4f, 0.8f);
@@ -79,6 +85,10 @@ public final class TowerDoors {
             Located at = locate(server, run);
             if (at == null) return 0;
             for (FloorDoor door : at.layout.doors()) {
+                if (TrickDoors.isTrick(door, at.origin)) {
+                    if (TrickDoors.isOpen(door, at.origin)) return 0;
+                    continue;
+                }
                 FloorBox box = door.open();
                 BlockPos centre = box.minIn(at.origin).offset((box.maxX() - box.minX()) / 2, (box.maxY() - box.minY()) / 2, 0);
                 if (at.level.isLoaded(centre) && at.level.getBlockState(centre).isAir()) return 0;
@@ -101,6 +111,11 @@ public final class TowerDoors {
         int changed = 0;
         for (FloorDoor door : at.layout.doors()) {
             changed += paint(at.level, door.frame(), at.origin, DARK, null);
+            if (TrickDoors.isTrick(door, at.origin)) {
+                if (TrickDoors.close(at.level, door, at.origin)) changed++;
+                else TowerLog.warn("Run {}: a trick-or-treat door of floor {} was left open because a player stands in it", run.runId(), run.floorIndex());
+                continue;
+            }
             BlockPos min = door.open().minIn(at.origin);
             BlockPos max = door.open().maxIn(at.origin);
             if (!at.level.getEntitiesOfClass(ServerPlayer.class, new AABB(min.getX(), min.getY(), min.getZ(), max.getX() + 1, max.getY() + 1, max.getZ() + 1)).isEmpty()) {
@@ -111,6 +126,18 @@ public final class TowerDoors {
         }
         if (changed > 0) TowerLog.info("Run {}: the doors of floor {} were shut and darkened again ({} blocks)", run.runId(), run.floorIndex(), changed);
         return changed;
+    }
+
+    /**
+     * The Trick or Treat vault is shown behind the door of {@code lane} (the middle one when unknown): that doorway becomes the trick door, standing open
+     * as the vault vote runs. Idempotent; false until it could be done (a player standing in the new wall).
+     */
+    public static boolean standTrickDoor(MinecraftServer server, PersistedRun run, int lane) {
+        Located at = locate(server, run);
+        if (at == null) return false;
+        List<FloorDoor> doors = at.layout.doors();
+        FloorDoor door = doors.get(lane >= 0 && lane < doors.size() ? lane : doors.size() / 2);
+        return TrickDoors.isTrick(door, at.origin) || TrickDoors.install(at.level, run.runId(), door, at.origin, true);
     }
 
     /** Where the chamber behind a door keeps its vault: on the dais by the east wall, the mimic fighting in the aisle in front of it. */
