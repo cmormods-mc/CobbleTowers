@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "tower": "cobbletowers:halloween",
+  "ranks": [
+    {"level": 1, "name": "Lantern Bearer"},
+    {"level": 5, "name": "Trick-or-Treater"},
+    {"level": 10, "name": "Ghost Hunter"},
+    {"level": 15, "name": "Hollow Warden"},
+    {"level": 20, "name": "Hollow's Eve Champion"}
+  ],
+  "levels": [
+    {"level": 1, "label": "First sweets", "grants": [{"item": "cobblemon:exp_candy_s", "amount": 4}]},
+    {"level": 2, "grants": [{"item": "cobblemon:dusk_ball", "amount": 8}]},
+    {"level": 3, "grants": [{"item": "cobblemon:super_potion", "amount": 5}]},
+    {"level": 4, "grants": [{"item": "cobblemon:exp_candy_m", "amount": 3}]},
+    {"level": 5, "label": "Trick-or-Treater's bag", "grants": [{"item": "cobblemon:exp_candy_m", "amount": 4}, {"item": "cobbletowers:cobble_dollar", "amount": 300}]},
+    {"level": 6, "grants": [{"item": "cobblemon:lum_berry", "amount": 3}]},
+    {"level": 7, "grants": [{"item": "cobblemon:quick_ball", "amount": 8}]},
+    {"level": 8, "grants": [{"item": "cobblemon:exp_candy_l", "amount": 2}]},
+    {"level": 9, "grants": [{"item": "cobbleraids:raid_points", "amount": 15}]},
+    {"level": 10, "label": "Ghost hunter's haul", "grants": [{"item": "cobblemon:exp_candy_l", "amount": 3}, {"item": "cobblemon:rare_candy", "amount": 2}]},
+    {"level": 11, "grants": [{"item": "cobblemon:hyper_potion", "amount": 4}]},
+    {"level": 12, "grants": [{"item": "cobblemon:revive", "amount": 3}]},
+    {"level": 13, "grants": [{"item": "cobblemon:exp_candy_l", "amount": 4}]},
+    {"level": 14, "grants": [{"item": "cobbletowers:cobble_dollar", "amount": 400}]},
+    {"level": 15, "label": "Warden's stash", "grants": [{"item": "cobblemon:exp_candy_xl", "amount": 1}, {"item": "cobblemon:rare_candy", "amount": 3}]},
+    {"level": 16, "grants": [{"item": "cobblemon:ultra_ball", "amount": 10}]},
+    {"level": 17, "grants": [{"item": "cobblemon:max_potion", "amount": 3}]},
+    {"level": 18, "grants": [{"item": "cobbleraids:raid_points", "amount": 25}]},
+    {"level": 19, "grants": [{"item": "cobblemon:exp_candy_xl", "amount": 1}, {"item": "cobblemon:full_restore", "amount": 2}]},
+    {"level": 20, "label": "The Hollow's Eve hoard", "grants": [{"item": "cobblemon:exp_candy_xl", "amount": 2}, {"item": "cobblemon:rare_candy", "amount": 5}]}
+  ]
+}
