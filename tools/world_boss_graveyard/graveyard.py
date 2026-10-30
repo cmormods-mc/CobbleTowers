@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The World Boss graveyard: an open night-time churchyard, 128 x 72 x 128, for the CobbleRaids World Boss arena.
+"""The World Boss graveyard: an open night-time churchyard, 128 x 96 x 128, for the CobbleRaids World Boss arena.
 
     python tools/world_boss_graveyard/graveyard.py [--out validation/schematics] [--npz grid.npz] [--check]
 
@@ -8,7 +8,7 @@ terraced hill with three tall stained-glass windows glowing red, orange and gree
 orange flame pillars, tombstones in purple-red grass, gnarled leafless trees and two small crypt towers behind an iron fence.
 
 The arena contract (CobbleRaids docs/WORLD-BOSS-DESIGN.md 12c): the boss stands at a `cobbleraids:world_boss_spawn` marker, players warp to a
-`cobbleraids:world_boss_entrance` marker, the arena radius is 96. The plaza (centre 64, 86) is open ground, 20 blocks clear on every side and open to the
+`cobbleraids:world_boss_entrance` marker, the arena radius is 96. The plaza (centre 64, 90) is open ground, 20 blocks clear on every side and open to the
 sky; the sky, the moon and the time of day belong to the world, not to this file. No block entity is used.
 """
 from __future__ import annotations
@@ -22,16 +22,16 @@ from pathlib import Path
 
 import numpy as np
 
-W, H, D = 128, 72, 128
+W, H, D = 128, 96, 128
 S0 = 12                 # the top block of the plaza and the avenue
-LIFT = 10
+LIFT = 12
 T = S0 + LIFT           # the top block of the church terrace
 AIR = "minecraft:air"
-CX, CZ = 64, 86         # the plaza centre and the boss
+CX, CZ = 64, 90         # the plaza centre and the boss
 PLAZA_RX, PLAZA_RZ = 27, 23
-TERRACE = (30, 104, 8, 38)          # x0, x1, z0, z1 of the flat terrace the church stands on
+TERRACE = (28, 112, 6, 38)          # x0, x1, z0, z1 of the flat terrace the church stands on
 SPAWN = (CX, S0 + 1, CZ)
-ENTRANCES = [(60, S0 + 1, 116), (64, S0 + 1, 118), (68, S0 + 1, 116), (64, S0 + 1, 112)]
+ENTRANCES = [(60, S0 + 1, 120), (64, S0 + 1, 122), (68, S0 + 1, 120), (64, S0 + 1, 117)]
 
 MARKER_SPAWN = "cobbleraids:world_boss_spawn"
 MARKER_ENTRANCE = "cobbleraids:world_boss_entrance"
@@ -142,11 +142,11 @@ def near_segment(x: float, z: float, a: tuple, b: tuple) -> float:
     return math.hypot(x - (ax + t * dx), z - (az + t * dz))
 
 
-PATHS = [((64, 127), (64, 106), 3.6),           # the avenue from the gate to the plaza
-         ((64, 64), (48, 52), 2.8),             # to the porch stair
-         ((64, 64), (80, 52), 2.8),             # to the wide stair
-         ((40, 86), (22, 62), 1.8),             # to the west crypt
-         ((88, 86), (106, 62), 1.8)]            # to the east crypt
+PATHS = [((64, 127), (64, 110), 3.6),          # the avenue from the gate to the plaza
+         ((64, 66), (46, 56), 2.8),             # to the porch stair
+         ((64, 66), (80, 56), 2.8),             # to the wide stair
+         ((40, 90), (22, 66), 1.8),             # to the west crypt
+         ((88, 90), (106, 66), 1.8)]            # to the east crypt
 
 
 def path_distance(x: int, z: int) -> float:
@@ -194,13 +194,11 @@ def blob(x: int, z: int, scale: float, salt: float) -> float:
 
 
 def turf(x: int, z: int) -> str:
-    red, grey = blob(x, z, 0.21, 1.0), blob(x, z, 0.17, 5.0)
-    if red > 0.66:
+    red = blob(x, z, 0.21, 1.0)
+    if red > 0.62:
         return NYLIUM
-    if grey > 0.68:
-        return PODZOL
-    if noise(x, z, 5) < 70:
-        return COARSE
+    if noise(x, z, 5) < 45:
+        return TUFF
     return MYCELIUM
 
 
@@ -245,7 +243,7 @@ def inlay(g: Grid, height: np.ndarray) -> None:
 
 def scatter_plants(g: Grid, height: np.ndarray) -> None:
     """Purple-red undergrowth: crimson roots thick in the red patches, thinner elsewhere, a few dead bushes; only on soil, never on paving."""
-    soil = {MYCELIUM, PODZOL, COARSE, NYLIUM}
+    soil = {MYCELIUM, NYLIUM}
     for x in range(W):
         for z in range(D):
             y = int(height[x, z])
@@ -270,8 +268,7 @@ def flame_pillar(g: Grid, x: int, y: int, z: int) -> None:
     g.fill(x - 1, x + 2, y + 5, y + 5, z - 1, z + 2, slab("deepslate_brick"))
     g.fill(x, x + 1, y + 5, y + 5, z, z + 1, DEEP_BRICKS)
     g.fill(x, x + 1, y + 6, y + 6, z, z + 1, SHROOM)
-    g.fill(x, x + 1, y + 7, y + 7, z, z + 1, GLASS_ORANGE)
-    g.set(x, y + 8, z, GLASS_ORANGE)
+    g.fill(x, x + 1, y + 7, y + 8, z, z + 1, GLASS_ORANGE)
 
 
 def lamp_post(g: Grid, x: int, y: int, z: int) -> None:
@@ -296,7 +293,7 @@ def tombstone(g: Grid, x: int, y: int, z: int, kind: int, rng: random.Random) ->
         g.fill(x, x, y + 2, y + 3, z, z, wall("deepslate_brick"))
         g.set(x, y + 4, z, slab("deepslate_brick"))
     else:
-        g.fill(x - 1, x + 1, y, y, z - 1, z + 1, COARSE)
+        g.fill(x - 1, x + 1, y, y, z - 1, z + 1, COBBLED_DEEP)
         g.set(x, y + 1, z, slab("cobbled_deepslate"))
     del face
     # a candle on the soil beside many of them: a small warm light in the dark
@@ -312,7 +309,7 @@ def boulder(g: Grid, x: int, y: int, z: int, r: float, rng: random.Random) -> No
             for dy in range(0, int(ry) + 2):
                 if (dx / r) ** 2 + (dz / r) ** 2 + (dy / ry) ** 2 <= 1.0:
                     n = rng.random()
-                    g.set(x + dx, y + dy, z + dz, COBBLED_DEEP if n < 0.45 else TUFF if n < 0.7 else DEEPSLATE if n < 0.9 else STONE)
+                    g.set(x + dx, y + dy, z + dz, COBBLED_DEEP if n < 0.42 else TUFF if n < 0.62 else DEEPSLATE if n < 0.84 else "minecraft:amethyst_block" if n < 0.93 else STONE)
 
 
 # ---- trees ------------------------------------------------------------------------------------------------------------------------
@@ -375,12 +372,12 @@ def lancet(g: Grid, xc: int, y0: int, z: int, behind: int, rows: int, idx: int) 
     """A tall pointed stained-glass window in a wall along x: five wide, a lead mullion down the middle, lead transoms, a head that narrows to a point.
     Panes alternate orange and red with green accents; each is lit from behind (ochre for the warm glass, verdant for the green)."""
     def pane(dx: int, r: int) -> None:
-        lead = dx == 0 or r in (3, 7)
+        lead = dx == 0 or r in (3, 7, 11)
         if lead and r < rows:
             g.set(xc + dx, y0 + r, z, BLACKSTONE_BRICKS)
             g.set(xc + dx, y0 + r, z + behind, BLACKSTONE_BRICKS)
             return
-        green = (r in (1, 5) and abs(dx) == 1) or r >= rows
+        green = (r in (1, 5, 9) and abs(dx) == 1) or r >= rows
         colour = GLASS_LIME if green else (GLASS_RED if (r // 4 + (dx > 0) + idx) % 2 else GLASS_ORANGE)
         g.set(xc + dx, y0 + r, z, colour)
         g.set(xc + dx, y0 + r, z + behind, VERDANT if colour == GLASS_LIME else OCHRE)
@@ -402,10 +399,10 @@ def gable_end_x(g: Grid, x: int, z0: int, z1: int, y_eave: int, block: str) -> N
 
 
 def church(g: Grid) -> None:
-    nx0, nx1, nz0, nz1 = 52, 86, 14, 31          # the nave, outer faces
-    wall_top = T + 14
+    nx0, nx1, nz0, nz1 = 50, 90, 12, 31          # the nave, outer faces
+    wall_top = T + 18
     # walls: two blocks thick, hollow inside, a floor of dark tiles
-    g.fill(nx0, nx1, T, wall_top, nz0, nz1, STONE_BRICKS)
+    g.fill(nx0, nx1, T, wall_top, nz0, nz1, DEEP_BRICKS)
     g.air(nx0 + 2, nx1 - 2, T + 1, wall_top, nz0 + 2, nz1 - 2)
     g.fill(nx0 + 2, nx1 - 2, T, T, nz0 + 2, nz1 - 2, DEEP_TILES)
     for x in range(nx0, nx1 + 1):
@@ -418,10 +415,10 @@ def church(g: Grid) -> None:
                     g.set(x, y, z, MOSSY_BRICKS)
     # a plinth of darker stone round the foot
     for x in range(nx0, nx1 + 1):
-        g.fill(x, x, T + 1, T + 1, nz1, nz1, DEEP_BRICKS)
+        g.fill(x, x, T + 1, T + 1, nz1, nz1, STONE_BRICKS)
         g.fill(x, x, T + 1, T + 1, nz0, nz0, DEEP_BRICKS)
     # the roof, slate stairs, ridge along x
-    ridge_z0, ridge_z1 = 22, 23
+    ridge_z0, ridge_z1 = (nz0 + nz1) // 2, (nz0 + nz1) // 2 + 1
     for z in range(nz0 - 1, ridge_z0 + 1):
         y = wall_top + 1 + (z - (nz0 - 1))
         g.fill(nx0 - 1, nx1 + 1, y, y, z, z, stairs("deepslate_tile", "south"))
@@ -433,13 +430,13 @@ def church(g: Grid) -> None:
     ridge_y = wall_top + 1 + (ridge_z0 - (nz0 - 1)) + 1
     g.fill(nx0 - 1, nx1 + 1, ridge_y, ridge_y, ridge_z0, ridge_z1, slab("deepslate_tile"))
     for x in (nx0, nx1):
-        gable_end_x(g, x, nz0, nz1, wall_top + 1, STONE_BRICKS)
+        gable_end_x(g, x, nz0, nz1, wall_top + 1, DEEP_BRICKS)
     # buttresses and four tall lit windows on the long south wall (z = nz1), lamps in the wall behind the glass
-    for i, xc in enumerate((58, 65, 72, 79)):
-        lancet(g, xc, T + 2, nz1, -1, 10, i)
+    for i, xc in enumerate((56, 63, 70, 77, 84)):
+        lancet(g, xc, T + 2, nz1, -1, 14, i)
         for bx in (xc - 4, xc + 4):
-            g.fill(bx, bx, T + 1, T + 11, nz1 + 1, nz1 + 1, STONE_BRICKS)
-            g.set(bx, T + 12, nz1 + 1, stairs("stone_brick", "south"))
+            g.fill(bx, bx, T + 1, T + 15, nz1 + 1, nz1 + 1, STONE_BRICKS)
+            g.set(bx, T + 16, nz1 + 1, stairs("stone_brick", "south"))
     for x in range(nx0, nx1 + 1):                               # a string course under the windows' sills
         g.set(x, T + 1, nz1 + 1, slab("deepslate_brick", "top")) if g.get(x, T + 1, nz1 + 1) == AIR else None
     # a cross on the east gable and the roof's west end
@@ -460,9 +457,9 @@ def church(g: Grid) -> None:
 
 def porch(g: Grid) -> None:
     """A gabled porch on the west end, facing south, with a pointed doorway of green glass lit from behind, and the stair up to it."""
-    px0, px1, pz0, pz1 = 40, 51, 24, 38
-    wall_top = T + 9
-    g.fill(px0, px1, T, wall_top, pz0, pz1, STONE_BRICKS)
+    px0, px1, pz0, pz1 = 38, 49, 24, 38
+    wall_top = T + 12
+    g.fill(px0, px1, T, wall_top, pz0, pz1, DEEP_BRICKS)
     g.air(px0 + 2, px1 - 2, T + 1, wall_top, pz0 + 2, pz1 - 2)
     g.fill(px0 + 2, px1 - 2, T, T, pz0 + 2, pz1 - 2, DEEP_TILES)
     mid = (px0 + px1) // 2
@@ -479,15 +476,15 @@ def porch(g: Grid) -> None:
     # the south gable: a triangle of brick above the doorway
     for x in range(px0, px1 + 1):
         top = wall_top + 1 + (min(x - px0, px1 - x) - 0)
-        g.fill(x, x, wall_top + 1, top, pz1, pz1, STONE_BRICKS)
+        g.fill(x, x, wall_top + 1, top, pz1, pz1, DEEP_BRICKS)
     # the doorway: five wide, a pointed head, glass lit green
-    for r in range(11):
-        half = 2 if r < 7 else max(0, 2 - (r - 6))
+    for r in range(12):
+        half = 2 if r < 8 else max(0, 2 - (r - 7))
         for dx in range(-half, half + 1):
             g.set(mid + dx, T + 1 + r, pz1, GLASS_LIME)
             g.set(mid + dx, T + 1 + r, pz1 - 1, VERDANT)
     for dx in (-3, 3):
-        g.fill(mid + dx, mid + dx, T + 1, T + 8, pz1, pz1, CHISELED)
+        g.fill(mid + dx, mid + dx, T + 1, T + 10, pz1, pz1, CHISELED)
     # the stair: eight steps down to the plaza level, a rail of wall blocks either side
     for i in range(1, LIFT + 1):
         z = pz1 + i
@@ -507,9 +504,9 @@ def porch(g: Grid) -> None:
 
 def tower(g: Grid) -> None:
     """The bell tower beside the nave: tall, with lit slits, an open belfry with green glass and a pyramid roof under a cross."""
-    x0, x1, z0, z1 = 88, 98, 20, 32
-    top = T + 34
-    g.fill(x0, x1, T, top, z0, z1, STONE_BRICKS)
+    x0, x1, z0, z1 = 94, 106, 18, 32
+    top = T + 44
+    g.fill(x0, x1, T, top, z0, z1, DEEP_BRICKS)
     g.air(x0 + 2, x1 - 2, T + 1, top, z0 + 2, z1 - 2)
     for y in range(T + 1, top + 1):
         for x in (x0, x1):
@@ -519,19 +516,19 @@ def tower(g: Grid) -> None:
                     g.set(x, y, z, CRACKED_BRICKS)
                 elif n < 150:
                     g.set(x, y, z, MOSSY_BRICKS)
-    for y in (T + 11, T + 23):                                  # string courses
+    for y in (T + 12, T + 26, T + 33):                                  # string courses
         g.fill(x0 - 1, x1 + 1, y, y, z0 - 1, z1 + 1, DEEP_BRICKS)
         g.fill(x0 - 1, x1 + 1, y, y, z0 - 1, z1 + 1, DEEP_BRICKS)
     for xc in (x0 + 3, x1 - 3):                                 # two narrow green windows on the south face, high on the shaft
-        for r in range(5):
-            g.set(xc, T + 14 + r, z1, GLASS_LIME)
-            g.set(xc, T + 14 + r, z1 - 1, VERDANT)
+        for r in range(7):
+            g.set(xc, T + 15 + r, z1, GLASS_LIME)
+            g.set(xc, T + 15 + r, z1 - 1, VERDANT)
     mid_x, mid_z = (x0 + x1) // 2, (z0 + z1) // 2
     for r in range(6):                                          # the belfry: an arched opening on each face
         for dx in range(-1, 2):
             if r == 5 and dx != 0:
                 continue
-            y = T + 27 + r
+            y = T + 35 + r
             for (px, pz) in ((mid_x + dx, z1), (mid_x + dx, z0)):
                 g.set(px, y, pz, GLASS_LIME)
                 g.set(px, y, pz + (-1 if pz == z1 else 1), VERDANT)
@@ -555,7 +552,7 @@ def tower(g: Grid) -> None:
 
 def wide_stair(g: Grid) -> None:
     """The broad stair of rough stone up to the terrace east of the porch, with flame pillars at the foot and the head."""
-    x0, x1 = 74, 86
+    x0, x1 = 74, 88
     for i in range(1, LIFT + 1):
         z = 38 + i
         y = T - i
@@ -665,14 +662,14 @@ def build(seed: int = 31) -> tuple[Grid, np.ndarray]:
     porch(g)
     tower(g)
     wide_stair(g)
-    crypt_tower(g, 12, 52, "east")
-    crypt_tower(g, 108, 52, "west")
+    crypt_tower(g, 12, 56, "east")
+    crypt_tower(g, 108, 56, "west")
     fence(g, height)
     # flame pillars: the plaza, the avenue, both stairs; lamp posts along the avenue
-    for (x, z) in ((40, 106), (86, 106), (45, 56), (82, 56), (35, 86), (92, 86)):
+    for (x, z) in ((40, 110), (88, 110), (44, 60), (84, 60), (35, 90), (93, 90)):
         y = int(height[x, z])
         flame_pillar(g, x, y + 1, z)
-    for (x, z) in ((40, LIFT + 40), (52, LIFT + 40), (71, LIFT + 40), (88, LIFT + 40)):
+    for (x, z) in ((38, LIFT + 40), (50, LIFT + 40), (71, LIFT + 40), (90, LIFT + 40)):
         flame_pillar(g, x, int(height[x, z]) + 1, z)
     for z in range(120, 108, -6):
         for x in (58, 70):
@@ -690,9 +687,9 @@ def build(seed: int = 31) -> tuple[Grid, np.ndarray]:
             return False
         if TERRACE[0] - 3 <= x <= TERRACE[1] + 3 and TERRACE[2] - 3 <= z <= TERRACE[3] + 3:
             return False
-        if 36 <= x <= 52 and 36 <= z <= 52 or 72 <= x <= 90 and 36 <= z <= 50:
+        if 34 <= x <= 54 and 36 <= z <= 54 or 72 <= x <= 92 and 36 <= z <= 54:
             return False
-        if 8 <= x <= 24 and 48 <= z <= 64 or 104 <= x <= 120 and 48 <= z <= 64:
+        if 8 <= x <= 24 and 52 <= z <= 68 or 104 <= x <= 120 and 52 <= z <= 68:
             return False
         if 4 <= x <= W - 5 and 4 <= z <= D - 5:
             return True
@@ -700,12 +697,12 @@ def build(seed: int = 31) -> tuple[Grid, np.ndarray]:
 
     placed: list[tuple[int, int]] = []
     tries = 0
-    while len(placed) < 78 and tries < 4000:
+    while len(placed) < 150 and tries < 12000:
         tries += 1
         x, z = rng.randint(6, W - 7), rng.randint(40, D - 12)
-        if not free(x, z, 2.5):
+        if not free(x, z, 2.0):
             continue
-        if any(abs(x - px) < 4 and abs(z - pz) < 4 for px, pz in placed):
+        if any(abs(x - px) < 3 and abs(z - pz) < 3 for px, pz in placed):
             continue
         placed.append((x, z))
         y = int(height[x, z]) + 1
@@ -783,7 +780,7 @@ def check(g: Grid, height: np.ndarray) -> list[str]:
     for e in ENTRANCES[1:] + [SPAWN]:
         if e not in seen:
             problems.append(f"{e} is not reachable on foot from the first entrance")
-    for goal, label in (((48, T, 39), "the porch stair head"), ((80, T + 1, 36), "the terrace by the wide stair")):
+    for goal, label in (((43, T, 39), "the porch stair head"), ((80, T + 1, 36), "the terrace by the wide stair")):
         if not any(c[0] == goal[0] and c[2] == goal[2] and abs(c[1] - goal[1]) <= 1 for c in seen):
             problems.append(f"{label} cannot be reached on foot from the entrance")
     return problems
