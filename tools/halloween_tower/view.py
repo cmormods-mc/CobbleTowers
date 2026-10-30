@@ -182,8 +182,8 @@ def shape_of(block: str) -> list[tuple[float, float, float, float, float, float]
 
 
 class Scene:
-    def __init__(self, grid: np.ndarray, palette: list[str]) -> None:
-        self.grid, self.palette = grid, palette
+    def __init__(self, grid: np.ndarray, palette: list[str], sky: bool = False) -> None:
+        self.grid, self.palette, self.sky = grid, palette, sky
         self.tex = Textures()
         n = len(palette)
         self.faces = np.zeros((n, 6, 16, 16, 4), dtype=np.uint8)
@@ -217,6 +217,11 @@ class Scene:
             self.opaque[i] = base not in TRANSPARENT_LIGHT and self.kind[i] not in (3, 4) and not base.endswith(("_carpet", "_stairs", "_slab")) or base.endswith("_slab") and bprops(block).get("type") == "double"
         self.missing = self.tex.missing
         self.light = self.propagate()
+        if sky:
+            solid = self.opaque[grid]
+            top = np.where(solid.any(axis=1), grid.shape[1] - 1 - np.argmax(solid[:, ::-1, :], axis=1), -1)      # highest opaque block per column
+            above = np.arange(grid.shape[1])[None, :, None] > top[:, None, :]
+            self.light = np.maximum(self.light, np.where(above, 5, 0).astype(np.uint8))                        # moonlight, level 5
 
     def propagate(self) -> np.ndarray:
         g = self.grid
@@ -237,6 +242,22 @@ class Scene:
                 break
             light = nb
         return light
+
+    @staticmethod
+    def night_sky(d: np.ndarray) -> np.ndarray:
+        """A purple night: a gradient, a full moon with a halo, and a scatter of stars, from the ray direction alone."""
+        up = np.clip(d[:, 1], 0, 1)[:, None]
+        col = (1 - up ** 0.6) * np.array([0.09, 0.07, 0.20]) + up ** 0.6 * np.array([0.03, 0.02, 0.09])
+        horizon = np.exp(-np.abs(d[:, 1]) * 9)[:, None] * np.array([0.10, 0.07, 0.17])
+        moon = np.array([-0.18, 0.55, -0.82])
+        moon /= np.linalg.norm(moon)
+        ang = np.degrees(np.arccos(np.clip(d @ moon, -1, 1)))[:, None]
+        glow = np.exp(-(ang / 14.0) ** 2) * np.array([0.30, 0.20, 0.45])
+        disk = (ang < 2.6) * np.array([0.92, 0.92, 0.98])
+        cell = np.floor(d * 140).astype(np.int64)
+        h = ((cell[:, 0] * 73856093) ^ (cell[:, 1] * 19349663) ^ (cell[:, 2] * 83492791)) % 1000
+        stars = ((h < 2) & (d[:, 1] > 0.02))[:, None] * np.array([0.7, 0.7, 0.9])
+        return (col + horizon + glow + disk + stars).astype(np.float32)
 
     def render(self, eye: tuple[float, float, float], yaw: float, pitch: float, w: int = 960, h: int = 540, fov: float = 90.0, exposure: float = 1.0) -> Image.Image:
         g, N = self.grid, w * h
@@ -260,6 +281,7 @@ class Scene:
         tdelta = np.abs(1.0 / d)
         tmax = np.where(d > 0, (vox + 1 - o) / d, (o - vox) / -d)
         color = np.zeros((N, 3), dtype=np.float32)
+        hit_any = np.zeros(N, dtype=bool)
         filt = np.ones((N, 3), dtype=np.float32)
         active = np.arange(N)
         t_enter = np.zeros(N)
@@ -267,7 +289,7 @@ class Scene:
         shape = np.array(g.shape)
         bg = np.array([0.02, 0.015, 0.03], dtype=np.float32)
         color[:] = bg
-        for _ in range(420):
+        for _ in range(700):
             if active.size == 0:
                 break
             v = vox[active]
@@ -346,6 +368,7 @@ class Scene:
                     warm = np.stack([np.ones_like(br), 0.93 + 0.07 * lvl, 0.82 + 0.18 * lvl], axis=1)
                     col = texel[stop][:, :3].astype(np.float32) / 255.0 * (br * np.where(emit, 1.0, shade))[:, None] * warm
                     color[s_rays] = col * filt[s_rays]
+                    hit_any[s_rays] = True
                     done = np.zeros(active.size, dtype=bool)
                     done[s_ids] = True
                     active, v = active[~done], v[~done]
@@ -359,6 +382,9 @@ class Scene:
             tmax[active, ax] += tdelta[active, ax]
             vox[active, ax] += step[active, ax]
             axis_in[active] = ax
+        if self.sky:
+            miss = ~hit_any
+            color[miss] = self.night_sky(d[miss]) * filt[miss]
         img = np.clip(color * exposure, 0, 1)
         return Image.fromarray((img.reshape(h, w, 3) * 255).astype(np.uint8))
 
@@ -390,6 +416,18 @@ def room_scene(kind: str) -> "Scene":
 
 
 def main() -> int:
+    if len(sys.argv) >= 4 and sys.argv[1] == "--npz":
+        data = np.load(sys.argv[2], allow_pickle=True)
+        scene = Scene(data["grid"], [str(n) for n in data["palette"]], sky=True)
+        out = Path(sys.argv[3])
+        out.mkdir(parents=True, exist_ok=True)
+        for spec in sys.argv[4:]:
+            name, vals = spec.split(":")
+            x, y, z, yaw, pitch, *rest = (float(v) for v in vals.split(","))
+            fov = rest[0] if rest else 90.0
+            scene.render((x, y, z), yaw, pitch, 960, 540, fov).save(out / f"{name}.png")
+            print("wrote", out / f"{name}.png")
+        return 0
     if len(sys.argv) >= 3 and sys.argv[1] == "--rooms":
         out = Path(sys.argv[2])
         out.mkdir(parents=True, exist_ok=True)
