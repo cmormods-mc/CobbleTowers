@@ -97,7 +97,8 @@ public final class TrackService {
     }
 
     public static TrackStatePayload build(MinecraftServer server, ServerPlayer player, String towerRaw, String message) {
-        List<ResourceLocation> ids = TowerDefinitionRegistry.content().sortedTowerIds();
+        List<ResourceLocation> ids = TowerDefinitionRegistry.content().listedTowerIds(System.currentTimeMillis(),
+                id -> MasteryClaims.levelOf(server, player.getUUID(), id) > 0);
         List<TrackStatePayload.Tower> towers = new ArrayList<>();
         for (ResourceLocation id : ids) {
             towers.add(new TrackStatePayload.Tower(id, cut(TowerDefinitionRegistry.content().towers().get(id).displayName(), 128),

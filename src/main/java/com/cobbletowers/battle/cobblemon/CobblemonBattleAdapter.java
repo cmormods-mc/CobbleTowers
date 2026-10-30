@@ -59,11 +59,15 @@ public final class CobblemonBattleAdapter {
     private static final long PROBE_DELAY_MILLIS = 20_000;
     /** Turn counters of open battles: a turn that moves counts as activity, not only a faint. */
     private static final TurnTracker TURNS = INDEX.turns;
+    private static final StallWatch STALLS = INDEX.stalls;
     private static final int TURN_POLL_TICKS = 20;
+    /** A stall is looked for twice a second: a player should not sit in a frozen battle for long. */
+    private static final int STALL_POLL_TICKS = 10;
     private static int pollTicks;
     /** The running server, so a result never depends on a participant still being online to find it. */
     private static volatile MinecraftServer runningServer;
     private static boolean installed;
+    private static java.util.function.Predicate<ServerPlayer> sharedBattleDeparture = player -> false;
 
     /** Marks an entity this adapter spawned as a tower opponent, so a stray one can be told from anything else. */
     static final String OPPONENT_TAG = "cobbletowers_opponent";
@@ -74,8 +78,16 @@ public final class CobblemonBattleAdapter {
     /** Opponents to discard once they can be found, with the ticks left to try. Server thread only. */
     private static final Map<UUID, Integer> PENDING_DISCARDS = new HashMap<>();
     private static final int PENDING_DISCARD_TICKS = 100;
+    /** IDs only: wait until native battle cleanup releases the exact deployed party entity. */
+    private record PendingRecall(UUID player, UUID pokemon, UUID entity, UUID battle, long expiresAt) {}
+    private static final Map<UUID, PendingRecall> PENDING_RECALLS = new HashMap<>();
 
     private CobblemonBattleAdapter() {}
+
+    /** The shared battle's owner withdraws one actor; this adapter terminates standalone fights. */
+    public static void setSharedBattleDeparture(java.util.function.Predicate<ServerPlayer> departure) {
+        sharedBattleDeparture = java.util.Objects.requireNonNull(departure);
+    }
 
     /** What happens when a floor's battle ends. Implemented by the encounter, called by this. */
     public interface Listener {
@@ -101,8 +113,11 @@ public final class CobblemonBattleAdapter {
             // An exception out of a tick callback ends the server: every step is contained.
             try {
                 retryPendingDiscards(server);
+                retryCompletedPartyRecalls(server);
                 probeQuietBattles(System.currentTimeMillis());
-                if (++pollTicks % TURN_POLL_TICKS == 0) pollTurns(System.currentTimeMillis());
+                pollTicks++;
+                if (pollTicks % TURN_POLL_TICKS == 0) pollTurns(System.currentTimeMillis());
+                if (pollTicks % STALL_POLL_TICKS == 0) watchStalls(System.currentTimeMillis());
             } catch (RuntimeException ex) {
                 TowerLog.errorOnce("battle-tick", "The battle adapter tick failed", ex);
             }
@@ -130,6 +145,10 @@ public final class CobblemonBattleAdapter {
 
     private static Optional<UUID> start(ServerLevel level, ServerPlayer player, EncounterSnapshot snapshot,
                                         BlockPos where, UUID runId, int floorIndex, boolean exhibition) {
+        // Victory closes the battle before the party's recall animation releases its busy locks.
+        // Spawning first and then getting BusyError can leave a client-only send-out ghost.
+        // The existing next-opponent retry waits without creating that throwaway entity.
+        if (!exhibition && !partyReady(player)) return Optional.empty();
         PokemonEntity opponent = spawn(level, snapshot, where);
         if (opponent == null) return Optional.empty();
 
@@ -163,6 +182,15 @@ public final class CobblemonBattleAdapter {
         TowerLog.info("Floor {} battle {} started{}: {} vs {} at level {}", floorIndex, battleId,
                 exhibition ? " (Echo duel)" : "", player.getGameProfile().getName(), opponentName, snapshot.level());
         return Optional.of(battleId);
+    }
+
+    private static boolean partyReady(ServerPlayer player) {
+        if (BattleRegistry.getBattleByParticipatingPlayer(player) != null) return false;
+        for (var pokemon : com.cobblemon.mod.common.Cobblemon.INSTANCE.getStorage().getParty(player)) {
+            PokemonEntity entity = pokemon.getEntity();
+            if (entity != null && entity.isBusy()) return false;
+        }
+        return true;
     }
 
     private static void register(UUID battleId, Binding binding) {
@@ -203,16 +231,9 @@ public final class CobblemonBattleAdapter {
                 PokemonBattle battle = BattleRegistry.getBattle(entry.getKey());
                 Binding binding = BY_BATTLE.get(entry.getKey());
                 if (battle == null || binding == null || battle.getEnded() || battle.getTurn() > 1) continue;
-                StringBuilder actors = new StringBuilder();
-                for (var actor : battle.getActors()) {
-                    actors.append(' ').append(actor.getShowdownId()).append("{mustChoose=").append(actor.getMustChoose())
-                            .append(",request=").append(actor.getRequest() != null)
-                            .append(",responses=").append(actor.getResponses().size()).append('}');
-                }
                 TowerLog.warn("Floor {} battle {} of run {} is still on turn {} {} s after it started (started={}):{}",
                         binding.floorIndex(), entry.getKey(), binding.runId(), battle.getTurn(), PROBE_DELAY_MILLIS / 1000,
-                        battle.getStarted(), actors);
-                nudgeIdleOpponents(battle, binding);
+                        battle.getStarted(), describeActors(battle));
             } catch (RuntimeException ex) {
                 TowerLog.errorOnce("battle-probe", "The quiet battle probe failed", ex);
             }
@@ -220,18 +241,49 @@ public final class CobblemonBattleAdapter {
     }
 
     /**
-     * Cobblemon can drop the opponent's request when the player answers first, so the AI's choice never reaches
-     * Showdown and the turn waits forever (seen live: only {@code >p1} written). Showdown picks a legal move for an
-     * AI side told {@code default}; done once, only when every actor is idle on turn 1.
+     * Twice a second: a battle whose every actor has been idle on one turn for a couple of seconds is stalled, so its AI side is told
+     * to choose. Cobblemon can drop the opponent's request when the player answers first, so the AI's choice never reaches
+     * Showdown and the turn waits forever (seen live: only {@code >p1} written). Showdown picks a legal move for an AI side
+     * told {@code default}. Any turn: a player should never sit in a frozen battle for the 20 s the probe above waits.
      */
+    private static void watchStalls(long now) {
+        if (BY_BATTLE.isEmpty()) return;
+        for (UUID battleId : new ArrayList<>(BY_BATTLE.keySet())) {
+            try {
+                PokemonBattle battle = BattleRegistry.getBattle(battleId);
+                Binding binding = BY_BATTLE.get(battleId);
+                if (battle == null || binding == null || battle.getEnded() || !battle.getStarted()) {
+                    STALLS.forget(battleId);
+                    continue;
+                }
+                boolean allIdle = true;
+                for (var actor : battle.getActors()) {
+                    if (actor.getMustChoose() || actor.getRequest() != null || !actor.getResponses().isEmpty()) allIdle = false;
+                }
+                if (STALLS.observe(battleId, battle.getTurn(), allIdle, now)) nudgeIdleOpponents(battle, binding);
+            } catch (RuntimeException ex) {
+                TowerLog.errorOnce("battle-stall-watch", "The stalled-battle check failed", ex);
+            }
+        }
+    }
+
+    /** Each actor's showdown id and whether it must choose, has a request, and has answered: the shape of a stall. */
+    private static String describeActors(PokemonBattle battle) {
+        StringBuilder actors = new StringBuilder();
+        for (var actor : battle.getActors()) {
+            actors.append(' ').append(actor.getShowdownId()).append("{mustChoose=").append(actor.getMustChoose())
+                    .append(",request=").append(actor.getRequest() != null)
+                    .append(",responses=").append(actor.getResponses().size()).append('}');
+        }
+        return actors.toString();
+    }
+
     private static void nudgeIdleOpponents(PokemonBattle battle, Binding binding) {
         for (var actor : battle.getActors()) {
-            if (actor.getMustChoose() || actor.getRequest() != null || !actor.getResponses().isEmpty()) return;
-        }
-        for (var actor : battle.getActors()) {
             if (!(actor instanceof com.cobblemon.mod.common.api.battles.model.actor.AIBattleActor)) continue;
-            TowerLog.warn("Floor {} battle of run {}: telling the idle opponent {} to choose", binding.floorIndex(),
-                    binding.runId(), actor.getShowdownId());
+            TowerLog.warn("Floor {} battle of run {} is stalled on turn {} ({} s into the battle): telling the idle opponent {} to choose ({})",
+                    binding.floorIndex(), binding.runId(), battle.getTurn(), (System.currentTimeMillis() - binding.startedAt()) / 1000,
+                    actor.getShowdownId(), describeActors(battle).trim());
             battle.writeShowdownAction(">" + actor.getShowdownId() + " default");
         }
     }
@@ -359,7 +411,48 @@ public final class CobblemonBattleAdapter {
         }
         if (BattleOutcome.isTie(winnerIds)) healAfterTie(server, binding);
         discardOpponent(server, binding);
+        if (!binding.exhibition()) queueCompletedPartyRecalls(event.getBattle(), binding.playerId());
         listener.onResolved(server, binding, playerWon);
+    }
+
+    private static void queueCompletedPartyRecalls(PokemonBattle battle, UUID playerId) {
+        var actor = battle.getActor(playerId);
+        if (actor == null) return;
+        for (var fought : actor.getPokemonList()) {
+            Pokemon pokemon = fought.getOriginalPokemon();
+            PokemonEntity entity = pokemon.getEntity();
+            if (entity == null) continue;
+            PENDING_RECALLS.put(entity.getUUID(), new PendingRecall(playerId, pokemon.getUuid(),
+                    entity.getUUID(), battle.getBattleId(), System.currentTimeMillis() + 10_000));
+        }
+    }
+
+    /** End-of-tick work: recalling in BATTLE_VICTORY would run inside native battle/entity iteration. */
+    private static void retryCompletedPartyRecalls(MinecraftServer server) {
+        for (PendingRecall pending : List.copyOf(PENDING_RECALLS.values())) {
+            try {
+                ServerPlayer player = server.getPlayerList().getPlayer(pending.player());
+                if (player == null || !player.level().dimension().equals(com.cobbletowers.instance.TowerDimension.LEVEL)
+                        || System.currentTimeMillis() >= pending.expiresAt()) {
+                    PENDING_RECALLS.remove(pending.entity(), pending);
+                    continue;
+                }
+                Pokemon pokemon = null;
+                for (Pokemon held : Cobblemon.INSTANCE.getStorage().getParty(player)) {
+                    if (held.getUuid().equals(pending.pokemon())) { pokemon = held; break; }
+                }
+                PokemonEntity entity = pokemon == null ? null : pokemon.getEntity();
+                PokemonBattle current = BattleRegistry.getBattleByParticipatingPlayer(player);
+                var action = CompletedPartyRecall.action(pending.battle(), current == null ? null : current.getBattleId(),
+                        pending.entity(), entity == null ? null : entity.getUUID(),
+                        entity == null ? null : entity.getBattleId(), entity != null && entity.isBusy());
+                if (action == CompletedPartyRecall.Action.WAIT) continue;
+                if (action == CompletedPartyRecall.Action.RECALL) pokemon.recall();
+                PENDING_RECALLS.remove(pending.entity(), pending);
+            } catch (RuntimeException ex) {
+                TowerLog.errorOnce("completed-party-recall-" + pending.entity(), "Could not recall a completed tower battle's Pokemon", ex);
+            }
+        }
     }
 
     /** A tie leaves the whole party fainted; the player gets it back whole for what comes next. */
@@ -450,23 +543,40 @@ public final class CobblemonBattleAdapter {
         return inBattle(player);
     }
 
-    /** Ends whatever battle a player is in, including one CobbleRaids started. @return true if one was ended */
+    /** Leaves a shared battle through its owner, or ends a standalone battle. */
     public static boolean endBattleOf(ServerPlayer player) {
         try {
             PokemonBattle battle = BattleRegistry.getBattleByParticipatingPlayer(player);
-            if (battle == null || battle.getEnded()) return false;
             onServerThread(player.getServer(), () -> {
                 try {
-                    if (!battle.getEnded()) battle.end();
+                    BattleDeparturePolicy.depart(() -> sharedBattleDeparture.test(player), () -> {
+                        if (battle != null) TowerBattleTermination.end(battle);
+                    });
                 } catch (RuntimeException ex) {
                     TowerLog.error("Could not end the battle of " + player.getUUID(), ex);
+                } finally {
+                    if (BattleRegistry.getBattleByParticipatingPlayer(player) == null) {
+                        new com.cobblemon.mod.common.net.messages.client.battle.BattleEndPacket().sendToPlayer(player);
+                    }
                 }
             });
-            return true;
+            return battle != null;
         } catch (RuntimeException ex) {
             TowerLog.error("Could not end the battle of " + player.getUUID(), ex);
             return false;
         }
+    }
+
+    /** Only end a journal's rental battle; an unrelated battle must not be closed by stale recovery work. */
+    public static boolean endRentalBattleOf(ServerPlayer player, java.util.Collection<UUID> rentals) {
+        PokemonBattle battle = BattleRegistry.getBattleByParticipatingPlayer(player);
+        if (battle == null || rentals.isEmpty()) return false;
+        for (var actor : battle.getActors()) {
+            for (var pokemon : actor.getPokemonList()) {
+                if (rentals.contains(pokemon.getOriginalPokemon().getUuid())) return endBattleOf(player);
+            }
+        }
+        return false;
     }
 
     private static void discardOpponent(MinecraftServer server, Binding binding) {
@@ -521,7 +631,7 @@ public final class CobblemonBattleAdapter {
         onServerThread(server, () -> {
             try {
                 PokemonBattle battle = BattleRegistry.getBattle(battleId);
-                if (battle != null && !battle.getEnded()) battle.end();
+                if (battle != null) TowerBattleTermination.end(battle);
             } catch (RuntimeException ex) {
                 TowerLog.error("Could not end tower battle " + battleId, ex);
             }
@@ -569,6 +679,7 @@ public final class CobblemonBattleAdapter {
         for (Binding binding : List.copyOf(BY_BATTLE.values())) discardOpponent(server, binding);
         INDEX.clear();
         PENDING_DISCARDS.clear();
+        PENDING_RECALLS.clear();
         sweepTicks = 0;
         pollTicks = 0;
         runningServer = null;

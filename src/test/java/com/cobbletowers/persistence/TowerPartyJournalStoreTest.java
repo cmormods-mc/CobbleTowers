@@ -90,6 +90,8 @@ class TowerPartyJournalStoreTest {
         TowerPartyJournalStore loaded = TowerPartyJournalStore.load(file, null);
 
         assertEquals(1, loaded.unreadableCount());
+        assertTrue(loaded.hasPending(PLAYER), "a malformed original journal prevents a new lock-in");
+        assertTrue(!loaded.hasPending(new UUID(123, 456)), "unrelated players can still start");
         assertTrue(loaded.entryFor(PLAYER).isEmpty(), "it is not offered as a journal to restore from");
         CompoundTag written = loaded.save(new CompoundTag(), null);
         assertEquals(1, written.getList("entries", Tag.TAG_COMPOUND).size(), "but it is still in the file");

@@ -61,6 +61,23 @@ public final class TowerBossAdapter {
 
     public static void install(Listener floorListener) {
         listener = floorListener;
+        com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter.setSharedBattleDeparture(TowerBossAdapter::withdrawParticipant);
+    }
+
+    /** Handles an individual exit without terminating the teammates' shared Cobblemon battle. */
+    private static boolean withdrawParticipant(ServerPlayer player) {
+        for (UUID encounterId : List.copyOf(BY_ENCOUNTER.keySet())) {
+            if (CobbleRaidsEncounters.withdraw(encounterId, player)) return true;
+        }
+        return false;
+    }
+
+    /** The withdrawn actor remains registered, but its frozen clone team can no longer fight. */
+    public static boolean hasWithdrawnParticipant(ServerPlayer player) {
+        for (UUID encounterId : List.copyOf(BY_ENCOUNTER.keySet())) {
+            if (CobbleRaidsEncounters.hasWithdrawnParticipant(encounterId, player)) return true;
+        }
+        return false;
     }
 
     /**

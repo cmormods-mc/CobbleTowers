@@ -38,6 +38,19 @@ class WebGuiConfigTest {
     }
 
     @Test
+    void upgradesLegacyAssetUrlWithoutChangingItsPageOrQuery() {
+        WebGuiConfig config = WebGuiConfig.parse(
+                "{\"enabled\":true,\"url\":\" webgui:/cobbletowers/index.html?view=hall \"}");
+        assertEquals("webgui://cobbletowers/index.html?view=hall", config.url());
+    }
+
+    @Test
+    void keepsCanonicalAssetUrl() {
+        assertEquals(WebGuiConfig.DEFAULT_URL,
+                WebGuiConfig.parse("{\"url\":\"webgui://cobbletowers/index.html\"}").url());
+    }
+
+    @Test
     @DisplayName("a bad value throws, so the loader keeps the bridge off rather than half-on")
     void refusesBadValues() {
         assertThrows(RuntimeException.class, () -> WebGuiConfig.parse("{\"mode\":\"always\"}"));

@@ -86,6 +86,20 @@ public final class RentalStorage {
         return placed;
     }
 
+    /** Cheap command-boundary check, including rentals whose journal could not be read. */
+    public static boolean hasRentalInParty(ServerPlayer player) {
+        return hasRentalInParty(player, List.of());
+    }
+
+    public static boolean hasRentalInParty(ServerPlayer player, java.util.Collection<UUID> recordedRentals) {
+        PlayerPartyStore party = Cobblemon.INSTANCE.getStorage().getParty(player);
+        for (int slot = 0; slot < 6; slot++) {
+            Pokemon pokemon = party.get(slot);
+            if (pokemon != null && (isRental(pokemon) || recordedRentals.contains(pokemon.getUuid()))) return true;
+        }
+        return false;
+    }
+
     /** Every tagged Pokemon the player holds, in the party or the boxes. */
     public static List<Pokemon> held(ServerPlayer player) {
         List<Pokemon> found = new ArrayList<>();

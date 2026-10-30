@@ -104,6 +104,7 @@ public final class RentalPartyService {
         // An earlier journal means an earlier run's Pokemon are not yet back; put them back first so the new journal
         // is true.
         if (store.entryFor(player.getUUID()).isPresent()) PartyJournalService.restoreNow(server, player);
+        if (store.hasPending(player.getUUID()) || RentalStorage.hasRentalInParty(player)) return Lock.FAILED;
 
         PartyStorage.Snapshot snapshot = PartyStorage.snapshot(player);
         Plan plan = PartyArrangement.plan(snapshot.contents(), snapshot.pcSlots(), List.of());
@@ -183,14 +184,17 @@ public final class RentalPartyService {
      * @return how many were deleted
      */
     public static int sweep(MinecraftServer server, ServerPlayer player) {
-        if (PartyStorage.inBattle(player)) return 0;
         List<UUID> held = RentalStorage.tagged(player);
         if (held.isEmpty()) return 0;
         Set<UUID> live = new HashSet<>();
         for (PartyJournalEntry entry : TowerPartyJournalStore.get(server).all()) {
             if (entry.player().equals(player.getUUID()) && !PartyJournalService.runIsOverFor(entry)) live.addAll(entry.rentals());
         }
-        int removed = RentalStorage.removeAll(player, id -> !live.contains(id));
+        List<UUID> stale = held.stream().filter(id -> !live.contains(id)).toList();
+        if (stale.isEmpty()) return 0;
+        com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter.endRentalBattleOf(player, stale);
+        if (!PartyJournalService.mayRestoreParty(player)) return 0;
+        int removed = RentalStorage.removeAll(player, stale::contains);
         if (removed > 0) TowerLog.warn("Swept {} stray rental Pokemon from {}", removed, player.getUUID());
         return removed;
     }

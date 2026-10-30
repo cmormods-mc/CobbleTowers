@@ -185,6 +185,15 @@ public final class WebGuiBridge {
         return true;
     }
 
+    /** Clear only our panel, including a HUD that has not finished loading. Never close another mod's page. */
+    public static void clearSpectatorPanel(ServerPlayer player) {
+        if (!takesOver(player, SpectatorPanelPayload.TYPE)) return;
+        String json = "{\"kind\":\"SpectatorPanel\",\"data\":null}";
+        SESSIONS.computeIfAbsent(player.getUUID(), id -> new PageSession())
+                .hold(PageSession.HUD_KIND, json, System.currentTimeMillis());
+        WebGuiLink.emit(player, json);
+    }
+
     // ---- page to server
     // ----------------------------------------------------------------------------------------------
 

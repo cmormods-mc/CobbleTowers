@@ -14,6 +14,41 @@ import org.junit.jupiter.api.Test;
 /** What the cleanup stage and the paste both rely on: who is holding what, and where a floor lands. */
 class CellTicketsTest {
 
+    @Test
+    void recoveryFinishingCannotReleaseResumedRunsTicket() {
+        var run = java.util.UUID.randomUUID();
+        assertTrue(CellTickets.claim(4, run), "recovery adds the first physical ticket");
+        assertFalse(CellTickets.claim(4, null), "resuming adds a claim, not a second physical ticket");
+        assertFalse(CellTickets.releaseClaim(4, run), "recovery must not remove the physical ticket");
+        assertTrue(CellTickets.isHeld(4));
+        assertEquals(1, CellTickets.heldCount());
+        assertTrue(CellTickets.releaseClaim(4, null), "the final holder removes the physical ticket");
+        assertFalse(CellTickets.isHeld(4));
+    }
+
+    @Test
+    void activeReleaseCannotReleaseRecoveryAndClaimsAreIdempotent() {
+        var run = java.util.UUID.randomUUID();
+        assertTrue(CellTickets.claim(4, null));
+        assertFalse(CellTickets.claim(4, null));
+        assertFalse(CellTickets.claim(4, run));
+        assertFalse(CellTickets.claim(4, run));
+        assertFalse(CellTickets.releaseClaim(4, null));
+        assertFalse(CellTickets.releaseClaim(4, null), "releasing the same owner twice cannot steal recovery's claim");
+        assertTrue(CellTickets.isHeld(4));
+        assertTrue(CellTickets.releaseClaim(4, run));
+        assertFalse(CellTickets.isHeld(4));
+    }
+
+    @Test
+    void unrelatedRecoveryCannotReleaseAnotherRunsClaim() {
+        var run = java.util.UUID.randomUUID();
+        assertTrue(CellTickets.claim(4, run));
+        assertFalse(CellTickets.releaseClaim(4, java.util.UUID.randomUUID()));
+        assertTrue(CellTickets.isHeld(4));
+        assertTrue(CellTickets.releaseClaim(4, run));
+    }
+
     @BeforeEach
     @AfterEach
     void clear() {

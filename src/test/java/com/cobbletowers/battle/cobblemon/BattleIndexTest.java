@@ -36,6 +36,7 @@ class BattleIndexTest {
         Binding bound = binding(false);
         UUID battle = add(bound);
         index.turns.advanced(battle, 1);
+        index.stalls.observe(battle, 1, true, 0);
         assertEquals(1, index.byBattle.size());
         assertEquals(1, index.byRun.get(RUN).size());
         assertEquals(1, index.lastActivity.size());
@@ -48,6 +49,7 @@ class BattleIndexTest {
         assertTrue(index.lastActivity.isEmpty());
         assertTrue(index.probeAt.isEmpty());
         assertEquals(0, index.turns.size());
+        assertEquals(0, index.stalls.size());
     }
 
     @Test

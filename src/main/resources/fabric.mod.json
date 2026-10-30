@@ -26,7 +26,7 @@
     "polymer-resource-pack": ">=0.9.19",
     "polymer-virtual-entity": ">=0.9.19",
     "cobblemon": ">=1.8.2",
-    "cobbleraids": ">=0.8.162-admin-helper"
+    "cobbleraids": ">=0.8.191-world-boss"
   },
   "suggests": {
     "webgui": ">=1.8.1"

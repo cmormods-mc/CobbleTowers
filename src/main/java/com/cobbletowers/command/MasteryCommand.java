@@ -111,7 +111,8 @@ public final class MasteryCommand {
         if (screen(context, "", "mastery")) return 1;
         TowerMasteryStore store = TowerMasteryStore.get(source.getServer());
         source.sendSuccess(() -> Component.literal("Your mastery").withStyle(ChatFormatting.GOLD), false);
-        for (ResourceLocation id : TowerDefinitionRegistry.content().sortedTowerIds()) {
+        for (ResourceLocation id : TowerDefinitionRegistry.content().listedTowerIds(System.currentTimeMillis(),
+                towerId -> store.progressOf(player.getUUID(), towerId).level() > 0)) {
             TowerDefinition tower = TowerDefinitionRegistry.content().towers().get(id);
             TowerMasteryStore.Progress progress = store.progressOf(player.getUUID(), id);
             source.sendSuccess(() -> Component.literal("  " + tower.displayName() + ": " + MasteryView.progressLine(progress.level())
@@ -131,6 +132,10 @@ public final class MasteryCommand {
         }
         ServerPlayer player = source.getPlayerOrException();
         TowerMasteryStore.Progress progress = TowerMasteryStore.get(source.getServer()).progressOf(player.getUUID(), towerId);
+        if (!TowerDefinitionRegistry.content().listedTowerIds(System.currentTimeMillis(), id -> progress.level() > 0).contains(towerId)) {
+            source.sendFailure(Component.literal(tower.displayName() + " is not open right now."));
+            return 0;
+        }
         MasteryPerks.Perks perks = MasteryPerks.at(towerId, progress.level());
         source.sendSuccess(() -> Component.literal(tower.displayName() + " mastery: " + MasteryView.progressLine(towerId, progress.level()))
                 .withStyle(ChatFormatting.GOLD), false);

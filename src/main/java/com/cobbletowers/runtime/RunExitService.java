@@ -114,6 +114,16 @@ public final class RunExitService {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (com.cobbletowers.spectator.Watching.isWatching(player.getUUID())) continue;
             if (!inTower(player)) {
+                // An external teleport can bypass our exit: do not leave its temporary spectator mode behind.
+                try {
+                    if (com.cobbletowers.persistence.TowerSpectatorStore.get(server).hasPending(player.getUUID())) {
+                        com.cobbletowers.spectator.SpectatorPresentation.stopSpectatingForExit(player);
+                        player.setCamera(player);
+                        com.cobbletowers.spectator.SpectatorModeService.restore(player);
+                    }
+                } catch (RuntimeException ex) {
+                    TowerLog.errorOnce("spectator-mode-outside-" + player.getUUID(), "Could not restore an outside player's original mode", ex);
+                }
                 LEAVING.remove(player.getUUID());
                 continue;
             }
@@ -191,6 +201,9 @@ public final class RunExitService {
     }
 
     static void evacuate(MinecraftServer server, ServerPlayer player) {
+        // Last exit boundary: also covers a missing/retired run with a stale battle HUD.
+        com.cobbletowers.battle.cobblemon.CobblemonBattleAdapter.endBattleOf(player);
+        com.cobbletowers.spectator.SpectatorPresentation.stopSpectatingForExit(player);
         TowerReturnStore store = TowerReturnStore.get(server);
         Optional<ReturnPoint> point = store.pointFor(player.getUUID());
 

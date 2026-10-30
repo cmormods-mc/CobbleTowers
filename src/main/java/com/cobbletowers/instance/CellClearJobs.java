@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -23,11 +24,16 @@ public final class CellClearJobs {
     private static final long LOAD_TIMEOUT_MILLIS = 60_000;
 
     private static final class Job {
+        final UUID owner;
         final List<ChunkPos> chunks = new ArrayList<>();
         final long createdAt = System.currentTimeMillis();
         int next;
         int cleared;
         long workNanos;
+
+        Job(UUID owner) {
+            this.owner = owner;
+        }
     }
 
     private static final Map<Integer, Job> JOBS = new LinkedHashMap<>();
@@ -43,12 +49,14 @@ public final class CellClearJobs {
      * returns false: ask again after it finishes. A clear that cannot finish is dropped, and then the release clears the
      * cell itself.
      */
-    public static boolean ensureClear(MinecraftServer server, int cell) {
+    public static boolean ensureClear(MinecraftServer server, int cell, UUID owner) {
+        if (!ownedBy(cell, owner)) return false;
         if (CellCleanliness.isClean(cell)) return true;
         Job job = JOBS.get(cell);
-        if (job != null) return false;
+        if (job != null && job.owner.equals(owner)) return false;
+        JOBS.remove(cell);
         if (TowerDimension.level(server) == null) return true;
-        job = new Job();
+        job = new Job(owner);
         ChunkPos middle = new ChunkPos(CellGrid.centerOf(cell));
         int reach = CellTickets.RADIUS_CHUNKS;
         for (int x = middle.x - reach; x <= middle.x + reach; x++) {
@@ -72,10 +80,15 @@ public final class CellClearJobs {
     /** Every tick: gives the oldest job a slice. */
     public static void advance(MinecraftServer server) {
         if (JOBS.isEmpty()) return;
-        ServerLevel level = TowerDimension.level(server);
         Map.Entry<Integer, Job> entry = JOBS.entrySet().iterator().next();
         int cell = entry.getKey();
         Job job = entry.getValue();
+        if (!ownedBy(cell, job.owner)) {
+            // A transferred/released lease invalidates the old job; its ticket belongs to the new tenant.
+            JOBS.remove(cell);
+            return;
+        }
+        ServerLevel level = TowerDimension.level(server);
         if (level == null) {
             JOBS.remove(cell);
             return;
@@ -115,6 +128,16 @@ public final class CellClearJobs {
             JOBS.remove(cell);
             CellCleanliness.markClean(cell);
         }
+    }
+
+    /** No destructive work may outlive the lease which authorized it. */
+    static boolean ownedBy(int cell, UUID owner) {
+        return owner != null && InstanceAllocator.runIn(cell).filter(owner::equals).isPresent();
+    }
+
+    /** Test seam. */
+    static void queueForTests(int cell, UUID owner) {
+        JOBS.put(cell, new Job(owner));
     }
 
     /** Test seam. */

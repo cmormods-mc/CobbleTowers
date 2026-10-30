@@ -169,6 +169,43 @@ async function open(look, size = { width: 1280, height: 720 }) {
   check('no console errors (route)', p.errors.length === 0, p.errors.join(' | '));
   await p.close();
 }
+// 4c. the branching route map (P56): a window per stop, the reachable ones are buttons, voting one votes its card, a skin per tower
+{
+  const kinds = ['BATTLE', 'FORGE', 'REST', 'SHRINE', 'ELITE', 'LIBRARY', 'MERCHANT', 'VAULT', 'POOL', 'TRICK_OR_TREAT'];
+  const boss = (r) => r === 5 || r === 10, stops = [{ row: 0, lane: 1, kind: 'START' }], links = [];
+  for (let r = 1; r <= 10; r++) for (let l = 0; l < 3; l++) if (!boss(r) || l === 1) stops.push({ row: r, lane: l, kind: boss(r) ? 'BOSS' : kinds[(r * 3 + l * 2) % kinds.length] });
+  const has = (row, lane) => stops.some((x) => x.row === row && x.lane === lane);
+  for (let r = 0; r < 10; r++) for (let f = 0; f < 3; f++) for (let t = 0; t < 3; t++) if (has(r, f) && has(r + 1, t) && Math.abs(f - t) <= 1) links.push({ row: r, from: f, to: t });
+  const atlas = (tower, mutate) => fixture('IntermissionState', (d) => {
+    d.floor = 2; d.extras.tower = tower; d.extras.cycleFloor = 2; d.extras.cycleLength = 10;
+    d.extras.route = { lane: 0, now: [{ lane: 0, card: 0, kind: 'FORGE', arena: '' }, { lane: 1, card: 1, kind: 'BATTLE', arena: '' }], ahead: [], graph: { rows: 10, reveal: 4, trail: [1, 1, 0], stops, links } };
+    d.draft.cards = d.draft.cards.slice(0, 2);
+    if (mutate) mutate(d);
+  });
+  const p = await open('desk');
+  await p.send('IntermissionState', atlas('Tideforge Tower'));
+  await p.waitForSelector('.fd .datlas .awin');
+  check('a branching map draws a window per stop and not the old route map', (await p.locator('.fd .awin').count()) === stops.length && (await p.locator('.fd .dstop').count()) === 0);
+  check('only the stops the party can step to are buttons', (await p.locator('.fd .awin[role="button"]').count()) === 2 && (await p.locator('.fd .awin.st-seen[role="button"]').count()) === 0 && (await p.locator('.fd .awin.st-fog[role="button"]').count()) === 0);
+  check('the party stands on one stop and the path behind it is marked', (await p.locator('.fd .awin.st-current').count()) === 1 && (await p.locator('.fd .awin.st-done').count()) === 2);
+  check('the plain tower wears the stone skin', (await p.locator('.fd .datlas.stone').count()) === 1 && (await p.locator('.fd .datlas.hollow').count()) === 0);
+  check('each reachable stop has an option card naming its modifier, room and payout', (await p.locator('.fd .aopt').count()) === 2 && /Far Sight/.test(await p.locator('.fd .aopt').nth(0).textContent()) && /Forge/.test(await p.locator('.fd .aopt').nth(1).textContent()) && /\+8%/.test(await p.locator('.fd .aopt').nth(1).textContent()));
+  await p.locator('.fd .aopt').nth(1).hover();
+  check('hovering an option lights its window on the map', (await p.locator('.fd .awin.hov').count()) === 1);
+  await p.locator('.fd .awin[role="button"]').nth(0).click();
+  check('choosing a stop selects it, shows its modifier and enables Confirm', (await p.locator('.fd .awin.sel').count()) === 1 && (await p.locator('.fd .aopt.sel').count()) === 1 && /Far Sight/.test(await p.locator('.fd .dside').innerText()) && !(await p.locator('.fd .dft .dbtn').first().isDisabled()));
+  await p.locator('.fd .dft .dbtn').first().click();
+  const sent = await p.sentKinds();
+  check('Confirm votes the card that rides on that stop', sent.includes('IntermissionAction:PICK_CARD:0'), sent.join(','));
+  await p.send('IntermissionState', atlas('Tideforge Tower', (d) => { d.draft.state = 2; d.draft.chosen = 1; }));
+  await p.waitForTimeout(150);
+  check('once settled no stop is a button and the chosen one is marked', (await p.locator('.fd .awin[role="button"]').count()) === 0 && (await p.locator('.fd .aopt:not(:disabled)').count()) === 0 && (await p.locator('.fd .aopt.chosen').count()) === 1 && (await p.locator('.fd .awin.chosen').count()) === 1);
+  await p.send('IntermissionState', atlas('Hollow’s Eve'));
+  await p.waitForTimeout(150);
+  check('the Halloween tower wears the Hollow’s Eve skin', (await p.locator('.fd .datlas.hollow').count()) === 1);
+  check('no console errors (atlas)', p.errors.length === 0, p.errors.join(' | '));
+  await p.close();
+}
 {
   const p = await open('desk');
   await p.send('IntermissionState', fixture('IntermissionState', (d) => { delete d.extras.route; }));

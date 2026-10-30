@@ -162,7 +162,7 @@
 /* ---- the route between floors (P50) ---- */
 .fd .rk-battle { --k: #3b82d6; } .fd .rk-forge { --k: #e8702a; } .fd .rk-rest { --k: #3fa34d; } .fd .rk-shrine { --k: #8c5cc9; } .fd .rk-gambler { --k: #d9468f; }
 .fd .rk-vault { --k: #0e9aa7; } .fd .rk-library { --k: #c98a06; } .fd .rk-pool { --k: #2f7fd0; } .fd .rk-relic { --k: #d6264e; }
-.fd .droute { position: relative; flex: 1; min-height: calc(var(--u) * 22); margin: 0; background: var(--surf); border: calc(var(--u) * .15) solid var(--line); border-radius: calc(var(--u) * 1.4); box-shadow: 0 calc(var(--u) * .3) 0 var(--edge); overflow: hidden; }
+.fd .droute { position: relative; flex: 1; min-height: calc(var(--u) * 22); margin: 0; background: var(--surf); border: calc(var(--u) * .15) solid var(--line); border-radius: calc(var(--u) * 1.4); box-shadow: 0 calc(var(--u) * .3) 0 var(--edge); overflow-x: auto; overflow-y: hidden; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--faint) var(--surf); }
 .fd .droutein { position: absolute; left: calc(var(--u) * 6.4); right: calc(var(--u) * .6); top: 0; bottom: 0; }
 .fd .dheads { position: absolute; left: 0; right: 0; top: calc(var(--u) * .8); height: calc(var(--u) * 1.6); }
 .fd .dhead { position: absolute; transform: translateX(-50%); font: 700 calc(var(--u) * .95) Outfit; letter-spacing: .08em; text-transform: uppercase; color: var(--mut); white-space: nowrap; } .fd .dhead.now { color: var(--acc); }
@@ -365,3 +365,14 @@ html.paused .fd *, html.paused .fd *::before, html.paused .fd *::after { animati
 .fd .awin[role="button"]:focus-visible { outline: 3px solid var(--pri); outline-offset: 2px; }
 @media (prefers-reduced-motion: no-preference) { .fd .awin.st-reach .aglow { animation: apulse 2.4s ease-in-out infinite; } }
 @keyframes apulse { 0%, 100% { opacity: .15; } 50% { opacity: .5; } }
+
+/* the options of a branching map: a card per stop the party can step to, left of the map */
+.fd .aleft { flex: 1 1 0; min-width: 0; max-width: calc(var(--u) * 28); display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u) * 1.4); padding: calc(var(--u) * 1.2) 0 calc(var(--u) * 1.2) calc(var(--u) * 1.4); }
+.fd .aopts { display: flex; flex-direction: column; gap: calc(var(--u) * 1); }
+.fd .aopt { display: flex; align-items: center; gap: calc(var(--u) * .8); width: 100%; padding: calc(var(--u) * .7); border: calc(var(--u) * .25) solid var(--k); border-radius: calc(var(--u) * 1.2); background: var(--surf); color: var(--ink); font: inherit; text-align: left; cursor: pointer; box-shadow: 0 calc(var(--u) * .25) 0 var(--edge); }
+.fd .aopt:disabled { cursor: default; } .fd .aopt:hover:not(:disabled):not(.sel):not(.chosen), .fd .aopt.hov:not(.sel):not(.chosen) { background: var(--surf2); }
+.fd .aopt.sel, .fd .aopt.chosen { background: var(--k); color: #fff; box-shadow: 0 0 0 calc(var(--u) * .3) #fff, 0 0 0 calc(var(--u) * .55) var(--k); } .fd .aopt:focus-visible { outline: 3px solid var(--pri); outline-offset: 3px; }
+.fd .aopt .dkindbox { color: var(--k); } .fd .aopt.sel .dkindbox, .fd .aopt.chosen .dkindbox { background: #ffffff33; color: #fff; }
+.fd .awin.hov .awface, .fd .awin.hov .aglow { stroke-width: 4; } .fd .awin.hov .awface { fill: var(--surf2); }
+.fd .aleft .alegend { flex-direction: row; flex-wrap: wrap; gap: calc(var(--u) * .5) calc(var(--u) * 1.2); padding: 0; }
+.fd .aleft .alegend li { font-size: calc(var(--u) * .9); } .fd .aleft .alegend svg { width: calc(var(--u) * 1.5); height: calc(var(--u) * 1.5); }

@@ -39,8 +39,9 @@ public final class MasteryScreens {
      */
     public static MasteryScreenPayload build(MinecraftServer server, ServerPlayer player, String towerRaw, String tabRaw,
                                              boolean open) {
-        List<ResourceLocation> ids = TowerDefinitionRegistry.content().sortedTowerIds();
         TowerMasteryStore store = TowerMasteryStore.get(server);
+        List<ResourceLocation> ids = TowerDefinitionRegistry.content().listedTowerIds(System.currentTimeMillis(),
+                id -> store.progressOf(player.getUUID(), id).level() > 0);
         List<MasteryScreenPayload.Tower> towers = new ArrayList<>();
         // the badge on the name (P47): shown only while the badge is on for the server and the player
         var onName = com.cobbletowers.season.CosmeticsConfig.masteryBadge() && !store.badgeHidden(player.getUUID())

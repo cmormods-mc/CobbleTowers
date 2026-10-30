@@ -22,6 +22,7 @@ fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, 'assets'), { recursive: true });
 
 // ---- data the server does not send, and the sprite sheet
+fs.mkdirSync(path.join(here, 'src/gen'), { recursive: true });
 const data = genData(root);
 fs.writeFileSync(path.join(here, 'src/gen/data.js'), 'export default ' + JSON.stringify(data) + ';\n');
 

@@ -45,7 +45,7 @@ def main() -> None:
     parser.add_argument("--java", type=Path, default=None)
     parser.add_argument("--jar", type=Path, default=None)
     parser.add_argument("--node-modules", type=Path, default=None)
-    parser.add_argument("--no-kill", action="store_true", help="skip the hard kill and restart (it trips a player-index problem that predates P56)")
+    parser.add_argument("--no-kill", action="store_true", help="skip the hard kill and restart; finish the walk through the milestone instead")
     args = parser.parse_args()
 
     server_dir = args.server_dir.resolve()
@@ -122,11 +122,19 @@ def main() -> None:
             rcon.command(f"cobbletowers runs advance {run} party_validated")
             rcon.command(f"cobbletowers runs allocate {run}")
 
-            stops = step(rcon, run, 1, "floor 1")
-            take(rcon, run, 1, stops)
+            for floor in (1, 2, 3):
+                take(rcon, run, floor, step(rcon, run, floor, f"floor {floor}"))
+            stops4 = step(rcon, run, 4, "floor 4")
 
-            killed = step(rcon, run, 2, "floor 2")
-            if not args.no_kill:
+            if args.no_kill:
+                take(rcon, run, 4, stops4)
+                to_intermission(rcon, run)
+                time.sleep(1.0)
+                shown = show(rcon, run)
+                results.append(Result("floor 5, a milestone, is not a step of the route (it pays a relic)", not route_of(shown) and draft_open(shown), shown.strip()[-260:]))
+                # past the boss the run needs the milestone reward flow, which milestone_floor_test drives; the floor after a milestone
+                # (a lone stop, no choice) is covered by the RouteMap unit tests
+            else:
                 rcon.command("save-all flush")
                 time.sleep(3)
                 print("Hard-killing the server mid-step")
@@ -138,24 +146,16 @@ def main() -> None:
             server.start()
             server.wait_until_ready()
             bot = start_bot()
-        with Rcon("127.0.0.1", 25575, read_password(server_dir)) as rcon:
-            if not args.no_kill:
+            with Rcon("127.0.0.1", 25575, read_password(server_dir)) as rcon:
                 wait_bot(rcon)
                 recovered = show(rcon, run)
-                results.append(Result("a hard kill mid-step returns the very same stops", route_of(recovered) == killed and bool(killed), f"before {killed} / after {route_of(recovered)}"))
-                results.append(Result("and the route taken before it survives", steps_of(recovered) == f"1:{taken[0]}", steps_of(recovered) or recovered.strip()[-200:]))
-                rcon.command(f"cobbletowers runs advance {run} recovery_completed")
-            take(rcon, run, 2, killed)
+                results.append(Result("a hard kill mid-step returns the very same stops", route_of(recovered) == stops4 and bool(stops4), f"before {stops4} / after {route_of(recovered)}"))
+                want = " ".join(f"{i + 1}:{lane}" for i, lane in enumerate(taken))
+                results.append(Result("and the route taken before it survives", steps_of(recovered) == want, f"{steps_of(recovered)!r} wanted {want!r}"))
+                # a run a restart interrupted ends when its player rejoins (commit a55c8c5): nothing is left to vote in
+                results.append(Result("the interrupted run is ended when its player rejoins, by design", "ABANDONED" in recovered, recovered.strip()[-220:]))
 
-            for floor in (3, 4):
-                take(rcon, run, floor, step(rcon, run, floor + 1 - 1, f"floor {floor}"))
-
-            to_intermission(rcon, run)
-            time.sleep(1.0)
-            shown = show(rcon, run)
-            results.append(Result("floor 5, a milestone, is not a step of the route (it pays a relic)", not route_of(shown) and draft_open(shown), shown.strip()[-260:]))
-            # past the boss the run needs the milestone reward flow, which milestone_floor_test drives; the floor after a milestone
-            # (a lone stop, no choice) is covered by the RouteMap unit tests
+        with Rcon("127.0.0.1", 25575, read_password(server_dir)) as rcon:
             results.append(Result("across the steps the party saw several kinds of stop", len(kinds_seen) >= 2, str(sorted(kinds_seen))))
             text = server.log.read_text(encoding="utf-8", errors="replace") if hasattr(server.log, "read_text") else ""
             results.append(Result("no route fault was logged", "route" not in "".join(l for l in text.splitlines() if "ERROR" in l).lower(),
