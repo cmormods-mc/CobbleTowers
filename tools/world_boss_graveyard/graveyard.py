@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The World Boss graveyard: an open night-time churchyard, 128 x 96 x 128, for the CobbleRaids World Boss arena.
 
-    python tools/world_boss_graveyard/graveyard.py [--out validation/schematics] [--npz grid.npz] [--check]
+    python tools/world_boss_graveyard/graveyard.py [--out validation/arena_schematics] [--npz grid.npz] [--check]
 
 Schematic coordinates: x east, z south, y up, (0,0,0) the north-west bottom corner. The reference is a moonlit churchyard: a dark stone church on a
 terraced hill with three tall stained-glass windows glowing red, orange and green, a green-lit porch and a bell tower, stairs up from a flagstone plaza,
@@ -812,7 +812,7 @@ def write_schem(g: Grid, path: Path) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", type=Path, default=Path("validation/schematics"))
+    ap.add_argument("--out", type=Path, default=Path("validation/arena_schematics"))
     ap.add_argument("--npz", type=Path, help="also save the grid for tools/halloween_tower/view.py --npz")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--blocks", type=Path, help="data/minecraft/loot_table/blocks from a 1.21.1 jar, to check every block id")

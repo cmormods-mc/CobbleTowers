@@ -4,7 +4,7 @@ An open, night-time churchyard for the CobbleRaids World Boss arena (`docs/WORLD
 a dark stone church on a terraced hill with four tall stained-glass windows (red, orange, green), a porch with a pointed green-lit doorway and a stair, a bell tower with green windows and
 a pyramid roof, a broad stair, orange flame pillars, tombstones and candles in purple-red grass, gnarled leafless trees, two small crypt towers and an iron fence with a gate.
 
-* **Generator**: `python tools/world_boss_graveyard/graveyard.py --blocks <loot_table/blocks dir> [--npz grid.npz]` writes `validation/schematics/world_boss_graveyard.schem` (128 x 96 x 128, about 305,000 blocks,
+* **Generator**: `python tools/world_boss_graveyard/graveyard.py --blocks <loot_table/blocks dir> [--npz grid.npz]` writes `validation/arena_schematics/world_boss_graveyard.schem` (128 x 96 x 128, about 305,000 blocks,
   the origin is the north-west bottom corner, `seed` 31 gives the same graveyard every run) and checks it. Pictures: `python tools/halloween_tower/view.py --npz grid.npz <out_dir> name:x,y,z,yaw,pitch[,fov]`
   (absolute coordinates, a night sky with a moon, the game's own block light). Preview sheet: `docs/handoff/interiors/world-boss-graveyard.jpg`.
 * **Arena contract**: boss spawn marker `cobbleraids:world_boss_spawn` at (64, 13, 90) in the middle of the plaza; four `cobbleraids:world_boss_entrance` markers inside the gate, at (60,13,120), (64,13,122), (68,13,120) and

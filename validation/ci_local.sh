@@ -60,7 +60,10 @@ for schematic in validation/schematics/*.schem; do
   name="$(basename "$schematic" .schem)"
   # The Battle Tower is one schematic recoloured into four structures; retheme_schem.py checks those below.
   [ "$name" = "battle_tower" ] && continue
-  "$py" validation/schem_to_structure.py --check "$schematic"     "src/main/resources/data/cobbletowers/structure/${name}.nbt"
+  # The Hollow's Eve generator writes hollow_tower.schem; its structure is committed as battle_tower_halloween.nbt.
+  structure="$name"
+  [ "$name" = "hollow_tower" ] && structure="battle_tower_halloween"
+  "$py" validation/schem_to_structure.py --check "$schematic"     "src/main/resources/data/cobbletowers/structure/${structure}.nbt"
 done
 "$py" validation/retheme_schem.py --check
 # BlockArchitect-style builds ship as .mcfunction (setblock lists), with an optional <name>.options.json for lighting.
