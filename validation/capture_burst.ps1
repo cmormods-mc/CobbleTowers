@@ -1,5 +1,5 @@
-param([string]$OutDir, [int]$Frames = 10, [int]$DelayMs = 60, [string]$Prefix = "burst", [string]$Title = "Minecraft", [int]$ProcessId = 0)
-# Saves $Frames pictures of the Minecraft client window in quick succession (the window is brought to the top-left once first).
+param([int]$OriginX = 2560, [int]$OriginY = 0, [string]$OutDir, [int]$Frames = 10, [int]$DelayMs = 60, [string]$Prefix = "burst", [string]$Title = "Minecraft", [int]$ProcessId = 0)
+# Saves $Frames pictures of the Minecraft client window in quick succession (the window is brought to the top-left of the monitor at ($OriginX, $OriginY) once first).
 Add-Type -AssemblyName System.Drawing
 Add-Type @"
 using System;
@@ -23,7 +23,7 @@ New-Item -ItemType Directory -Force $OutDir | Out-Null
 [WinB]::SetForegroundWindow($p.MainWindowHandle) | Out-Null
 $r = New-Object WinB+RECT
 [WinB]::GetWindowRect($p.MainWindowHandle, [ref]$r) | Out-Null
-[WinB]::MoveWindow($p.MainWindowHandle, 0, 0, ($r.Right - $r.Left), ($r.Bottom - $r.Top), $true) | Out-Null
+[WinB]::MoveWindow($p.MainWindowHandle, $OriginX, $OriginY, ($r.Right - $r.Left), ($r.Bottom - $r.Top), $true) | Out-Null
 Start-Sleep -Milliseconds 700
 [WinB]::GetWindowRect($p.MainWindowHandle, [ref]$r) | Out-Null
 $w = $r.Right - $r.Left; $h = $r.Bottom - $r.Top

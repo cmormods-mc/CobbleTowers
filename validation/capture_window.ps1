@@ -1,5 +1,5 @@
-param([string]$Out, [string]$Title = "Minecraft", [int]$ProcessId = 0)
-# Saves a picture of the Minecraft client window (moved to the top-left and brought to the front first) to $Out.
+param([int]$OriginX = 2560, [int]$OriginY = 0, [string]$Out, [string]$Title = "Minecraft", [int]$ProcessId = 0)
+# Saves a picture of the Minecraft client window (moved to the top-left of the monitor at ($OriginX, $OriginY) and brought to the front first) to $Out.
 Add-Type -AssemblyName System.Drawing
 Add-Type @"
 using System;
@@ -23,7 +23,7 @@ if (-not $p) { Write-Error "no client window"; exit 1 }
 $r = New-Object Win+RECT
 [Win]::GetWindowRect($p.MainWindowHandle, [ref]$r) | Out-Null
 $w = $r.Right - $r.Left; $h = $r.Bottom - $r.Top
-[Win]::MoveWindow($p.MainWindowHandle, 0, 0, $w, $h, $true) | Out-Null
+[Win]::MoveWindow($p.MainWindowHandle, $OriginX, $OriginY, $w, $h, $true) | Out-Null
 Start-Sleep -Milliseconds 700
 [Win]::GetWindowRect($p.MainWindowHandle, [ref]$r) | Out-Null
 $w = $r.Right - $r.Left; $h = $r.Bottom - $r.Top
