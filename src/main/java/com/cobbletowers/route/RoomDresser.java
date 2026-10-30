@@ -69,7 +69,7 @@ public final class RoomDresser {
         return out;
     }
 
-    /** Dresses the chambers for the run's open route draft; does nothing for a floor without doors or a draft without lanes. Never throws. */
+    /** Dresses the chambers for the run's open route draft; does nothing for a floor without doors; a draft without lanes dresses every chamber as a battle. Never throws. */
     public static void dress(MinecraftServer server, PersistedRun run, FloorLayout layout, BlockPos origin) {
         try {
             dressUnguarded(server, run, layout, origin);
@@ -80,11 +80,12 @@ public final class RoomDresser {
 
     private static void dressUnguarded(MinecraftServer server, PersistedRun run, FloorLayout layout, BlockPos origin) {
         if (layout.doors().isEmpty()) return;
+        // A relic or lock-in draft has no lanes: every chamber is dressed as a battle, so a door of its own never opens onto the bare shell.
         Optional<PersistedDraft> draft = run.modifiers().draft().filter(PersistedDraft::route);
-        if (draft.isEmpty()) return;
         ServerLevel level = TowerDimension.level(server);
         if (level == null) return;
-        List<String> wanted = kindsByDoor(draft.get().lanes(), draft.get().kinds(), layout.doors().size());
+        List<String> wanted = kindsByDoor(draft.map(PersistedDraft::lanes).orElse(List.of()), draft.map(PersistedDraft::kinds).orElse(List.of()),
+                layout.doors().size());
         List<String> have = DRESSED.getOrDefault(run.runId(), List.of());
         List<String> now = new ArrayList<>(wanted);
         for (int door = 0; door < wanted.size(); door++) {
