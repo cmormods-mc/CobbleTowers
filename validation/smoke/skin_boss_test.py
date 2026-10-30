@@ -116,6 +116,7 @@ def main() -> None:
                 if not wait_state(rcon, "FLOOR_READY", floor + 1, seconds=40):
                     raise RuntimeError(f"floor {floor + 1} never got ready: {run_line(rcon)}")
                 if floor + 1 == 5:
+                    time.sleep(8)   # floors 1-4 were cleared by command, so let their battles wind down before the real fight
                     tell_bot(rig, BOT, "FIGHT")
                     tell_bot(rig, BOT, f"MOVE {FIRST_MOVE}")
                     wait_for(rig / "bot" / f"{BOT}.log", r"AUTOFIGHT on", seconds=30)
