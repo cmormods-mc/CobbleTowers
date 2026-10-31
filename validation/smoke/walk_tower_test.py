@@ -112,6 +112,28 @@ def gate_state(rcon: Rcon, origin: tuple[int, int, int], box: dict, block: str) 
     return all(block_is(rcon, origin, s, block) for s in samples)
 
 
+def door_centre(box: dict) -> tuple[int, int, int]:
+    return tuple((box["min"][i] + box["max"][i]) // 2 for i in range(3))
+
+
+def door_shut(rcon: Rcon, origin: tuple[int, int, int], door: dict) -> bool:
+    """Shut and dark: a plain doorway is iron bars all through; a Trick or Treat doorway (P57) is walled with its gap barrier. The lintel is crying obsidian."""
+    centre = door_centre(door["open"])
+    plain = gate_state(rcon, origin, door["open"], "minecraft:iron_bars")
+    trick = block_is(rcon, origin, centre, "minecraft:barrier")
+    return (plain or trick) and gate_state(rcon, origin, door["frame"], "minecraft:crying_obsidian")
+
+
+def door_open(rcon: Rcon, origin: tuple[int, int, int], door: dict) -> bool:
+    """Open: a plain doorway is air all through; a Trick or Treat doorway keeps its wall and its gap is air."""
+    if not block_is(rcon, origin, door_centre(door["open"]), "minecraft:air"):
+        return False
+    if gate_state(rcon, origin, door["open"], "minecraft:air"):
+        return True
+    corner = tuple(door["open"]["min"])
+    return block_is(rcon, origin, corner, "minecraft:polished_blackstone_bricks") or block_is(rcon, origin, corner, "minecraft:barrier")
+
+
 def wait_for(condition, seconds: float, step: float = 1.0) -> bool:
     deadline = time.time() + seconds
     while time.time() < deadline:
@@ -275,12 +297,12 @@ def main() -> None:
                 check(f"{at}: winning it opens gate A", gate_state(rcon, origin, lay["gate_a"], "minecraft:air"))
                 vendor = lay["exit"]
                 near = rcon.command(f"{IN_TOWER} positioned {origin[0] + vendor['x']} {origin[1] + vendor['y']} {origin[2] + vendor['z']} "
-                                    f"if entity @e[type=minecraft:villager,tag=cobbletowers_vendor,distance=..3]")
+                                    f"if entity @e[tag=cobbletowers_vendor,distance=..3]")
                 check(f"{at}: the vendor stands in the room behind gate A", "passed" in near.lower(), near[:80])
 
                 doors = lay["doors"]
                 check(f"{at}: all three doors are shut and dark while the floor is fought",
-                      all(gate_state(rcon, origin, d["open"], "minecraft:iron_bars") and gate_state(rcon, origin, d["frame"], "minecraft:crying_obsidian")
+                      all(door_shut(rcon, origin, d)
                           for d in doors))
                 # the real walk through gate A to the intermission room (the team is where the fight left it, at the arena door)
                 problems = walk(list(by_name.values()), origin, route_to_vendor(floor))
@@ -313,13 +335,13 @@ def main() -> None:
                             rcon.command(f"cobbletowers runs winfloor {A}")
                             back = log_has(server_dir, rf"Run {run} beat the mimic of floor {floor}: (.*)", 20)
                             check(f"{at}: beating the mimic returns the price and pays half a treat", bool(back), back)
-                lit = [i for i, d in enumerate(doors) if gate_state(rcon, origin, d["open"], "minecraft:air")]
+                lit = [i for i, d in enumerate(doors) if door_open(rcon, origin, d)]
                 if len(lit) == 1:
                     lane = lit[0]
                     check(f"{at}: the door of the chosen route lights up", gate_state(rcon, origin, doors[lane]["frame"], "minecraft:shroomlight"))
                     others = [d for i, d in enumerate(doors) if i != lane]
                     check(f"{at}: it is the only one that opens, and the other two stay shut and dark",
-                          all(gate_state(rcon, origin, d["open"], "minecraft:iron_bars") and gate_state(rcon, origin, d["frame"], "minecraft:crying_obsidian")
+                          all(door_shut(rcon, origin, d)
                               for d in others))
                 else:
                     lane = -1   # a draft with no lanes (a relic, a lock-in): the middle door is opened for the team when it sets out
@@ -340,7 +362,7 @@ def main() -> None:
                           abs(here[0] - (origin[0] + entry1["x"] + 0.5)) < 0.05 and abs(here[1] - (origin[1] + entry1["y"])) < 0.05,
                           f"at {here}")
                     check("and the doors and gates of floor 1, left open by the first cycle, are shut again",
-                          all(gate_state(rcon, origin, d["open"], "minecraft:iron_bars") and gate_state(rcon, origin, d["frame"], "minecraft:crying_obsidian")
+                          all(door_shut(rcon, origin, d)
                               for d in layout_of(1)["doors"])
                           and gate_state(rcon, origin, layout_of(1)["gate_a"], "minecraft:iron_bars")
                           and gate_state(rcon, origin, layout_of(1)["gate_b"], "minecraft:iron_bars"))
@@ -351,7 +373,7 @@ def main() -> None:
                 line = run_line(rcon)
                 check(f"{at}: the next floor waits for the climb", "INTERMISSION" in line and f"floor {floor}" in line, line[-120:])
                 if lane < 0:
-                    lane = next((i for i, d in enumerate(doors) if gate_state(rcon, origin, d["open"], "minecraft:air")), -1)
+                    lane = next((i for i, d in enumerate(doors) if door_open(rcon, origin, d)), -1)
                     check(f"{at}: a floor with no route lanes opens a door of its own", lane >= 0)
 
                 # through the chosen door, along the corridor and up the stair, then down the arrival hall to the next arena
