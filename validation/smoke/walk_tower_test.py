@@ -134,6 +134,19 @@ def door_open(rcon: Rcon, origin: tuple[int, int, int], door: dict) -> bool:
     return block_is(rcon, origin, corner, "minecraft:polished_blackstone_bricks") or block_is(rcon, origin, corner, "minecraft:barrier")
 
 
+def what_is(rcon: Rcon, origin: tuple[int, int, int], local: tuple[int, int, int]) -> str:
+    """The name of the block at {local}, for a failure's detail: the first of the blocks a gate or door can be."""
+    for name in ("iron_bars", "barrier", "air", "polished_blackstone_bricks", "crying_obsidian", "shroomlight"):
+        if block_is(rcon, origin, local, f"minecraft:{name}"):
+            return name
+    return "other"
+
+
+def door_states(rcon: Rcon, origin: tuple[int, int, int], doors: list[dict]) -> str:
+    return "; ".join(f"door {i}: centre {what_is(rcon, origin, door_centre(d['open']))}, lintel {what_is(rcon, origin, tuple(d['frame']['min']))}"
+                     for i, d in enumerate(doors))
+
+
 def wait_for(condition, seconds: float, step: float = 1.0) -> bool:
     deadline = time.time() + seconds
     while time.time() < deadline:
@@ -289,7 +302,8 @@ def main() -> None:
             for floor in range(1, top + 1):
                 lay = layout_of(floor)
                 at = f"floor {floor}"
-                check(f"{at}: gate A is shut while the floor is fought", gate_state(rcon, origin, lay["gate_a"], "minecraft:iron_bars"))
+                check(f"{at}: gate A is shut while the floor is fought", gate_state(rcon, origin, lay["gate_a"], "minecraft:iron_bars"),
+                      "gate A middle is " + what_is(rcon, origin, door_centre(lay["gate_a"])) + "; " + run_line(rcon)[-90:])
                 if "gate_b" in lay:
                     check(f"{at}: gate B is shut too", gate_state(rcon, origin, lay["gate_b"], "minecraft:iron_bars"))
                 if not win_floor(rcon, floor):
@@ -303,7 +317,7 @@ def main() -> None:
                 doors = lay["doors"]
                 check(f"{at}: all three doors are shut and dark while the floor is fought",
                       all(door_shut(rcon, origin, d)
-                          for d in doors))
+                          for d in doors), door_states(rcon, origin, doors))
                 # the real walk through gate A to the intermission room (the team is where the fight left it, at the arena door)
                 problems = walk(list(by_name.values()), origin, route_to_vendor(floor))
                 check(f"{at}: both players walk through gate A into the intermission room", not problems, "; ".join(problems)[:200])
