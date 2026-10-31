@@ -206,6 +206,7 @@ def main() -> None:
     parser.add_argument("--java", type=Path, default=None)
     parser.add_argument("--jar", type=Path, default=None)
     parser.add_argument("--attach", action="store_true", help="drive a server that is already running")
+    parser.add_argument("--lose-mimic", action="store_true", help="lose every Trick or Treat mimic on purpose instead of winning it, and check what the loss costs")
     parser.add_argument("--floors", type=int, default=10, help="how many floors to play (2 to 10)")
     args = parser.parse_args()
 
@@ -301,9 +302,17 @@ def main() -> None:
                         taken = log_has(server_dir, rf"Run {run} mimic on floor {floor}: (.*)", 15)
                         check(f"{at}: a trick raises a mimic and takes its price first", bool(taken), taken)
                         time.sleep(2)
-                        rcon.command(f"cobbletowers runs winfloor {A}")
-                        back = log_has(server_dir, rf"Run {run} beat the mimic of floor {floor}: (.*)", 20)
-                        check(f"{at}: beating the mimic returns the price and pays half a treat", bool(back), back)
+                        if args.lose_mimic:
+                            rcon.command(f"cobbletowers runs losemimic {A}")
+                            lost = log_has(server_dir, rf"Run {run} lost the mimic of floor {floor}: (.*)", 20)
+                            check(f"{at}: losing the mimic leaves the price taken ({lost})", bool(lost), lost)
+                            check(f"{at}: and pays nothing back", not log_has(server_dir, rf"Run {run} beat the mimic of floor {floor}", 2))
+                            cut = log_has(server_dir, rf"Run {run} mimic on floor {floor}: .*loot cut now (\d+)%", 2)
+                            check(f"{at}: the cut is marked on the ledger", cut != "" and int(cut) >= 5, f"cut {cut}%")
+                        else:
+                            rcon.command(f"cobbletowers runs winfloor {A}")
+                            back = log_has(server_dir, rf"Run {run} beat the mimic of floor {floor}: (.*)", 20)
+                            check(f"{at}: beating the mimic returns the price and pays half a treat", bool(back), back)
                 lit = [i for i, d in enumerate(doors) if gate_state(rcon, origin, d["open"], "minecraft:air")]
                 if len(lit) == 1:
                     lane = lit[0]

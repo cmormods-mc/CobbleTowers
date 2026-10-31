@@ -270,6 +270,17 @@ public final class TrickOrTreatService {
         return FIGHTS.containsKey(runId);
     }
 
+    /** Operator tool ({@code runs losemimic}): ends each fighter's battle and counts it as lost, so the price stays taken. @return a line, or empty with no fight */
+    public static Optional<String> operatorLose(MinecraftServer server, UUID runId) {
+        Fight fight = FIGHTS.get(runId);
+        if (fight == null) return Optional.empty();
+        for (UUID playerId : new ArrayList<>(fight.waiting)) {
+            CobblemonBattleAdapter.endPlayer(server, runId, playerId);
+            resolve(server, runId, playerId, false);
+        }
+        return Optional.of("The mimic was lost by the operator.");
+    }
+
     /** Operator tool ({@code runs winfloor} while a mimic is being fought): ends each fighter's battle and counts it as won. @return a line, or empty with no fight */
     public static Optional<String> operatorWin(MinecraftServer server, UUID runId) {
         Fight fight = FIGHTS.get(runId);

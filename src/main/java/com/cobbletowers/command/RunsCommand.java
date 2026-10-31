@@ -143,6 +143,20 @@ public final class RunsCommand {
         group.then(opOnRun("show", RunsCommand::show));
         // A moderator's way to end a run that is stuck (beta runbook): abandons it, or a run waiting for recovery.
         group.then(opOnRun("abandon", RunsCommand::abandon));
+        // Loses the Trick or Treat mimic under way for a player's run: the vault's price stays taken (admin testing).
+        group.then(op("losemimic")
+                .then(Commands.argument("player", EntityArgument.player())
+                        .executes(context -> {
+                            ServerPlayer target = EntityArgument.getPlayer(context, "player");
+                            Optional<PersistedRun> run = TowerRuns.forPlayer(target.getUUID());
+                            Optional<String> line = run.flatMap(r -> com.cobbletowers.trick.TrickOrTreatService.operatorLose(context.getSource().getServer(), r.runId()));
+                            if (line.isEmpty()) {
+                                context.getSource().sendFailure(Component.literal("No mimic is being fought."));
+                                return 0;
+                            }
+                            context.getSource().sendSuccess(() -> Component.literal(line.get()).withStyle(ChatFormatting.GOLD), true);
+                            return 1;
+                        })));
         // Wins the floor under way for a player's run, rewards and all (admin testing).
         group.then(op("winfloor")
                 .executes(context -> winFloor(context, context.getSource().getPlayerOrException()))
