@@ -116,22 +116,33 @@ def door_centre(box: dict) -> tuple[int, int, int]:
     return tuple((box["min"][i] + box["max"][i]) // 2 for i in range(3))
 
 
+def door_samples(box: dict) -> list[tuple[int, int, int]]:
+    """Where a doorway is read: the middle and the two bottom corners. The top corners are the pointed arch's stonework and are not part of the opening."""
+    low, high = box["min"], box["max"]
+    return [door_centre(box), tuple(low), (high[0], low[1], low[2])]
+
+
 def door_shut(rcon: Rcon, origin: tuple[int, int, int], door: dict) -> bool:
-    """Shut and dark: a plain doorway is iron bars all through; a Trick or Treat doorway (P57) is walled with its gap barrier. The lintel is crying obsidian."""
-    centre = door_centre(door["open"])
-    plain = gate_state(rcon, origin, door["open"], "minecraft:iron_bars")
-    trick = block_is(rcon, origin, centre, "minecraft:barrier")
+    """Shut and dark: a plain doorway is iron bars at every sample; a Trick or Treat doorway (P57) has its gap barrier. The lintel is crying obsidian."""
+    plain = all(block_is(rcon, origin, p, "minecraft:iron_bars") for p in door_samples(door["open"]))
+    trick = block_is(rcon, origin, door_centre(door["open"]), "minecraft:barrier")
     return (plain or trick) and gate_state(rcon, origin, door["frame"], "minecraft:crying_obsidian")
 
 
 def door_open(rcon: Rcon, origin: tuple[int, int, int], door: dict) -> bool:
-    """Open: a plain doorway is air all through; a Trick or Treat doorway keeps its wall and its gap is air."""
-    if not block_is(rcon, origin, door_centre(door["open"]), "minecraft:air"):
+    """Open: a plain doorway is air at every sample; a Trick or Treat doorway keeps its wall and its gap is air."""
+    samples = door_samples(door["open"])
+    if not block_is(rcon, origin, samples[0], "minecraft:air"):
         return False
-    if gate_state(rcon, origin, door["open"], "minecraft:air"):
+    if all(block_is(rcon, origin, p, "minecraft:air") for p in samples):
         return True
-    corner = tuple(door["open"]["min"])
+    corner = samples[1]
     return block_is(rcon, origin, corner, "minecraft:polished_blackstone_bricks") or block_is(rcon, origin, corner, "minecraft:barrier")
+
+
+def gate_is(rcon: Rcon, origin: tuple[int, int, int], box: dict, block: str) -> bool:
+    """A gate is {block} where it is read (the middle and the bottom corners); the arch's top corners are stonework."""
+    return all(block_is(rcon, origin, p, block) for p in door_samples(box))
 
 
 def what_is(rcon: Rcon, origin: tuple[int, int, int], local: tuple[int, int, int]) -> str:
@@ -302,13 +313,13 @@ def main() -> None:
             for floor in range(1, top + 1):
                 lay = layout_of(floor)
                 at = f"floor {floor}"
-                check(f"{at}: gate A is shut while the floor is fought", gate_state(rcon, origin, lay["gate_a"], "minecraft:iron_bars"),
+                check(f"{at}: gate A is shut while the floor is fought", gate_is(rcon, origin, lay["gate_a"], "minecraft:iron_bars"),
                       "gate A middle is " + what_is(rcon, origin, door_centre(lay["gate_a"])) + "; " + run_line(rcon)[-90:])
                 if "gate_b" in lay:
-                    check(f"{at}: gate B is shut too", gate_state(rcon, origin, lay["gate_b"], "minecraft:iron_bars"))
+                    check(f"{at}: gate B is shut too", gate_is(rcon, origin, lay["gate_b"], "minecraft:iron_bars"))
                 if not win_floor(rcon, floor):
                     raise RuntimeError(f"{at} never reached its intermission: " + run_line(rcon))
-                check(f"{at}: winning it opens gate A", gate_state(rcon, origin, lay["gate_a"], "minecraft:air"))
+                check(f"{at}: winning it opens gate A", gate_is(rcon, origin, lay["gate_a"], "minecraft:air"))
                 vendor = lay["exit"]
                 near = rcon.command(f"{IN_TOWER} positioned {origin[0] + vendor['x']} {origin[1] + vendor['y']} {origin[2] + vendor['z']} "
                                     f"if entity @e[tag=cobbletowers_vendor,distance=..3]")
@@ -378,11 +389,11 @@ def main() -> None:
                     check("and the doors and gates of floor 1, left open by the first cycle, are shut again",
                           all(door_shut(rcon, origin, d)
                               for d in layout_of(1)["doors"])
-                          and gate_state(rcon, origin, layout_of(1)["gate_a"], "minecraft:iron_bars")
-                          and gate_state(rcon, origin, layout_of(1)["gate_b"], "minecraft:iron_bars"))
+                          and gate_is(rcon, origin, layout_of(1)["gate_a"], "minecraft:iron_bars")
+                          and gate_is(rcon, origin, layout_of(1)["gate_b"], "minecraft:iron_bars"))
                     break
 
-                opened = wait_for(lambda: gate_state(rcon, origin, lay["gate_b"], "minecraft:air"), 20)
+                opened = wait_for(lambda: gate_is(rcon, origin, lay["gate_b"], "minecraft:air"), 20)
                 check(f"{at}: everyone ready opens gate B after the countdown", opened)
                 line = run_line(rcon)
                 check(f"{at}: the next floor waits for the climb", "INTERMISSION" in line and f"floor {floor}" in line, line[-120:])
